@@ -1,11 +1,11 @@
 /**
- * Context middleware
+ * Request middleware
  */
 const CommonUtils = require('../utils/common.utils.js');
 
 const Public = {
   /**
-   * context middlware
+   * Request middlware
    */
   middleware: (req, res, next) => {
     // add _req to request
