@@ -1,0 +1,35 @@
+{
+  "name": "small-nodejs-service",
+  "version": "1.0.0",
+  "description": "Small Nodejs Service",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "nyc --reporter=text --reporter=html mocha --require test/hooks.js --timeout 15000 --reporte mocha-multi-reporters"
+  },
+  "keywords": [
+    "small",
+    "nodejs",
+    "micro",
+    "service"
+  ],
+  "author": "Small",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "1.4.0",
+    "body-parser": "1.20.2",
+    "express": "4.18.2",
+    "joi": "17.9.2",
+    "lodash": "4.17.21",
+    "morgan": "1.10.0",
+    "uuid": "9.0.0"
+  },
+  "devDependencies": {
+    "chai": "4.3.7",
+    "chai-http": "4.4.0",
+    "mocha": "10.2.0",
+    "mocha-multi-reporters": "1.5.1",
+    "nyc": "15.1.0",
+    "sinon": "15.2.0"
+  }
+}
