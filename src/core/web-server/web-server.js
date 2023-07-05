@@ -3,11 +3,13 @@
  */
 const morgan = require('morgan');
 
+const RequestMiddleware = require('./request.middleware');
+
 const Public = {
   /**
    * init a webserver
    */
-  init: async (port, routers, _middlewares = null) => {
+  init: async (port, routers /*: [] */, middlewares /* :[] */ = null) => {
     console.log(`Init web server on port ${port}`);
 
     let express = require('express');
@@ -18,10 +20,17 @@ const Public = {
     app.use(morgan('combined')); //'combined' outputs the Apache style LOGs
 
     //parse application/json and look for raw text
-    app.use(bodyParser.json());
-    app.use(bodyParser.urlencoded({ extended: true }));
+    app.use(bodyParser.json({ limit: '5mb' }));
+    app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
     app.use(bodyParser.text());
-    app.use(bodyParser.json({ type: 'application/json' }));
+    app.use(bodyParser.json({ limit: '5mb', type: 'application/json' }));
+
+    // add middlewares
+    app.use(RequestMiddleware.middleware);
+
+    if (Array.isArray(middlewares)) {
+      middlewares.forEach((middleware) => app.use(middleware?.middleware || middleware));
+    }
 
     // add routes
     if (!Array.isArray(routers)) {
