@@ -7,7 +7,7 @@ const Public = {
    */
   setupEnv: () => {
     //env
-    process.env.NODE_ENV = 'development';
+    process.env.NODE_ENV = 'test';
 
     console.log('process.env.NODE_ENV:', process.env.NODE_ENV);
   },

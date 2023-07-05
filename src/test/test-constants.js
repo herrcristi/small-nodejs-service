@@ -3,7 +3,7 @@
  */
 
 const Public = {
-  WebServer: 'localhost:8080',
+  WebServer: 'http://localhost:8080',
 };
 
 module.exports = { ...Public };

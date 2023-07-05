@@ -5,4 +5,4 @@
  */
 
 // students tests
-require('./students/students.getAll.test');
+require('./students.controller.getAll.test');

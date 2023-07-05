@@ -5,5 +5,5 @@
 // core tests
 require('../core/test/core.all.tests.js');
 
-// controllers tests
-require('./test/controllers/controllers.all.tests.js');
+// services tests
+require('./test/services.students/students.all.tests.js');
