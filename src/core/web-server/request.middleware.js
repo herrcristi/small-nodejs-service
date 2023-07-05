@@ -10,8 +10,14 @@ const Public = {
   middleware: (req, res, next) => {
     // add _req to request
     req._req = {
+      tenantID: req.headers.tenantid,
       reqID: CommonUtils.uuidc(),
       lang: 'en',
+      ipAddress: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+      reqMethod: req.method?.toUpperCase(),
+      reqUrl: req.originalUrl,
+      reqPath: req.path,
+      reqTime: new Date().toISOString(),
     };
 
     let time = new Date();

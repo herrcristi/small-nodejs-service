@@ -1,7 +1,6 @@
 /**
  * Web server
  */
-const morgan = require('morgan');
 
 const RequestMiddleware = require('./request.middleware');
 
@@ -15,9 +14,6 @@ const Public = {
     let express = require('express');
     let app = express();
     let bodyParser = require('body-parser');
-
-    // logging
-    app.use(morgan('combined')); //'combined' outputs the Apache style LOGs
 
     //parse application/json and look for raw text
     app.use(bodyParser.json({ limit: '5mb' }));
