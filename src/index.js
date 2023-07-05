@@ -1,7 +1,7 @@
 /**
  * Entry point of the service
  */
-const WebServer = require('./core/web-server/web-server.cjs');
+const WebServer = require('./web-server/web-server.js');
 const { EventEmitter } = require('events');
 
 const e = new EventEmitter();

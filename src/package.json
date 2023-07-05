@@ -2,10 +2,10 @@
   "name": "small-nodejs-service",
   "version": "1.0.0",
   "description": "Small Nodejs Service",
-  "main": "index.cjs",
+  "main": "index.js",
   "scripts": {
-    "start": "node index.cjs",
-    "test": "nyc --reporter=text --reporter=html mocha --require test/hooks.cjs --timeout 15000 --reporte mocha-multi-reporters"
+    "start": "node index.js",
+    "test": "nyc --reporter=text --reporter=html mocha --require test/hooks.js --timeout 15000 --reporte mocha-multi-reporters"
   },
   "keywords": [
     "small",
@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "chai": "4.3.7",
+    "chai-http": "4.4.0",
     "mocha": "10.2.0",
     "mocha-multi-reporters": "1.5.1",
     "nyc": "15.1.0",

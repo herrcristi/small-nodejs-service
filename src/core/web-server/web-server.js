@@ -6,8 +6,8 @@ const Public = {
   /**
    * init a webserver
    */
-  init: async () => {
-    console.log('Init web server');
+  init: async (port, router, _middlewares = null) => {
+    console.log(`Init web server on port ${port}`);
   },
 };
 
