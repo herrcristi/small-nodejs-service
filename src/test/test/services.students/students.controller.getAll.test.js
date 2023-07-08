@@ -17,7 +17,9 @@ describe('Students', function () {
     sinon.restore();
   });
 
-  afterEach(async function () {});
+  afterEach(async function () {
+    sinon.restore();
+  });
 
   /**
    * get all with success
@@ -29,5 +31,23 @@ describe('Students', function () {
 
     // check
     chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal({
+      data: [],
+    });
+  }).timeout(10000);
+
+  /**
+   * get all failed with exception
+   */
+  it('should get all failed with exception', async () => {
+    // // TODO replace console.log with manager
+    // // stub
+    // sinon.stub(console, 'log').throws('Test exception');
+    // // call
+    // let res = await chai.request(TestConstants.WebServer).get(`${StudentsConstants.StudentsApiPath}`);
+    // sinon.restore();
+    // console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+    // // check
+    // chai.expect(res.status).to.equal(500);
   }).timeout(10000);
 });
