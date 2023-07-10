@@ -12,6 +12,13 @@ const Public = {
   },
 
   /**
+   * is debug
+   */
+  isDebug: () => {
+    return ['dev', 'test', 'development'].includes(process.env.NODE_ENV);
+  },
+
+  /**
    * uuid
    */
   uuid: () => {

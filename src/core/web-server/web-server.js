@@ -22,7 +22,7 @@ const Public = {
     app.use(bodyParser.json({ limit: '5mb', type: 'application/json' }));
 
     // add middlewares
-    app.use(RequestMiddleware.middleware); // adds a req._req
+    app.use(RequestMiddleware.middleware); // adds a req._ctx
 
     if (Array.isArray(middlewares)) {
       middlewares.forEach((middleware) => app.use(middleware?.middleware || middleware));

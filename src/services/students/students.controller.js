@@ -1,23 +1,58 @@
 /**
  * Students controller
  */
+
+const Joi = require('joi');
+
+const RestApiUtils = require('../../core/utils/rest-api.utils');
+const RestMsgUtils = require('../../core/utils/rest-messages.utils');
+
 const StudentConstants = require('./students.constants');
+const StudentsService = require('./students.service');
+
+/**
+ * validation
+ */
+const Schema = {
+  Student: Joi.object().keys({
+    user: Joi.string().min(1).max(64),
+    classes: Joi.array(Joi.string().min(1).max(64)).label('Classes'),
+  }),
+};
+
+const Validators = {
+  /**
+   * for post
+   */
+  Post: Schema.Student.fork(['user', 'classes'], (x) => x.required() /*make required */),
+};
+
+const Config = {
+  /**
+   * controller config
+   */
+  Controller: {
+    name: 'Students',
+    schema: Schema.Student,
+    service: StudentsService,
+  },
+};
 
 const Public = {
   /**
    * get all
    */
-  getAll: (req, res, _next) => {
-    try {
-      console.log('Students get all called');
+  getAll: async (req, res, _next) => {
+    // call base implementation
+    return RestControllerUtils.getAll(Config.Controller, req, res, _next);
+  },
 
-      res.status(200).json({ data: [] });
-    } catch (e) {
-      console.log(`Error occured. ${e.stack ? e.stack : e}`);
-      res.status(500);
-    } finally {
-      res.end();
-    }
+  /**
+   * get one
+   */
+  getOne: async (req, res, _next) => {
+    // call base implementation
+    return RestControllerUtils.getOne(Config.Controller, req, res, _next);
   },
 };
 
