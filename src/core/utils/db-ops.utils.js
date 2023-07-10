@@ -7,7 +7,7 @@ const Utils = {
   /**
    * error
    */
-  error: (msg, _ctx) => {
+  error: (msg, time, _ctx) => {
     return {
       time: new Date() - time /*milliseconds*/,
       error: { message: msg, error: new Error(msg) },

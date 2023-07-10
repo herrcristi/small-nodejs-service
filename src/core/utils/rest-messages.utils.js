@@ -18,7 +18,7 @@ const Public = {
       msg.error = error;
     }
 
-    console.log(`${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
+    console.log(`Status message: ${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
 
     return msg;
   },
@@ -36,7 +36,7 @@ const Public = {
       msg.error = `${objID}`;
     }
 
-    console.log(`${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
+    console.log(`Status message: ${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
 
     return msg;
   },
@@ -54,9 +54,28 @@ const Public = {
       msg.error = error.stack || error;
     }
 
-    console.log(`${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
+    console.log(`Status message: ${msg.message}. Stack: ${error.stack}. Request: ${JSON.stringify(_ctx)}`);
 
     return msg;
+  },
+
+  /**
+   * status error
+   */
+  statusError: async (status, error, _ctx) => {
+    switch (status) {
+      case 400:
+        return await Public.notValid(error, _ctx);
+
+      case 404:
+        return await Public.notFound(error, _ctx);
+
+      case 500:
+        return await Public.exception(error, _ctx);
+
+      default:
+        return await Public.exception('Error', _ctx);
+    }
   },
 };
 

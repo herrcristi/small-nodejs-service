@@ -6,10 +6,10 @@ const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
 const TestConstants = require('../../test-constants.js');
-const StudentsConstants = require('../../../services/students/students.constants.js');
-const StudentsService = require('../../../services/students/students.service.js');
+const UsersConstants = require('../../../services/users/users.constants.js');
+const UsersService = require('../../../services/users/users.service.js');
 
-describe('Students', function () {
+describe('Users', function () {
   before(async function () {});
 
   beforeEach(async function () {});
@@ -27,7 +27,7 @@ describe('Students', function () {
    */
   it('should get all with success', async () => {
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${StudentsConstants.StudentsApiPath}`);
+    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.UsersApiPath}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -42,10 +42,10 @@ describe('Students', function () {
    */
   it('should get all failed with exception', async () => {
     // stub
-    sinon.stub(StudentsService, 'getAll').throws('Test exception');
+    sinon.stub(UsersService, 'getAll').throws('Test exception');
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${StudentsConstants.StudentsApiPath}`);
+    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.UsersApiPath}`);
     sinon.restore();
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 

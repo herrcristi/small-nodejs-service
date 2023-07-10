@@ -61,6 +61,16 @@ const Public = {
 
     return chunks;
   },
+
+  /**
+   * hide sensitive data
+   */
+  protectData: (obj) => {
+    return {
+      ...obj,
+      password: undefined,
+    };
+  },
 };
 
 module.exports = { ...Public };
