@@ -24,86 +24,67 @@ describe('Users', function () {
   });
 
   /**
-   * get all with success
+   * get one with success
    */
-  it('should get all with success', async () => {
+  it('should get one with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
 
     // stub
-    let stubServiceGetAll = sinon.stub(UsersService, 'getAll').callsFake((filter) => {
-      console.log(`\nUserService.getAll called\n`);
-      return { value: testUsers };
-    });
-
-    let stubServiceGetAllCount = sinon.stub(UsersService, 'getAllCount').callsFake((filter) => {
-      console.log(`\nUserService.getAllCount called\n`);
-      return { value: testUsers.length };
+    let stubServiceGetOne = sinon.stub(UsersService, 'getOne').callsFake(() => {
+      console.log(`\nUserService.getOne called\n`);
+      return { value: testUser };
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.UsersApiPath}`);
+    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.UsersApiPath}/${testUser.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(200);
-    chai.expect(stubServiceGetAll.callCount).to.equal(1);
-    chai.expect(stubServiceGetAllCount.callCount).to.equal(1);
+    chai.expect(stubServiceGetOne.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      data: [...testUsers],
-      meta: {
-        count: testUsers.length,
-        limit: 0,
-        skip: 0,
-      },
+      ...testUser,
     });
   }).timeout(10000);
 
   /**
-   * get all partial data applying filter with success
+   * get one not found
    */
-  it('should get all partial data applying filter with success', async () => {
+  it('should get one not found', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
 
     // stub
-    let stubServiceGetAll = sinon.stub(UsersService, 'getAll').callsFake((filter) => {
-      console.log(`\nUserService.getAll called\n`);
-      return { value: testUsers };
-    });
-
-    let stubServiceGetAllCount = sinon.stub(UsersService, 'getAllCount').callsFake((filter) => {
-      console.log(`\nUserService.getAllCount called\n`);
-      return { value: testUsers.length + 1 };
+    let stubServiceGetOne = sinon.stub(UsersService, 'getOne').callsFake((objID) => {
+      console.log(`\nUserService.getOne called\n`);
+      console.log(objID);
+      return { value: null };
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .get(`${UsersConstants.UsersApiPath}?firstName!=John&lastName=/ben/i&skip=1&limit=1`);
+    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.UsersApiPath}/${testUser.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
-    chai.expect(res.status).to.equal(206);
-    chai.expect(stubServiceGetAll.callCount).to.equal(1);
-    chai.expect(stubServiceGetAllCount.callCount).to.equal(1);
-    chai.expect(res.body).to.deep.equal({
-      data: [...testUsers],
-      meta: {
-        count: testUsers.length + 1,
-        limit: 1,
-        skip: 1,
-      },
-    });
+    chai.expect(res.status).to.equal(404);
+    chai.expect(stubServiceGetOne.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('Not found');
+    chai.expect(res.body.error).to.include(testUser.id);
   }).timeout(10000);
 
   /**
-   * get all failed with exception
+   * get one failed with exception
    */
-  it('should get all failed with exception', async () => {
+  it('should get one failed with exception', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
+
     // stub
-    sinon.stub(UsersService, 'getAll').throws('Test exception');
+    sinon.stub(UsersService, 'getOne').throws('Test exception');
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.UsersApiPath}`);
+    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.UsersApiPath}/${testUser.id}`);
     sinon.restore();
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 

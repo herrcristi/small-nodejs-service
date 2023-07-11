@@ -22,13 +22,13 @@ const Public = {
    */
   getAll: async (filter, _ctx) => {
     const time = new Date();
-    return { value: [] };
+
     return Utils.error('Not implemented', time, _ctx);
   },
 
   getAllCount: async (filter, _ctx) => {
     const time = new Date();
-    return { value: 0 };
+
     return Utils.error('Not implemented', time, _ctx);
   },
 
