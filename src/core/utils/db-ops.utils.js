@@ -22,6 +22,13 @@ const Public = {
    */
   getAll: async (filter, _ctx) => {
     const time = new Date();
+    return { value: [] };
+    return Utils.error('Not implemented', time, _ctx);
+  },
+
+  getAllCount: async (filter, _ctx) => {
+    const time = new Date();
+    return { value: 0 };
     return Utils.error('Not implemented', time, _ctx);
   },
 
@@ -40,6 +47,8 @@ const Public = {
     const time = new Date();
 
     objInfo.id = objInfo.id || CommonUtils.uuidc();
+    objInfo.createdTimestamp = new Date();
+    objInfo.lastModifiedTimestamp = objInfo.createdTimestamp;
 
     return Utils.error('Not implemented', time, _ctx);
   },
@@ -58,6 +67,8 @@ const Public = {
    */
   put: async (objID, objInfo, _ctx) => {
     const time = new Date();
+    objInfo.lastModifiedTimestamp = new Date();
+
     return Utils.error('Not implemented', time, _ctx);
   },
 
@@ -66,6 +77,7 @@ const Public = {
    */
   patch: async (objID, patchInfo, _ctx) => {
     const time = new Date();
+    //patchInfo.set.lastModifiedTimestamp = new Date();
     return Utils.error('Not implemented', time, _ctx);
   },
 };

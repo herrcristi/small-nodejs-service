@@ -15,6 +15,10 @@ const Public = {
     return await DbOpsUtils.getAll(filter, _ctx);
   },
 
+  getAllCount: async (filter, _ctx) => {
+    return await DbOpsUtils.getAllCount(filter, _ctx);
+  },
+
   /**
    * get one
    */

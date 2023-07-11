@@ -34,6 +34,11 @@ describe('Students', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(res.body).to.deep.equal({
       data: [],
+      meta: {
+        count: 0,
+        limit: 0,
+        skip: 0,
+      },
     });
   }).timeout(10000);
 

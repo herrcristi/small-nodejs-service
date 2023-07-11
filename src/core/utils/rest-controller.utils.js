@@ -36,7 +36,7 @@ const Public = {
     try {
       console.log(`${controller.name}: Get all called, query ${JSON.stringify(CommonUtils.protectData(req.query))}`);
 
-      // convert query to mongo build
+      // convert query to mongo build filter: { filter, projection, limit, skip, sort }
       const filter = await RestApiUtils.buildMongoFilterFromReq(req, controller.schema, _ctx);
       if (filter.error) {
         return { status: 400, error: filter.error };
@@ -48,11 +48,27 @@ const Public = {
         throw r.error.error;
       }
 
+      // get corresponding count
+      let rCount = await controller.service.getAllCount(filter, _ctx);
+      if (rCount.error) {
+        throw rCount.error.error;
+      }
+
+      const limit = filter.limit || 0;
+      const skip = filter.skip || 0;
+      const currentLimit = skip + limit;
+
       // success
       return {
-        status: 200,
+        status: currentLimit && currentLimit < rCount.value ? 206 /*partial data*/ : 200,
         value: {
           data: r.value,
+          meta: {
+            count: rCount.value,
+            limit,
+            skip,
+            sort: filter.sort,
+          },
         },
       };
     } catch (e) {

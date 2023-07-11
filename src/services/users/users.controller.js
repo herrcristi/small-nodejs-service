@@ -20,7 +20,7 @@ const Schema = {
       .min(1)
       .max(64)
       .label('Email'),
-    password: Joi.string().min(1).max(64).label('Password'),
+    password: Joi.string().min(1).max(64).label('Password'), // TODO move to usersLogin
     firstName: Joi.string().min(1).max(64).label('First Name'),
     lastName: Joi.string().min(1).max(64).label('Last Name'),
     birthday: Joi.date().min(1).max(64).prefs({ dateFormat: 'iso' }).label('Birthday'),
@@ -35,7 +35,7 @@ const Validators = {
    * for post
    */
   Post: Schema.User.fork(
-    ['email', 'firstName', 'lastName', 'birthday', 'address', 'schools'],
+    ['email', 'password', 'firstName', 'lastName', 'birthday', 'address', 'schools'],
     (x) => x.required() /*make required */
   ),
 };

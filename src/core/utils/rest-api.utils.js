@@ -17,6 +17,7 @@ const Utils = {
 const Public = {
   /**
    * validate and build Mongo filter from request
+   * return filter: { filter, projection, limit, skip, sort }
    */
   buildMongoFilterFromReq: async (req, schema, _ctx) => {
     try {
