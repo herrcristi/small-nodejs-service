@@ -26,14 +26,14 @@ const Public = {
   /**
    * not found
    */
-  notFound: async (objID, error, _ctx) => {
+  notFound: async (error, _ctx) => {
     let msg = {
       message: 'Not found',
     };
 
     // detailed error in debug
     if (CommonUtils.isDebug()) {
-      msg.error = `${objID}`;
+      msg.error = `${error}`;
     }
 
     console.log(`Status message: ${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
@@ -74,7 +74,7 @@ const Public = {
         return await Public.exception(error, _ctx);
 
       default:
-        return await Public.exception('Error', _ctx);
+        return await Public.exception(error || 'Error', _ctx);
     }
   },
 };

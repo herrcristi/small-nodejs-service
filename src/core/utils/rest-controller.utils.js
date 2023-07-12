@@ -10,8 +10,8 @@ const CommonUtils = require('./common.utils');
 const Public = {
   /**
    * reply
-   * controller = { name, schema, service }
-   * result = { status, error?, value? }
+   * controller: { name, schema, service }
+   * return: { status, error } or { status, value }
    */
   reply: async (controller, result, req, res, next) => {
     const _ctx = req._ctx;
@@ -29,7 +29,8 @@ const Public = {
 
   /**
    * get all base implementation
-   * controller = { name, schema, service }
+   * controller: { name, schema, service }
+   * return: { status, error } or { status, value: { data, meta: { count, limit, skip, sort } } } }
    */
   getAll: async (controller, req, res, next) => {
     const _ctx = req._ctx;
@@ -78,7 +79,8 @@ const Public = {
 
   /**
    * get one
-   * controller = { name, schema, service }
+   * controller: { name, schema, service }
+   * return: { status, error } or { status, value }
    */
   getOne: async (controller, req, res, next) => {
     const _ctx = req._ctx;
@@ -106,24 +108,26 @@ const Public = {
 
   /**
    * post
-   * controller = { name, schema, service }
+   * controller: { name, schema, service }
+   * return: { status, error } or { status, value }
    */
   post: async (controller, req, res, next) => {
     const _ctx = req._ctx;
     try {
-      console.log(`${controller.name}: Post called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
+      console.log(`${controller.name}: Post called, body ${JSON.stringify(CommonUtils.protectData(req.body))}`);
 
       // validate
       const v = controller.schema.validate(req.body);
       if (v.error) {
-        return { status: 400, error: v.error.error };
+        return { status: 400, error: v.error.details[0] };
       }
 
       // post
-      const newO = controller.service.post(req.body, _ctx);
+      const r = controller.service.post(req.body, _ctx);
+      console.log(`Post succesful new object with id: ${r.value.id}, name: ${r.value.name}`);
 
       // success
-      return { status: 201, value: newO.id };
+      return { status: 201, value: r.value };
     } catch (e) {
       return { status: 500, error: e };
     }
@@ -131,7 +135,8 @@ const Public = {
 
   /**
    * delete
-   * controller = { name, schema, service }
+   * controller: { name, schema, service }
+   * return: { status, error } or { status, value }
    */
   delete: async (controller, req, res, next) => {
     const _ctx = req._ctx;
@@ -159,7 +164,8 @@ const Public = {
 
   /**
    * patch
-   * controller = { name, schema, service }
+   * controller: { name, schema, service }
+   * return: { status, error } or { status, value }
    */
   patch: async (controller, req, res, next) => {
     const _ctx = req._ctx;
@@ -190,7 +196,8 @@ const Public = {
 
   /**
    * put
-   * controller = { name, schema, service }
+   * controller: { name, schema, service }
+   * return: { status, error } or { status, value }
    */
   put: async (controller, req, res, next) => {
     const _ctx = req._ctx;

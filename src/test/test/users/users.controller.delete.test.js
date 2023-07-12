@@ -22,67 +22,67 @@ describe('Users', function () {
   after(async function () {});
 
   /**
-   * get one with success
+   * delete one with success
    */
-  it('should get one with success', async () => {
+  it('should delete one with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
     // stub
-    let stubServiceGetOne = sinon.stub(UsersService, 'getOne').callsFake(() => {
-      console.log(`\nUserService.getOne called\n`);
+    let stubServiceDeleteOne = sinon.stub(UsersService, 'delete').callsFake(() => {
+      console.log(`\nUserService.delete called\n`);
       return { value: testUser };
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.UsersApiPath}/${testUser.id}`);
+    let res = await chai.request(TestConstants.WebServer).delete(`${UsersConstants.UsersApiPath}/${testUser.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(200);
-    chai.expect(stubServiceGetOne.callCount).to.equal(1);
+    chai.expect(stubServiceDeleteOne.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
       ...testUser,
     });
   }).timeout(10000);
 
   /**
-   * get one not found
+   * delete one not found
    */
-  it('should get one not found', async () => {
+  it('should delete one not found', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
     // stub
-    let stubServiceGetOne = sinon.stub(UsersService, 'getOne').callsFake((objID) => {
-      console.log(`\nUserService.getOne called\n`);
+    let stubServiceDeleteOne = sinon.stub(UsersService, 'delete').callsFake((objID) => {
+      console.log(`\nUserService.delete called\n`);
       console.log(objID);
       return { value: null };
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.UsersApiPath}/${testUser.id}`);
+    let res = await chai.request(TestConstants.WebServer).delete(`${UsersConstants.UsersApiPath}/${testUser.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(404);
-    chai.expect(stubServiceGetOne.callCount).to.equal(1);
+    chai.expect(stubServiceDeleteOne.callCount).to.equal(1);
     chai.expect(res.body.message).to.include('Not found');
     chai.expect(res.body.error).to.include(testUser.id);
   }).timeout(10000);
 
   /**
-   * get one failed with exception
+   * delete one failed with exception
    */
-  it('should get one failed with exception', async () => {
+  it('should delete one failed with exception', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
     // stub
-    sinon.stub(UsersService, 'getOne').throws('Test exception');
+    sinon.stub(UsersService, 'delete').throws('Test exception');
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.UsersApiPath}/${testUser.id}`);
+    let res = await chai.request(TestConstants.WebServer).delete(`${UsersConstants.UsersApiPath}/${testUser.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check

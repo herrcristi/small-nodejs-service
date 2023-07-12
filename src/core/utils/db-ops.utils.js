@@ -19,6 +19,7 @@ const Public = {
   /**
    * get all
    * filter: { filter, projection, limit, skip, sort }
+   * return: { error: { message, error } } or { value }
    */
   getAll: async (filter, _ctx) => {
     const time = new Date();
@@ -34,6 +35,7 @@ const Public = {
 
   /**
    * get one
+   * return: { error: { message, error } } or { value }
    */
   getOne: async (objID, _ctx) => {
     const time = new Date();
@@ -42,6 +44,7 @@ const Public = {
 
   /**
    * post
+   * return: { error: { message, error } } or { value }
    */
   post: async (objInfo, _ctx) => {
     const time = new Date();
@@ -55,6 +58,7 @@ const Public = {
 
   /**
    * delete
+   * return: { error: { message, error } } or { value }
    */
   delete: async (objID, _ctx) => {
     const time = new Date();
@@ -64,6 +68,7 @@ const Public = {
 
   /**
    * put
+   * return: { error: { message, error } } or { value }
    */
   put: async (objID, objInfo, _ctx) => {
     const time = new Date();
@@ -74,6 +79,7 @@ const Public = {
 
   /**
    * patch
+   * return: { error: { message, error } } or { value }
    */
   patch: async (objID, patchInfo, _ctx) => {
     const time = new Date();

@@ -63,7 +63,7 @@ const Public = {
    */
   post: async (req, res, next) => {
     // call base implementation -> { status, error?, value? }
-    const result = await RestControllerUtils.delete({ ...Config.Controller, schema: Validators.Post }, req, res, next);
+    const result = await RestControllerUtils.post({ ...Config.Controller, schema: Validators.Post }, req, res, next);
     await RestControllerUtils.reply(Config.Controller, result, req, res, next);
   },
 

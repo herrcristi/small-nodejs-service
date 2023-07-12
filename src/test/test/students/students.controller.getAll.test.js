@@ -18,9 +18,7 @@ describe('Students', function () {
     sinon.restore();
   });
 
-  afterEach(async function () {
-    sinon.restore();
-  });
+  after(async function () {});
 
   /**
    * get all with success
@@ -51,7 +49,6 @@ describe('Students', function () {
 
     // call
     let res = await chai.request(TestConstants.WebServer).get(`${StudentsConstants.StudentsApiPath}`);
-    sinon.restore();
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check

@@ -30,6 +30,9 @@ const Public = {
    * post
    */
   post: async (objInfo, _ctx) => {
+    // add name
+    objInfo.name = `${objInfo.firstName} ${objInfo.lastName}`;
+
     const r = await DbOpsUtils.post(objInfo, _ctx);
     if (r.error) {
       return r;

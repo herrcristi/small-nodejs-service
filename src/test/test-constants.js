@@ -13,10 +13,12 @@ const Public = {
    */
   Schools: [
     {
-      id: 'GitHub University',
+      id: 'school-univ1',
+      name: 'GitHub University',
     },
     {
-      id: 'Local Highschool',
+      id: 'school-high2',
+      name: 'Local Highschool',
     },
   ],
 
@@ -30,10 +32,11 @@ const Public = {
       password: 'password',
       firstName: 'Big',
       lastName: 'Ben',
+      name: 'Big Ben',
       birthday: '1980-01-01T00:00:00Z',
       phoneNumber: '+0',
       address: 'London',
-      schools: ['GitHub University', 'Local Highschool'],
+      schools: ['school-univ1', 'school-high2'],
     },
     {
       id: 'user2',
@@ -41,10 +44,11 @@ const Public = {
       password: 'password',
       firstName: 'John',
       lastName: 'Bravo',
+      name: 'John Bravo',
       birthday: '2000-01-01T00:00:00Z',
       phoneNumber: '+0',
       address: 'Home alone',
-      schools: ['GitHub University'],
+      schools: ['school-univ1'],
     },
   ],
 };

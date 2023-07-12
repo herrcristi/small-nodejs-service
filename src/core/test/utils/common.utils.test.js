@@ -14,7 +14,7 @@ describe('Tests', function () {
     sinon.restore();
   });
 
-  afterEach(async function () {});
+  after(async function () {});
 
   /**
    * sleep test

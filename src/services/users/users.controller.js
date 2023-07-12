@@ -18,15 +18,14 @@ const Schema = {
     email: Joi.string()
       .email({ tlds: { allow: false } })
       .min(1)
-      .max(64)
-      .label('Email'),
-    password: Joi.string().min(1).max(64).label('Password'), // TODO move to usersLogin
-    firstName: Joi.string().min(1).max(64).label('First Name'),
-    lastName: Joi.string().min(1).max(64).label('Last Name'),
-    birthday: Joi.date().min(1).max(64).prefs({ dateFormat: 'iso' }).label('Birthday'),
-    phoneNumber: Joi.string().min(1).max(32).optional().label('Phone number'),
-    address: Joi.string().min(1).max(256).label('Address'),
-    schools: Joi.array().items(Joi.string().min(1).max(32).optional()).label('Schools'),
+      .max(64),
+    password: Joi.string().min(1).max(64), // TODO move to usersLogin
+    firstName: Joi.string().min(1).max(64),
+    lastName: Joi.string().min(1).max(64),
+    birthday: Joi.date().prefs({ dateFormat: 'iso' }),
+    phoneNumber: Joi.string().min(1).max(32).optional(),
+    address: Joi.string().min(1).max(256),
+    schools: Joi.array().items(Joi.string().min(1).max(32).optional()),
   }),
 };
 
@@ -75,7 +74,7 @@ const Public = {
    */
   post: async (req, res, next) => {
     // call base implementation -> { status, error?, value? }
-    const result = await RestControllerUtils.delete({ ...Config.Controller, schema: Validators.Post }, req, res, next);
+    const result = await RestControllerUtils.post({ ...Config.Controller, schema: Validators.Post }, req, res, next);
     await RestControllerUtils.reply(Config.Controller, result, req, res, next);
   },
 
