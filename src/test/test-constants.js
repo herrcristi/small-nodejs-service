@@ -25,7 +25,7 @@ const Public = {
    */
   Users: [
     {
-      id: 'Teacher 1',
+      id: 'user1',
       email: 'big.ben@testdomain.test',
       password: 'password',
       firstName: 'Big',
@@ -36,7 +36,7 @@ const Public = {
       schools: ['GitHub University', 'Local Highschool'],
     },
     {
-      id: 'Student 1',
+      id: 'user2',
       email: 'john.bravo@testdomain.test',
       password: 'password',
       firstName: 'John',
