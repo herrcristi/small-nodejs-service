@@ -5,7 +5,7 @@ const WebConstants = require('../../web-server/web-server.constants.js');
 
 const Public = {
   // paths
-  StudentsApiPath: `${WebConstants.BaseApiPath}/students`,
+  ApiPath: `${WebConstants.BaseApiPath}/students`,
 };
 
 module.exports = { ...Public };

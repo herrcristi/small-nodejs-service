@@ -25,7 +25,7 @@ describe('Students', function () {
    */
   it('should get all with success', async () => {
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${StudentsConstants.StudentsApiPath}`);
+    let res = await chai.request(TestConstants.WebServer).get(`${StudentsConstants.ApiPath}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -48,7 +48,7 @@ describe('Students', function () {
     sinon.stub(StudentsService, 'getAll').throws('Test exception');
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${StudentsConstants.StudentsApiPath}`);
+    let res = await chai.request(TestConstants.WebServer).get(`${StudentsConstants.ApiPath}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check

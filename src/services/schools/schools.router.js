@@ -12,12 +12,12 @@ const router = express.Router();
 /**
  * Schools
  */
-router.route(`${SchoolsConstants.SchoolsApiPath}`).get(SchoolsController.getAll);
-router.route(`${SchoolsConstants.SchoolsApiPath}/:id`).get(SchoolsController.getOne);
+router.route(`${SchoolsConstants.ApiPath}`).get(SchoolsController.getAll);
+router.route(`${SchoolsConstants.ApiPath}/:id`).get(SchoolsController.getOne);
 
-router.route(`${SchoolsConstants.SchoolsApiPath}`).post(SchoolsController.post);
-router.route(`${SchoolsConstants.SchoolsApiPath}/:id`).delete(SchoolsController.delete);
-router.route(`${SchoolsConstants.SchoolsApiPath}/:id`).put(SchoolsController.put);
-router.route(`${SchoolsConstants.SchoolsApiPath}/:id`).patch(SchoolsController.patch);
+router.route(`${SchoolsConstants.ApiPath}`).post(SchoolsController.post);
+router.route(`${SchoolsConstants.ApiPath}/:id`).delete(SchoolsController.delete);
+router.route(`${SchoolsConstants.ApiPath}/:id`).put(SchoolsController.put);
+router.route(`${SchoolsConstants.ApiPath}/:id`).patch(SchoolsController.patch);
 
 module.exports = router;

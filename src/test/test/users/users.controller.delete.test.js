@@ -35,7 +35,7 @@ describe('Users', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).delete(`${UsersConstants.UsersApiPath}/${testUser.id}`);
+    let res = await chai.request(TestConstants.WebServer).delete(`${UsersConstants.ApiPath}/${testUser.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -61,7 +61,7 @@ describe('Users', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).delete(`${UsersConstants.UsersApiPath}/${testUser.id}`);
+    let res = await chai.request(TestConstants.WebServer).delete(`${UsersConstants.ApiPath}/${testUser.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -82,7 +82,7 @@ describe('Users', function () {
     sinon.stub(UsersService, 'delete').throws('Test exception');
 
     // call
-    let res = await chai.request(TestConstants.WebServer).delete(`${UsersConstants.UsersApiPath}/${testUser.id}`);
+    let res = await chai.request(TestConstants.WebServer).delete(`${UsersConstants.ApiPath}/${testUser.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check

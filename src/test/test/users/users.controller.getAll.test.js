@@ -39,7 +39,7 @@ describe('Users', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.UsersApiPath}`);
+    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -76,7 +76,7 @@ describe('Users', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .get(`${UsersConstants.UsersApiPath}?firstName!=John&lastName=/ben/i&skip=1&limit=1`);
+      .get(`${UsersConstants.ApiPath}?firstName!=John&lastName=/ben/i&skip=1&limit=1`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -101,7 +101,7 @@ describe('Users', function () {
     sinon.stub(UsersService, 'getAll').throws('Test exception');
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.UsersApiPath}`);
+    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check

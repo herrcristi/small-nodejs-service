@@ -41,12 +41,10 @@ const Public = {
       schools: [
         {
           id: 'school-univ1',
-          name: 'GitHub University',
           roles: ['student'],
         },
         {
           id: 'school-high2',
-          name: 'Local Highschool',
           roles: ['teacher', 'admin'],
         },
       ],
@@ -64,7 +62,6 @@ const Public = {
       schools: [
         {
           id: 'school-univ1',
-          name: 'GitHub University',
           roles: ['teacher'],
         },
       ],

@@ -35,7 +35,7 @@ describe('Schools', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.SchoolsApiPath}/${testSchool.id}`);
+    let res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}/${testSchool.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -61,7 +61,7 @@ describe('Schools', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.SchoolsApiPath}/${testSchool.id}`);
+    let res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}/${testSchool.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -82,7 +82,7 @@ describe('Schools', function () {
     sinon.stub(SchoolsService, 'getOne').throws('Test exception');
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.SchoolsApiPath}/${testSchool.id}`);
+    let res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}/${testSchool.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check

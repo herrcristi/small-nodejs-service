@@ -41,7 +41,7 @@ describe('Schools', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.SchoolsApiPath}`).send(postReq);
+    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.ApiPath}`).send(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -69,7 +69,7 @@ describe('Schools', function () {
     sinon.stub(SchoolsService, 'post').throws('Test exception');
 
     // call
-    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.SchoolsApiPath}`).send(postReq);
+    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.ApiPath}`).send(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
