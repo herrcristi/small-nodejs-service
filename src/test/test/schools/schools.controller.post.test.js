@@ -7,10 +7,10 @@ const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
 const TestConstants = require('../../test-constants.js');
-const UsersConstants = require('../../../services/users/users.constants.js');
-const UsersService = require('../../../services/users/users.service.js');
+const SchoolsConstants = require('../../../services/schools/schools.constants.js');
+const SchoolsService = require('../../../services/schools/schools.service.js');
 
-describe('Users', function () {
+describe('Schools', function () {
   before(async function () {});
 
   beforeEach(async function () {});
@@ -25,36 +25,30 @@ describe('Users', function () {
    * post one with success
    */
   it('should post one with success', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
-    const testUser = testUsers[0];
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+    const testSchool = testSchools[0];
 
     // post request does not have id, name or name in schools
     const postReq = {
-      ...testUser,
+      ...testSchool,
       id: undefined,
-      name: undefined,
     };
 
-    // renmove schools name
-    for (let s of postReq.schools) {
-      delete s.name;
-    }
-
     // stub
-    let stubServicePostOne = sinon.stub(UsersService, 'post').callsFake(() => {
-      console.log(`\nUserService.post called\n`);
-      return { value: testUser };
+    let stubServicePostOne = sinon.stub(SchoolsService, 'post').callsFake(() => {
+      console.log(`\nSchoolService.post called\n`);
+      return { value: testSchool };
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).post(`${UsersConstants.UsersApiPath}`).send(postReq);
+    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.SchoolsApiPath}`).send(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(201);
     chai.expect(stubServicePostOne.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      ...testUser,
+      ...testSchool,
     });
   }).timeout(10000);
 
@@ -62,26 +56,20 @@ describe('Users', function () {
    * post one failed with exception
    */
   it('should post one failed with exception', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
-    const testUser = testUsers[0];
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+    const testSchool = testSchools[0];
 
     // post request does not have id, name or name in schools
     const postReq = {
-      ...testUser,
+      ...testSchool,
       id: undefined,
-      name: undefined,
     };
 
-    // renmove schools name
-    for (let s of postReq.schools) {
-      delete s.name;
-    }
-
     // stub
-    sinon.stub(UsersService, 'post').throws('Test exception');
+    sinon.stub(SchoolsService, 'post').throws('Test exception');
 
     // call
-    let res = await chai.request(TestConstants.WebServer).post(`${UsersConstants.UsersApiPath}`).send(postReq);
+    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.SchoolsApiPath}`).send(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check

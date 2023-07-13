@@ -1,5 +1,5 @@
 /**
- * Users controller
+ * Schools controller
  */
 const Joi = require('joi');
 
@@ -7,30 +7,19 @@ const RestApiUtils = require('../../core/utils/rest-api.utils');
 const RestMsgUtils = require('../../core/utils/rest-messages.utils');
 const RestControllerUtils = require('../../core/utils/rest-controller.utils');
 
-const UsersConstants = require('./users.constants');
-const UsersService = require('./users.service');
+const SchoolsConstants = require('./schools.constants');
+const SchoolsService = require('./schools.service');
 
 /**
  * validation
  */
 const Schema = {
-  User: Joi.object().keys({
-    email: Joi.string()
-      .email({ tlds: { allow: false } })
+  School: Joi.object().keys({
+    name: Joi.string().min(1).max(64),
+    status: Joi.string()
       .min(1)
-      .max(64),
-    password: Joi.string().min(1).max(64), // TODO move to usersLogin
-    firstName: Joi.string().min(1).max(64),
-    lastName: Joi.string().min(1).max(64),
-    birthday: Joi.date().prefs({ dateFormat: 'iso' }),
-    phoneNumber: Joi.string().min(1).max(32).optional(),
-    address: Joi.string().min(1).max(256),
-    schools: Joi.array().items(
-      Joi.object().keys({
-        id: Joi.string().min(1).max(64).required(),
-        roles: Joi.array().items(Joi.string().min(1).max(32).optional()).required(),
-      })
-    ),
+      .max(64)
+      .valid(...Object.values(SchoolsConstants.Status)),
   }),
 };
 
@@ -38,10 +27,7 @@ const Validators = {
   /**
    * for post
    */
-  Post: Schema.User.fork(
-    ['email', 'password', 'firstName', 'lastName', 'birthday', 'address', 'schools'],
-    (x) => x.required() /*make required */
-  ),
+  Post: Schema.School.fork(['name'], (x) => x.required() /*make required */),
 };
 
 const Config = {
@@ -49,9 +35,9 @@ const Config = {
    * controller config
    */
   Controller: {
-    name: 'Users',
-    schema: Schema.User,
-    service: UsersService,
+    name: 'Schools',
+    schema: Schema.School,
+    service: SchoolsService,
   },
 };
 

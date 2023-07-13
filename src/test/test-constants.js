@@ -15,10 +15,12 @@ const Public = {
     {
       id: 'school-univ1',
       name: 'GitHub University',
+      status: 'active',
     },
     {
       id: 'school-high2',
       name: 'Local Highschool',
+      status: 'active',
     },
   ],
 
@@ -36,7 +38,18 @@ const Public = {
       birthday: '1980-01-01T00:00:00Z',
       phoneNumber: '+0',
       address: 'London',
-      schools: ['school-univ1', 'school-high2'],
+      schools: [
+        {
+          id: 'school-univ1',
+          name: 'GitHub University',
+          roles: ['student'],
+        },
+        {
+          id: 'school-high2',
+          name: 'Local Highschool',
+          roles: ['teacher', 'admin'],
+        },
+      ],
     },
     {
       id: 'user2',
@@ -48,7 +61,13 @@ const Public = {
       birthday: '2000-01-01T00:00:00Z',
       phoneNumber: '+0',
       address: 'Home alone',
-      schools: ['school-univ1'],
+      schools: [
+        {
+          id: 'school-univ1',
+          name: 'GitHub University',
+          roles: ['teacher'],
+        },
+      ],
     },
   ],
 };

@@ -1,10 +1,10 @@
 /**
- * Users service
+ * Schools service
  */
 
 const DbOpsUtils = require('../../core/utils/db-ops.utils');
 
-const UsersConstants = require('./users.constants');
+const SchoolsConstants = require('./schools.constants');
 
 const Public = {
   /**
@@ -30,10 +30,8 @@ const Public = {
    * post
    */
   post: async (objInfo, _ctx) => {
-    // add name
-    objInfo.name = `${objInfo.firstName} ${objInfo.lastName}`;
-
-    // TODO get schools names and embed into schools
+    // add default status if not set
+    objInfo.status = objInfo.status || SchoolsConstants.Status.Pending;
 
     const r = await DbOpsUtils.post(objInfo, _ctx);
     if (r.error) {
