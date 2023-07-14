@@ -5,7 +5,7 @@
  */
 
 // controller tests
-require('./schools.controller.getAll.test');
-require('./schools.controller.getOne.test');
-require('./schools.controller.delete.test');
-require('./schools.controller.post.test');
+require('./schools.controller.getAll.test.js');
+require('./schools.controller.getOne.test.js');
+require('./schools.controller.delete.test.js');
+require('./schools.controller.post.test.js');

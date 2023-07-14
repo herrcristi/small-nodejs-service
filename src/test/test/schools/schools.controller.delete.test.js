@@ -10,7 +10,7 @@ const TestConstants = require('../../test-constants.js');
 const SchoolsConstants = require('../../../services/schools/schools.constants.js');
 const SchoolsService = require('../../../services/schools/schools.service.js');
 
-describe('Schools', function () {
+describe('Schools Controller', function () {
   before(async function () {});
 
   beforeEach(async function () {});
