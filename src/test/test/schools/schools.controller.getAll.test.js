@@ -74,7 +74,9 @@ describe('Schools', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}?name!=/school/i`);
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${SchoolsConstants.ApiPath}?name!=/school/i&limit=2&skip=0`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -85,8 +87,8 @@ describe('Schools', function () {
       data: [...testSchools],
       meta: {
         count: testSchools.length + 1,
-        limit: 1,
-        skip: 1,
+        limit: 2,
+        skip: 0,
       },
     });
   }).timeout(10000);

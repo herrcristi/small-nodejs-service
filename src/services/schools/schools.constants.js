@@ -7,6 +7,9 @@ const Public = {
   // paths
   ApiPath: `${WebConstants.BaseApiPath}/schools`,
 
+  // service name
+  ServiceName: 'schools',
+
   // status
   Status: {
     Pending: 'pending',

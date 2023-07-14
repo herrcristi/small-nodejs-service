@@ -8,7 +8,7 @@ const RestApiUtils = require('../../core/utils/rest-api.utils');
 const RestMsgUtils = require('../../core/utils/rest-messages.utils');
 const RestControllerUtils = require('../../core/utils/rest-controller.utils');
 
-const StudentConstants = require('./students.constants');
+const StudentsConstants = require('./students.constants');
 const StudentsService = require('./students.service');
 
 /**

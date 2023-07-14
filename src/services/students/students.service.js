@@ -4,7 +4,7 @@
 
 const DbOpsUtils = require('../../core/utils/db-ops.utils');
 
-const StudentConstants = require('./students.constants');
+const StudentsConstants = require('./students.constants');
 
 const Public = {
   /**

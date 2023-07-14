@@ -31,7 +31,6 @@ const Public = {
     {
       id: 'user1',
       email: 'big.ben@testdomain.test',
-      password: 'password',
       firstName: 'Big',
       lastName: 'Ben',
       name: 'Big Ben',
@@ -52,7 +51,6 @@ const Public = {
     {
       id: 'user2',
       email: 'john.bravo@testdomain.test',
-      password: 'password',
       firstName: 'John',
       lastName: 'Bravo',
       name: 'John Bravo',

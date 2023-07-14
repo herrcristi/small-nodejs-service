@@ -6,7 +6,7 @@ This projects implements a portal for managing schools.
 
 The reasons behind this project includes:
 
-- multi tenant schools
+- multi tenant with schools
 - users have roles inside every entity (school) like teacher, student, admin
 - relantionships between schools - users (teachers/students/etc) - classes - locations
 

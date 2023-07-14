@@ -19,7 +19,6 @@ const Schema = {
       .email({ tlds: { allow: false } })
       .min(1)
       .max(64),
-    password: Joi.string().min(1).max(64), // TODO move to usersLogin
     firstName: Joi.string().min(1).max(64),
     lastName: Joi.string().min(1).max(64),
     birthday: Joi.date().prefs({ dateFormat: 'iso' }),
@@ -39,7 +38,7 @@ const Validators = {
    * for post
    */
   Post: Schema.User.fork(
-    ['email', 'password', 'firstName', 'lastName', 'birthday', 'address', 'schools'],
+    ['email', 'firstName', 'lastName', 'birthday', 'address', 'schools'],
     (x) => x.required() /*make required */
   ),
 };

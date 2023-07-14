@@ -2,9 +2,46 @@
  * Users service
  */
 
-const DbOpsUtils = require('../../core/utils/db-ops.utils');
+const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 
-const UsersConstants = require('./users.constants');
+const UsersConstants = require('./users.constants.js');
+const SchoolsRest = require('../rest/schools.rest.js');
+
+const Utils = {
+  /**
+   * get all schools data and fill the users
+   */
+  fillSchoolsInfo: async (users, _ctx) => {
+    // get all schools ids first
+    const schoolsMap = {};
+    for (const user of users) {
+      for (const school of user.schools) {
+        schoolsMap[school.id] = 1;
+      }
+    }
+
+    // get all schools
+    let r = await SchoolsRest.getAllByIDs(Object.keys(schoolsMap), _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    for (const school of r.value.data) {
+      schoolsMap[school.id] = school;
+    }
+
+    // update info
+    for (const user of users) {
+      for (const school of user.schools) {
+        const schoolDetails = schoolsMap[school.id];
+        school.name = schoolDetails?.name;
+        school.status = schoolDetails?.status;
+      }
+    }
+
+    return r;
+  },
+};
 
 const Public = {
   /**
@@ -12,7 +49,20 @@ const Public = {
    * filter: { filter, projection, limit, skip, sort }
    */
   getAll: async (filter, _ctx) => {
-    return await DbOpsUtils.getAll(filter, _ctx);
+    let r = await DbOpsUtils.getAll(filter, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // TODO implement schools notification and here onSchoolNotification instead of
+    // fill scho0ls name and status
+    let rs = await Utils.fillSchoolsInfo(r.value, _ctx);
+    if (rs.error) {
+      return rs;
+    }
+
+    // return users
+    return r;
   },
 
   getAllCount: async (filter, _ctx) => {
@@ -32,8 +82,6 @@ const Public = {
   post: async (objInfo, _ctx) => {
     // add name
     objInfo.name = `${objInfo.firstName} ${objInfo.lastName}`;
-
-    // TODO get schools names and embed into schools
 
     const r = await DbOpsUtils.post(objInfo, _ctx);
     if (r.error) {
