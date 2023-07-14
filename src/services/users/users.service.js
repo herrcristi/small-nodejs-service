@@ -21,9 +21,14 @@ const Utils = {
     }
 
     // get all schools
-    let r = await SchoolsRest.getAllByIDs(Object.keys(schoolsMap), _ctx);
+    const schoolsIDs = Object.keys(schoolsMap);
+    let r = await SchoolsRest.getAllByIDs(schoolsIDs, _ctx);
     if (r.error) {
       return r;
+    }
+
+    if (schoolsIDs.length != r.value.data?.length) {
+      console.log(`Not all schools were found`);
     }
 
     for (const school of r.value.data) {
@@ -55,7 +60,7 @@ const Public = {
     }
 
     // TODO implement schools notification and here onSchoolNotification instead of
-    // fill scho0ls name and status
+    // fill schools name and status
     let rs = await Utils.fillSchoolsInfo(r.value, _ctx);
     if (rs.error) {
       return rs;

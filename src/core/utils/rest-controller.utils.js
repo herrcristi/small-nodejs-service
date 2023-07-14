@@ -127,7 +127,7 @@ const Public = {
       console.log(`Post succesful new object with id: ${r.value.id}, name: ${r.value.name}`);
 
       // success
-      return { status: 201, value: r.value };
+      return { status: 201, value: { id: r.value.id } };
     } catch (e) {
       return { status: 500, error: e };
     }
@@ -156,7 +156,7 @@ const Public = {
       }
 
       // success
-      return { status: 200, value: r.value };
+      return { status: 200, value: { id: r.value.id } };
     } catch (e) {
       return { status: 500, error: e };
     }
@@ -176,7 +176,7 @@ const Public = {
       // validate
       const v = controller.schema.validate(req.body);
       if (v.error) {
-        return { status: 400, error: v.error.error };
+        return { status: 400, error: v.error.details[0] };
       }
 
       // patch
@@ -188,7 +188,7 @@ const Public = {
       }
 
       // success
-      return { status: 200, value: r.value };
+      return { status: 200, value: { id: r.value.id } };
     } catch (e) {
       return { status: 500, error: e };
     }
@@ -208,7 +208,7 @@ const Public = {
       // validate
       const v = controller.schema.validate(req.body);
       if (v.error) {
-        return { status: 400, error: v.error.error };
+        return { status: 400, error: v.error.details[0] };
       }
 
       // put
@@ -220,7 +220,7 @@ const Public = {
       }
 
       // success
-      return { status: 200, value: r.value };
+      return { status: 200, value: { id: r.value.id } };
     } catch (e) {
       return { status: 500, error: e };
     }

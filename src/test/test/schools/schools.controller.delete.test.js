@@ -42,7 +42,7 @@ describe('Schools Controller', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(stubServiceDeleteOne.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      ...testSchool,
+      id: testSchool.id,
     });
   }).timeout(10000);
 
