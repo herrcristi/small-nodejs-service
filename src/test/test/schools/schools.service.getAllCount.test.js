@@ -13,7 +13,7 @@ const SchoolsConstants = require('../../../services/schools/schools.constants.js
 const SchoolsService = require('../../../services/schools/schools.service.js');
 
 describe('Schools Service', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en' };
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Schools' };
 
   before(async function () {});
 

@@ -34,6 +34,8 @@ const Public = {
    */
   getAll: async (controller, req, res, next) => {
     const _ctx = req._ctx;
+    _ctx.service = controller.name;
+
     try {
       console.log(`${controller.name}: Get all called, query ${JSON.stringify(CommonUtils.protectData(req.query))}`);
 
@@ -84,6 +86,8 @@ const Public = {
    */
   getOne: async (controller, req, res, next) => {
     const _ctx = req._ctx;
+    _ctx.service = controller.name;
+
     try {
       console.log(`${controller.name}: Get one called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
       const objID = req.params.id;
@@ -113,6 +117,8 @@ const Public = {
    */
   post: async (controller, req, res, next) => {
     const _ctx = req._ctx;
+    _ctx.service = controller.name;
+
     try {
       console.log(`${controller.name}: Post called, body ${JSON.stringify(CommonUtils.protectData(req.body))}`);
 
@@ -140,6 +146,8 @@ const Public = {
    */
   delete: async (controller, req, res, next) => {
     const _ctx = req._ctx;
+    _ctx.service = controller.name;
+
     try {
       console.log(`${controller.name}: Delete called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
       const objID = req.params.id;
@@ -169,6 +177,8 @@ const Public = {
    */
   patch: async (controller, req, res, next) => {
     const _ctx = req._ctx;
+    _ctx.service = controller.name;
+
     try {
       console.log(`${controller.name}: Patch called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
       const objID = req.params.id;
@@ -201,6 +211,8 @@ const Public = {
    */
   put: async (controller, req, res, next) => {
     const _ctx = req._ctx;
+    _ctx.service = controller.name;
+
     try {
       console.log(`${controller.name}: Put called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
       const objID = req.params.id;

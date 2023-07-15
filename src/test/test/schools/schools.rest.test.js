@@ -12,7 +12,7 @@ const TestConstants = require('../../test-constants.js');
 const SchoolsRest = require('../../../services/rest/schools.rest.js');
 
 describe('Schools Rest', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en' };
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Schools' };
 
   before(async function () {});
 
