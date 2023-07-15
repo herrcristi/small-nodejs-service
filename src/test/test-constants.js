@@ -15,11 +15,13 @@ const Public = {
     {
       id: 'school-univ1',
       name: 'GitHub University',
+      description: 'GitHub University. The place to code.',
       status: 'active',
     },
     {
       id: 'school-high2',
       name: 'Local Highschool',
+      description: '',
       status: 'active',
     },
   ],

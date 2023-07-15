@@ -55,14 +55,15 @@ describe('Schools Controller', function () {
   }).timeout(10000);
 
   /**
-   * put only name with success
+   * put name and null description with success
    */
-  it('should put only name with success', async () => {
+  it('should put name and null description with success', async () => {
     const testSchools = _.cloneDeep(TestConstants.Schools);
     const testSchool = testSchools[0];
 
     const putReq = {
       name: testSchool.name,
+      description: null,
     };
 
     // stub
@@ -87,7 +88,7 @@ describe('Schools Controller', function () {
   }).timeout(10000);
 
   /**
-   * put failed due to to invalid name
+   * put failed due to invalid name
    */
   it('should put failed due to invalid name', async () => {
     const testSchools = _.cloneDeep(TestConstants.Schools);
@@ -110,7 +111,7 @@ describe('Schools Controller', function () {
   }).timeout(10000);
 
   /**
-   * put failed due to to invalid status
+   * put failed due to invalid status
    */
   it('should put failed due to invalid status', async () => {
     const testSchools = _.cloneDeep(TestConstants.Schools);
@@ -131,6 +132,30 @@ describe('Schools Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(res.body.error.message).to.include('"status" must be one of [pending, active, disabled]');
+  }).timeout(10000);
+
+  /**
+   * put failed due to invalid description
+   */
+  it('should put failed due to invalid description', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+    const testSchool = testSchools[0];
+
+    const putReq = {
+      name: 'School',
+      description: 1,
+    };
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
+      .send(putReq);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.body.error.message).to.include('"description" must be a string');
   }).timeout(10000);
 
   /**

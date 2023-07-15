@@ -97,9 +97,9 @@ describe('Schools Controller', function () {
   }).timeout(10000);
 
   /**
-   * post one failed due to no name
+   * post one failed due to invalid name type
    */
-  it('should post one failed due to no name', async () => {
+  it('should post one failed due to invalid name type', async () => {
     const testSchools = _.cloneDeep(TestConstants.Schools);
     const testSchool = testSchools[0];
 
@@ -137,5 +137,27 @@ describe('Schools Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(res.body.error.message).to.include('"status" must be one of [pending, active, disabled]');
+  }).timeout(10000);
+
+  /**
+   * post one failed due to no valid description
+   */
+  it('should post one failed due to no valid description', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+    const testSchool = testSchools[0];
+
+    // post request does not have id, name or name in schools
+    const postReq = {
+      name: 'School',
+      description: 1,
+    };
+
+    // call
+    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.ApiPath}`).send(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.body.error.message).to.include('"description" must be a string');
   }).timeout(10000);
 });

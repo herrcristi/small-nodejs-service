@@ -16,3 +16,10 @@ require('./schools.controller.patch.test.js');
 require('./schools.rest.test.js');
 
 // service tests
+require('./schools.service.getAll.test.js');
+require('./schools.service.getAllCount.test.js');
+require('./schools.service.getOne.test.js');
+require('./schools.service.post.test.js');
+require('./schools.service.delete.test.js');
+require('./schools.service.put.test.js');
+require('./schools.service.patch.test.js');

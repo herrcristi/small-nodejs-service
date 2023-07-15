@@ -170,7 +170,7 @@ const Public = {
   patch: async (controller, req, res, next) => {
     const _ctx = req._ctx;
     try {
-      console.log(`${controller.name}: Put called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
+      console.log(`${controller.name}: Patch called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
       const objID = req.params.id;
 
       // validate

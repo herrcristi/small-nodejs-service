@@ -16,6 +16,7 @@ const SchoolsService = require('./schools.service');
 const Schema = {
   School: Joi.object().keys({
     name: Joi.string().min(1).max(64),
+    description: Joi.string().min(1).max(1024).allow(null),
     status: Joi.string()
       .min(1)
       .max(64)
@@ -28,6 +29,13 @@ const Validators = {
    * for post
    */
   Post: Schema.School.fork(['name'], (x) => x.required() /*make required */),
+
+  /**
+   * for patch allowed operations are add, remove, set, unset
+   */
+  Patch: Joi.object().keys({
+    set: Schema.School,
+  }),
 };
 
 const Config = {
@@ -83,7 +91,7 @@ const Public = {
    */
   patch: async (req, res, next) => {
     // call base implementation -> { status, error?, value? }
-    const result = await RestControllerUtils.patch(Config.Controller, req, res, next);
+    const result = await RestControllerUtils.patch({ ...Config.Controller, schema: Validators.Patch }, req, res, next);
     await RestControllerUtils.reply(Config.Controller, result, req, res, next);
   },
 
