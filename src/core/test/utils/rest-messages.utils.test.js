@@ -11,7 +11,7 @@ const loadEsOnlyModules = async () => {
 
 const RestApiUtils = require('../../utils/rest-api.utils.js');
 
-describe('Rest Api Utils', function () {
+describe('Rest Messages Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
 
   before(async function () {

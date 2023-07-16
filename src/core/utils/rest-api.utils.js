@@ -26,7 +26,8 @@ const Public = {
 
       console.log(`Current filter ${JSON.stringify(filter, Utils.stringifyFilter, 2)}`);
 
-      // TODO add search
+      // TODO use schema to validate filter
+      // TODO add search, searchFields
 
       return filter;
     } catch (e) {

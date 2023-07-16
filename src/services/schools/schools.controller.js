@@ -16,7 +16,7 @@ const SchoolsService = require('./schools.service');
 const Schema = {
   School: Joi.object().keys({
     name: Joi.string().min(1).max(64),
-    description: Joi.string().min(1).max(1024).allow(null),
+    description: Joi.string().min(0).max(1024).allow(null),
     status: Joi.string()
       .min(1)
       .max(64)
