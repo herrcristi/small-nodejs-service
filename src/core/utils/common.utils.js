@@ -12,6 +12,13 @@ const Public = {
   },
 
   /**
+   * is debug
+   */
+  isDebug: () => {
+    return ['dev', 'test', 'development'].includes(process.env.NODE_ENV);
+  },
+
+  /**
    * uuid
    */
   uuid: () => {
@@ -53,6 +60,16 @@ const Public = {
     }
 
     return chunks;
+  },
+
+  /**
+   * hide sensitive data
+   */
+  protectData: (obj) => {
+    return {
+      ...obj,
+      password: undefined,
+    };
   },
 };
 

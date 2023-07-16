@@ -8,8 +8,8 @@ const Public = {
    * Request middlware
    */
   middleware: (req, res, next) => {
-    // add _req to request
-    req._req = {
+    // add _ctx to request
+    req._ctx = {
       tenantID: req.headers.tenantid,
       reqID: CommonUtils.uuidc(),
       lang: 'en',
@@ -28,12 +28,12 @@ const Public = {
     });
 
     res.on('close', () => {
-      req._req.duration = new Date() - time;
-      req._req.statusCode = res.statusCode;
-      console.log(`Request closed  : ${call} -> Response: ${res.statusCode}. Time: ${req._req.duration} ms`);
+      req._ctx.duration = new Date() - time;
+      req._ctx.statusCode = res.statusCode;
+      console.log(`Request closed  : ${call} -> Response: ${res.statusCode}. Time: ${req._ctx.duration} ms`);
     });
 
-    console.log('Received call', call, req._req);
+    console.log('Received call', call, req._ctx);
     next();
   },
 };

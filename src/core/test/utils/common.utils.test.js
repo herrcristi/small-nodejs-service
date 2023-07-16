@@ -5,7 +5,7 @@ const sinon = require('sinon');
 
 const CommonUtils = require('../../utils/common.utils.js');
 
-describe('Tests', function () {
+describe('Common Utils', function () {
   before(async function () {});
 
   beforeEach(async function () {});
@@ -14,7 +14,7 @@ describe('Tests', function () {
     sinon.restore();
   });
 
-  afterEach(async function () {});
+  after(async function () {});
 
   /**
    * sleep test
@@ -35,8 +35,6 @@ describe('Tests', function () {
    * uuid test
    */
   it('should get a random uuid', async () => {
-    let time = new Date();
-
     // call
     let res = CommonUtils.uuid();
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -50,8 +48,6 @@ describe('Tests', function () {
    * compact uuid test
    */
   it('should get a compact uuid', async () => {
-    let time = new Date();
-
     // call
     let res = CommonUtils.uuidc();
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -66,8 +62,6 @@ describe('Tests', function () {
    * chunks
    */
   it('should get proper chunks', async () => {
-    let time = new Date();
-
     let array = [1, 2, 3];
 
     // 0
@@ -104,5 +98,22 @@ describe('Tests', function () {
     res = CommonUtils.getChunks([], 0);
     console.log(`\nTest returned: ${JSON.stringify(res)}\n`);
     chai.expect(res).to.deep.equal([]);
+  }).timeout(10000);
+
+  /**
+   * protect data and remove sensitive fields
+   */
+  it('should protect data and remove sensitive fields', async () => {
+    let data = {
+      name: 'user',
+      password: 'pass',
+    };
+
+    // call
+    let res = CommonUtils.protectData(data);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({ ...data, password: undefined });
   }).timeout(10000);
 });

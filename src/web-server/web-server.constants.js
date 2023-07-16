@@ -7,7 +7,7 @@ const Public = {
   BaseApiPath: '/api/v1',
 
   // web service port
-  Port: process.env.WEB_PORT || 8080,
+  Port: process.env.PORT || 8080,
 };
 
 module.exports = { ...Public };

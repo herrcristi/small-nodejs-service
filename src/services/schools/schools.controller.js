@@ -1,23 +1,26 @@
 /**
- * Students controller
+ * Schools controller
  */
-
 const Joi = require('joi');
 
 const RestApiUtils = require('../../core/utils/rest-api.utils');
 const RestMsgUtils = require('../../core/utils/rest-messages.utils');
 const RestControllerUtils = require('../../core/utils/rest-controller.utils');
 
-const StudentsConstants = require('./students.constants');
-const StudentsService = require('./students.service');
+const SchoolsConstants = require('./schools.constants');
+const SchoolsService = require('./schools.service');
 
 /**
  * validation
  */
 const Schema = {
-  Student: Joi.object().keys({
-    user: Joi.string().min(1).max(64),
-    classes: Joi.array().items(Joi.string().min(1).max(64)).label('Classes'),
+  School: Joi.object().keys({
+    name: Joi.string().min(1).max(64),
+    description: Joi.string().min(1).max(1024).allow(null),
+    status: Joi.string()
+      .min(1)
+      .max(64)
+      .valid(...Object.values(SchoolsConstants.Status)),
   }),
 };
 
@@ -25,7 +28,14 @@ const Validators = {
   /**
    * for post
    */
-  Post: Schema.Student.fork(['user', 'classes'], (x) => x.required() /*make required */),
+  Post: Schema.School.fork(['name'], (x) => x.required() /*make required */),
+
+  /**
+   * for patch allowed operations are add, remove, set, unset
+   */
+  Patch: Joi.object().keys({
+    set: Schema.School,
+  }),
 };
 
 const Config = {
@@ -33,9 +43,9 @@ const Config = {
    * controller config
    */
   Controller: {
-    name: 'Students',
-    schema: Schema.Student,
-    service: StudentsService,
+    name: 'Schools',
+    schema: Schema.School,
+    service: SchoolsService,
   },
 };
 
@@ -81,7 +91,7 @@ const Public = {
    */
   patch: async (req, res, next) => {
     // call base implementation -> { status, error?, value? }
-    const result = await RestControllerUtils.patch(Config.Controller, req, res, next);
+    const result = await RestControllerUtils.patch({ ...Config.Controller, schema: Validators.Patch }, req, res, next);
     await RestControllerUtils.reply(Config.Controller, result, req, res, next);
   },
 
