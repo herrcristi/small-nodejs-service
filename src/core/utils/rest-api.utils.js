@@ -22,7 +22,9 @@ const Public = {
   buildMongoFilterFromReq: async (req, schema, _ctx) => {
     try {
       // convert query to mongo build
-      let filter = Aqs(req.query, {});
+      let filter = Aqs(req.query, {
+        projectionKey: 'projection',
+      });
 
       console.log(`Current filter ${JSON.stringify(filter, Utils.stringifyFilter, 2)}`);
 

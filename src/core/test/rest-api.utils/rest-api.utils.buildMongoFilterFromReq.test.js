@@ -165,11 +165,11 @@ describe('Rest Api Utils', function () {
   }).timeout(10000);
 
   /**
-   * buildMongoFilterFromReq test limit, skip, sort
+   * buildMongoFilterFromReq test limit, skip, sort, projection
    */
-  it('should buildMongoFilterFromReq test limit, skip, sort', async () => {
+  it('should buildMongoFilterFromReq test limit, skip, sort, projection', async () => {
     let req = {
-      query: querystring.parse('?name=John&limit=1&skip=1&sort=name,-date'),
+      query: querystring.parse('?name=John&limit=1&skip=1&sort=name,-date&projection=id,name,type,status'),
     };
 
     let schema = {};
@@ -189,6 +189,12 @@ describe('Rest Api Utils', function () {
       },
       skip: 1,
       limit: 1,
+      projection: {
+        id: 1,
+        name: 1,
+        type: 1,
+        status: 1,
+      },
     });
   }).timeout(10000);
 

@@ -32,6 +32,7 @@ describe('Schools Controller', function () {
     const postReq = {
       ...testSchool,
       id: undefined,
+      type: undefined,
     };
 
     // stub
@@ -49,6 +50,9 @@ describe('Schools Controller', function () {
     chai.expect(stubServicePostOne.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
       id: testSchool.id,
+      name: testSchool.name,
+      type: testSchool.type,
+      status: testSchool.status,
     });
   }).timeout(10000);
 
@@ -63,6 +67,7 @@ describe('Schools Controller', function () {
     const postReq = {
       ...testSchool,
       id: undefined,
+      type: undefined,
     };
 
     // stub

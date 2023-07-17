@@ -23,13 +23,15 @@ const Public = {
    * get one
    */
   getOne: async (objID, _ctx) => {
-    return await DbOpsUtils.getOne(objID, _ctx);
+    return await DbOpsUtils.getOne(objID, null /* projection */, _ctx);
   },
 
   /**
    * post
    */
   post: async (objInfo, _ctx) => {
+    objInfo.type = StudentsConstants.Type;
+
     const r = await DbOpsUtils.post(objInfo, _ctx);
     if (r.error) {
       return r;
@@ -44,7 +46,8 @@ const Public = {
    * delete
    */
   delete: async (objID, _ctx) => {
-    const r = await DbOpsUtils.delete(objID, _ctx);
+    const projection = { id: 1, name: 1, type: 1, status: 1 };
+    const r = await DbOpsUtils.delete(objID, projection, _ctx);
     if (r.error) {
       return r;
     }
@@ -60,7 +63,8 @@ const Public = {
    * put
    */
   put: async (objID, objInfo, _ctx) => {
-    const r = await DbOpsUtils.put(objID, objInfo, _ctx);
+    const projection = { id: 1, name: 1, type: 1, status: 1 };
+    const r = await DbOpsUtils.put(objID, objInfo, projection, _ctx);
     if (r.error) {
       return r;
     }
@@ -76,7 +80,8 @@ const Public = {
    * patch
    */
   patch: async (objID, patchInfo, _ctx) => {
-    const r = await DbOpsUtils.patch(objID, patchInfo, _ctx);
+    const projection = { id: 1, name: 1, type: 1, status: 1 };
+    const r = await DbOpsUtils.patch(objID, patchInfo, projection, _ctx);
     if (r.error) {
       return r;
     }

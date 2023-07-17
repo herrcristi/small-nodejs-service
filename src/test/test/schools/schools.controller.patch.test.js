@@ -32,6 +32,7 @@ describe('Schools Controller', function () {
       set: {
         ...testSchool,
         id: undefined,
+        type: undefined,
       },
     };
 
@@ -53,6 +54,9 @@ describe('Schools Controller', function () {
     chai.expect(stubServicePatchOne.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
       id: testSchool.id,
+      name: testSchool.name,
+      type: testSchool.type,
+      status: testSchool.status,
     });
   }).timeout(10000);
 
@@ -110,6 +114,9 @@ describe('Schools Controller', function () {
     chai.expect(stubServicePatchOne.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
       id: testSchool.id,
+      name: testSchool.name,
+      type: testSchool.type,
+      status: testSchool.status,
     });
   }).timeout(10000);
 
@@ -201,6 +208,7 @@ describe('Schools Controller', function () {
       set: {
         ...testSchool,
         id: undefined,
+        type: undefined,
       },
     };
 

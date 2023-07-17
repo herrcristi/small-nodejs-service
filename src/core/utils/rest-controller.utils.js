@@ -63,7 +63,7 @@ const Public = {
 
       // success
       return {
-        status: currentLimit && currentLimit < rCount.value ? 206 /*partial data*/ : 200,
+        status: limit && currentLimit < rCount.value ? 206 /*partial data*/ : 200,
         value: {
           data: r.value,
           meta: {
@@ -133,7 +133,15 @@ const Public = {
       console.log(`Post succesful new object with id: ${r.value.id}, name: ${r.value.name}`);
 
       // success
-      return { status: 201, value: { id: r.value.id } };
+      return {
+        status: 201,
+        value: {
+          id: r.value.id,
+          name: r.value.name,
+          type: r.value.type,
+          status: r.value.status,
+        },
+      };
     } catch (e) {
       return { status: 500, error: e };
     }
@@ -164,7 +172,15 @@ const Public = {
       }
 
       // success
-      return { status: 200, value: { id: r.value.id } };
+      return {
+        status: 200,
+        value: {
+          id: r.value.id,
+          name: r.value.name,
+          type: r.value.type,
+          status: r.value.status,
+        },
+      };
     } catch (e) {
       return { status: 500, error: e };
     }
@@ -198,7 +214,15 @@ const Public = {
       }
 
       // success
-      return { status: 200, value: { id: r.value.id } };
+      return {
+        status: 200,
+        value: {
+          id: r.value.id,
+          name: r.value.name,
+          type: r.value.type,
+          status: r.value.status,
+        },
+      };
     } catch (e) {
       return { status: 500, error: e };
     }
@@ -232,7 +256,15 @@ const Public = {
       }
 
       // success
-      return { status: 200, value: { id: r.value.id } };
+      return {
+        status: 200,
+        value: {
+          id: r.value.id,
+          name: r.value.name,
+          type: r.value.type,
+          status: r.value.status,
+        },
+      };
     } catch (e) {
       return { status: 500, error: e };
     }
