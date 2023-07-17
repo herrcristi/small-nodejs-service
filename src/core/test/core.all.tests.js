@@ -3,6 +3,6 @@
  *
  * include test files in order
  */
-require('./utils/common.utils.test');
-require('./utils/rest-api.utils.test');
-require('./utils/rest-messages.utils.test');
+require('./common.utils/common.utils.all.tests.js');
+require('./rest-api.utils/rest-api.utils.all.tests.js');
+require('./rest-messages.utils/rest-messages.utils.all.tests.js');
