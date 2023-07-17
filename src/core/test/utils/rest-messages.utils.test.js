@@ -3,20 +3,13 @@ const assert = require('assert');
 const chai = require('chai');
 const sinon = require('sinon');
 
-// due to 'require() of ES modules is not supported'
-let querystring = null;
-const loadEsOnlyModules = async () => {
-  querystring = (await import('query-string')).default;
-};
-
-const RestApiUtils = require('../../utils/rest-api.utils.js');
+const RestMessagesUtils = require('../../utils/rest-messages.utils.js');
+const CommonUtils = require('../../utils/common.utils.js');
 
 describe('Rest Messages Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
 
-  before(async function () {
-    await loadEsOnlyModules();
-  });
+  before(async function () {});
 
   beforeEach(async function () {});
 
@@ -27,204 +20,180 @@ describe('Rest Messages Utils', function () {
   after(async function () {});
 
   /**
-   * buildMongoFilterFromReq test equal
+   * notValid
    */
-  it('should buildMongoFilterFromReq test equal', async () => {
-    let req = {
-      query: querystring.parse('?name=John&status!=active'),
-    };
-
-    let schema = {};
+  it('should call notValid', async () => {
+    let error = 'Test error';
 
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    let res = await RestMessagesUtils.notValid(error, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(res).to.deep.equal({
-      filter: {
-        name: 'John',
-        status: { $ne: 'active' },
-      },
+      message: 'Request is not valid',
+      error: 'Test error',
     });
-  }).timeout(10000);
 
-  /**
-   * buildMongoFilterFromReq test exists
-   */
-  it('should buildMongoFilterFromReq test exists', async () => {
-    let req = {
-      query: querystring.parse('?name&!status'),
-    };
-
-    let schema = {};
-
+    ///
+    // non-debug
+    sinon.stub(CommonUtils, 'isDebug').returns(false);
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    res = await RestMessagesUtils.notValid(error, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(res).to.deep.equal({
-      filter: {
-        status: { $exists: false },
-        name: { $exists: true },
-      },
+      message: 'Request is not valid',
     });
   }).timeout(10000);
 
   /**
-   * buildMongoFilterFromReq test regexp
+   * notFound
    */
-  it('should buildMongoFilterFromReq test regexp', async () => {
-    let req = {
-      query: querystring.parse('?name=/john/i&status!=/active/i'),
-    };
-
-    let schema = {};
+  it('should call notFound', async () => {
+    let error = 'Test error';
 
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    let res = await RestMessagesUtils.notFound(error, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(res).to.deep.equal({
-      filter: {
-        name: /john/i,
-        status: {
-          $not: /active/i,
-        },
-      },
+      message: 'Not found',
+      error: 'Test error',
     });
-  }).timeout(10000);
 
-  /**
-   * buildMongoFilterFromReq test numbers
-   */
-  it('should buildMongoFilterFromReq test numbers', async () => {
-    let req = {
-      query: querystring.parse('?count=1&value>10&value<=20'),
-    };
-
-    let schema = {};
-
+    ///
+    // non-debug
+    sinon.stub(CommonUtils, 'isDebug').returns(false);
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    res = await RestMessagesUtils.notFound(error, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(res).to.deep.equal({
-      filter: {
-        count: 1,
-        value: { $gt: 10, $lte: 20 },
-      },
+      message: 'Not found',
     });
   }).timeout(10000);
 
   /**
-   * buildMongoFilterFromReq test multiple values
+   * exception
    */
-  it('should buildMongoFilterFromReq test multiple values', async () => {
-    let req = {
-      query: querystring.parse('?g.id=a1,2,3,4'),
+  it('should call exception', async () => {
+    let error = {
+      stack: 'Stack trace',
     };
 
-    let schema = {};
-
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    let res = await RestMessagesUtils.exception(error, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(res).to.deep.equal({
-      filter: {
-        'g.id': {
-          $in: ['a1', 2, 3, 4],
-        },
-      },
+      message: 'An unknown error has occured',
+      error: 'Stack trace',
     });
-  }).timeout(10000);
 
-  /**
-   * buildMongoFilterFromReq test empty
-   */
-  it('should buildMongoFilterFromReq test empty', async () => {
-    let req = {
-      query: querystring.parse(''),
-    };
-
-    let schema = {};
+    ///
+    // normal error
+    error = 'Test error';
 
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    res = await RestMessagesUtils.exception(error, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(res).to.deep.equal({
-      filter: {},
+      message: 'An unknown error has occured',
+      error: 'Test error',
     });
-  }).timeout(10000);
 
-  /**
-   * buildMongoFilterFromReq test limit, skip, sort
-   */
-  it('should buildMongoFilterFromReq test limit, skip, sort', async () => {
-    let req = {
-      query: querystring.parse('?name=John&limit=1&skip=1&sort=name,-date'),
-    };
-
-    let schema = {};
-
+    ///
+    // non-debug
+    sinon.stub(CommonUtils, 'isDebug').returns(false);
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    res = await RestMessagesUtils.exception(error, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(res).to.deep.equal({
-      filter: {
-        name: 'John',
-      },
-      sort: {
-        name: 1,
-        date: -1,
-      },
-      skip: 1,
-      limit: 1,
+      message: 'An unknown error has occured',
     });
   }).timeout(10000);
 
   /**
-   * buildMongoFilterFromReq fail
+   * status error
    */
-  it('should buildMongoFilterFromReq fail', async () => {
-    let req = null;
-    let schema = {};
+  it('should call statusError', async () => {
+    ///
+    // 400 error
+    let error = 'Test error';
 
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    let res = await RestMessagesUtils.statusError(400, error, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(res.error.message).to.include('Cannot read properties of null');
-  }).timeout(10000);
-
-  /**
-   * buildMongoFilterFromReq fail exception
-   */
-  it('should buildMongoFilterFromReq fail exception', async () => {
-    let req = {};
-    let schema = {};
-
-    // stub
-    sinon.stub(JSON, 'stringify').callsFake(() => {
-      throw 'Test String exception';
+    chai.expect(res).to.deep.equal({
+      message: 'Request is not valid',
+      error: 'Test error',
     });
 
+    ///
+    // 404 error
+    error = 'Test error';
+
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
-    sinon.restore();
+    res = await RestMessagesUtils.statusError(404, error, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(res.error.message).to.include('Failed to validate query');
+    chai.expect(res).to.deep.equal({
+      message: 'Not found',
+      error: 'Test error',
+    });
+
+    ///
+    // 500 error
+    error = 'Test error';
+
+    // call
+    res = await RestMessagesUtils.statusError(500, error, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      message: 'An unknown error has occured',
+      error: 'Test error',
+    });
+
+    ///
+    // other error
+    error = 'Test error';
+
+    // call
+    res = await RestMessagesUtils.statusError(501, error, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      message: 'An unknown error has occured',
+      error: 'Test error',
+    });
+
+    ///
+    // other null error
+    error = 'Test error';
+
+    // call
+    res = await RestMessagesUtils.statusError(501, null, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      message: 'An unknown error has occured',
+      error: 'Error',
+    });
   }).timeout(10000);
 });
