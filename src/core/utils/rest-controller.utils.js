@@ -130,6 +130,10 @@ const Public = {
 
       // post
       const r = controller.service.post(req.body, _ctx);
+      if (r.error) {
+        throw r.error.error;
+      }
+
       console.log(`Post succesful new object with id: ${r.value.id}, name: ${r.value.name}`);
 
       // success
@@ -187,16 +191,16 @@ const Public = {
   },
 
   /**
-   * patch
+   * put
    * controller: { name, schema, service }
    * return: { status, error } or { status, value }
    */
-  patch: async (controller, req, res, next) => {
+  put: async (controller, req, res, next) => {
     const _ctx = req._ctx;
     _ctx.service = controller.name;
 
     try {
-      console.log(`${controller.name}: Patch called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
+      console.log(`${controller.name}: Put called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
       const objID = req.params.id;
 
       // validate
@@ -205,8 +209,11 @@ const Public = {
         return { status: 400, error: v.error.details[0] };
       }
 
-      // patch
-      const r = controller.service.patch(objID, req.body, _ctx);
+      // put
+      const r = controller.service.put(objID, req.body, _ctx);
+      if (r.error) {
+        throw r.error.error;
+      }
 
       // not found
       if (!r.value) {
@@ -229,16 +236,16 @@ const Public = {
   },
 
   /**
-   * put
+   * patch
    * controller: { name, schema, service }
    * return: { status, error } or { status, value }
    */
-  put: async (controller, req, res, next) => {
+  patch: async (controller, req, res, next) => {
     const _ctx = req._ctx;
     _ctx.service = controller.name;
 
     try {
-      console.log(`${controller.name}: Put called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
+      console.log(`${controller.name}: Patch called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
       const objID = req.params.id;
 
       // validate
@@ -247,8 +254,11 @@ const Public = {
         return { status: 400, error: v.error.details[0] };
       }
 
-      // put
-      const r = controller.service.put(objID, req.body, _ctx);
+      // patch
+      const r = controller.service.patch(objID, req.body, _ctx);
+      if (r.error) {
+        throw r.error.error;
+      }
 
       // not found
       if (!r.value) {

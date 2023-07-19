@@ -10,9 +10,9 @@ const Public = {
   middleware: (req, res, next) => {
     // add _ctx to request
     req._ctx = {
-      tenantID: req.headers.tenantid,
-      reqID: CommonUtils.uuidc(),
-      lang: 'en',
+      tenantID: req.headers['x-tenant-id'],
+      reqID: req.headers['x-request-id'] || CommonUtils.uuidc(),
+      lang: req.headers['x-lang'] || 'en',
       ipAddress: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
       reqMethod: req.method?.toUpperCase(),
       reqUrl: req.originalUrl,

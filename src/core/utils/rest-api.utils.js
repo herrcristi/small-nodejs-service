@@ -29,7 +29,10 @@ const Public = {
       console.log(`Current filter ${JSON.stringify(filter, Utils.stringifyFilter, 2)}`);
 
       // TODO use schema to validate filter
+      // if (schema) {
+      // }
       // TODO add search, searchFields
+      // TODO set limit to some value like 1000 (if not set)
 
       return filter;
     } catch (e) {
