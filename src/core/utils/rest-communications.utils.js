@@ -102,6 +102,14 @@ const Public = {
   },
 
   /**
+   * rest call
+   * config: { serviceName, method, path, query?, body? }
+   */
+  restCall: async (config, _ctx) => {
+    return await Private.restCall(config, _ctx);
+  },
+
+  /**
    * get all
    * queryParams should contain `?`
    */
