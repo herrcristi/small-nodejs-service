@@ -33,6 +33,16 @@ const Public = {
     return Utils.error('Not implemented', time, _ctx);
   },
 
+  getAllByIDs: async (ids, projection, _ctx) => {
+    return Public.getAll(
+      {
+        filter: { id: { $in: ids } },
+        projection,
+      },
+      _ctx
+    );
+  },
+
   /**
    * get one
    * return: { error: { message, error } } or { value }

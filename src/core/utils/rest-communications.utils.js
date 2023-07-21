@@ -10,6 +10,10 @@ const axios = require('axios');
 const CommonUtils = require('./common.utils');
 const RestApiUtils = require('./rest-api.utils');
 
+const Constants = {
+  Timeout: 30000 /* 30s */,
+};
+
 const Private = {
   /**
    * services inside local prop will be called directly
@@ -28,11 +32,18 @@ const Private = {
     console.log(`Rest api call: ${JSON.stringify(config, null, 2)}`);
 
     let srvConfigUri = Private.Config.rest[config.serviceName];
+    if (!srvConfigUri) {
+      return {
+        status: 400,
+        error: { message: `No service ${config.serviceName}`, error: new Error(`No service ${config.serviceName}`) },
+      };
+    }
     let srvUri = `${srvConfigUri.protocol || 'http'}://${srvConfigUri.host}:${srvConfigUri.port || 80}${
       srvConfigUri.path
     }${config.path}`;
 
-    if (config.method.toUpperCase() === 'GET') {
+    config.method = config.method?.toUpperCase();
+    if (config.method === 'GET' && config.query) {
       srvUri += `${config.query}`; // should contain `?`
     }
 
@@ -54,7 +65,8 @@ const Private = {
           'content-type': 'application/json',
         },
         body: config.body,
-        timeout: 30000,
+        timeout: config.timeout || Constants.Timeout,
+        validateStatus: (status) => config.validateStatus /*for testing*/ ?? true /* dont throw exception*/,
       });
 
       console.log(
@@ -66,19 +78,20 @@ const Private = {
       // failed
       if (r.status >= 300) {
         return {
+          status: r.status,
           error: {
             message: `Calling ${config.method} ${srvUri} failed with status ${r.status}`,
+            error: new Error(`Calling ${config.method} ${srvUri} failed with status ${r.status}`),
           },
         };
       }
 
       // success
-      return { value: r.data };
+      return { status: r.status, value: r.data };
     } catch (e) {
-      console.log(
-        `Calling ${config.method} ${srvUri} failed: ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
-      );
-      return { error: { message: e.message, error: e } };
+      console.log(`Calling ${config.method} ${srvUri} failed: ${e?.message}. Finished in ${new Date() - time} ms`);
+
+      return { status: 500, error: { message: e?.message, error: e?.message } };
     }
   },
 };
@@ -133,13 +146,32 @@ const Public = {
     return { value: r.value.data, meta: r.value.meta };
   },
 
-  getAllByIDs: async (serviceName, ids, _ctx) => {
+  /**
+   * get all by ids with projection
+   */
+  getAllByIDs: async (serviceName, ids, projection, _ctx) => {
     const localService = Private.Config.local[serviceName];
     if (localService) {
-      return await localService.getAllByIDs(ids, _ctx);
+      return await localService.getAllByIDs(ids, projection, _ctx);
     }
-    // TODO get in chunks
-    return await Private.restCall({ serviceName, method: 'GET', path: '', query: `?id=${ids.join(',')}` }, _ctx);
+
+    let query = `?`;
+    if (projection) {
+      query += `projection=${Object.keys(projection).join(',')}&`;
+    }
+    //  get in chunks due to limited size of url
+    let data = [];
+    const chunks = CommonUtils.getChunks(ids, 50);
+    for (const chunkIDs of chunks) {
+      const chunkQuery = `${query}id=${chunkIDs.join(',')}`;
+      let r = await Private.restCall({ serviceName, method: 'GET', path: '', query: chunkQuery }, _ctx);
+      if (r.error) {
+        return r;
+      }
+      data = data.concat(r.value.data);
+    }
+
+    return { value: data };
   },
 
   /**

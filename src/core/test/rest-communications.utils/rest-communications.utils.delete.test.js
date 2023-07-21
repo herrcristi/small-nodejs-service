@@ -34,21 +34,21 @@ describe('Rest Communications Utils', function () {
   after(async function () {});
 
   /**
-   * getAll local with success
+   * delete local with success
    */
-  it('should call getAll local with success', async () => {
+  it('should call delete local with success', async () => {
     // local config
     let serviceName = 'Service';
     let localConfig = {
       local: {
         [serviceName]: {
-          getAll: sinon.stub().callsFake((filter) => {
+          delete: sinon.stub().callsFake((objID) => {
             return {
-              value: [
-                {
-                  id: 'id1',
-                },
-              ],
+              value: {
+                id: objID,
+                name: 'name',
+                type: 'type',
+              },
             };
           }),
         },
@@ -57,57 +57,46 @@ describe('Rest Communications Utils', function () {
 
     // call
     await RestCommsUtils.init(localConfig);
-    let res = await RestCommsUtils.getAll(serviceName, { filter: {} }, _ctx);
+    let res = await RestCommsUtils.delete(serviceName, 'id1', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(localConfig.local[serviceName].getAll.callCount).to.equal(1);
+    chai.expect(localConfig.local[serviceName].delete.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      value: [
-        {
-          id: 'id1',
-        },
-      ],
+      value: {
+        id: 'id1',
+        name: 'name',
+        type: 'type',
+      },
     });
   }).timeout(10000);
 
   /**
-   * getAll local fail
+   * delete local fail
    */
-  it('should call getAll local and fail', async () => {
+  it('should call delete local and fail', async () => {
     // local config
     let serviceName = 'Service';
     let localConfig = {
       local: {
         [serviceName]: {
-          getAll: sinon.stub().callsFake((filter) => {
-            return {
-              value: [
-                {
-                  id: 'id1',
-                },
-              ],
-            };
+          delete: sinon.stub().callsFake((objInfo) => {
+            return { error: { message: 'Test error message', error: new Error('Test error').toString() } };
           }),
         },
       },
     };
 
-    sinon.stub(RestApiUtils, 'buildMongoFilterFromReq').returns({
-      error: { message: 'Test error message', error: new Error('Test error').toString() },
-    });
-
     // call
     await RestCommsUtils.init(localConfig);
-    let res = await RestCommsUtils.getAll(serviceName, { filter: {} }, _ctx);
+    let res = await RestCommsUtils.delete(serviceName, 'id1', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(localConfig.local[serviceName].getAll.callCount).to.equal(0);
+    chai.expect(localConfig.local[serviceName].delete.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 400,
       error: {
         error: 'Error: Test error',
         message: 'Test error message',
@@ -116,9 +105,9 @@ describe('Rest Communications Utils', function () {
   }).timeout(10000);
 
   /**
-   * getAll remote with success
+   * delete remote with success
    */
-  it('should call getAll remote with success', async () => {
+  it('should call delete remote with success', async () => {
     // local config
     let serviceName = 'Service';
     let restConfig = {
@@ -133,35 +122,32 @@ describe('Rest Communications Utils', function () {
     };
 
     // stub
-    mockAxios.onGet().reply(200, {
-      data: [{ id: 'id1' }],
-      meta: { count: 1, limit: 0, skip: 0 },
+    mockAxios.onDelete().reply(200, {
+      id: 'id1',
+      name: 'name',
+      type: 'type',
     });
 
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.getAll(serviceName, `?id=id1&sort=id&limit=10`, _ctx);
+    let res = await RestCommsUtils.delete(serviceName, 'id1', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai.expect(res).to.deep.equal({
-      value: [
-        {
-          id: 'id1',
-        },
-      ],
-      meta: {
-        count: 1,
-        limit: 0,
-        skip: 0,
+      status: 200,
+      value: {
+        id: 'id1',
+        name: 'name',
+        type: 'type',
       },
     });
   }).timeout(10000);
 
   /**
-   * getAll remote with failure
+   * delete remote with failure
    */
-  it('should call getAll remote with failure', async () => {
+  it('should call delete remote with failure', async () => {
     // local config
     let serviceName = 'Service';
     let restConfig = {
@@ -176,16 +162,16 @@ describe('Rest Communications Utils', function () {
     };
 
     // stub
-    mockAxios.onGet().reply(500, {});
+    mockAxios.onDelete().reply(500, {});
 
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.getAll(serviceName, `?id=id1&sort=id&limit=10`, _ctx);
+    let res = await RestCommsUtils.delete(serviceName, 'id1', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai
       .expect(res.error.message)
-      .to.include('Calling GET http://localhost:8080/api/v1/service?id=id1&sort=id&limit=10 failed with status 500');
+      .to.include('Calling DELETE http://localhost:8080/api/v1/service/id1 failed with status 500');
   }).timeout(10000);
 });

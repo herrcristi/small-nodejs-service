@@ -34,15 +34,15 @@ describe('Rest Communications Utils', function () {
   after(async function () {});
 
   /**
-   * getAll local with success
+   * getAllByIDs local with success
    */
-  it('should call getAll local with success', async () => {
+  it('should call getAllByIDs local with success', async () => {
     // local config
     let serviceName = 'Service';
     let localConfig = {
       local: {
         [serviceName]: {
-          getAll: sinon.stub().callsFake((filter) => {
+          getAllByIDs: sinon.stub().callsFake((ids, projection) => {
             return {
               value: [
                 {
@@ -57,11 +57,11 @@ describe('Rest Communications Utils', function () {
 
     // call
     await RestCommsUtils.init(localConfig);
-    let res = await RestCommsUtils.getAll(serviceName, { filter: {} }, _ctx);
+    let res = await RestCommsUtils.getAllByIDs(serviceName, ['id1'], { id: 1 }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(localConfig.local[serviceName].getAll.callCount).to.equal(1);
+    chai.expect(localConfig.local[serviceName].getAllByIDs.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
       value: [
@@ -73,41 +73,30 @@ describe('Rest Communications Utils', function () {
   }).timeout(10000);
 
   /**
-   * getAll local fail
+   * getAllByIDs local fail
    */
-  it('should call getAll local and fail', async () => {
+  it('should call getAllByIDs local and fail', async () => {
     // local config
     let serviceName = 'Service';
     let localConfig = {
       local: {
         [serviceName]: {
-          getAll: sinon.stub().callsFake((filter) => {
-            return {
-              value: [
-                {
-                  id: 'id1',
-                },
-              ],
-            };
+          getAllByIDs: sinon.stub().callsFake((ids, projection) => {
+            return { error: { message: 'Test error message', error: new Error('Test error').toString() } };
           }),
         },
       },
     };
 
-    sinon.stub(RestApiUtils, 'buildMongoFilterFromReq').returns({
-      error: { message: 'Test error message', error: new Error('Test error').toString() },
-    });
-
     // call
     await RestCommsUtils.init(localConfig);
-    let res = await RestCommsUtils.getAll(serviceName, { filter: {} }, _ctx);
+    let res = await RestCommsUtils.getAllByIDs(serviceName, ['id1'], { id: 1 }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(localConfig.local[serviceName].getAll.callCount).to.equal(0);
+    chai.expect(localConfig.local[serviceName].getAllByIDs.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 400,
       error: {
         error: 'Error: Test error',
         message: 'Test error message',
@@ -116,9 +105,9 @@ describe('Rest Communications Utils', function () {
   }).timeout(10000);
 
   /**
-   * getAll remote with success
+   * getAllByIDs remote with success
    */
-  it('should call getAll remote with success', async () => {
+  it('should call getAllByIDs remote with success', async () => {
     // local config
     let serviceName = 'Service';
     let restConfig = {
@@ -134,34 +123,30 @@ describe('Rest Communications Utils', function () {
 
     // stub
     mockAxios.onGet().reply(200, {
-      data: [{ id: 'id1' }],
+      data: [{ id: 'id1', name: 'name' }],
       meta: { count: 1, limit: 0, skip: 0 },
     });
 
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.getAll(serviceName, `?id=id1&sort=id&limit=10`, _ctx);
+    let res = await RestCommsUtils.getAllByIDs(serviceName, ['id1'], { id: 1, name: 1 }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai.expect(res).to.deep.equal({
       value: [
         {
           id: 'id1',
+          name: 'name',
         },
       ],
-      meta: {
-        count: 1,
-        limit: 0,
-        skip: 0,
-      },
     });
   }).timeout(10000);
 
   /**
-   * getAll remote with failure
+   * getAllByIDs remote with failure
    */
-  it('should call getAll remote with failure', async () => {
+  it('should call getAllByIDs remote with failure', async () => {
     // local config
     let serviceName = 'Service';
     let restConfig = {
@@ -181,11 +166,11 @@ describe('Rest Communications Utils', function () {
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.getAll(serviceName, `?id=id1&sort=id&limit=10`, _ctx);
+    let res = await RestCommsUtils.getAllByIDs(serviceName, ['id1'], null, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai
       .expect(res.error.message)
-      .to.include('Calling GET http://localhost:8080/api/v1/service?id=id1&sort=id&limit=10 failed with status 500');
+      .to.include('Calling GET http://localhost:8080/api/v1/service?id=id1 failed with status 500');
   }).timeout(10000);
 });

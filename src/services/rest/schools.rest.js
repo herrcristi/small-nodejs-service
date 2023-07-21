@@ -15,8 +15,8 @@ const Public = {
     return await RestCommsUtils.getAll(SchoolsConstants.ServiceName, queryParams, _ctx);
   },
 
-  getAllByIDs: async (ids, _ctx) => {
-    return await RestCommsUtils.getAllByIDs(SchoolsConstants.ServiceName, ids, _ctx);
+  getAllByIDs: async (ids, projection, _ctx) => {
+    return await RestCommsUtils.getAllByIDs(SchoolsConstants.ServiceName, ids, projection, _ctx);
   },
 
   /**

@@ -22,7 +22,7 @@ const Utils = {
 
     // get all schools
     const schoolsIDs = Object.keys(schoolsMap);
-    let r = await SchoolsRest.getAllByIDs(schoolsIDs, _ctx);
+    let r = await SchoolsRest.getAllByIDs(schoolsIDs, { id: 1, name: 1, type: 1, status: 1 }, _ctx);
     if (r.error) {
       return r;
     }
@@ -72,6 +72,25 @@ const Public = {
 
   getAllCount: async (filter, _ctx) => {
     return await DbOpsUtils.getAllCount(filter, _ctx);
+  },
+
+  getAllByIDs: async (ids, projection, _ctx) => {
+    let r = await DbOpsUtils.getAllByIDs(ids, projection, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // TODO implement schools notification and here onSchoolNotification instead of
+    // fill schools name and status
+    if (projection?.schools) {
+      let rs = await Utils.fillSchoolsInfo(r.value, _ctx);
+      if (rs.error) {
+        return rs;
+      }
+    }
+
+    // return users
+    return r;
   },
 
   /**
