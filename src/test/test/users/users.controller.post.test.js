@@ -62,6 +62,7 @@ describe('Users', function () {
       ...testUser,
       id: undefined,
       name: undefined,
+      type: undefined,
     };
 
     // stub

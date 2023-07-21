@@ -43,6 +43,9 @@ describe('Schools Controller', function () {
     chai.expect(stubServiceDeleteOne.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
       id: testSchool.id,
+      name: testSchool.name,
+      type: testSchool.type,
+      status: testSchool.status,
     });
   }).timeout(10000);
 

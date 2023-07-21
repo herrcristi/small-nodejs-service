@@ -35,6 +35,7 @@ describe('Schools Service', function () {
     const patchReq = {
       ...testSchool,
       id: undefined,
+      type: undefined,
     };
 
     // stub

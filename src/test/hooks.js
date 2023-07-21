@@ -38,7 +38,11 @@ exports.mochaHooks = {
   /**
    * after each
    */
-  afterEach: [async function () {}],
+  afterEach: [
+    async function () {
+      console.log('---------------------\n');
+    },
+  ],
 
   /**
    * after all

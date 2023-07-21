@@ -9,14 +9,14 @@ const SchoolsConstants = require('../schools/schools.constants');
 const Public = {
   /**
    * get all
-   * filter: { filter, projection, limit, skip, sort }
+   * queryParams should contain `?`
    */
-  getAll: async (filter, _ctx) => {
-    return await RestCommsUtils.getAll(SchoolsConstants.ServiceName, filter, _ctx);
+  getAll: async (queryParams, _ctx) => {
+    return await RestCommsUtils.getAll(SchoolsConstants.ServiceName, queryParams, _ctx);
   },
 
-  getAllByIDs: async (ids, _ctx) => {
-    return await RestCommsUtils.getAllByIDs(SchoolsConstants.ServiceName, ids, _ctx);
+  getAllByIDs: async (ids, projection, _ctx) => {
+    return await RestCommsUtils.getAllByIDs(SchoolsConstants.ServiceName, ids, projection, _ctx);
   },
 
   /**

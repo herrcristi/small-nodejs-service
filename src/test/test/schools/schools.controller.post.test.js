@@ -32,6 +32,7 @@ describe('Schools Controller', function () {
     const postReq = {
       ...testSchool,
       id: undefined,
+      type: undefined,
     };
 
     // stub
@@ -49,6 +50,9 @@ describe('Schools Controller', function () {
     chai.expect(stubServicePostOne.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
       id: testSchool.id,
+      name: testSchool.name,
+      type: testSchool.type,
+      status: testSchool.status,
     });
   }).timeout(10000);
 
@@ -63,6 +67,7 @@ describe('Schools Controller', function () {
     const postReq = {
       ...testSchool,
       id: undefined,
+      type: undefined,
     };
 
     // stub
@@ -94,6 +99,27 @@ describe('Schools Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(res.body.error.message).to.include('"name" is required');
+  }).timeout(10000);
+
+  /**
+   * post one failed due to empty name
+   */
+  it('should post one failed due to empty name', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+    const testSchool = testSchools[0];
+
+    // post request does not have id, name or name in schools
+    const postReq = {
+      name: '',
+    };
+
+    // call
+    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.ApiPath}`).send(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.body.error.message).to.include('"name" is not allowed to be empty');
   }).timeout(10000);
 
   /**

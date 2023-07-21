@@ -3,6 +3,8 @@
  */
 const RestCommsUtils = require('../core/utils/rest-communications.utils.js');
 
+const WebConstants = require('../web-server/web-server.constants.js');
+
 const SchoolsConstants = require('./schools/schools.constants.js');
 const SchoolsService = require('./schools/schools.service.js');
 const SchoolsRouter = require('../services/schools/schools.router.js');
@@ -26,6 +28,26 @@ const Public = {
         [SchoolsConstants.ServiceName]: SchoolsService,
         [UsersConstants.ServiceName]: UsersService,
         [StudentsConstants.ServiceName]: StudentsService,
+      },
+      rest: {
+        [SchoolsConstants.ServiceName]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: WebConstants.Port,
+          path: SchoolsConstants.ApiPath,
+        },
+        [UsersConstants.ServiceName]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: WebConstants.Port,
+          path: UsersConstants.ApiPath,
+        },
+        [StudentsConstants.ServiceName]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: WebConstants.Port,
+          path: StudentsConstants.ApiPath,
+        },
       },
     };
 

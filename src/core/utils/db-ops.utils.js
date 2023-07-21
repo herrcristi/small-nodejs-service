@@ -33,11 +33,21 @@ const Public = {
     return Utils.error('Not implemented', time, _ctx);
   },
 
+  getAllByIDs: async (ids, projection, _ctx) => {
+    return Public.getAll(
+      {
+        filter: { id: { $in: ids } },
+        projection,
+      },
+      _ctx
+    );
+  },
+
   /**
    * get one
    * return: { error: { message, error } } or { value }
    */
-  getOne: async (objID, _ctx) => {
+  getOne: async (objID, projection, _ctx) => {
     const time = new Date();
     return Utils.error('Not implemented', time, _ctx);
   },
@@ -60,7 +70,7 @@ const Public = {
    * delete
    * return: { error: { message, error } } or { value }
    */
-  delete: async (objID, _ctx) => {
+  delete: async (objID, projection, _ctx) => {
     const time = new Date();
 
     return Utils.error('Not implemented', time, _ctx);
@@ -70,7 +80,7 @@ const Public = {
    * put
    * return: { error: { message, error } } or { value }
    */
-  put: async (objID, objInfo, _ctx) => {
+  put: async (objID, objInfo, projection, _ctx) => {
     const time = new Date();
     objInfo.lastModifiedTimestamp = new Date();
 
@@ -81,7 +91,7 @@ const Public = {
    * patch
    * return: { error: { message, error } } or { value }
    */
-  patch: async (objID, patchInfo, _ctx) => {
+  patch: async (objID, patchInfo, projection, _ctx) => {
     const time = new Date();
     //patchInfo.set.lastModifiedTimestamp = new Date();
     return Utils.error('Not implemented', time, _ctx);

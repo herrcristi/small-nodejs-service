@@ -35,7 +35,7 @@ describe('Schools Rest', function () {
     });
 
     // call
-    let res = await SchoolsRest.getAll({}, _ctx);
+    let res = await SchoolsRest.getAll('?', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -53,7 +53,7 @@ describe('Schools Rest', function () {
     });
 
     // call
-    let res = await SchoolsRest.getAllByIDs(['id1'], _ctx);
+    let res = await SchoolsRest.getAllByIDs(['id1'], { id: 1, name: 1 } /*projection*/, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

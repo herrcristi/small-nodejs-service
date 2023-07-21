@@ -63,7 +63,7 @@ const Public = {
 
       // success
       return {
-        status: currentLimit && currentLimit < rCount.value ? 206 /*partial data*/ : 200,
+        status: limit && currentLimit < rCount.value ? 206 /*partial data*/ : 200,
         value: {
           data: r.value,
           meta: {
@@ -130,10 +130,22 @@ const Public = {
 
       // post
       const r = controller.service.post(req.body, _ctx);
+      if (r.error) {
+        throw r.error.error;
+      }
+
       console.log(`Post succesful new object with id: ${r.value.id}, name: ${r.value.name}`);
 
       // success
-      return { status: 201, value: { id: r.value.id } };
+      return {
+        status: 201,
+        value: {
+          id: r.value.id,
+          name: r.value.name,
+          type: r.value.type,
+          status: r.value.status,
+        },
+      };
     } catch (e) {
       return { status: 500, error: e };
     }
@@ -164,41 +176,15 @@ const Public = {
       }
 
       // success
-      return { status: 200, value: { id: r.value.id } };
-    } catch (e) {
-      return { status: 500, error: e };
-    }
-  },
-
-  /**
-   * patch
-   * controller: { name, schema, service }
-   * return: { status, error } or { status, value }
-   */
-  patch: async (controller, req, res, next) => {
-    const _ctx = req._ctx;
-    _ctx.service = controller.name;
-
-    try {
-      console.log(`${controller.name}: Patch called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
-      const objID = req.params.id;
-
-      // validate
-      const v = controller.schema.validate(req.body);
-      if (v.error) {
-        return { status: 400, error: v.error.details[0] };
-      }
-
-      // patch
-      const r = controller.service.patch(objID, req.body, _ctx);
-
-      // not found
-      if (!r.value) {
-        return { status: 404, error: objID };
-      }
-
-      // success
-      return { status: 200, value: { id: r.value.id } };
+      return {
+        status: 200,
+        value: {
+          id: r.value.id,
+          name: r.value.name,
+          type: r.value.type,
+          status: r.value.status,
+        },
+      };
     } catch (e) {
       return { status: 500, error: e };
     }
@@ -225,6 +211,9 @@ const Public = {
 
       // put
       const r = controller.service.put(objID, req.body, _ctx);
+      if (r.error) {
+        throw r.error.error;
+      }
 
       // not found
       if (!r.value) {
@@ -232,7 +221,60 @@ const Public = {
       }
 
       // success
-      return { status: 200, value: { id: r.value.id } };
+      return {
+        status: 200,
+        value: {
+          id: r.value.id,
+          name: r.value.name,
+          type: r.value.type,
+          status: r.value.status,
+        },
+      };
+    } catch (e) {
+      return { status: 500, error: e };
+    }
+  },
+
+  /**
+   * patch
+   * controller: { name, schema, service }
+   * return: { status, error } or { status, value }
+   */
+  patch: async (controller, req, res, next) => {
+    const _ctx = req._ctx;
+    _ctx.service = controller.name;
+
+    try {
+      console.log(`${controller.name}: Patch called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
+      const objID = req.params.id;
+
+      // validate
+      const v = controller.schema.validate(req.body);
+      if (v.error) {
+        return { status: 400, error: v.error.details[0] };
+      }
+
+      // patch
+      const r = controller.service.patch(objID, req.body, _ctx);
+      if (r.error) {
+        throw r.error.error;
+      }
+
+      // not found
+      if (!r.value) {
+        return { status: 404, error: objID };
+      }
+
+      // success
+      return {
+        status: 200,
+        value: {
+          id: r.value.id,
+          name: r.value.name,
+          type: r.value.type,
+          status: r.value.status,
+        },
+      };
     } catch (e) {
       return { status: 500, error: e };
     }

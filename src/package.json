@@ -26,6 +26,7 @@
     "lodash": "4.17.21"
   },
   "devDependencies": {
+    "axios-mock-adapter": "1.21.5",
     "chai": "4.3.7",
     "chai-http": "4.4.0",
     "mocha": "10.2.0",

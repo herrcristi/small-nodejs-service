@@ -5,7 +5,14 @@
  * can be done in 2 ways, either direct or via rest calls
  */
 
-const Axios = require('axios');
+const axios = require('axios');
+
+const CommonUtils = require('./common.utils');
+const RestApiUtils = require('./rest-api.utils');
+
+const Constants = {
+  Timeout: 30000 /* 30s */,
+};
 
 const Private = {
   /**
@@ -19,13 +26,73 @@ const Private = {
 
   /**
    * rest call
-   * config: { service, method, path, params?, data? }
+   * config: { serviceName, method, path, query?, body? }
    */
   restCall: async (config, _ctx) => {
     console.log(`Rest api call: ${JSON.stringify(config, null, 2)}`);
-    // TODO axios + service2service auth
 
-    return { error: { message: 'Not implemented', error: new Error('Not implemented') } };
+    let srvConfigUri = Private.Config.rest[config.serviceName];
+    if (!srvConfigUri) {
+      return {
+        status: 400,
+        error: { message: `No service ${config.serviceName}`, error: new Error(`No service ${config.serviceName}`) },
+      };
+    }
+    let srvUri = `${srvConfigUri.protocol || 'http'}://${srvConfigUri.host}:${srvConfigUri.port || 80}${
+      srvConfigUri.path
+    }${config.path}`;
+
+    config.method = config.method?.toUpperCase();
+    if (config.method === 'GET' && config.query) {
+      srvUri += `${config.query}`; // should contain `?`
+    }
+
+    console.log(`Current url to call: ${config.method} ${srvUri}`);
+
+    // TODO service2service auth
+
+    // call axios
+    let time = new Date();
+    try {
+      let r = await axios({
+        method: config.method,
+        url: srvUri,
+        headers: {
+          'x-tenant-id': _ctx.tenantID,
+          'x-request-id': _ctx.reqID,
+          'x-lang': _ctx.lang,
+          'x-forwarded-for': _ctx.ipAddress,
+          'content-type': 'application/json',
+        },
+        body: config.body,
+        timeout: config.timeout || Constants.Timeout,
+        validateStatus: (status) => config.validateStatus /*for testing*/ ?? true /* dont throw exception*/,
+      });
+
+      console.log(
+        `Calling ${config.method} ${srvUri} returned status: ${r.status}, body: ${
+          CommonUtils.isDebug() ? JSON.stringify(r.data).slice(0, 2000) : '***'
+        }. Finished in ${new Date() - time} ms`
+      );
+
+      // failed
+      if (r.status >= 300) {
+        return {
+          status: r.status,
+          error: {
+            message: `Calling ${config.method} ${srvUri} failed with status ${r.status}`,
+            error: new Error(`Calling ${config.method} ${srvUri} failed with status ${r.status}`),
+          },
+        };
+      }
+
+      // success
+      return { status: r.status, value: r.data };
+    } catch (e) {
+      console.log(`Calling ${config.method} ${srvUri} failed: ${e?.message}. Finished in ${new Date() - time} ms`);
+
+      return { status: 500, error: { message: e?.message, error: e?.message } };
+    }
   },
 };
 
@@ -39,81 +106,127 @@ const Public = {
 
     // save it
     Private.Config = config;
+    Private.Config.local = Private.Config.local || {};
+    Private.Config.rest = Private.Config.rest || {};
+  },
+
+  getConfig: async () => {
+    return Private.Config;
+  },
+
+  /**
+   * rest call
+   * config: { serviceName, method, path, query?, body? }
+   */
+  restCall: async (config, _ctx) => {
+    return await Private.restCall(config, _ctx);
   },
 
   /**
    * get all
-   * filter: { filter, projection, limit, skip, sort }
+   * queryParams should contain `?`
    */
-  getAll: async (service, filter, _ctx) => {
-    const localService = Private.Config.local[service];
+  getAll: async (serviceName, queryParams, _ctx) => {
+    const localService = Private.Config.local[serviceName];
     if (localService) {
+      // convert query to mongo build filter: { filter, projection, limit, skip, sort }
+      const filter = await RestApiUtils.buildMongoFilterFromReq({ query: queryParams }, null /* schema */, _ctx);
+      if (filter.error) {
+        return { status: 400, error: filter.error };
+      }
+
       return await localService.getAll(filter, _ctx);
     }
-    return await Private.restCall({ service, method: 'GET', path: '/', params: filter }, _ctx);
+
+    // TODO get in chunks
+    let r = await Private.restCall({ serviceName, method: 'GET', path: '', query: queryParams }, _ctx);
+    if (r.error) {
+      return r;
+    }
+    return { value: r.value.data, meta: r.value.meta };
   },
 
-  getAllByIDs: async (service, ids, _ctx) => {
-    const localService = Private.Config.local[service];
+  /**
+   * get all by ids with projection
+   */
+  getAllByIDs: async (serviceName, ids, projection, _ctx) => {
+    const localService = Private.Config.local[serviceName];
     if (localService) {
-      return await localService.getAllByIDs(ids, _ctx);
+      return await localService.getAllByIDs(ids, projection, _ctx);
     }
-    return await Private.restCall({ service, method: 'GET', path: '/', params: { id: ids.join(',') } }, _ctx);
+
+    let query = `?`;
+    if (projection) {
+      query += `projection=${Object.keys(projection).join(',')}&`;
+    }
+    //  get in chunks due to limited size of url
+    let data = [];
+    const chunks = CommonUtils.getChunks(ids, 50);
+    for (const chunkIDs of chunks) {
+      const chunkQuery = `${query}id=${chunkIDs.join(',')}`;
+      let r = await Private.restCall({ serviceName, method: 'GET', path: '', query: chunkQuery }, _ctx);
+      if (r.error) {
+        return r;
+      }
+      data = data.concat(r.value.data);
+    }
+
+    return { value: data };
   },
 
   /**
    * get one
    */
-  getOne: async (service, objID, _ctx) => {
-    const localService = Private.Config.local[service];
+  getOne: async (serviceName, objID, _ctx) => {
+    const localService = Private.Config.local[serviceName];
     if (localService) {
       return await localService.getOne(objID, _ctx);
     }
-    return await Private.restCall({ service, method: 'GET', path: `/${objID}` }, _ctx);
+    return await Private.restCall({ serviceName, method: 'GET', path: `/${objID}` }, _ctx);
   },
 
   /**
    * post
    */
-  post: async (service, objInfo, _ctx) => {
-    const localService = Private.Config.local[service];
+  post: async (serviceName, objInfo, _ctx) => {
+    const localService = Private.Config.local[serviceName];
     if (localService) {
       return await localService.post(objInfo, _ctx);
     }
-    return await Private.restCall({ service, method: 'POST', path: '/', data: objInfo }, _ctx);
+    return await Private.restCall({ serviceName, method: 'POST', path: '', body: objInfo }, _ctx);
   },
 
   /**
    * delete
    */
-  delete: async (service, objID, _ctx) => {
-    const localService = Private.Config.local[service];
+  delete: async (serviceName, objID, _ctx) => {
+    const localService = Private.Config.local[serviceName];
     if (localService) {
       return await localService.delete(objID, _ctx);
     }
-    return await Private.restCall({ service, method: 'DELETE', path: `/${objID}` }, _ctx);
+    return await Private.restCall({ serviceName, method: 'DELETE', path: `/${objID}` }, _ctx);
   },
 
   /**
    * put
    */
-  put: async (service, objID, objInfo, _ctx) => {
-    const localService = Private.Config.local[service];
+  put: async (serviceName, objID, objInfo, _ctx) => {
+    const localService = Private.Config.local[serviceName];
     if (localService) {
       return await localService.put(objID, objInfo, _ctx);
     }
-    return await Private.restCall({ service, method: 'PUT', path: `/${objID}`, data: objInfo }, _ctx);
+    return await Private.restCall({ serviceName, method: 'PUT', path: `/${objID}`, body: objInfo }, _ctx);
   },
 
   /**
    * patch
    */
-  patch: async (service, objID, patchInfo, _ctx) => {
-    const localService = Private.Config.local[service];
+  patch: async (serviceName, objID, patchInfo, _ctx) => {
+    const localService = Private.Config.local[serviceName];
     if (localService) {
       return await localService.patch(objID, patchInfo, _ctx);
     }
-    return await Private.restCall({ service, method: 'PATCH', path: `/${objID}`, data: patchInfo }, _ctx);
+    return await Private.restCall({ serviceName, method: 'PATCH', path: `/${objID}`, body: patchInfo }, _ctx);
   },
 };
 

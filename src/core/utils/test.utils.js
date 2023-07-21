@@ -8,8 +8,10 @@ const Public = {
   setupEnv: () => {
     //env
     process.env.NODE_ENV = 'test';
+    process.env.PORT = 8080;
 
     console.log('process.env.NODE_ENV:', process.env.NODE_ENV);
+    console.log('process.env.PORT:', process.env.PORT);
   },
 
   /**

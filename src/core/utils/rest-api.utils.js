@@ -22,11 +22,17 @@ const Public = {
   buildMongoFilterFromReq: async (req, schema, _ctx) => {
     try {
       // convert query to mongo build
-      let filter = Aqs(req.query, {});
+      let filter = Aqs(req.query, {
+        projectionKey: 'projection',
+      });
 
       console.log(`Current filter ${JSON.stringify(filter, Utils.stringifyFilter, 2)}`);
 
-      // TODO add search
+      // TODO use schema to validate filter
+      // if (schema) {
+      // }
+      // TODO add search, searchFields
+      // TODO set limit to some value like 1000 (if not set)
 
       return filter;
     } catch (e) {

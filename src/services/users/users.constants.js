@@ -10,6 +10,9 @@ const Public = {
   // service name
   ServiceName: 'users',
 
+  // type
+  Type: 'user',
+
   // status
   Status: {
     Pending: 'pending',
