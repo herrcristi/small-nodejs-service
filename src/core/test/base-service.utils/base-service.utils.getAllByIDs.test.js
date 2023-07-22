@@ -9,6 +9,7 @@ const DbOpsUtils = require('../../utils/db-ops.utils.js');
 
 describe('Base Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
+
   const config = {
     serviceName: 'service',
     schema: 'schema',
@@ -26,23 +27,23 @@ describe('Base Service', function () {
   after(async function () {});
 
   /**
-   * getOne with success
+   * getAllByIDs with success
    */
-  it('should call getOne with success', async () => {
+  it('should call getAllByIDs with success', async () => {
     // stub
-    sinon.stub(DbOpsUtils, 'getOne').returns({
+    sinon.stub(DbOpsUtils, 'getAllByIDs').returns({
       status: 200,
-      value: { id: 'id1' },
+      value: [{ id: 'id1' }],
     });
 
     // call
-    let res = await BaseServiceUtils.getOne(config, 'id1', { id: 1 }, _ctx);
+    let res = await BaseServiceUtils.getAllByIDs(config, ['id1'], { id: 1 }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: { id: 'id1' },
+      value: [{ id: 'id1' }],
     });
   }).timeout(10000);
 });

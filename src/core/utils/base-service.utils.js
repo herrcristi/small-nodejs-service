@@ -88,12 +88,9 @@ const Public = {
     // validate
     const v = config.schema.validate(objInfo);
     if (v.error) {
-      return { status: 400, error: v.error.details[0] };
+      const err = v.error.details[0].message;
+      return { status: 400, error: { message: err, error: new Error(err) } };
     }
-
-    // add default status if not set
-    objInfo.status = objInfo.status || SchoolsConstants.Status.Pending;
-    objInfo.type = SchoolsConstants.Type;
 
     // post
     const r = await DbOpsUtils.post(config, objInfo, _ctx);
@@ -142,7 +139,8 @@ const Public = {
     // validate
     const v = config.schema.validate(objInfo);
     if (v.error) {
-      return { status: 400, error: v.error.details[0] };
+      const err = v.error.details[0].message;
+      return { status: 400, error: { message: err, error: new Error(err) } };
     }
 
     // put
@@ -166,7 +164,8 @@ const Public = {
     // validate
     const v = config.schema.validate(patchInfo);
     if (v.error) {
-      return { status: 400, error: v.error.details[0] };
+      const err = v.error.details[0].message;
+      return { status: 400, error: { message: err, error: new Error(err) } };
     }
 
     const projection = { id: 1, name: 1, type: 1, status: 1 };

@@ -3,18 +3,21 @@ const mocha = require('mocha');
 const assert = require('assert');
 const chai = require('chai');
 const sinon = require('sinon');
+const Joi = require('joi');
 
-const CommonUtils = require('../../utils/common.utils.js');
-const RestMessagesUtils = require('../../utils/rest-messages.utils.js');
 const BaseServiceUtils = require('../../utils/base-service.utils.js');
-const RestApiUtils = require('../../utils/rest-api.utils.js');
+const DbOpsUtils = require('../../utils/db-ops.utils.js');
 
 describe('Base Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
-
-  let res = {};
-
-  let next = () => {};
+  const config = {
+    serviceName: 'service',
+    schema: Joi.object().keys({
+      name: Joi.string().min(1).max(64),
+      description: Joi.string().min(0).max(1024).allow(null),
+    }),
+    collection: 'collection',
+  };
 
   before(async function () {});
 
@@ -30,110 +33,50 @@ describe('Base Service', function () {
    * delete with success
    */
   it('should call delete with success', async () => {
-    let req = {
-      _ctx: _.cloneDeep(_ctx),
-      params: { id: 'id1' },
-    };
-
     // stub
-    let controller = {
-      name: 'Service',
-      schema: 'schema',
-      service: {
-        delete: sinon.stub().callsFake((objID) => {
-          return {
-            value: {
-              id: objID,
-              name: 'name',
-              type: 'type',
-              status: 'status',
-            },
-          };
-        }),
-      },
-    };
+    sinon.stub(DbOpsUtils, 'delete').callsFake((conf, objID) => {
+      return {
+        status: 200,
+        value: {
+          id: objID,
+          name: 'name',
+          type: undefined,
+          status: undefined,
+        },
+      };
+    });
 
     // call
-    let response = await BaseControllerUtils.delete(controller, req, res, next);
-    console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
+    let res = await BaseServiceUtils.delete(config, 'id1', _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(controller.service.delete.callCount).to.equal(1);
-
-    chai.expect(response).to.deep.equal({
+    chai.expect(res).to.deep.equal({
       status: 200,
       value: {
         id: 'id1',
         name: 'name',
-        type: 'type',
-        status: 'status',
+        status: undefined,
+        type: undefined,
       },
     });
   }).timeout(10000);
 
   /**
-   * fail to delete
+   * delete with failed db
    */
-  it('should fail to delete', async () => {
-    let req = {
-      _ctx: _.cloneDeep(_ctx),
-      params: { id: 'id1' },
-    };
-
+  it('should call delete with failed db', async () => {
     // stub
-    let controller = {
-      name: 'Service',
-      schema: 'schema',
-      service: {
-        delete: sinon.stub().callsFake((objID) => {
-          return { error: { message: 'Test error message', error: new Error('Test error').toString() } };
-        }),
-      },
-    };
+    sinon.stub(DbOpsUtils, 'delete').callsFake((conf, objID) => {
+      return { status: 500, error: { message: 'Test message error', error: new Error('Test error').toString() } };
+    });
 
     // call
-    let response = await BaseControllerUtils.delete(controller, req, res, next);
-    console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
+    let res = await BaseServiceUtils.delete(config, 'id1', _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(controller.service.delete.callCount).to.equal(1);
-
-    chai.expect(response).to.deep.equal({
-      status: 500,
-      error: 'Error: Test error',
-    });
-  }).timeout(10000);
-
-  /**
-   * delete not found
-   */
-  it('should fail to delete - not found', async () => {
-    let req = {
-      _ctx: _.cloneDeep(_ctx),
-      params: { id: 'id1' },
-    };
-
-    // stub
-    let controller = {
-      name: 'Service',
-      schema: 'schema',
-      service: {
-        delete: sinon.stub().callsFake((objID) => {
-          return { value: null };
-        }),
-      },
-    };
-
-    // call
-    let response = await BaseControllerUtils.delete(controller, req, res, next);
-    console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
-
-    // check
-    chai.expect(controller.service.delete.callCount).to.equal(1);
-
-    chai.expect(response).to.deep.equal({
-      status: 404,
-      error: 'id1',
-    });
+    chai.expect(res.status).to.equal(500);
+    chai.expect(res.error.message).to.include('Test message error');
   }).timeout(10000);
 });

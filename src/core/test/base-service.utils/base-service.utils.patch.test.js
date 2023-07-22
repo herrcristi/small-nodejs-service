@@ -3,18 +3,23 @@ const mocha = require('mocha');
 const assert = require('assert');
 const chai = require('chai');
 const sinon = require('sinon');
+const Joi = require('joi');
 
-const CommonUtils = require('../../utils/common.utils.js');
-const RestMessagesUtils = require('../../utils/rest-messages.utils.js');
 const BaseServiceUtils = require('../../utils/base-service.utils.js');
-const RestApiUtils = require('../../utils/rest-api.utils.js');
+const DbOpsUtils = require('../../utils/db-ops.utils.js');
 
 describe('Base Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
-
-  let res = {};
-
-  let next = () => {};
+  const config = {
+    serviceName: 'service',
+    schema: Joi.object().keys({
+      set: Joi.object().keys({
+        name: Joi.string().min(1).max(64),
+        description: Joi.string().min(0).max(1024).allow(null),
+      }),
+    }),
+    collection: 'collection',
+  };
 
   before(async function () {});
 
@@ -30,192 +35,94 @@ describe('Base Service', function () {
    * patch with success
    */
   it('should call patch with success', async () => {
-    let req = {
-      _ctx: _.cloneDeep(_ctx),
-      params: { id: 'id1' },
-      body: {
-        set: {
-          name: 'name',
-        },
+    const patchInfo = {
+      set: {
+        name: 'name',
+        description: 'description',
       },
     };
 
     // stub
-    let controller = {
-      name: 'Service',
-      schema: {
-        validate: () => {
-          return {};
+    sinon.stub(DbOpsUtils, 'patch').callsFake((conf, objID, patch) => {
+      return {
+        status: 200,
+        value: {
+          id: objID,
+          name: patch.set.name,
+          type: undefined,
+          status: undefined,
         },
-      },
-      service: {
-        patch: sinon.stub().callsFake((objID, patchInfo) => {
-          return {
-            value: {
-              id: objID,
-              name: patchInfo.set.name,
-              type: 'type',
-              status: 'status',
-            },
-          };
-        }),
-      },
-    };
+      };
+    });
 
     // call
-    let response = await BaseControllerUtils.patch(controller, req, res, next);
-    console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
+    let res = await BaseServiceUtils.patch(config, 'id1', patchInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(controller.service.patch.callCount).to.equal(1);
-
-    chai.expect(response).to.deep.equal({
+    chai.expect(res).to.deep.equal({
       status: 200,
       value: {
         id: 'id1',
         name: 'name',
-        type: 'type',
-        status: 'status',
+        status: undefined,
+        type: undefined,
       },
     });
   }).timeout(10000);
 
   /**
-   * fail to patch due to invalid request
+   * patch with failed validation
    */
-  it('should fail to patch due to invalid request', async () => {
-    let req = {
-      _ctx: _.cloneDeep(_ctx),
-      params: { id: 'id1' },
-      body: {
-        set: {
-          name: 'name',
-        },
+  it('should call patch with failed validation', async () => {
+    const patchInfo = {
+      set: {
+        name: 'name',
+        prop: 'prop',
       },
     };
 
     // stub
-    let controller = {
-      name: 'Service',
-      schema: {
-        validate: () => {
-          return {
-            error: {
-              details: [{ message: 'Test error message' }],
-            },
-          };
+    sinon.stub(DbOpsUtils, 'patch').callsFake((conf, objID, patch) => {
+      return {
+        status: 200,
+        value: {
+          id: objID,
+          name: patch.set.name,
         },
-      },
-      service: {
-        patch: sinon.stub().callsFake((objID, patchInfo) => {
-          return {
-            value: {
-              id: objID,
-              name: patchInfo.set.name,
-              type: 'type',
-              status: 'status',
-            },
-          };
-        }),
-      },
-    };
+      };
+    });
 
     // call
-    let response = await BaseControllerUtils.patch(controller, req, res, next);
-    console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
+    let res = await BaseServiceUtils.patch(config, 'id1', patchInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(controller.service.patch.callCount).to.equal(0);
-
-    chai.expect(response).to.deep.equal({
-      status: 400,
-      error: {
-        message: 'Test error message',
-      },
-    });
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.error.message).to.include('"set.prop" is not allowed');
   }).timeout(10000);
 
   /**
-   * fail patch
+   * patch with failed db
    */
-  it('should fail to patch', async () => {
-    let req = {
-      _ctx: _.cloneDeep(_ctx),
-      params: { id: 'id1' },
-      body: {
-        set: {
-          name: 'name',
-        },
+  it('should call patch with failed db', async () => {
+    const patchInfo = {
+      set: {
+        name: 'name',
       },
     };
 
     // stub
-    let controller = {
-      name: 'Service',
-      schema: {
-        validate: () => {
-          return {};
-        },
-      },
-      service: {
-        patch: sinon.stub().callsFake((objID, patchInfo) => {
-          return { error: { message: 'Test error message', error: new Error('Test error').toString() } };
-        }),
-      },
-    };
+    sinon.stub(DbOpsUtils, 'patch').callsFake((conf, objID, obj) => {
+      return { status: 500, error: { message: 'Test message error', error: new Error('Test error').toString() } };
+    });
 
     // call
-    let response = await BaseControllerUtils.patch(controller, req, res, next);
-    console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
+    let res = await BaseServiceUtils.patch(config, 'id1', patchInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(controller.service.patch.callCount).to.equal(1);
-
-    chai.expect(response).to.deep.equal({
-      status: 500,
-      error: 'Error: Test error',
-    });
-  }).timeout(10000);
-
-  /**
-   * fail patch not found
-   */
-  it('should fail to patch - not found', async () => {
-    let req = {
-      _ctx: _.cloneDeep(_ctx),
-      params: { id: 'id1' },
-      body: {
-        set: {
-          name: 'name',
-        },
-      },
-    };
-
-    // stub
-    let controller = {
-      name: 'Service',
-      schema: {
-        validate: () => {
-          return {};
-        },
-      },
-      service: {
-        patch: sinon.stub().callsFake((objID, patchInfo) => {
-          return { value: null };
-        }),
-      },
-    };
-
-    // call
-    let response = await BaseControllerUtils.patch(controller, req, res, next);
-    console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
-
-    // check
-    chai.expect(controller.service.patch.callCount).to.equal(1);
-
-    chai.expect(response).to.deep.equal({
-      status: 404,
-      error: 'id1',
-    });
+    chai.expect(res.status).to.equal(500);
+    chai.expect(res.error.message).to.include('Test message error');
   }).timeout(10000);
 });

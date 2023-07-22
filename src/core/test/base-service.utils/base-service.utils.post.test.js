@@ -3,18 +3,21 @@ const mocha = require('mocha');
 const assert = require('assert');
 const chai = require('chai');
 const sinon = require('sinon');
+const Joi = require('joi');
 
-const CommonUtils = require('../../utils/common.utils.js');
-const RestMessagesUtils = require('../../utils/rest-messages.utils.js');
 const BaseServiceUtils = require('../../utils/base-service.utils.js');
-const RestApiUtils = require('../../utils/rest-api.utils.js');
+const DbOpsUtils = require('../../utils/db-ops.utils.js');
 
 describe('Base Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
-
-  let res = {};
-
-  let next = () => {};
+  const config = {
+    serviceName: 'service',
+    schema: Joi.object().keys({
+      name: Joi.string().min(1).max(64),
+      description: Joi.string().min(0).max(1024).allow(null),
+    }),
+    collection: 'collection',
+  };
 
   before(async function () {});
 
@@ -30,141 +33,86 @@ describe('Base Service', function () {
    * post with success
    */
   it('should call post with success', async () => {
-    let req = {
-      _ctx: _.cloneDeep(_ctx),
-      body: {
-        name: 'name',
-      },
+    const objInfo = {
+      name: 'name',
+      description: 'description',
     };
 
     // stub
-    let controller = {
-      name: 'Service',
-      schema: {
-        validate: () => {
-          return {};
+    sinon.stub(DbOpsUtils, 'post').callsFake((conf, obj) => {
+      return {
+        status: 200,
+        value: {
+          id: 'id1',
+          ...obj,
         },
-      },
-      service: {
-        post: sinon.stub().callsFake((objInfo) => {
-          return {
-            value: {
-              id: 'id1',
-              name: objInfo.name,
-              type: 'type',
-              status: 'pending',
-            },
-          };
-        }),
-      },
-    };
+      };
+    });
 
     // call
-    let response = await BaseControllerUtils.post(controller, req, res, next);
-    console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
+    let res = await BaseServiceUtils.post(config, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(controller.service.post.callCount).to.equal(1);
-
-    chai.expect(response).to.deep.equal({
-      status: 201,
+    chai.expect(res).to.deep.equal({
+      status: 200,
       value: {
         id: 'id1',
         name: 'name',
-        type: 'type',
-        status: 'pending',
+        status: undefined,
+        type: undefined,
       },
     });
   }).timeout(10000);
 
   /**
-   * post fail due to invalid request
+   * post with failed validation
    */
-  it('should post fail due to invalid request', async () => {
-    let req = {
-      _ctx: _.cloneDeep(_ctx),
-      body: {
-        name: 'name',
-      },
+  it('should call post with failed validation', async () => {
+    const objInfo = {
+      name: 'name',
+      prop: 'prop',
     };
 
     // stub
-    let controller = {
-      name: 'Service',
-      schema: {
-        validate: () => {
-          return {
-            error: {
-              details: [{ message: 'Test error message' }],
-            },
-          };
+    sinon.stub(DbOpsUtils, 'post').callsFake((conf, obj) => {
+      return {
+        status: 200,
+        value: {
+          id: 'id1',
+          ...obj,
         },
-      },
-      service: {
-        post: sinon.stub().callsFake((objInfo) => {
-          return {
-            value: {
-              id: 'id1',
-              name: objInfo.name,
-              type: 'type',
-              status: 'pending',
-            },
-          };
-        }),
-      },
-    };
+      };
+    });
 
     // call
-    let response = await BaseControllerUtils.post(controller, req, res, next);
-    console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
+    let res = await BaseServiceUtils.post(config, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(controller.service.post.callCount).to.equal(0);
-
-    chai.expect(response).to.deep.equal({
-      status: 400,
-      error: {
-        message: 'Test error message',
-      },
-    });
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.error.message).to.include('"prop" is not allowed');
   }).timeout(10000);
 
   /**
-   * post fail
+   * post with failed db
    */
-  it('should post fail', async () => {
-    let req = {
-      _ctx: _.cloneDeep(_ctx),
-      body: {
-        name: 'name',
-      },
+  it('should call post with failed db', async () => {
+    const objInfo = {
+      name: 'name',
     };
 
     // stub
-    let controller = {
-      name: 'Service',
-      schema: {
-        validate: () => {
-          return {};
-        },
-      },
-      service: {
-        post: sinon.stub().callsFake((objInfo) => {
-          return { error: { message: 'Test error message', error: new Error('Test error').toString() } };
-        }),
-      },
-    };
+    sinon.stub(DbOpsUtils, 'post').callsFake((conf, obj) => {
+      return { status: 500, error: { message: 'Test message error', error: new Error('Test error').toString() } };
+    });
 
     // call
-    let response = await BaseControllerUtils.post(controller, req, res, next);
-    console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
+    let res = await BaseServiceUtils.post(config, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(controller.service.post.callCount).to.equal(1);
-
-    chai.expect(response).to.deep.equal({
-      status: 500,
-      error: 'Error: Test error',
-    });
+    chai.expect(res.status).to.equal(500);
+    chai.expect(res.error.message).to.include('Test message error');
   }).timeout(10000);
 });
