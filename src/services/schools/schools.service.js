@@ -64,7 +64,7 @@ const Public = {
    */
   getAllForReq: async (req, _ctx) => {
     const config = await Private.getConfig(_ctx);
-    return BaseServiceUtils.getAllForReq(config, req, _ctx);
+    return await BaseServiceUtils.getAllForReq(config, req, _ctx);
   },
 
   /**

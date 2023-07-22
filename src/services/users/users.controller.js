@@ -1,111 +1,160 @@
 /**
  * Users controller
  */
-const Joi = require('joi');
 
-const RestApiUtils = require('../../core/utils/rest-api.utils');
-const RestMsgUtils = require('../../core/utils/rest-messages.utils');
+const CommonUtils = require('../../core/utils/common.utils.js');
+const RestMessagesUtils = require('../../core/utils/rest-messages.utils.js');
 
-const UsersConstants = require('./users.constants');
-const UsersService = require('./users.service');
-
-/**
- * validation
- */
-const Schema = {
-  User: Joi.object().keys({
-    email: Joi.string()
-      .email({ tlds: { allow: false } })
-      .min(1)
-      .max(64),
-    firstName: Joi.string().min(1).max(64),
-    lastName: Joi.string().min(1).max(64),
-    birthday: Joi.date().prefs({ dateFormat: 'iso' }),
-    phoneNumber: Joi.string().min(1).max(32).optional(),
-    address: Joi.string().min(1).max(256),
-    schools: Joi.array().items(
-      Joi.object().keys({
-        id: Joi.string().min(1).max(64).required(),
-        roles: Joi.array().items(Joi.string().min(1).max(32).optional()).required(),
-      })
-    ),
-  }),
-};
-
-const Validators = {
-  /**
-   * for post
-   */
-  Post: Schema.User.fork(
-    ['email', 'firstName', 'lastName', 'birthday', 'address', 'schools'],
-    (x) => x.required() /*make required */
-  ),
-};
-
-const Config = {
-  /**
-   * controller config
-   */
-  Controller: {
-    name: 'Users',
-    schema: Schema.User,
-    service: UsersService,
-  },
-};
+const UsersConstants = require('./users.constants.js');
+const UsersService = require('./users.constants.js');
 
 const Public = {
   /**
    * get all
    */
   getAll: async (req, res, next) => {
-    // call base implementation -> { status, error?, value? }
-    const result = await BaseControllerUtils.getAll(Config.Controller, req, res, next);
-    await BaseControllerUtils.reply(Config.Controller, result, req, res, next);
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(`${_ctx.serviceName}: Get all called, query ${JSON.stringify(CommonUtils.protectData(req.query))}`);
+
+      // get all
+      const r = await UsersService.getAllForReq(req, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
   },
 
   /**
    * get one
    */
   getOne: async (req, res, next) => {
-    // call base implementation -> { status, error?, value? }
-    const result = await BaseControllerUtils.getOne(Config.Controller, req, res, next);
-    await BaseControllerUtils.reply(Config.Controller, result, req, res, next);
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(`${_ctx.serviceName}: Get one called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
+      const objID = req.params.id;
+
+      // get
+      const r = await UsersService.getOne(objID, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
   },
 
   /**
    * post
    */
   post: async (req, res, next) => {
-    // call base implementation -> { status, error?, value? }
-    const result = await BaseControllerUtils.post({ ...Config.Controller, schema: Validators.Post }, req, res, next);
-    await BaseControllerUtils.reply(Config.Controller, result, req, res, next);
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(`${_ctx.serviceName}: Post called, body ${JSON.stringify(CommonUtils.protectData(req.body))}`);
+
+      // post
+      const r = UsersService.post(req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
   },
 
   /**
    * delete
    */
   delete: async (req, res, next) => {
-    // call base implementation -> { status, error?, value? }
-    const result = await BaseControllerUtils.delete(Config.Controller, req, res, next);
-    await BaseControllerUtils.reply(Config.Controller, result, req, res, next);
-  },
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
 
-  /**
-   * patch
-   */
-  patch: async (req, res, next) => {
-    // call base implementation -> { status, error?, value? }
-    const result = await BaseControllerUtils.patch(Config.Controller, req, res, next);
-    await BaseControllerUtils.reply(Config.Controller, result, req, res, next);
+    try {
+      console.log(`${_ctx.serviceName}: Delete called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
+      const objID = req.params.id;
+
+      // delete
+      const r = await UsersService.delete(objID, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
   },
 
   /**
    * put
    */
   put: async (req, res, next) => {
-    // call base implementation -> { status, error?, value? }
-    const result = await BaseControllerUtils.put(Config.Controller, req, res, next);
-    await BaseControllerUtils.reply(Config.Controller, result, req, res, next);
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(`${_ctx.serviceName}: Put called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
+      const objID = req.params.id;
+
+      // put
+      const r = await UsersService.put(objID, req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * patch
+   */
+  patch: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(`${_ctx.serviceName}: Patch called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
+      const objID = req.params.id;
+
+      // patch
+      const r = UsersService.patch(objID, req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
   },
 };
 
