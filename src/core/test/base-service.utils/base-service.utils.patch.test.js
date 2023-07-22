@@ -6,7 +6,7 @@ const sinon = require('sinon');
 
 const CommonUtils = require('../../utils/common.utils.js');
 const RestMessagesUtils = require('../../utils/rest-messages.utils.js');
-const RestControllerUtils = require('../../utils/rest-controller.utils.js');
+const BaseControllerUtils = require('../../utils/base-controller.utils.js');
 const RestApiUtils = require('../../utils/rest-api.utils.js');
 
 describe('Rest Messages Utils', function () {
@@ -63,7 +63,7 @@ describe('Rest Messages Utils', function () {
     };
 
     // call
-    let response = await RestControllerUtils.patch(controller, req, res, next);
+    let response = await BaseControllerUtils.patch(controller, req, res, next);
     console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
 
     // check
@@ -121,7 +121,7 @@ describe('Rest Messages Utils', function () {
     };
 
     // call
-    let response = await RestControllerUtils.patch(controller, req, res, next);
+    let response = await BaseControllerUtils.patch(controller, req, res, next);
     console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
 
     // check
@@ -165,7 +165,7 @@ describe('Rest Messages Utils', function () {
     };
 
     // call
-    let response = await RestControllerUtils.patch(controller, req, res, next);
+    let response = await BaseControllerUtils.patch(controller, req, res, next);
     console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
 
     // check
@@ -207,7 +207,7 @@ describe('Rest Messages Utils', function () {
     };
 
     // call
-    let response = await RestControllerUtils.patch(controller, req, res, next);
+    let response = await BaseControllerUtils.patch(controller, req, res, next);
     console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
 
     // check

@@ -6,7 +6,7 @@ const sinon = require('sinon');
 
 const CommonUtils = require('../../utils/common.utils.js');
 const RestMessagesUtils = require('../../utils/rest-messages.utils.js');
-const RestControllerUtils = require('../../utils/rest-controller.utils.js');
+const BaseControllerUtils = require('../../utils/base-controller.utils.js');
 const RestApiUtils = require('../../utils/rest-api.utils.js');
 
 describe('Rest Messages Utils', function () {
@@ -27,12 +27,11 @@ describe('Rest Messages Utils', function () {
   after(async function () {});
 
   /**
-   * put with success
+   * post with success
    */
-  it('should call put with success', async () => {
+  it('should call post with success', async () => {
     let req = {
       _ctx: _.cloneDeep(_ctx),
-      params: { id: 'id1' },
       body: {
         name: 'name',
       },
@@ -47,13 +46,13 @@ describe('Rest Messages Utils', function () {
         },
       },
       service: {
-        put: sinon.stub().callsFake((objID, objInfo) => {
+        post: sinon.stub().callsFake((objInfo) => {
           return {
             value: {
-              id: objID,
+              id: 'id1',
               name: objInfo.name,
               type: 'type',
-              status: 'status',
+              status: 'pending',
             },
           };
         }),
@@ -61,30 +60,29 @@ describe('Rest Messages Utils', function () {
     };
 
     // call
-    let response = await RestControllerUtils.put(controller, req, res, next);
+    let response = await BaseControllerUtils.post(controller, req, res, next);
     console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
 
     // check
-    chai.expect(controller.service.put.callCount).to.equal(1);
+    chai.expect(controller.service.post.callCount).to.equal(1);
 
     chai.expect(response).to.deep.equal({
-      status: 200,
+      status: 201,
       value: {
         id: 'id1',
         name: 'name',
         type: 'type',
-        status: 'status',
+        status: 'pending',
       },
     });
   }).timeout(10000);
 
   /**
-   * fail to put due to invalid request
+   * post fail due to invalid request
    */
-  it('should fail to put due to invalid request', async () => {
+  it('should post fail due to invalid request', async () => {
     let req = {
       _ctx: _.cloneDeep(_ctx),
-      params: { id: 'id1' },
       body: {
         name: 'name',
       },
@@ -103,13 +101,13 @@ describe('Rest Messages Utils', function () {
         },
       },
       service: {
-        put: sinon.stub().callsFake((objID, objInfo) => {
+        post: sinon.stub().callsFake((objInfo) => {
           return {
             value: {
-              id: objID,
+              id: 'id1',
               name: objInfo.name,
               type: 'type',
-              status: 'status',
+              status: 'pending',
             },
           };
         }),
@@ -117,11 +115,11 @@ describe('Rest Messages Utils', function () {
     };
 
     // call
-    let response = await RestControllerUtils.put(controller, req, res, next);
+    let response = await BaseControllerUtils.post(controller, req, res, next);
     console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
 
     // check
-    chai.expect(controller.service.put.callCount).to.equal(0);
+    chai.expect(controller.service.post.callCount).to.equal(0);
 
     chai.expect(response).to.deep.equal({
       status: 400,
@@ -132,12 +130,11 @@ describe('Rest Messages Utils', function () {
   }).timeout(10000);
 
   /**
-   * fail put
+   * post fail
    */
-  it('should fail to put', async () => {
+  it('should post fail', async () => {
     let req = {
       _ctx: _.cloneDeep(_ctx),
-      params: { id: 'id1' },
       body: {
         name: 'name',
       },
@@ -152,62 +149,22 @@ describe('Rest Messages Utils', function () {
         },
       },
       service: {
-        put: sinon.stub().callsFake((objID, objInfo) => {
+        post: sinon.stub().callsFake((objInfo) => {
           return { error: { message: 'Test error message', error: new Error('Test error').toString() } };
         }),
       },
     };
 
     // call
-    let response = await RestControllerUtils.put(controller, req, res, next);
+    let response = await BaseControllerUtils.post(controller, req, res, next);
     console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
 
     // check
-    chai.expect(controller.service.put.callCount).to.equal(1);
+    chai.expect(controller.service.post.callCount).to.equal(1);
 
     chai.expect(response).to.deep.equal({
       status: 500,
       error: 'Error: Test error',
-    });
-  }).timeout(10000);
-
-  /**
-   * fail put not found
-   */
-  it('should fail to put - not found', async () => {
-    let req = {
-      _ctx: _.cloneDeep(_ctx),
-      params: { id: 'id1' },
-      body: {
-        name: 'name',
-      },
-    };
-
-    // stub
-    let controller = {
-      name: 'Service',
-      schema: {
-        validate: () => {
-          return {};
-        },
-      },
-      service: {
-        put: sinon.stub().callsFake((objID, objInfo) => {
-          return { value: null };
-        }),
-      },
-    };
-
-    // call
-    let response = await RestControllerUtils.put(controller, req, res, next);
-    console.log(`\nTest returned: ${JSON.stringify(response, null, 2)}\n`);
-
-    // check
-    chai.expect(controller.service.put.callCount).to.equal(1);
-
-    chai.expect(response).to.deep.equal({
-      status: 404,
-      error: 'id1',
     });
   }).timeout(10000);
 });

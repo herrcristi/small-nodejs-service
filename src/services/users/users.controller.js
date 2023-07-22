@@ -5,7 +5,7 @@ const Joi = require('joi');
 
 const RestApiUtils = require('../../core/utils/rest-api.utils');
 const RestMsgUtils = require('../../core/utils/rest-messages.utils');
-const RestControllerUtils = require('../../core/utils/rest-controller.utils');
+const BaseControllerUtils = require('../../core/utils/base-controller.utils');
 
 const UsersConstants = require('./users.constants');
 const UsersService = require('./users.service');
@@ -60,8 +60,8 @@ const Public = {
    */
   getAll: async (req, res, next) => {
     // call base implementation -> { status, error?, value? }
-    const result = await RestControllerUtils.getAll(Config.Controller, req, res, next);
-    await RestControllerUtils.reply(Config.Controller, result, req, res, next);
+    const result = await BaseControllerUtils.getAll(Config.Controller, req, res, next);
+    await BaseControllerUtils.reply(Config.Controller, result, req, res, next);
   },
 
   /**
@@ -69,8 +69,8 @@ const Public = {
    */
   getOne: async (req, res, next) => {
     // call base implementation -> { status, error?, value? }
-    const result = await RestControllerUtils.getOne(Config.Controller, req, res, next);
-    await RestControllerUtils.reply(Config.Controller, result, req, res, next);
+    const result = await BaseControllerUtils.getOne(Config.Controller, req, res, next);
+    await BaseControllerUtils.reply(Config.Controller, result, req, res, next);
   },
 
   /**
@@ -78,8 +78,8 @@ const Public = {
    */
   post: async (req, res, next) => {
     // call base implementation -> { status, error?, value? }
-    const result = await RestControllerUtils.post({ ...Config.Controller, schema: Validators.Post }, req, res, next);
-    await RestControllerUtils.reply(Config.Controller, result, req, res, next);
+    const result = await BaseControllerUtils.post({ ...Config.Controller, schema: Validators.Post }, req, res, next);
+    await BaseControllerUtils.reply(Config.Controller, result, req, res, next);
   },
 
   /**
@@ -87,8 +87,8 @@ const Public = {
    */
   delete: async (req, res, next) => {
     // call base implementation -> { status, error?, value? }
-    const result = await RestControllerUtils.delete(Config.Controller, req, res, next);
-    await RestControllerUtils.reply(Config.Controller, result, req, res, next);
+    const result = await BaseControllerUtils.delete(Config.Controller, req, res, next);
+    await BaseControllerUtils.reply(Config.Controller, result, req, res, next);
   },
 
   /**
@@ -96,8 +96,8 @@ const Public = {
    */
   patch: async (req, res, next) => {
     // call base implementation -> { status, error?, value? }
-    const result = await RestControllerUtils.patch(Config.Controller, req, res, next);
-    await RestControllerUtils.reply(Config.Controller, result, req, res, next);
+    const result = await BaseControllerUtils.patch(Config.Controller, req, res, next);
+    await BaseControllerUtils.reply(Config.Controller, result, req, res, next);
   },
 
   /**
@@ -105,8 +105,8 @@ const Public = {
    */
   put: async (req, res, next) => {
     // call base implementation -> { status, error?, value? }
-    const result = await RestControllerUtils.put(Config.Controller, req, res, next);
-    await RestControllerUtils.reply(Config.Controller, result, req, res, next);
+    const result = await BaseControllerUtils.put(Config.Controller, req, res, next);
+    await BaseControllerUtils.reply(Config.Controller, result, req, res, next);
   },
 };
 

@@ -16,5 +16,6 @@ For the backend part every entity should show
 - mongo access
 - notification
 - calls between difference services
+- authentication
+- translation
 - unit tests with high coverage of the code
-

@@ -7,11 +7,7 @@ const sinon = require('sinon');
 const axios = require('axios');
 const MockAdapter = require('axios-mock-adapter');
 
-const CommonUtils = require('../../utils/common.utils.js');
-const RestMessagesUtils = require('../../utils/rest-messages.utils.js');
 const RestCommsUtils = require('../../utils/rest-communications.utils.js');
-const RestControllerUtils = require('../../utils/rest-controller.utils.js');
-const RestApiUtils = require('../../utils/rest-api.utils.js');
 
 describe('Rest Communications Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };

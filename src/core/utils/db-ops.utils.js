@@ -10,6 +10,7 @@ const Utils = {
   error: (msg, time, _ctx) => {
     return {
       time: new Date() - time /*milliseconds*/,
+      status: 500,
       error: { message: msg, error: new Error(msg) },
     };
   },
@@ -18,82 +19,89 @@ const Utils = {
 const Public = {
   /**
    * get all
+   * config: { serviceName, collection }
    * filter: { filter, projection, limit, skip, sort }
-   * return: { error: { message, error } } or { value }
+   * return: { status, value } or { status, error: { message, error } }
    */
-  getAll: async (filter, _ctx) => {
+  getAll: async (config, filter, _ctx) => {
     const time = new Date();
 
     return Utils.error('Not implemented', time, _ctx);
   },
 
-  getAllCount: async (filter, _ctx) => {
+  getAllCount: async (config, filter, _ctx) => {
     const time = new Date();
 
     return Utils.error('Not implemented', time, _ctx);
   },
 
-  getAllByIDs: async (ids, projection, _ctx) => {
-    return Public.getAll(
-      {
-        filter: { id: { $in: ids } },
-        projection,
-      },
-      _ctx
-    );
+  getAllByIDs: async (config, ids, projection, _ctx) => {
+    return Public.getAll(config, { filter: { id: { $in: ids } }, projection }, _ctx);
   },
 
   /**
    * get one
-   * return: { error: { message, error } } or { value }
+   * config: { serviceName, collection }
+   * return: { status, value } or { status, error: { message, error } }
    */
-  getOne: async (objID, projection, _ctx) => {
+  getOne: async (config, objID, projection, _ctx) => {
     const time = new Date();
+
+    // 200, 404
     return Utils.error('Not implemented', time, _ctx);
   },
 
   /**
    * post
-   * return: { error: { message, error } } or { value }
+   * config: { serviceName, collection }
+   * return: { status, value } or { status, error: { message, error } }
    */
-  post: async (objInfo, _ctx) => {
+  post: async (config, objInfo, _ctx) => {
     const time = new Date();
 
     objInfo.id = objInfo.id || CommonUtils.uuidc();
     objInfo.createdTimestamp = new Date();
     objInfo.lastModifiedTimestamp = objInfo.createdTimestamp;
 
+    // 201
     return Utils.error('Not implemented', time, _ctx);
   },
 
   /**
    * delete
-   * return: { error: { message, error } } or { value }
+   * config: { serviceName, collection }
+   * return: { status, value } or { status, error: { message, error } }
    */
-  delete: async (objID, projection, _ctx) => {
+  delete: async (config, objID, projection, _ctx) => {
     const time = new Date();
 
+    // 200, 404
     return Utils.error('Not implemented', time, _ctx);
   },
 
   /**
    * put
-   * return: { error: { message, error } } or { value }
+   * config: { serviceName, collection }
+   * return: { status, value } or { status, error: { message, error } }
    */
-  put: async (objID, objInfo, projection, _ctx) => {
+  put: async (config, objID, objInfo, projection, _ctx) => {
     const time = new Date();
     objInfo.lastModifiedTimestamp = new Date();
 
+    // 200, 404
     return Utils.error('Not implemented', time, _ctx);
   },
 
   /**
    * patch
-   * return: { error: { message, error } } or { value }
+   * config: { serviceName, collection }
+   * return: { status, value } or { status, error: { message, error } }
    */
-  patch: async (objID, patchInfo, projection, _ctx) => {
+  patch: async (config, objID, patchInfo, projection, _ctx) => {
     const time = new Date();
     //patchInfo.set.lastModifiedTimestamp = new Date();
+
+    // 200, 404
     return Utils.error('Not implemented', time, _ctx);
   },
 };
