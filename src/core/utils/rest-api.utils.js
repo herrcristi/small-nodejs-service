@@ -37,6 +37,7 @@ const Public = {
       return filter;
     } catch (e) {
       return {
+        status: 400,
         error: {
           message: e.message || 'Failed to validate query',
           error: e,

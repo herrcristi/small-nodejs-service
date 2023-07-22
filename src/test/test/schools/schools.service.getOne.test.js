@@ -6,7 +6,7 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
-const DbOpsUtils = require('../../../core/utils/db-ops.utils');
+const BaseServiceUtils = require('../../../core/utils/base-service.utils');
 
 const TestConstants = require('../../test-constants.js');
 const SchoolsConstants = require('../../../services/schools/schools.constants.js');
@@ -33,9 +33,9 @@ describe('Schools Service', function () {
     const testSchool = testSchools[0];
 
     // stub
-    let stubDbGetOne = sinon.stub(DbOpsUtils, 'getOne').callsFake(() => {
-      console.log(`\nDbOpsUtils.getOne called\n`);
-      return { value: testSchool };
+    let stubDbGetOne = sinon.stub(BaseServiceUtils, 'getOne').callsFake(() => {
+      console.log(`\nBaseServiceUtils.getOne called\n`);
+      return { status: 200, value: { ...testSchool } };
     });
 
     // call
@@ -44,6 +44,9 @@ describe('Schools Service', function () {
 
     // check
     chai.expect(stubDbGetOne.callCount).to.equal(1);
-    chai.expect(res.value).to.deep.equal({ ...testSchool });
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: { ...testSchool },
+    });
   }).timeout(10000);
 });

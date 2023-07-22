@@ -6,7 +6,7 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
-const DbOpsUtils = require('../../../core/utils/db-ops.utils');
+const BaseServiceUtils = require('../../../core/utils/base-service.utils');
 
 const TestConstants = require('../../test-constants.js');
 const SchoolsConstants = require('../../../services/schools/schools.constants.js');
@@ -32,9 +32,9 @@ describe('Schools Service', function () {
     const testSchools = _.cloneDeep(TestConstants.Schools);
 
     // stub
-    let stubDbGetAll = sinon.stub(DbOpsUtils, 'getAll').callsFake((filter) => {
-      console.log(`\nDbOpsUtils.getAll called\n`);
-      return { value: testSchools };
+    let stubDbGetAll = sinon.stub(BaseServiceUtils, 'getAll').callsFake((config, filter) => {
+      console.log(`\nBaseServiceUtils.getAll called\n`);
+      return { status: 200, value: testSchools };
     });
 
     // call
@@ -43,7 +43,10 @@ describe('Schools Service', function () {
 
     // check
     chai.expect(stubDbGetAll.callCount).to.equal(1);
-    chai.expect(res.value).to.deep.equal([...testSchools]);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: testSchools,
+    });
   }).timeout(10000);
 
   /**
@@ -53,9 +56,9 @@ describe('Schools Service', function () {
     const testSchools = _.cloneDeep(TestConstants.Schools);
 
     // stub
-    let stubDbGetAll = sinon.stub(DbOpsUtils, 'getAll').callsFake((filter) => {
-      console.log(`\nDbOpsUtils.getAll called\n`);
-      return { error: { message: 'Test error message', error: new Error('Test error') } };
+    let stubDbGetAll = sinon.stub(BaseServiceUtils, 'getAll').callsFake((config, filter) => {
+      console.log(`\nBaseServiceUtils.getAll called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 
     // call
@@ -64,6 +67,12 @@ describe('Schools Service', function () {
 
     // check
     chai.expect(stubDbGetAll.callCount).to.equal(1);
-    chai.expect(res.error.message).to.deep.include('Test error message');
+    chai.expect(res).to.deep.equal({
+      status: 400,
+      error: {
+        message: 'Test error message',
+        error: 'Error: Test error',
+      },
+    });
   }).timeout(10000);
 });

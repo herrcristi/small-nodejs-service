@@ -28,14 +28,19 @@ describe('Schools Controller', function () {
     const testSchools = _.cloneDeep(TestConstants.Schools);
 
     // stub
-    let stubServiceGetAll = sinon.stub(SchoolsService, 'getAll').callsFake((filter) => {
-      console.log(`\nSchoolService.getAll called\n`);
-      return { value: testSchools };
-    });
-
-    let stubServiceGetAllCount = sinon.stub(SchoolsService, 'getAllCount').callsFake((filter) => {
-      console.log(`\nSchoolService.getAllCount called\n`);
-      return { value: testSchools.length };
+    let stubServiceGetAll = sinon.stub(SchoolsService, 'getAllForReq').callsFake((filter) => {
+      console.log(`\nSchoolService.getAllForReq called\n`);
+      return {
+        status: 200,
+        value: {
+          data: testSchools,
+          meta: {
+            count: testSchools.length,
+            skip: 0,
+            limit: 0,
+          },
+        },
+      };
     });
 
     // call
@@ -45,7 +50,6 @@ describe('Schools Controller', function () {
     // check
     chai.expect(res.status).to.equal(200);
     chai.expect(stubServiceGetAll.callCount).to.equal(1);
-    chai.expect(stubServiceGetAllCount.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
       data: [...testSchools],
       meta: {
@@ -57,48 +61,47 @@ describe('Schools Controller', function () {
   }).timeout(10000);
 
   /**
-   * get all partial data applying filter with success
+   * get all fail
    */
-  it('should get all partial data applying filter with success', async () => {
+  it('should get all fail', async () => {
     const testSchools = _.cloneDeep(TestConstants.Schools);
 
     // stub
-    let stubServiceGetAll = sinon.stub(SchoolsService, 'getAll').callsFake((filter) => {
-      console.log(`\nSchoolService.getAll called\n`);
-      return { value: testSchools };
-    });
-
-    let stubServiceGetAllCount = sinon.stub(SchoolsService, 'getAllCount').callsFake((filter) => {
-      console.log(`\nSchoolService.getAllCount called\n`);
-      return { value: testSchools.length + 1 };
+    let stubServiceGetAll = sinon.stub(SchoolsService, 'getAllForReq').callsFake((filter) => {
+      console.log(`\nSchoolService.getAllForReq called\n`);
+      return {
+        status: 400,
+        error: { message: 'Test error message', error: new Error('Test error').toString() },
+      };
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .get(`${SchoolsConstants.ApiPath}?name!=/school/i&limit=2&skip=0`);
+    let res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
-    chai.expect(res.status).to.equal(206);
+    chai.expect(res.status).to.equal(400);
     chai.expect(stubServiceGetAll.callCount).to.equal(1);
-    chai.expect(stubServiceGetAllCount.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      data: [...testSchools],
-      meta: {
-        count: testSchools.length + 1,
-        limit: 2,
-        skip: 0,
+      message: 'Request is not valid',
+      error: {
+        message: 'Test error message',
+        error: 'Error: Test error',
       },
     });
   }).timeout(10000);
 
   /**
-   * get all failed with exception
+   * get all fail with exception
    */
-  it('should get all failed with exception', async () => {
+  it('should get all fail with exception', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+
     // stub
-    sinon.stub(SchoolsService, 'getAll').throws('Test exception');
+    let stubServiceGetAll = sinon.stub(SchoolsService, 'getAllForReq').callsFake((filter) => {
+      console.log(`\nSchoolService.getAllForReq called\n`);
+      throw new Error('Test error');
+    });
 
     // call
     let res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}`);
@@ -106,6 +109,7 @@ describe('Schools Controller', function () {
 
     // check
     chai.expect(res.status).to.equal(500);
-    chai.expect(res.body.error).to.include('Test exception');
+    chai.expect(stubServiceGetAll.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
   }).timeout(10000);
 });

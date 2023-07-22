@@ -16,6 +16,7 @@ require('./schools.controller.patch.test.js');
 require('./schools.rest.test.js');
 
 // service tests
+require('./schools.service.getAllForReq.test.js');
 require('./schools.service.getAll.test.js');
 require('./schools.service.getAllCount.test.js');
 require('./schools.service.getAllByIDs.test.js');

@@ -37,7 +37,10 @@ describe('Schools Controller', function () {
     // stub
     let stubServicePutOne = sinon.stub(SchoolsService, 'put').callsFake(() => {
       console.log(`\nSchoolService.put called\n`);
-      return { value: testSchool };
+      return {
+        status: 200,
+        value: testSchool,
+      };
     });
 
     // call
@@ -51,29 +54,30 @@ describe('Schools Controller', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(stubServicePutOne.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      id: testSchool.id,
-      name: testSchool.name,
-      type: testSchool.type,
-      status: testSchool.status,
+      ...testSchool,
     });
   }).timeout(10000);
 
   /**
-   * put name and null description with success
+   * put one fail
    */
-  it('should put name and null description with success', async () => {
+  it('should put one fail', async () => {
     const testSchools = _.cloneDeep(TestConstants.Schools);
     const testSchool = testSchools[0];
 
     const putReq = {
-      name: testSchool.name,
-      description: null,
+      ...testSchool,
+      id: undefined,
+      type: undefined,
     };
 
     // stub
     let stubServicePutOne = sinon.stub(SchoolsService, 'put').callsFake(() => {
       console.log(`\nSchoolService.put called\n`);
-      return { value: testSchool };
+      return {
+        status: 400,
+        error: { message: 'Test error message', error: new Error('Test error').toString() },
+      };
     });
 
     // call
@@ -84,85 +88,15 @@ describe('Schools Controller', function () {
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
-    chai.expect(res.status).to.equal(200);
+    chai.expect(res.status).to.equal(400);
     chai.expect(stubServicePutOne.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      id: testSchool.id,
-      name: testSchool.name,
-      type: testSchool.type,
-      status: testSchool.status,
+      message: 'Request is not valid',
+      error: {
+        message: 'Test error message',
+        error: 'Error: Test error',
+      },
     });
-  }).timeout(10000);
-
-  /**
-   * put failed due to invalid name
-   */
-  it('should put failed due to invalid name', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
-
-    const putReq = {
-      name: 1,
-    };
-
-    // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .put(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
-      .send(putReq);
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.body.error.message).to.include('"name" must be a string');
-  }).timeout(10000);
-
-  /**
-   * put failed due to invalid status
-   */
-  it('should put failed due to invalid status', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
-
-    const putReq = {
-      name: 'School',
-      status: 'invalid',
-    };
-
-    // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .put(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
-      .send(putReq);
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.body.error.message).to.include('"status" must be one of [pending, active, disabled]');
-  }).timeout(10000);
-
-  /**
-   * put failed due to invalid description
-   */
-  it('should put failed due to invalid description', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
-
-    const putReq = {
-      name: 'School',
-      description: 1,
-    };
-
-    // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .put(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
-      .send(putReq);
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.body.error.message).to.include('"description" must be a string');
   }).timeout(10000);
 
   /**

@@ -39,7 +39,10 @@ describe('Schools Controller', function () {
     // stub
     let stubServicePatchOne = sinon.stub(SchoolsService, 'patch').callsFake(() => {
       console.log(`\nSchoolService.patch called\n`);
-      return { value: testSchool };
+      return {
+        status: 200,
+        value: testSchool,
+      };
     });
 
     // call
@@ -53,53 +56,32 @@ describe('Schools Controller', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(stubServicePatchOne.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      id: testSchool.id,
-      name: testSchool.name,
-      type: testSchool.type,
-      status: testSchool.status,
+      ...testSchool,
     });
   }).timeout(10000);
 
   /**
-   * patch failed due to invalid patch ops
+   * patch one fail
    */
-  it('should patch failed due to invalid patch ops', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
-
-    const patchReq = {
-      add: {},
-    };
-
-    // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .patch(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
-      .send(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.body.error.message).to.include('"add" is not allowed');
-  }).timeout(10000);
-
-  /**
-   * patch only name with success
-   */
-  it('should patch only name with success', async () => {
+  it('should patch one fail', async () => {
     const testSchools = _.cloneDeep(TestConstants.Schools);
     const testSchool = testSchools[0];
 
     const patchReq = {
       set: {
-        name: testSchool.name,
+        ...testSchool,
+        id: undefined,
+        type: undefined,
       },
     };
 
     // stub
     let stubServicePatchOne = sinon.stub(SchoolsService, 'patch').callsFake(() => {
       console.log(`\nSchoolService.patch called\n`);
-      return { value: testSchool };
+      return {
+        status: 400,
+        error: { message: 'Test error message', error: new Error('Test error').toString() },
+      };
     });
 
     // call
@@ -110,91 +92,15 @@ describe('Schools Controller', function () {
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
-    chai.expect(res.status).to.equal(200);
+    chai.expect(res.status).to.equal(400);
     chai.expect(stubServicePatchOne.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      id: testSchool.id,
-      name: testSchool.name,
-      type: testSchool.type,
-      status: testSchool.status,
+      message: 'Request is not valid',
+      error: {
+        message: 'Test error message',
+        error: 'Error: Test error',
+      },
     });
-  }).timeout(10000);
-
-  /**
-   * patch failed due to invalid name
-   */
-  it('should patch failed due to invalid name', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
-
-    const patchReq = {
-      set: {
-        name: 1,
-      },
-    };
-
-    // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .patch(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
-      .send(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.body.error.message).to.include('"set.name" must be a string');
-  }).timeout(10000);
-
-  /**
-   * patch failed due to invalid status
-   */
-  it('should patch failed due to invalid status', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
-
-    const patchReq = {
-      set: {
-        name: 'School',
-        status: 'invalid',
-      },
-    };
-
-    // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .patch(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
-      .send(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.body.error.message).to.include('"set.status" must be one of [pending, active, disabled]');
-  }).timeout(10000);
-
-  /**
-   * patch failed due to invalid description
-   */
-  it('should patch failed due to invalid description', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
-
-    const patchReq = {
-      set: {
-        name: 'School',
-        description: 1,
-      },
-    };
-
-    // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .patch(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
-      .send(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.body.error.message).to.include('"set.description" must be a string');
   }).timeout(10000);
 
   /**

@@ -20,7 +20,10 @@ const Private = {
    * { local: {
    *    'service1': service1,
    *    'service2': service2
-   * } }
+   * },
+   * rest: {
+   *    'service1': { protocol, host, port, path }
+   *  }} }
    */
   Config: null,
 
@@ -143,11 +146,12 @@ const Public = {
     if (r.error) {
       return r;
     }
-    return { value: r.value.data, meta: r.value.meta };
+    return { status: 200, value: r.value.data, meta: r.value.meta };
   },
 
   /**
    * get all by ids with projection
+   * projection: {id:1, name:1, ...}
    */
   getAllByIDs: async (serviceName, ids, projection, _ctx) => {
     const localService = Private.Config.local[serviceName];
@@ -171,7 +175,7 @@ const Public = {
       data = data.concat(r.value.data);
     }
 
-    return { value: data };
+    return { status: 200, value: data };
   },
 
   /**
