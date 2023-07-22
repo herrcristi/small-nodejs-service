@@ -130,6 +130,7 @@ describe('Rest Communications Utils', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai.expect(res).to.deep.equal({
+      status: 200,
       value: [
         {
           id: 'id1',

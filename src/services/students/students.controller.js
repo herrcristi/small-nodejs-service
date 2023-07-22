@@ -6,7 +6,6 @@ const Joi = require('joi');
 
 const RestApiUtils = require('../../core/utils/rest-api.utils');
 const RestMsgUtils = require('../../core/utils/rest-messages.utils');
-const BaseControllerUtils = require('../../core/utils/base-controller.utils');
 
 const StudentsConstants = require('./students.constants');
 const StudentsService = require('./students.service');

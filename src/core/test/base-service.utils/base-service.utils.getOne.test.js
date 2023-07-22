@@ -6,10 +6,10 @@ const sinon = require('sinon');
 
 const CommonUtils = require('../../utils/common.utils.js');
 const RestMessagesUtils = require('../../utils/rest-messages.utils.js');
-const BaseControllerUtils = require('../../utils/base-controller.utils.js');
+const BaseServiceUtils = require('../../utils/base-service.utils.js');
 const RestApiUtils = require('../../utils/rest-api.utils.js');
 
-describe('Rest Messages Utils', function () {
+describe('Base Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
 
   let res = {};

@@ -5,7 +5,6 @@ const Joi = require('joi');
 
 const RestApiUtils = require('../../core/utils/rest-api.utils');
 const RestMsgUtils = require('../../core/utils/rest-messages.utils');
-const BaseControllerUtils = require('../../core/utils/base-controller.utils');
 
 const UsersConstants = require('./users.constants');
 const UsersService = require('./users.service');
