@@ -22,16 +22,19 @@ describe('Schools Controller', function () {
   after(async function () {});
 
   /**
-   * delete one with success
+   * delete with success
    */
-  it('should delete one with success', async () => {
+  it('should delete with success', async () => {
     const testSchools = _.cloneDeep(TestConstants.Schools);
     const testSchool = testSchools[0];
 
     // stub
-    let stubServiceDeleteOne = sinon.stub(SchoolsService, 'delete').callsFake(() => {
+    let stubServiceDelete = sinon.stub(SchoolsService, 'delete').callsFake(() => {
       console.log(`\nSchoolService.delete called\n`);
-      return { value: testSchool };
+      return {
+        status: 200,
+        value: testSchool,
+      };
     });
 
     // call
@@ -40,27 +43,24 @@ describe('Schools Controller', function () {
 
     // check
     chai.expect(res.status).to.equal(200);
-    chai.expect(stubServiceDeleteOne.callCount).to.equal(1);
-    chai.expect(res.body).to.deep.equal({
-      id: testSchool.id,
-      name: testSchool.name,
-      type: testSchool.type,
-      status: testSchool.status,
-    });
+    chai.expect(stubServiceDelete.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal({ ...testSchool });
   }).timeout(10000);
 
   /**
-   * delete one not found
+   * delete fail
    */
-  it('should delete one not found', async () => {
+  it('should delete fail', async () => {
     const testSchools = _.cloneDeep(TestConstants.Schools);
     const testSchool = testSchools[0];
 
     // stub
-    let stubServiceDeleteOne = sinon.stub(SchoolsService, 'delete').callsFake((objID) => {
+    let stubServiceDelete = sinon.stub(SchoolsService, 'delete').callsFake((filter) => {
       console.log(`\nSchoolService.delete called\n`);
-      console.log(objID);
-      return { value: null };
+      return {
+        status: 400,
+        error: { message: 'Test error message', error: new Error('Test error').toString() },
+      };
     });
 
     // call
@@ -68,21 +68,29 @@ describe('Schools Controller', function () {
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
-    chai.expect(res.status).to.equal(404);
-    chai.expect(stubServiceDeleteOne.callCount).to.equal(1);
-    chai.expect(res.body.message).to.include('Not found');
-    chai.expect(res.body.error).to.include(testSchool.id);
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubServiceDelete.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal({
+      message: 'Request is not valid',
+      error: {
+        message: 'Test error message',
+        error: 'Error: Test error',
+      },
+    });
   }).timeout(10000);
 
   /**
-   * delete one failed with exception
+   * delete fail with exception
    */
-  it('should delete one failed with exception', async () => {
+  it('should delete fail with exception', async () => {
     const testSchools = _.cloneDeep(TestConstants.Schools);
     const testSchool = testSchools[0];
 
     // stub
-    sinon.stub(SchoolsService, 'delete').throws('Test exception');
+    let stubServiceDelete = sinon.stub(SchoolsService, 'delete').callsFake((filter) => {
+      console.log(`\nSchoolService.delete called\n`);
+      throw new Error('Test error');
+    });
 
     // call
     let res = await chai.request(TestConstants.WebServer).delete(`${SchoolsConstants.ApiPath}/${testSchool.id}`);
@@ -90,6 +98,7 @@ describe('Schools Controller', function () {
 
     // check
     chai.expect(res.status).to.equal(500);
-    chai.expect(res.body.error).to.include('Test exception');
+    chai.expect(stubServiceDelete.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
   }).timeout(10000);
 });

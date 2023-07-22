@@ -22,168 +22,82 @@ describe('Schools Controller', function () {
   after(async function () {});
 
   /**
-   * post one with success
+   * post with success
    */
-  it('should post one with success', async () => {
+  it('should post with success', async () => {
     const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
-
-    // post request does not have id, name or name in schools
-    const postReq = {
-      ...testSchool,
-      id: undefined,
-      type: undefined,
-    };
 
     // stub
-    let stubServicePostOne = sinon.stub(SchoolsService, 'post').callsFake(() => {
-      console.log(`\nSchoolService.post called\n`);
-      return { value: testSchool };
+    let stubServicePost = sinon.stub(SchoolsService, 'post').callsFake(() => {
+      console.log(`\nSchoolService.postcalled\n`);
+      return {
+        status: 201,
+        value: testSchools[0],
+      };
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.ApiPath}`).send(postReq);
+    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.ApiPath}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(201);
-    chai.expect(stubServicePostOne.callCount).to.equal(1);
+    chai.expect(stubServicePost.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      id: testSchool.id,
-      name: testSchool.name,
-      type: testSchool.type,
-      status: testSchool.status,
+      ...testSchools[0],
     });
   }).timeout(10000);
 
   /**
-   * post one failed with exception
+   * post fail
    */
-  it('should post one failed with exception', async () => {
+  it('should post fail', async () => {
     const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
-
-    // post request does not have id, name or name in schools
-    const postReq = {
-      ...testSchool,
-      id: undefined,
-      type: undefined,
-    };
 
     // stub
-    sinon.stub(SchoolsService, 'post').throws('Test exception');
+    let stubServicePost = sinon.stub(SchoolsService, 'post').callsFake((filter) => {
+      console.log(`\nSchoolService.post called\n`);
+      return {
+        status: 400,
+        error: { message: 'Test error message', error: new Error('Test error').toString() },
+      };
+    });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.ApiPath}`).send(postReq);
+    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.ApiPath}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubServicePost.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal({
+      message: 'Request is not valid',
+      error: {
+        message: 'Test error message',
+        error: 'Error: Test error',
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * post fail with exception
+   */
+  it('should post fail with exception', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+
+    // stub
+    let stubServicePost = sinon.stub(SchoolsService, 'post').callsFake((filter) => {
+      console.log(`\nSchoolService.post called\n`);
+      throw new Error('Test error');
+    });
+
+    // call
+    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.ApiPath}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(500);
-    chai.expect(res.body.error).to.include('Test exception');
-  }).timeout(10000);
-
-  /**
-   * post one failed due to no name
-   */
-  it('should post one failed due to no name', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
-
-    // post request does not have id, name or name in schools
-    const postReq = {};
-
-    // call
-    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.ApiPath}`).send(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.body.error.message).to.include('"name" is required');
-  }).timeout(10000);
-
-  /**
-   * post one failed due to empty name
-   */
-  it('should post one failed due to empty name', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
-
-    // post request does not have id, name or name in schools
-    const postReq = {
-      name: '',
-    };
-
-    // call
-    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.ApiPath}`).send(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.body.error.message).to.include('"name" is not allowed to be empty');
-  }).timeout(10000);
-
-  /**
-   * post one failed due to invalid name type
-   */
-  it('should post one failed due to invalid name type', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
-
-    // post request does not have id, name or name in schools
-    const postReq = {
-      name: {},
-    };
-
-    // call
-    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.ApiPath}`).send(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.body.error.message).to.include('"name" must be a string');
-  }).timeout(10000);
-
-  /**
-   * post one failed due to no valid status
-   */
-  it('should post one failed due to no valid status', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
-
-    // post request does not have id, name or name in schools
-    const postReq = {
-      name: 'School',
-      status: 1,
-    };
-
-    // call
-    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.ApiPath}`).send(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.body.error.message).to.include('"status" must be one of [pending, active, disabled]');
-  }).timeout(10000);
-
-  /**
-   * post one failed due to no valid description
-   */
-  it('should post one failed due to no valid description', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
-
-    // post request does not have id, name or name in schools
-    const postReq = {
-      name: 'School',
-      description: 1,
-    };
-
-    // call
-    let res = await chai.request(TestConstants.WebServer).post(`${SchoolsConstants.ApiPath}`).send(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.body.error.message).to.include('"description" must be a string');
+    chai.expect(stubServicePost.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
   }).timeout(10000);
 });

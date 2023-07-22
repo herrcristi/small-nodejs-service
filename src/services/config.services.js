@@ -30,6 +30,11 @@ const Public = {
       await database.init();
     }
 
+    // init services
+    for (const service of [SchoolsService, UsersService, StudentsService]) {
+      await service.init();
+    }
+
     // init the communication
     const config = {
       local: {

@@ -8,6 +8,11 @@ const StudentsConstants = require('./students.constants');
 
 const Public = {
   /**
+   * init
+   */
+  init: async () => {},
+
+  /**
    * get all
    * filter: { filter, projection, limit, skip, sort }
    */
