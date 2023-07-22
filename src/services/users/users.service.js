@@ -78,7 +78,7 @@ const Private = {
     // get all schools ids first
     let schoolsMap = {};
     for (const user of users) {
-      for (const school of user.schools) {
+      for (const school of user.schools || []) {
         schoolsMap[school.id] = 1;
       }
     }
@@ -164,7 +164,7 @@ const Public = {
   getAllByIDs: async (ids, projection, _ctx) => {
     const config = await Private.getConfig(_ctx);
     let r = await BaseServiceUtils.getAllByIDs(config, ids, projection, _ctx);
-    return projection?.schools ? await Private.fillSchoolsInfo(r, _ctx) : r;
+    return await Private.fillSchoolsInfo(r, _ctx);
   },
 
   /**
