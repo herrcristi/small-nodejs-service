@@ -163,6 +163,7 @@ const Public = {
     if (projection) {
       query += `projection=${Object.keys(projection).join(',')}&`;
     }
+
     //  get in chunks due to limited size of url
     let data = [];
     const chunks = CommonUtils.getChunks(ids, 50);

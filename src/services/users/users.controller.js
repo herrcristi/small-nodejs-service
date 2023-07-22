@@ -6,7 +6,7 @@ const CommonUtils = require('../../core/utils/common.utils.js');
 const RestMessagesUtils = require('../../core/utils/rest-messages.utils.js');
 
 const UsersConstants = require('./users.constants.js');
-const UsersService = require('./users.constants.js');
+const UsersService = require('./users.service.js');
 
 const Public = {
   /**

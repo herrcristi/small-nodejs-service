@@ -67,35 +67,40 @@ const Private = {
   /**
    * get all schools data and fill the users
    */
-  fillSchoolsInfo: async (userResult, _ctx) => {
+  fillSchoolsInfo: async (resUsers, _ctx) => {
     // TODO implement schools notification and here onSchoolNotification instead of fill schools name and status
-    if (userResult.error) {
-      return userResult;
+    if (resUsers.error) {
+      return resUsers;
     }
 
-    const users = userResult.value.data || userResult.value;
+    const users = resUsers.value.data || resUsers.value;
 
     // get all schools ids first
-    const schoolsMap = {};
+    let schoolsMap = {};
     for (const user of users) {
       for (const school of user.schools) {
         schoolsMap[school.id] = 1;
       }
     }
 
+    let schoolsIDs = Object.keys(schoolsMap);
+    if (!schoolsIDs.length) {
+      console.log(`Skipping calling schools to fill info`);
+      return resUsers;
+    }
+
     // get all schools
-    const schoolsIDs = Object.keys(schoolsMap);
     let rs = await SchoolsRest.getAllByIDs(schoolsIDs, { id: 1, name: 1, type: 1, status: 1 }, _ctx);
     if (rs.error) {
       return r;
     }
 
-    if (schoolsIDs.length != rs.value.data?.length) {
+    if (schoolsIDs.length != rs.value.length) {
       console.log(`Not all schools were found`);
     }
 
     schoolsMap = {};
-    for (const school of rs.value.data) {
+    for (const school of rs.value) {
       schoolsMap[school.id] = school;
     }
 
@@ -110,7 +115,7 @@ const Private = {
       }
     }
 
-    return r;
+    return resUsers;
   },
 };
 
