@@ -5,9 +5,12 @@
  */
 
 // controller tests
-require('./users.controller.getAll.test');
-require('./users.controller.getOne.test');
-require('./users.controller.post.test');
-require('./users.controller.delete.test');
-require('./users.controller.put.test');
-require('./users.controller.patch.test');
+require('./users.controller.getAll.test.js');
+require('./users.controller.getOne.test.js');
+require('./users.controller.post.test.js');
+require('./users.controller.delete.test.js');
+require('./users.controller.put.test.js');
+require('./users.controller.patch.test.js');
+
+// rest tests
+require('./users.rest.test.js');
