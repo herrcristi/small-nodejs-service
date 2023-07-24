@@ -29,7 +29,7 @@ describe('Schools Controller', function () {
 
     // stub
     let stubServiceGetAll = sinon.stub(SchoolsService, 'getAllForReq').callsFake((filter) => {
-      console.log(`\nSchoolService.getAllForReq called\n`);
+      console.log(`\nSchoolsService.getAllForReq called\n`);
       return {
         status: 200,
         value: {
@@ -68,7 +68,7 @@ describe('Schools Controller', function () {
 
     // stub
     let stubServiceGetAll = sinon.stub(SchoolsService, 'getAllForReq').callsFake((filter) => {
-      console.log(`\nSchoolService.getAllForReq called\n`);
+      console.log(`\nSchoolsService.getAllForReq called\n`);
       return {
         status: 400,
         error: { message: 'Test error message', error: new Error('Test error').toString() },
@@ -99,7 +99,7 @@ describe('Schools Controller', function () {
 
     // stub
     let stubServiceGetAll = sinon.stub(SchoolsService, 'getAllForReq').callsFake((filter) => {
-      console.log(`\nSchoolService.getAllForReq called\n`);
+      console.log(`\nSchoolsService.getAllForReq called\n`);
       throw new Error('Test error');
     });
 

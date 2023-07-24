@@ -10,7 +10,7 @@ const TestConstants = require('../../test-constants.js');
 const UsersConstants = require('../../../services/users/users.constants.js');
 const UsersService = require('../../../services/users/users.service.js');
 
-describe('Users', function () {
+describe('Users Controller', function () {
   before(async function () {});
 
   beforeEach(async function () {});
@@ -22,16 +22,19 @@ describe('Users', function () {
   after(async function () {});
 
   /**
-   * get one with success
+   * getOne with success
    */
-  it('should get one with success', async () => {
+  it('should getOne with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
     // stub
     let stubServiceGetOne = sinon.stub(UsersService, 'getOne').callsFake(() => {
-      console.log(`\nUserService.getOne called\n`);
-      return { value: testUser };
+      console.log(`\nUsersService.getOne called\n`);
+      return {
+        status: 200,
+        value: testUser,
+      };
     });
 
     // call
@@ -41,23 +44,23 @@ describe('Users', function () {
     // check
     chai.expect(res.status).to.equal(200);
     chai.expect(stubServiceGetOne.callCount).to.equal(1);
-    chai.expect(res.body).to.deep.equal({
-      ...testUser,
-    });
+    chai.expect(res.body).to.deep.equal({ ...testUser });
   }).timeout(10000);
 
   /**
-   * get one not found
+   * getOne fail
    */
-  it('should get one not found', async () => {
+  it('should getOne fail', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
     // stub
-    let stubServiceGetOne = sinon.stub(UsersService, 'getOne').callsFake((objID) => {
-      console.log(`\nUserService.getOne called\n`);
-      console.log(objID);
-      return { value: null };
+    let stubServiceGetOne = sinon.stub(UsersService, 'getOne').callsFake((filter) => {
+      console.log(`\nUsersService.getOne called\n`);
+      return {
+        status: 400,
+        error: { message: 'Test error message', error: new Error('Test error').toString() },
+      };
     });
 
     // call
@@ -65,21 +68,29 @@ describe('Users', function () {
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
-    chai.expect(res.status).to.equal(404);
+    chai.expect(res.status).to.equal(400);
     chai.expect(stubServiceGetOne.callCount).to.equal(1);
-    chai.expect(res.body.message).to.include('Not found');
-    chai.expect(res.body.error).to.include(testUser.id);
+    chai.expect(res.body).to.deep.equal({
+      message: 'Request is not valid',
+      error: {
+        message: 'Test error message',
+        error: 'Error: Test error',
+      },
+    });
   }).timeout(10000);
 
   /**
-   * get one failed with exception
+   * getOne fail with exception
    */
-  it('should get one failed with exception', async () => {
+  it('should getOne fail with exception', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
     // stub
-    sinon.stub(UsersService, 'getOne').throws('Test exception');
+    let stubServiceGetOne = sinon.stub(UsersService, 'getOne').callsFake((filter) => {
+      console.log(`\nUsersService.getOne called\n`);
+      throw new Error('Test error');
+    });
 
     // call
     let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUser.id}`);
@@ -87,6 +98,7 @@ describe('Users', function () {
 
     // check
     chai.expect(res.status).to.equal(500);
-    chai.expect(res.body.error).to.include('Test exception');
+    chai.expect(stubServiceGetOne.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
   }).timeout(10000);
 });
