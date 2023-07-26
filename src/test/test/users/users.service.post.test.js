@@ -36,6 +36,7 @@ describe('Users Service', function () {
       ...testUser,
       id: undefined,
       type: undefined,
+      name: undefined,
     };
 
     // stub
@@ -69,8 +70,9 @@ describe('Users Service', function () {
     const postReq = {
       ...testUser,
       id: undefined,
-      type: undefined,
       status: undefined,
+      type: undefined,
+      name: undefined,
     };
 
     // stub

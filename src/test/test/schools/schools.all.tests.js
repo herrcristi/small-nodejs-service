@@ -25,3 +25,5 @@ require('./schools.service.post.test.js');
 require('./schools.service.delete.test.js');
 require('./schools.service.put.test.js');
 require('./schools.service.patch.test.js');
+
+require('./schools.service.schema.test.js');

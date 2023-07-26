@@ -23,16 +23,14 @@ const Schema = {
 };
 
 const Validators = {
-  /**
-   * for post
-   */
   Post: Schema.School.fork(['name'], (x) => x.required() /*make required */),
 
-  /**
-   * for patch allowed operations are add, remove, set, unset
-   */
+  Put: Schema.School,
+
   Patch: Joi.object().keys({
+    // for patch allowed operations are add, remove, set, unset
     set: Schema.School,
+    unset: Joi.array().items(Joi.string().min(1).max(128).valid('description')),
   }),
 };
 
@@ -131,21 +129,24 @@ const Public = {
    * put
    */
   put: async (objID, objInfo, _ctx) => {
-    // TODO add translations
+    // TODO add translations for status
 
     const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.put(config, objID, objInfo, _ctx);
+    return await BaseServiceUtils.put({ ...config, schema: Validators.Put }, objID, objInfo, _ctx);
   },
 
   /**
    * patch
    */
   patch: async (objID, patchInfo, _ctx) => {
-    // TODO add translations
+    // TODO add translations for status
 
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.patch({ ...config, schema: Validators.Patch }, objID, patchInfo, _ctx);
   },
 };
 
-module.exports = { ...Public };
+module.exports = {
+  ...Public,
+  Validators,
+};

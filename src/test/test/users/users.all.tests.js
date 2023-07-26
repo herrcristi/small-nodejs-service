@@ -25,3 +25,5 @@ require('./users.service.post.test.js');
 require('./users.service.delete.test.js');
 require('./users.service.put.test.js');
 require('./users.service.patch.test.js');
+
+require('./users.service.schema.test.js');

@@ -13,40 +13,53 @@ const UsersDatabase = require('./users.database.js');
 /**
  * validation
  */
+const SchemaSchools = Joi.array().items(
+  Joi.object().keys({
+    id: Joi.string().min(1).max(64).required(),
+    roles: Joi.array().items(Joi.string().min(1).max(32).required()).min(1).required(),
+  })
+);
+
 const Schema = {
   User: Joi.object().keys({
     email: Joi.string()
       .email({ tlds: { allow: false } })
       .min(1)
-      .max(64),
+      .max(128),
+    status: Joi.string()
+      .min(1)
+      .max(64)
+      .valid(...Object.values(UsersConstants.Status)),
     firstName: Joi.string().min(1).max(64),
     lastName: Joi.string().min(1).max(64),
-    birthday: Joi.date().prefs({ dateFormat: 'iso' }),
-    phoneNumber: Joi.string().min(1).max(32).optional(),
+    birthday: Joi.date().iso(),
+    phoneNumber: Joi.string()
+      .min(1)
+      .max(32)
+      .regex(/^(\d|\+|\-|\.|' ')*$/), // allow 0-9 + - . in any order
     address: Joi.string().min(1).max(256),
-    schools: Joi.array().items(
-      Joi.object().keys({
-        id: Joi.string().min(1).max(64).required(),
-        roles: Joi.array().items(Joi.string().min(1).max(32).optional()).required(),
-      })
-    ),
+    schools: SchemaSchools,
   }),
 };
 
 const Validators = {
-  /**
-   * for post
-   */
   Post: Schema.User.fork(
     ['email', 'firstName', 'lastName', 'birthday', 'address', 'schools'],
     (x) => x.required() /*make required */
   ),
 
-  /**
-   * for patch allowed operations are add, remove, set, unset
-   */
+  Put: Schema.User,
+
   Patch: Joi.object().keys({
+    // for patch allowed operations are add, remove, set, unset
     set: Schema.User,
+    unset: Joi.array().items(Joi.string().min(1).max(128).valid('phoneNumber')),
+    add: Joi.object().keys({
+      schools: SchemaSchools,
+    }),
+    remove: Joi.object().keys({
+      schools: SchemaSchools,
+    }),
   }),
 };
 
@@ -183,6 +196,7 @@ const Public = {
     // add default status if not set
     objInfo.status = objInfo.status || UsersConstants.Status.Pending;
     objInfo.type = UsersConstants.Type;
+    objInfo.name = `${objInfo.firstName} ${objInfo.lastName}`;
 
     // TODO add translations
 
@@ -219,4 +233,7 @@ const Public = {
   },
 };
 
-module.exports = { ...Public };
+module.exports = {
+  ...Public,
+  Validators,
+};
