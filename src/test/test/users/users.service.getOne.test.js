@@ -9,11 +9,11 @@ chai.use(chaiHttp);
 const BaseServiceUtils = require('../../../core/utils/base-service.utils');
 
 const TestConstants = require('../../test-constants.js');
-const SchoolsConstants = require('../../../services/schools/schools.constants.js');
-const SchoolsService = require('../../../services/schools/schools.service.js');
+const UsersConstants = require('../../../services/users/users.constants');
+const UsersService = require('../../../services/users/users.service.js');
 
-describe('Schools Service', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Schools' };
+describe('Users Service', function () {
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
 
   before(async function () {});
 
@@ -29,24 +29,24 @@ describe('Schools Service', function () {
    * get one with success
    */
   it('should get one with success', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
 
     // stub
     let stubDbGetOne = sinon.stub(BaseServiceUtils, 'getOne').callsFake(() => {
       console.log(`\nBaseServiceUtils.getOne called\n`);
-      return { status: 200, value: { ...testSchool } };
+      return { status: 200, value: { ...testUser } };
     });
 
     // call
-    let res = await SchoolsService.getOne(testSchool.id, { id: 1 }, _ctx);
+    let res = await UsersService.getOne(testUser.id, { id: 1 }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubDbGetOne.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: { ...testSchool },
+      value: { ...testUser },
     });
   }).timeout(10000);
 });

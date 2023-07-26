@@ -9,11 +9,11 @@ chai.use(chaiHttp);
 const BaseServiceUtils = require('../../../core/utils/base-service.utils');
 
 const TestConstants = require('../../test-constants.js');
-const SchoolsConstants = require('../../../services/schools/schools.constants.js');
-const SchoolsService = require('../../../services/schools/schools.service.js');
+const UsersConstants = require('../../../services/users/users.constants.js');
+const UsersService = require('../../../services/users/users.service.js');
 
-describe('Schools Service', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Schools' };
+describe('Users Service', function () {
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
 
   before(async function () {});
 
@@ -29,12 +29,12 @@ describe('Schools Service', function () {
    * patch one with success
    */
   it('should patch one with success', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
 
     const patchReq = {
       set: {
-        ...testSchool,
+        ...testUser,
         id: undefined,
         type: undefined,
       },
@@ -45,19 +45,19 @@ describe('Schools Service', function () {
       console.log(`\nBaseServiceUtils.patch called\n`);
       return {
         status: 200,
-        value: { ...testSchool },
+        value: { ...testUser },
       };
     });
 
     // call
-    let res = await SchoolsService.patch(patchReq, _ctx);
+    let res = await UsersService.patch(patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubDbPatchOne.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: { ...testSchool },
+      value: { ...testUser },
     });
   }).timeout(10000);
 });

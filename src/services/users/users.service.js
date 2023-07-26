@@ -92,7 +92,7 @@ const Private = {
     // get all schools
     let rs = await SchoolsRest.getAllByIDs(schoolsIDs, { id: 1, name: 1, type: 1, status: 1 }, _ctx);
     if (rs.error) {
-      return r;
+      return rs;
     }
 
     if (schoolsIDs.length != rs.value.length) {
@@ -181,8 +181,8 @@ const Public = {
    */
   post: async (objInfo, _ctx) => {
     // add default status if not set
-    objInfo.status = objInfo.status || SchoolsConstants.Status.Pending;
-    objInfo.type = SchoolsConstants.Type;
+    objInfo.status = objInfo.status || UsersConstants.Status.Pending;
+    objInfo.type = UsersConstants.Type;
 
     // TODO add translations
 
