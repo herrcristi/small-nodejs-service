@@ -105,12 +105,13 @@ const Public = {
    * parse config and save it to be used later in calls
    */
   init: async (config) => {
-    console.log(`Current communication config, local service: ${JSON.stringify(config, null, 2)}`);
-
     // save it
     Private.Config = config;
     Private.Config.local = Private.Config.local || {};
     Private.Config.rest = Private.Config.rest || {};
+
+    console.log(`Current communication config, local service: ${JSON.stringify(Object.keys(config.local), null, 2)}`);
+    console.log(`Current communication config, remote service: ${JSON.stringify(config.rest, null, 2)}`);
   },
 
   getConfig: async () => {
@@ -163,6 +164,7 @@ const Public = {
     if (projection) {
       query += `projection=${Object.keys(projection).join(',')}&`;
     }
+
     //  get in chunks due to limited size of url
     let data = [];
     const chunks = CommonUtils.getChunks(ids, 50);

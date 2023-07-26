@@ -2,49 +2,133 @@
  * Users service
  */
 
-const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
+const Joi = require('joi');
 
-const UsersConstants = require('./users.constants.js');
+const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
+
 const SchoolsRest = require('../rest/schools.rest.js');
+const UsersConstants = require('./users.constants.js');
+const UsersDatabase = require('./users.database.js');
 
-const Utils = {
+/**
+ * validation
+ */
+const SchemaSchools = Joi.array().items(
+  Joi.object().keys({
+    id: Joi.string().min(1).max(64).required(),
+    roles: Joi.array().items(Joi.string().min(1).max(32).required()).min(1).required(),
+  })
+);
+
+const Schema = {
+  User: Joi.object().keys({
+    email: Joi.string()
+      .email({ tlds: { allow: false } })
+      .min(1)
+      .max(128),
+    status: Joi.string()
+      .min(1)
+      .max(64)
+      .valid(...Object.values(UsersConstants.Status)),
+    firstName: Joi.string().min(1).max(64),
+    lastName: Joi.string().min(1).max(64),
+    birthday: Joi.date().iso(),
+    phoneNumber: Joi.string()
+      .min(1)
+      .max(32)
+      .regex(/^(\d|\+|\-|\.|' ')*$/), // allow 0-9 + - . in any order
+    address: Joi.string().min(1).max(256),
+    schools: SchemaSchools,
+  }),
+};
+
+const Validators = {
+  Post: Schema.User.fork(
+    ['email', 'firstName', 'lastName', 'birthday', 'address', 'schools'],
+    (x) => x.required() /*make required */
+  ),
+
+  Put: Schema.User,
+
+  Patch: Joi.object().keys({
+    // for patch allowed operations are add, remove, set, unset
+    set: Schema.User,
+    unset: Joi.array().items(Joi.string().min(1).max(128).valid('phoneNumber')),
+    add: Joi.object().keys({
+      schools: SchemaSchools,
+    }),
+    remove: Joi.object().keys({
+      schools: SchemaSchools,
+    }),
+  }),
+};
+
+const Private = {
+  /**
+   * config
+   * returns { serviceName, collection, schema }
+   */
+  getConfig: async (_ctx) => {
+    const config = {
+      serviceName: UsersConstants.ServiceName,
+      collection: await UsersDatabase.collection(_ctx),
+      schema: Schema.User,
+    };
+    return config;
+  },
+
   /**
    * get all schools data and fill the users
    */
-  fillSchoolsInfo: async (users, _ctx) => {
+  fillSchoolsInfo: async (resUsers, _ctx) => {
+    // TODO implement schools notification and here onSchoolNotification instead of fill schools name and status
+    if (resUsers.error) {
+      return resUsers;
+    }
+
+    const users = resUsers.value.data || resUsers.value;
+
     // get all schools ids first
-    const schoolsMap = {};
+    let schoolsMap = {};
     for (const user of users) {
-      for (const school of user.schools) {
+      for (const school of user.schools || []) {
         schoolsMap[school.id] = 1;
       }
     }
 
-    // get all schools
-    const schoolsIDs = Object.keys(schoolsMap);
-    let r = await SchoolsRest.getAllByIDs(schoolsIDs, { id: 1, name: 1, type: 1, status: 1 }, _ctx);
-    if (r.error) {
-      return r;
+    let schoolsIDs = Object.keys(schoolsMap);
+    if (!schoolsIDs.length) {
+      console.log(`Skipping calling schools to fill info`);
+      return resUsers;
     }
 
-    if (schoolsIDs.length != r.value.data?.length) {
+    // get all schools
+    let rs = await SchoolsRest.getAllByIDs(schoolsIDs, { id: 1, name: 1, type: 1, status: 1 }, _ctx);
+    if (rs.error) {
+      return rs;
+    }
+
+    if (schoolsIDs.length != rs.value.length) {
       console.log(`Not all schools were found`);
     }
 
-    for (const school of r.value.data) {
+    schoolsMap = {};
+    for (const school of rs.value) {
       schoolsMap[school.id] = school;
     }
 
     // update info
-    for (const user of users) {
-      for (const school of user.schools) {
+    for (let user of users) {
+      for (let school of user.schools) {
         const schoolDetails = schoolsMap[school.id];
-        school.name = schoolDetails?.name;
-        school.status = schoolDetails?.status;
+        if (schoolDetails) {
+          school.name = schoolDetails.name;
+          school.status = schoolDetails.status;
+        }
       }
     }
 
-    return r;
+    return resUsers;
   },
 };
 
@@ -55,124 +139,101 @@ const Public = {
   init: async () => {},
 
   /**
+   * get all for a request
+   * req: { query }
+   * returns { status, value: {data, meta} } or { status, error }
+   */
+  getAllForReq: async (req, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    let r = await BaseServiceUtils.getAllForReq(config, req, _ctx);
+    return await Private.fillSchoolsInfo(r, _ctx);
+  },
+
+  /**
    * get all
    * filter: { filter, projection, limit, skip, sort }
+   * returns { status, value } or { status, error }
    */
   getAll: async (filter, _ctx) => {
-    let r = await DbOpsUtils.getAll(filter, _ctx);
-    if (r.error) {
-      return r;
-    }
-
-    // TODO implement schools notification and here onSchoolNotification instead of
-    // fill schools name and status
-    let rs = await Utils.fillSchoolsInfo(r.value, _ctx);
-    if (rs.error) {
-      return rs;
-    }
-
-    // return users
-    return r;
+    const config = await Private.getConfig(_ctx);
+    let r = await BaseServiceUtils.getAll(config, filter, _ctx);
+    return await Private.fillSchoolsInfo(r, _ctx);
   },
 
+  /**
+   * get all count
+   * filter: { filter }
+   * returns { status, value } or { status, error }
+   */
   getAllCount: async (filter, _ctx) => {
-    return await DbOpsUtils.getAllCount(filter, _ctx);
+    const config = await Private.getConfig(_ctx);
+    return await BaseServiceUtils.getAllCount(config, filter, _ctx);
   },
 
+  /**
+   * get all by ids
+   * returns { status, value } or { status, error }
+   */
   getAllByIDs: async (ids, projection, _ctx) => {
-    let r = await DbOpsUtils.getAllByIDs(ids, projection, _ctx);
-    if (r.error) {
-      return r;
-    }
-
-    // TODO implement schools notification and here onSchoolNotification instead of
-    // fill schools name and status
-    if (projection?.schools) {
-      let rs = await Utils.fillSchoolsInfo(r.value, _ctx);
-      if (rs.error) {
-        return rs;
-      }
-    }
-
-    // return users
-    return r;
+    const config = await Private.getConfig(_ctx);
+    let r = await BaseServiceUtils.getAllByIDs(config, ids, projection, _ctx);
+    return await Private.fillSchoolsInfo(r, _ctx);
   },
 
   /**
    * get one
+   * returns { status, value } or { status, error }
    */
-  getOne: async (objID, _ctx) => {
-    return await DbOpsUtils.getOne(objID, null /* projection */, _ctx);
+  getOne: async (objID, projection, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    return await BaseServiceUtils.getOne(config, objID, projection, _ctx);
   },
 
   /**
    * post
    */
   post: async (objInfo, _ctx) => {
-    // add name
-    objInfo.name = `${objInfo.firstName} ${objInfo.lastName}`;
+    // add default status if not set
+    objInfo.status = objInfo.status || UsersConstants.Status.Pending;
     objInfo.type = UsersConstants.Type;
+    objInfo.name = `${objInfo.firstName} ${objInfo.lastName}`;
 
-    const r = await DbOpsUtils.post(objInfo, _ctx);
-    if (r.error) {
-      return r;
-    }
+    // TODO add translations
 
-    // TODO raise notification
-
-    return r;
+    const config = await Private.getConfig(_ctx);
+    return await BaseServiceUtils.post({ ...config, schema: Validators.Post }, objInfo, _ctx);
   },
 
   /**
    * delete
    */
   delete: async (objID, _ctx) => {
-    const projection = { id: 1, name: 1, type: 1, status: 1 };
-    const r = await DbOpsUtils.delete(objID, projection, _ctx);
-    if (r.error) {
-      return r;
-    }
-
-    if (r.value) {
-      // TODO raise notification
-    }
-
-    return r;
+    const config = await Private.getConfig(_ctx);
+    return await BaseServiceUtils.delete(config, objID, _ctx);
   },
 
   /**
    * put
    */
   put: async (objID, objInfo, _ctx) => {
-    const projection = { id: 1, name: 1, type: 1, status: 1 };
-    const r = await DbOpsUtils.put(objID, objInfo, projection, _ctx);
-    if (r.error) {
-      return r;
-    }
+    // TODO add translations
 
-    if (r.value) {
-      // TODO raise notification
-    }
-
-    return r;
+    const config = await Private.getConfig(_ctx);
+    return await BaseServiceUtils.put(config, objID, objInfo, _ctx);
   },
 
   /**
    * patch
    */
   patch: async (objID, patchInfo, _ctx) => {
-    const projection = { id: 1, name: 1, type: 1, status: 1 };
-    const r = await DbOpsUtils.patch(objID, patchInfo, projection, _ctx);
-    if (r.error) {
-      return r;
-    }
+    // TODO add translations
 
-    if (r.value) {
-      // TODO raise notification
-    }
-
-    return r;
+    const config = await Private.getConfig(_ctx);
+    return await BaseServiceUtils.patch({ ...config, schema: Validators.Patch }, objID, patchInfo, _ctx);
   },
 };
 
-module.exports = { ...Public };
+module.exports = {
+  ...Public,
+  Validators,
+};

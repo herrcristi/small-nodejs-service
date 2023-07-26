@@ -30,7 +30,7 @@ describe('Schools Controller', function () {
 
     // stub
     let stubServiceDelete = sinon.stub(SchoolsService, 'delete').callsFake(() => {
-      console.log(`\nSchoolService.delete called\n`);
+      console.log(`\nSchoolsService.delete called\n`);
       return {
         status: 200,
         value: testSchool,
@@ -56,7 +56,7 @@ describe('Schools Controller', function () {
 
     // stub
     let stubServiceDelete = sinon.stub(SchoolsService, 'delete').callsFake((filter) => {
-      console.log(`\nSchoolService.delete called\n`);
+      console.log(`\nSchoolsService.delete called\n`);
       return {
         status: 400,
         error: { message: 'Test error message', error: new Error('Test error').toString() },
@@ -88,7 +88,7 @@ describe('Schools Controller', function () {
 
     // stub
     let stubServiceDelete = sinon.stub(SchoolsService, 'delete').callsFake((filter) => {
-      console.log(`\nSchoolService.delete called\n`);
+      console.log(`\nSchoolsService.delete called\n`);
       throw new Error('Test error');
     });
 

@@ -7,10 +7,10 @@ const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
 const TestConstants = require('../../test-constants.js');
-const SchoolsConstants = require('../../../services/schools/schools.constants.js');
-const SchoolsService = require('../../../services/schools/schools.service.js');
+const UsersConstants = require('../../../services/users/users.constants.js');
+const UsersService = require('../../../services/users/users.service.js');
 
-describe('Schools Controller', function () {
+describe('Users Controller', function () {
   before(async function () {});
 
   beforeEach(async function () {});
@@ -25,30 +25,30 @@ describe('Schools Controller', function () {
    * patch one with success
    */
   it('should patch one with success', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
 
     const patchReq = {
       set: {
-        ...testSchool,
+        ...testUser,
         id: undefined,
         type: undefined,
       },
     };
 
     // stub
-    let stubServicePatchOne = sinon.stub(SchoolsService, 'patch').callsFake(() => {
-      console.log(`\nSchoolsService.patch called\n`);
+    let stubServicePatchOne = sinon.stub(UsersService, 'patch').callsFake(() => {
+      console.log(`\nUsersService.patch called\n`);
       return {
         status: 200,
-        value: testSchool,
+        value: testUser,
       };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .patch(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
+      .patch(`${UsersConstants.ApiPath}/${testUser.id}`)
       .send(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -56,7 +56,7 @@ describe('Schools Controller', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(stubServicePatchOne.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      ...testSchool,
+      ...testUser,
     });
   }).timeout(10000);
 
@@ -64,20 +64,20 @@ describe('Schools Controller', function () {
    * patch one fail
    */
   it('should patch one fail', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
 
     const patchReq = {
       set: {
-        ...testSchool,
+        ...testUser,
         id: undefined,
         type: undefined,
       },
     };
 
     // stub
-    let stubServicePatchOne = sinon.stub(SchoolsService, 'patch').callsFake(() => {
-      console.log(`\nSchoolsService.patch called\n`);
+    let stubServicePatchOne = sinon.stub(UsersService, 'patch').callsFake(() => {
+      console.log(`\nUsersService.patch called\n`);
       return {
         status: 400,
         error: { message: 'Test error message', error: new Error('Test error').toString() },
@@ -87,7 +87,7 @@ describe('Schools Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .patch(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
+      .patch(`${UsersConstants.ApiPath}/${testUser.id}`)
       .send(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -107,24 +107,24 @@ describe('Schools Controller', function () {
    * patch one failed with exception
    */
   it('should patch one failed with exception', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-    const testSchool = testSchools[0];
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
 
     const patchReq = {
       set: {
-        ...testSchool,
+        ...testUser,
         id: undefined,
         type: undefined,
       },
     };
 
     // stub
-    sinon.stub(SchoolsService, 'patch').throws('Test exception');
+    sinon.stub(UsersService, 'patch').throws('Test exception');
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .patch(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
+      .patch(`${UsersConstants.ApiPath}/${testUser.id}`)
       .send(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 

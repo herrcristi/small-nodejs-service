@@ -9,11 +9,11 @@ chai.use(chaiHttp);
 const BaseServiceUtils = require('../../../core/utils/base-service.utils');
 
 const TestConstants = require('../../test-constants.js');
-const SchoolsConstants = require('../../../services/schools/schools.constants.js');
-const SchoolsService = require('../../../services/schools/schools.service.js');
+const UsersConstants = require('../../../services/users/users.constants.js');
+const UsersService = require('../../../services/users/users.service.js');
 
-describe('Schools Service', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Schools' };
+describe('Users Service', function () {
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
 
   before(async function () {});
 
@@ -29,7 +29,7 @@ describe('Schools Service', function () {
    * get all count with success
    */
   it('should get all count with success', async () => {
-    const testSchools = _.cloneDeep(TestConstants.Schools);
+    const testUsers = _.cloneDeep(TestConstants.Users);
 
     // stub
     let stubDbGetAllCount = sinon.stub(BaseServiceUtils, 'getAllCount').callsFake((config, filter) => {
@@ -38,7 +38,7 @@ describe('Schools Service', function () {
     });
 
     // call
-    let res = await SchoolsService.getAllCount({}, _ctx);
+    let res = await UsersService.getAllCount({}, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

@@ -62,12 +62,12 @@ const Public = {
     return await DbOpsUtils.getAll(config, filter, _ctx);
   },
 
-  getAllCount: async (filter, _ctx) => {
-    return await DbOpsUtils.getAllCount(filter, _ctx);
+  getAllCount: async (config, filter, _ctx) => {
+    return await DbOpsUtils.getAllCount(config, filter, _ctx);
   },
 
-  getAllByIDs: async (ids, projection, _ctx) => {
-    return await DbOpsUtils.getAllByIDs(ids, projection, _ctx);
+  getAllByIDs: async (config, ids, projection, _ctx) => {
+    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx);
   },
 
   /**
