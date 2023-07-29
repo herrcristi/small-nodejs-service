@@ -228,6 +228,8 @@ const Public = {
   patch: async (objID, patchInfo, _ctx) => {
     // TODO add translations
 
+    // TODO implement add/remove schools/roles
+
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.patch({ ...config, schema: Validators.Patch }, objID, patchInfo, _ctx);
   },
