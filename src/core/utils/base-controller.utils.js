@@ -1,5 +1,5 @@
 /**
- * Schools controller
+ * Base controller
  */
 
 const CommonUtils = require('./common.utils.js');

@@ -80,55 +80,15 @@ const Private = {
   /**
    * get all schools data and fill the users
    */
-  fillSchoolsInfo: async (resUsers, _ctx) => {
+  fillSchoolsInfo: async (r, _ctx) => {
     // TODO implement schools notification and here onSchoolNotification instead of fill schools name and status
-    if (resUsers.error) {
-      return resUsers;
+    if (r.error) {
+      return r;
     }
 
-    const users = resUsers.value.data || resUsers.value;
-
-    // get all schools ids first
-    let schoolsMap = {};
-    for (const user of users) {
-      for (const school of user.schools || []) {
-        schoolsMap[school.id] = 1;
-      }
-    }
-
-    let schoolsIDs = Object.keys(schoolsMap);
-    if (!schoolsIDs.length) {
-      console.log(`Skipping calling schools to fill info`);
-      return resUsers;
-    }
-
-    // get all schools
-    let rs = await SchoolsRest.getAllByIDs(schoolsIDs, { id: 1, name: 1, type: 1, status: 1 }, _ctx);
-    if (rs.error) {
-      return rs;
-    }
-
-    if (schoolsIDs.length != rs.value.length) {
-      console.log(`Not all schools were found`);
-    }
-
-    schoolsMap = {};
-    for (const school of rs.value) {
-      schoolsMap[school.id] = school;
-    }
-
-    // update info
-    for (let user of users) {
-      for (let school of user.schools) {
-        const schoolDetails = schoolsMap[school.id];
-        if (schoolDetails) {
-          school.name = schoolDetails.name;
-          school.status = schoolDetails.status;
-        }
-      }
-    }
-
-    return resUsers;
+    const users = r.value.data || r.value;
+    const rb = await BaseServiceUtils.populate(users, 'schools', SchoolsRest, _ctx);
+    return rb.error ? rb : r;
   },
 };
 

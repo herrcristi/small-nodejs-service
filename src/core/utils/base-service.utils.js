@@ -7,6 +7,72 @@ const DbOpsUtils = require('./db-ops.utils.js');
 const RestApiUtils = require('./rest-api.utils');
 const CommonUtils = require('./common.utils');
 
+const Utils = {
+  /**
+   * get ids from fieldName
+   */
+  collectIDs: (targetsMap, objs, i, fieldName) => {
+    let obj = objs[i];
+    if (obj && fieldName) {
+      obj = obj[fieldName];
+    }
+    if (!obj) {
+      return;
+    }
+
+    // there are 4 situations: string, object.id, array of strings, array of object.id
+    if (Array.isArray(obj)) {
+      for (const i in obj) {
+        Utils.collectIDs(targetsMap, obj, i, '');
+      }
+    } else if (typeof obj === 'string') {
+      // assume string is the id
+      targetsMap[obj] = 1;
+    } else if (typeof obj === 'object') {
+      if (obj.id) {
+        targetsMap[obj.id] = 1;
+      }
+    }
+  },
+
+  /**
+   * populate
+   */
+  populate: (targetsMap, objs, i, fieldName) => {
+    let obj = objs[i];
+    if (obj && fieldName) {
+      obj = obj[fieldName];
+    }
+    if (!obj) {
+      return;
+    }
+
+    // there are 4 situations: string, object.id, array of strings, array of object.id
+    if (Array.isArray(obj)) {
+      for (const i in obj) {
+        Utils.populate(targetsMap, obj, i, '');
+      }
+    } else if (typeof obj === 'string') {
+      const details = targetsMap[obj];
+      if (details) {
+        // must set in parent
+        if (fieldName) {
+          objs[i][fieldName] = details;
+        } else {
+          objs[i] = details;
+        }
+      }
+    } else if (typeof obj === 'object') {
+      if (obj.id) {
+        const details = targetsMap[obj.id];
+        if (details) {
+          Object.assign(obj, details);
+        }
+      }
+    }
+  },
+};
+
 const Public = {
   /**
    * get all for a requst
@@ -177,6 +243,47 @@ const Public = {
     // TODO raise notification
 
     return r;
+  },
+
+  /**
+   * populate the field by getting the detail info via rest
+   * config: { serviceName, collection, schema }
+   * fieldName: if empty take data from current object
+   */
+  populate: async (objs, fieldName, serviceRest, _ctx, projection = { id: 1, name: 1, type: 1, status: 1 }) => {
+    // get all ids first
+    let targetsMap = {};
+    for (const i in objs) {
+      Utils.collectIDs(targetsMap, objs, i, fieldName);
+    }
+
+    let targetsIDs = Object.keys(targetsMap);
+    if (!targetsIDs.length) {
+      console.log(`Skipping calling targets ${fieldName} to populate info`);
+      return objs;
+    }
+
+    // get all targets
+    let rs = await serviceRest.getAllByIDs(targetsIDs, projection, _ctx);
+    if (rs.error) {
+      return rs;
+    }
+
+    if (targetsIDs.length != rs.value.length) {
+      console.log(`Not all targets ${fieldName} were found`);
+    }
+
+    targetsMap = {};
+    for (const obj of rs.value) {
+      targetsMap[obj.id] = obj;
+    }
+
+    // update info
+    for (let i in objs) {
+      Utils.populate(targetsMap, objs, i, fieldName);
+    }
+
+    return objs;
   },
 };
 
