@@ -2,159 +2,37 @@
  * Users controller
  */
 
-const CommonUtils = require('../../core/utils/common.utils.js');
-const RestMessagesUtils = require('../../core/utils/rest-messages.utils.js');
+const BaseControllerUtils = require('../../core/utils/base-controller.utils.js');
 
 const UsersConstants = require('./users.constants.js');
 const UsersService = require('./users.service.js');
 
+/**
+ * controller functions called from router
+ */
 const Public = {
-  /**
-   * get all
-   */
   getAll: async (req, res, next) => {
-    let _ctx = req._ctx;
-    _ctx.serviceName = UsersConstants.ServiceName;
-
-    try {
-      console.log(`${_ctx.serviceName}: Get all called, query ${JSON.stringify(CommonUtils.protectData(req.query))}`);
-
-      // get all
-      const r = await UsersService.getAllForReq(req, _ctx);
-      if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
-      }
-
-      res.status(r.status).json(r.value);
-    } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
-    } finally {
-      res.end();
-    }
+    await BaseControllerUtils.getAll(UsersService, UsersConstants.ServiceName, req, res, next);
   },
 
-  /**
-   * get one
-   */
   getOne: async (req, res, next) => {
-    let _ctx = req._ctx;
-    _ctx.serviceName = UsersConstants.ServiceName;
-
-    try {
-      console.log(`${_ctx.serviceName}: Get one called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
-      const objID = req.params.id;
-
-      // get
-      const r = await UsersService.getOne(objID, _ctx);
-      if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
-      }
-
-      res.status(r.status).json(r.value);
-    } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
-    } finally {
-      res.end();
-    }
+    await BaseControllerUtils.getOne(UsersService, UsersConstants.ServiceName, req, res, next);
   },
 
-  /**
-   * post
-   */
   post: async (req, res, next) => {
-    let _ctx = req._ctx;
-    _ctx.serviceName = UsersConstants.ServiceName;
-
-    try {
-      console.log(`${_ctx.serviceName}: Post called, body ${JSON.stringify(CommonUtils.protectData(req.body))}`);
-
-      // post
-      const r = UsersService.post(req.body, _ctx);
-      if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
-      }
-
-      res.status(r.status).json(r.value);
-    } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
-    } finally {
-      res.end();
-    }
+    await BaseControllerUtils.post(UsersService, UsersConstants.ServiceName, req, res, next);
   },
 
-  /**
-   * delete
-   */
   delete: async (req, res, next) => {
-    let _ctx = req._ctx;
-    _ctx.serviceName = UsersConstants.ServiceName;
-
-    try {
-      console.log(`${_ctx.serviceName}: Delete called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
-      const objID = req.params.id;
-
-      // delete
-      const r = await UsersService.delete(objID, _ctx);
-      if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
-      }
-
-      res.status(r.status).json(r.value);
-    } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
-    } finally {
-      res.end();
-    }
+    await BaseControllerUtils.delete(UsersService, UsersConstants.ServiceName, req, res, next);
   },
 
-  /**
-   * put
-   */
   put: async (req, res, next) => {
-    let _ctx = req._ctx;
-    _ctx.serviceName = UsersConstants.ServiceName;
-
-    try {
-      console.log(`${_ctx.serviceName}: Put called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
-      const objID = req.params.id;
-
-      // put
-      const r = await UsersService.put(objID, req.body, _ctx);
-      if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
-      }
-
-      res.status(r.status).json(r.value);
-    } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
-    } finally {
-      res.end();
-    }
+    await BaseControllerUtils.put(UsersService, UsersConstants.ServiceName, req, res, next);
   },
 
-  /**
-   * patch
-   */
   patch: async (req, res, next) => {
-    let _ctx = req._ctx;
-    _ctx.serviceName = UsersConstants.ServiceName;
-
-    try {
-      console.log(`${_ctx.serviceName}: Patch called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
-      const objID = req.params.id;
-
-      // patch
-      const r = UsersService.patch(objID, req.body, _ctx);
-      if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
-      }
-
-      res.status(r.status).json(r.value);
-    } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
-    } finally {
-      res.end();
-    }
+    await BaseControllerUtils.patch(UsersService, UsersConstants.ServiceName, req, res, next);
   },
 };
 

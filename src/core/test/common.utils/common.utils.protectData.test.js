@@ -30,6 +30,22 @@ describe('Common Utils', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(res).to.deep.equal({ ...data, password: undefined });
+    chai.expect(res).to.deep.equal({ name: 'user' });
+
+    data = {
+      name: 'user',
+      password: 'pass',
+      set: {
+        name: 'user1',
+        password: 'pass1',
+      },
+    };
+
+    // call
+    res = CommonUtils.protectData(data);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({ name: 'user', set: { name: 'user1' } });
   }).timeout(10000);
 });
