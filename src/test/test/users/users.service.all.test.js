@@ -73,53 +73,6 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * getAllForReq for no schools
-   */
-  it('should getAllForReq for no schools', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-
-    for (let user of testUsers) {
-      delete user.schools;
-    }
-
-    // stub
-    let stubBase = sinon.stub(BaseServiceUtils, 'getAllForReq').callsFake((config, filter) => {
-      console.log(`\nBaseServiceUtils.getAllForReq called\n`);
-      return {
-        status: 200,
-        value: {
-          data: _.cloneDeep(testUsers),
-          meta: { count: testUsers.length },
-        },
-      };
-    });
-
-    let stubSchoolRestGetAll = sinon.stub(SchoolsRest, 'getAllByIDs').callsFake((schoolIDs, projection) => {
-      console.log(`\nSchoolsRest.getAllByIDs called\n`);
-      chai.expect(schoolIDs).to.deep.equal(testSchools.map((item) => item.id));
-
-      return { status: 200, value: [...testSchools] };
-    });
-
-    // call
-    let res = await UsersService.getAllForReq({ query: {} }, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubSchoolRestGetAll.callCount).to.equal(0); // no call
-
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: {
-        data: _.cloneDeep(testUsers),
-        meta: { count: testUsers.length },
-      },
-    });
-  }).timeout(10000);
-
-  /**
    * getAllForReq failed
    */
   it('should getAllForReq failed', async () => {
@@ -165,8 +118,8 @@ describe('Users Service', function () {
       };
     });
 
-    let stubSchoolRestGetAll = sinon.stub(SchoolsRest, 'getAllByIDs').callsFake((schoolIDs, projection) => {
-      console.log(`\nSchoolsRest.getAllByIDs called\n`);
+    let stubPopulate = sinon.stub(BaseServiceUtils, 'populate').callsFake(() => {
+      console.log(`\nBaseServiceUtils.populate called\n`);
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 
@@ -176,7 +129,7 @@ describe('Users Service', function () {
 
     // check
     chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubSchoolRestGetAll.callCount).to.equal(1);
+    chai.expect(stubPopulate.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
       status: 500,
@@ -185,52 +138,6 @@ describe('Users Service', function () {
         error: 'Error: Test error',
       },
     });
-  }).timeout(10000);
-
-  /**
-   * getAllForReq success without schools
-   */
-  it('should getAllForReq success without schools', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-
-    // stub
-    let stubBase = sinon.stub(BaseServiceUtils, 'getAllForReq').callsFake((config, filter) => {
-      console.log(`\nBaseServiceUtils.getAllForReq called\n`);
-      return {
-        status: 200,
-        value: {
-          data: _.cloneDeep(testUsers),
-          meta: { count: testUsers.length },
-        },
-      };
-    });
-
-    let stubSchoolRestGetAll = sinon.stub(SchoolsRest, 'getAllByIDs').callsFake((schoolIDs, projection) => {
-      console.log(`\nSchoolsRest.getAllByIDs called\n`);
-      chai.expect(schoolIDs).to.deep.equal(testSchools.map((item) => item.id));
-
-      return { status: 200, value: [] };
-    });
-
-    // call
-    let res = await UsersService.getAllForReq({ query: {} }, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubSchoolRestGetAll.callCount).to.equal(1);
-
-    chai.expect(res.status).to.equal(200);
-    chai.expect(res.value.meta).to.deep.equal({
-      count: testUsers.length,
-    });
-    for (const user of res.value.data) {
-      for (const school of user.schools) {
-        chai.expect(school.name).to.not.exist;
-        chai.expect(school.status).to.not.exist;
-      }
-    }
   }).timeout(10000);
 
   /**
