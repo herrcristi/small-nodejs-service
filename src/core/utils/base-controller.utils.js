@@ -112,7 +112,11 @@ const Public = {
     _ctx.serviceName = serviceName;
 
     try {
-      console.log(`${_ctx.serviceName}: Put called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
+      console.log(
+        `${_ctx.serviceName}: Put called, param ${JSON.stringify(
+          CommonUtils.protectData(req.params)
+        )}, body ${JSON.stringify(CommonUtils.protectData(req.body))}`
+      );
       const objID = req.params.id;
 
       // put
@@ -137,7 +141,11 @@ const Public = {
     _ctx.serviceName = serviceName;
 
     try {
-      console.log(`${_ctx.serviceName}: Patch called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
+      console.log(
+        `${_ctx.serviceName}: Patch called, param ${JSON.stringify(
+          CommonUtils.protectData(req.params)
+        )} body ${JSON.stringify(CommonUtils.protectData(req.body))}`
+      );
       const objID = req.params.id;
 
       // patch

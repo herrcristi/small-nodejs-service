@@ -66,10 +66,14 @@ const Public = {
    * hide sensitive data
    */
   protectData: (obj) => {
-    return {
-      ...obj,
-      password: undefined,
-    };
+    let newObj = { ...obj };
+    delete newObj.password;
+
+    if (newObj.set) {
+      newObj.set = Public.protectData(newObj.set);
+    }
+
+    return newObj;
   },
 };
 
