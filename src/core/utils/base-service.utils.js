@@ -76,7 +76,7 @@ const Utils = {
 const Public = {
   /**
    * get all for a requst
-   * config: { serviceName, collection, schema }
+   * config: { serviceName, collection, schema, references, fillReferences }
    * req: { query }
    * returns: { status, value: {data, meta} } or { status, error }
    */
@@ -87,7 +87,7 @@ const Public = {
       return { status: 400, error: filter.error };
     }
 
-    // get all
+    // get all (and expanded too)
     let r = await Public.getAll(config, filter, _ctx);
     if (r.error) {
       return r;
@@ -120,12 +120,23 @@ const Public = {
 
   /**
    * get all
-   * config: { serviceName, collection, schema }
+   * config: { serviceName, collection, schema, references, fillReferences }
    * filter: { filter, projection, limit, skip, sort }
    * returns: { status, value } or { status, error }
    */
   getAll: async (config, filter, _ctx) => {
-    return await DbOpsUtils.getAll(config, filter, _ctx);
+    let r = await DbOpsUtils.getAll(config, filter, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // populate references
+    let rf = await Public.populateReferences(config, r.value, _ctx);
+    if (rf.error) {
+      return rf;
+    }
+
+    return r;
   },
 
   getAllCount: async (config, filter, _ctx) => {
@@ -133,21 +144,43 @@ const Public = {
   },
 
   getAllByIDs: async (config, ids, projection, _ctx) => {
-    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx);
+    let r = await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // populate references
+    let rf = await Public.populateReferences(config, r.value, _ctx);
+    if (rf.error) {
+      return rf;
+    }
+
+    return r;
   },
 
   /**
    * get one
-   * config: { serviceName, collection, schema }
+   * config: { serviceName, collection, schema, references, fillReferences }
    * returns: { status, value } or { status, error }
    */
   getOne: async (config, objID, projection, _ctx) => {
-    return await DbOpsUtils.getOne(config, objID, projection, _ctx);
+    let r = await DbOpsUtils.getOne(config, objID, projection, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // populate references
+    let rf = await Public.populateReferences(config, r.value, _ctx);
+    if (rf.error) {
+      return rf;
+    }
+
+    return r;
   },
 
   /**
    * post
-   * config: { serviceName, collection, schema }
+   * config: { serviceName, collection, schema, references, fillReferences }
    * returns: { status, value } or { status, error }
    */
   post: async (config, objInfo, _ctx) => {
@@ -156,6 +189,12 @@ const Public = {
     if (v.error) {
       const err = v.error.details[0].message;
       return { status: 400, error: { message: err, error: new Error(err) } };
+    }
+
+    // populate references
+    let rf = await Public.populateReferences(config, objInfo, _ctx);
+    if (rf.error) {
+      return rf;
     }
 
     // post
@@ -181,7 +220,7 @@ const Public = {
 
   /**
    * delete
-   * config: { serviceName, collection, schema }
+   * config: { serviceName, collection, schema, references, fillReferences }
    * returns: { status, value } or { status, error }
    */
   delete: async (config, objID, _ctx) => {
@@ -198,7 +237,7 @@ const Public = {
 
   /**
    * put
-   * config: { serviceName, collection, schema }
+   * config: { serviceName, collection, schema, references, fillReferences }
    * returns: { status, value } or { status, error }
    */
   put: async (config, objID, objInfo, _ctx) => {
@@ -207,6 +246,12 @@ const Public = {
     if (v.error) {
       const err = v.error.details[0].message;
       return { status: 400, error: { message: err, error: new Error(err) } };
+    }
+
+    // populate references
+    let rf = await Public.populateReferences(config, objInfo, _ctx);
+    if (rf.error) {
+      return rf;
     }
 
     // put
@@ -223,7 +268,8 @@ const Public = {
 
   /**
    * patch
-   * config: { serviceName, collection, schema }
+   * config: { serviceName, collection, schema, references, fillReferences }
+   * patchInfo: { set, unset, add, remove }
    * returns: { status, value } or { status, error }
    */
   patch: async (config, objID, patchInfo, _ctx) => {
@@ -232,6 +278,17 @@ const Public = {
     if (v.error) {
       const err = v.error.details[0].message;
       return { status: 400, error: { message: err, error: new Error(err) } };
+    }
+
+    // populate references
+    let rf = await Public.populateReferences(config, patchInfo.set, _ctx);
+    if (rf.error) {
+      return rf;
+    }
+
+    let rfa = await Public.populateReferences(config, patchInfo.add, _ctx);
+    if (rfa.error) {
+      return rfa;
     }
 
     const projection = { id: 1, name: 1, type: 1, status: 1 };
@@ -247,30 +304,31 @@ const Public = {
 
   /**
    * populate the field by getting the detail info via rest
-   * config: { serviceName, collection, schema }
-   * fieldName: if empty take data from current object
+   * config: {fieldName, service, projection}
+   *          fieldName: if empty take data from current object
    */
-  populate: async (objs, fieldName, serviceRest, _ctx, projection = { id: 1, name: 1, type: 1, status: 1 }) => {
+  populate: async (config, objs, _ctx) => {
     // get all ids first
     let targetsMap = {};
     for (const i in objs) {
-      Utils.collectIDs(targetsMap, objs, i, fieldName);
+      Utils.collectIDs(targetsMap, objs, i, config.fieldName);
     }
 
     let targetsIDs = Object.keys(targetsMap);
     if (!targetsIDs.length) {
-      console.log(`Skipping calling targets ${fieldName} to populate info`);
+      console.log(`Skipping calling targets to populate info for field ${config.fieldName}`);
       return objs;
     }
 
     // get all targets
-    let rs = await serviceRest.getAllByIDs(targetsIDs, projection, _ctx);
+    const projection = config.projection || { id: 1, name: 1, type: 1, status: 1 };
+    let rs = await config.service.getAllByIDs(targetsIDs, projection, _ctx);
     if (rs.error) {
       return rs;
     }
 
     if (targetsIDs.length != rs.value.length) {
-      console.log(`Not all targets ${fieldName} were found`);
+      console.log(`Not all targets were found for field ${config.fieldName}`);
     }
 
     targetsMap = {};
@@ -280,10 +338,39 @@ const Public = {
 
     // update info
     for (let i in objs) {
-      Utils.populate(targetsMap, objs, i, fieldName);
+      Utils.populate(targetsMap, objs, i, config.fieldName);
     }
 
+    console.log(`Targets expanded for field ${config.fieldName}`);
+
     return objs;
+  },
+
+  /**
+   * populate references
+   * config: { ..., fillReferences, references: [ {fieldName, service, projection} ] }
+   */
+  populateReferences: async (config, objs, _ctx) => {
+    if (!config.fillReferences) {
+      return { value: null }; // skipped
+    }
+
+    if (!objs) {
+      return { value: null }; // skipped
+    }
+
+    if (!Array.isArray(objs)) {
+      objs = [objs];
+    }
+
+    for (const configRef of config.references) {
+      let r = await Public.populate(configRef, objs, _ctx);
+      if (r.error) {
+        return r;
+      }
+    }
+
+    return { value: true }; // success
   },
 };
 

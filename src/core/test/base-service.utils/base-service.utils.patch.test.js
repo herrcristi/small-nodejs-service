@@ -15,10 +15,15 @@ describe('Base Service', function () {
     schema: Joi.object().keys({
       set: Joi.object().keys({
         name: Joi.string().min(1).max(64),
-        description: Joi.string().min(0).max(1024).allow(null),
+        field: Joi.string().min(0).max(1024).allow(null),
+      }),
+      add: Joi.object().keys({
+        field: Joi.string().min(0).max(1024).allow(null),
       }),
     }),
     collection: 'collection',
+    references: [{ fieldName: 'field', service: { getAllByIDs: () => {} }, projection: null /*default*/ }],
+    fillReferences: false,
   };
 
   before(async function () {});
@@ -38,12 +43,36 @@ describe('Base Service', function () {
     const patchInfo = {
       set: {
         name: 'name',
-        description: 'description',
+        field: 'idf1',
       },
     };
 
+    config.fillReferences = true;
+    sinon.stub(config.references[0].service, 'getAllByIDs').callsFake(() => {
+      return {
+        value: [
+          {
+            id: 'idf1',
+            name: 'name1',
+          },
+        ],
+      };
+    });
+
     // stub
     sinon.stub(DbOpsUtils, 'patch').callsFake((conf, objID, patch) => {
+      console.log(`\nDbOpsUtils.patch called with objid ${objID} and patch ${JSON.stringify(patch, null, 2)}\n`);
+
+      chai.expect(patch).to.deep.equal({
+        set: {
+          name: 'name',
+          field: {
+            id: 'idf1',
+            name: 'name1',
+          },
+        },
+      });
+
       return {
         status: 200,
         value: {
@@ -124,5 +153,103 @@ describe('Base Service', function () {
     // check
     chai.expect(res.status).to.equal(500);
     chai.expect(res.error.message).to.include('Test message error');
+  }).timeout(10000);
+
+  /**
+   * patch with set.references fail
+   */
+  it('should call patch with set.references fail ', async () => {
+    const patchInfo = {
+      set: {
+        name: 'name',
+        field: 'idf1',
+      },
+    };
+
+    config.fillReferences = true;
+    sinon.stub(config.references[0].service, 'getAllByIDs').callsFake(() => {
+      return {
+        status: 400,
+        error: { message: 'Test error message', error: new Error('Test error').toString() },
+      };
+    });
+
+    // stub
+    sinon.stub(DbOpsUtils, 'patch').callsFake((conf, objID, patch) => {
+      console.log(`\nDbOpsUtils.patch called with objid ${objID} and patch ${JSON.stringify(patch, null, 2)}\n`);
+
+      return {
+        status: 200,
+        value: {
+          id: objID,
+          name: patch.set.name,
+          type: undefined,
+          status: undefined,
+        },
+      };
+    });
+
+    // call
+    let res = await BaseServiceUtils.patch(config, 'id1', patchInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 400,
+      error: {
+        message: 'Test error message',
+        error: 'Error: Test error',
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * patch with add.references fail
+   */
+  it('should call patch with add.references fail ', async () => {
+    const patchInfo = {
+      set: {
+        name: 'name',
+      },
+      add: {
+        field: 'idf1',
+      },
+    };
+
+    config.fillReferences = true;
+    sinon.stub(config.references[0].service, 'getAllByIDs').callsFake(() => {
+      return {
+        status: 400,
+        error: { message: 'Test error message', error: new Error('Test error').toString() },
+      };
+    });
+
+    // stub
+    sinon.stub(DbOpsUtils, 'patch').callsFake((conf, objID, patch) => {
+      console.log(`\nDbOpsUtils.patch called with objid ${objID} and patch ${JSON.stringify(patch, null, 2)}\n`);
+
+      return {
+        status: 200,
+        value: {
+          id: objID,
+          name: patch.set.name,
+          type: undefined,
+          status: undefined,
+        },
+      };
+    });
+
+    // call
+    let res = await BaseServiceUtils.patch(config, 'id1', patchInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 400,
+      error: {
+        message: 'Test error message',
+        error: 'Error: Test error',
+      },
+    });
   }).timeout(10000);
 });

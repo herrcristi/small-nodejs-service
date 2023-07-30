@@ -16,6 +16,8 @@ describe('Base Service', function () {
     serviceName: 'service',
     schema: 'schema',
     collection: 'collection',
+    references: [{ fieldName: 'field', service: { getAllByIDs: () => {} }, projection: null /*default*/ }],
+    fillReferences: false,
   };
 
   before(async function () {});

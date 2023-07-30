@@ -11,7 +11,6 @@ const BaseServiceUtils = require('../../../core/utils/base-service.utils');
 const TestConstants = require('../../test-constants.js');
 const UsersConstants = require('../../../services/users/users.constants.js');
 const UsersService = require('../../../services/users/users.service.js');
-const SchoolsRest = require('../../../services/rest/schools.rest');
 
 describe('Users Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
@@ -31,7 +30,6 @@ describe('Users Service', function () {
    */
   it('should getAllForReq with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
-    const testSchools = _.cloneDeep(TestConstants.Schools);
 
     // stub
     let stubBase = sinon.stub(BaseServiceUtils, 'getAllForReq').callsFake((config, filter) => {
@@ -45,31 +43,18 @@ describe('Users Service', function () {
       };
     });
 
-    let stubSchoolRestGetAll = sinon.stub(SchoolsRest, 'getAllByIDs').callsFake((schoolIDs, projection) => {
-      console.log(`\nSchoolsRest.getAllByIDs called\n`);
-      chai.expect(schoolIDs).to.deep.equal(testSchools.map((item) => item.id));
-
-      return { status: 200, value: [...testSchools] };
-    });
-
     // call
     let res = await UsersService.getAllForReq({ query: {} }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubSchoolRestGetAll.callCount).to.equal(1);
 
     chai.expect(res.status).to.equal(200);
-    chai.expect(res.value.meta).to.deep.equal({
-      count: testUsers.length,
+    chai.expect(res.value).to.deep.equal({
+      data: _.cloneDeep(testUsers),
+      meta: { count: testUsers.length },
     });
-    for (const user of res.value.data) {
-      for (const school of user.schools) {
-        chai.expect(school.name).to.be.a('string');
-        chai.expect(school.status).to.be.a('string');
-      }
-    }
   }).timeout(10000);
 
   /**
@@ -100,52 +85,10 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * getAllForReq fail for schools
-   */
-  it('should getAllForReq fail for schools', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
-    const testSchools = _.cloneDeep(TestConstants.Schools);
-
-    // stub
-    let stubBase = sinon.stub(BaseServiceUtils, 'getAllForReq').callsFake((config, filter) => {
-      console.log(`\nBaseServiceUtils.getAllForReq called\n`);
-      return {
-        status: 200,
-        value: {
-          data: _.cloneDeep(testUsers),
-          meta: { count: testUsers.length },
-        },
-      };
-    });
-
-    let stubPopulate = sinon.stub(BaseServiceUtils, 'populate').callsFake(() => {
-      console.log(`\nBaseServiceUtils.populate called\n`);
-      return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
-    });
-
-    // call
-    let res = await UsersService.getAllForReq({ query: {} }, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubPopulate.callCount).to.equal(1);
-
-    chai.expect(res).to.deep.equal({
-      status: 500,
-      error: {
-        message: 'Test error message',
-        error: 'Error: Test error',
-      },
-    });
-  }).timeout(10000);
-
-  /**
    * getAll with success
    */
   it('should getAll with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
-    const testSchools = _.cloneDeep(TestConstants.Schools);
 
     // stub
     let stubBase = sinon.stub(BaseServiceUtils, 'getAll').callsFake((config, filter) => {
@@ -156,28 +99,17 @@ describe('Users Service', function () {
       };
     });
 
-    let stubSchoolRestGetAll = sinon.stub(SchoolsRest, 'getAllByIDs').callsFake((schoolIDs, projection) => {
-      console.log(`\nSchoolsRest.getAllByIDs called\n`);
-      chai.expect(schoolIDs).to.deep.equal(testSchools.map((item) => item.id));
-
-      return { status: 200, value: [...testSchools] };
-    });
-
     // call
     let res = await UsersService.getAll({ filter: {} }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubSchoolRestGetAll.callCount).to.equal(1);
 
-    chai.expect(res.status).to.equal(200);
-    for (const user of res.value) {
-      for (const school of user.schools) {
-        chai.expect(school.name).to.be.a('string');
-        chai.expect(school.status).to.be.a('string');
-      }
-    }
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: _.cloneDeep(testUsers),
+    });
   }).timeout(10000);
 
   /**
@@ -209,7 +141,6 @@ describe('Users Service', function () {
    */
   it('should getAllByIDs with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
-    const testSchools = _.cloneDeep(TestConstants.Schools);
 
     // stub
     let stubBase = sinon.stub(BaseServiceUtils, 'getAllByIDs').callsFake((config, ids, projection) => {
@@ -220,28 +151,17 @@ describe('Users Service', function () {
       };
     });
 
-    let stubSchoolRestGetAll = sinon.stub(SchoolsRest, 'getAllByIDs').callsFake((schoolIDs, projection) => {
-      console.log(`\nSchoolsRest.getAllByIDs called\n`);
-      chai.expect(schoolIDs).to.deep.equal(testSchools.map((item) => item.id));
-
-      return { status: 200, value: [...testSchools] };
-    });
-
     // call
     let res = await UsersService.getAllByIDs(['id1'], { id: 1 }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubSchoolRestGetAll.callCount).to.equal(1);
 
-    chai.expect(res.status).to.equal(200);
-    for (const user of res.value) {
-      for (const school of user.schools) {
-        chai.expect(school.name).to.be.a('string');
-        chai.expect(school.status).to.be.a('string');
-      }
-    }
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: _.cloneDeep(testUsers),
+    });
   }).timeout(10000);
 
   /**

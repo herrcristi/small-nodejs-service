@@ -17,6 +17,8 @@ describe('Base Service', function () {
       description: Joi.string().min(0).max(1024).allow(null),
     }),
     collection: 'collection',
+    references: [{ fieldName: 'field', service: { getAllByIDs: () => {} }, projection: null /*default*/ }],
+    fillReferences: false,
   };
 
   before(async function () {});

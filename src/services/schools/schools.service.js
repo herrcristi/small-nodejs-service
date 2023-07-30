@@ -37,13 +37,15 @@ const Validators = {
 const Private = {
   /**
    * config
-   * returns { serviceName, collection, schema }
+   * returns { serviceName, collection, schema, references, fillReferences }
    */
   getConfig: async (_ctx) => {
     const config = {
       serviceName: SchoolsConstants.ServiceName,
       collection: await SchoolsDatabase.collection(_ctx),
       schema: Schema.School,
+      references: [], // to be populated (like foreign keys)
+      fillReferences: false,
     };
     return config;
   },
@@ -107,9 +109,8 @@ const Public = {
    * post
    */
   post: async (objInfo, _ctx) => {
-    // add default status if not set
-    objInfo.status = objInfo.status || SchoolsConstants.Status.Pending;
     objInfo.type = SchoolsConstants.Type;
+    objInfo.status = objInfo.status || SchoolsConstants.Status.Pending; // add default status if not set
 
     // TODO add translations
 

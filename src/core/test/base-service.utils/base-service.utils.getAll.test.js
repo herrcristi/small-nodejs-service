@@ -16,6 +16,8 @@ describe('Base Service', function () {
     serviceName: 'service',
     schema: 'schema',
     collection: 'collection',
+    references: [{ fieldName: 'field', service: { getAllByIDs: () => {} }, projection: null /*default*/ }],
+    fillReferences: false,
   };
 
   before(async function () {});
@@ -37,7 +39,19 @@ describe('Base Service', function () {
     // stub
     sinon.stub(DbOpsUtils, 'getAll').returns({
       status: 200,
-      value: [{ id: 'id1' }],
+      value: [{ id: 'id1', field: 'idf1' }],
+    });
+
+    config.fillReferences = true;
+    sinon.stub(config.references[0].service, 'getAllByIDs').callsFake(() => {
+      return {
+        value: [
+          {
+            id: 'idf1',
+            name: 'name1',
+          },
+        ],
+      };
     });
 
     // call
@@ -47,7 +61,75 @@ describe('Base Service', function () {
     // check
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: [{ id: 'id1' }],
+      value: [
+        {
+          id: 'id1',
+          field: {
+            id: 'idf1',
+            name: 'name1',
+          },
+        },
+      ],
+    });
+  }).timeout(10000);
+
+  /**
+   * getAll fail
+   */
+  it('should call getAll and fail', async () => {
+    let filter = { filter: {} };
+
+    // stub
+    sinon.stub(DbOpsUtils, 'getAll').returns({
+      status: 500,
+      error: { message: 'Test error message', error: new Error('Test error').toString() },
+    });
+
+    // call
+    let res = await BaseServiceUtils.getAll(config, filter, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 500,
+      error: {
+        message: 'Test error message',
+        error: 'Error: Test error',
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * getAll references fail
+   */
+  it('should call getAll and references fail', async () => {
+    let filter = { filter: {} };
+
+    // stub
+    sinon.stub(DbOpsUtils, 'getAll').returns({
+      status: 200,
+      value: [{ id: 'id1', field: 'idf1' }],
+    });
+
+    config.fillReferences = true;
+    sinon.stub(config.references[0].service, 'getAllByIDs').callsFake(() => {
+      return {
+        status: 400,
+        error: { message: 'Test error message', error: new Error('Test error').toString() },
+      };
+    });
+
+    // call
+    let res = await BaseServiceUtils.getAll(config, filter, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 400,
+      error: {
+        message: 'Test error message',
+        error: 'Error: Test error',
+      },
     });
   }).timeout(10000);
 });
