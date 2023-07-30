@@ -66,29 +66,18 @@ const Validators = {
 const Private = {
   /**
    * config
-   * returns { serviceName, collection, schema }
+   * returns { serviceName, collection, schema, references, fillReferences  }
    */
   getConfig: async (_ctx) => {
     const config = {
       serviceName: UsersConstants.ServiceName,
       collection: await UsersDatabase.collection(_ctx),
       schema: Schema.User,
+      references: [{ fieldName: 'schools', service: SchoolsRest, projection: null /*default*/ }],
+      //fillReferences: false,
+      fillReferences: true, // TODO implement schools notification and here onSchoolNotification instead of fill schools name and status
     };
     return config;
-  },
-
-  /**
-   * get all schools data and fill the users
-   */
-  fillSchoolsInfo: async (r, _ctx) => {
-    // TODO implement schools notification and here onSchoolNotification instead of fill schools name and status
-    if (r.error) {
-      return r;
-    }
-
-    const users = r.value.data || r.value;
-    const rb = await BaseServiceUtils.populate(users, 'schools', SchoolsRest, _ctx);
-    return rb.error ? rb : r;
   },
 };
 
@@ -105,8 +94,7 @@ const Public = {
    */
   getAllForReq: async (req, _ctx) => {
     const config = await Private.getConfig(_ctx);
-    let r = await BaseServiceUtils.getAllForReq(config, req, _ctx);
-    return await Private.fillSchoolsInfo(r, _ctx);
+    return await BaseServiceUtils.getAllForReq(config, req, _ctx);
   },
 
   /**
@@ -116,8 +104,7 @@ const Public = {
    */
   getAll: async (filter, _ctx) => {
     const config = await Private.getConfig(_ctx);
-    let r = await BaseServiceUtils.getAll(config, filter, _ctx);
-    return await Private.fillSchoolsInfo(r, _ctx);
+    return await BaseServiceUtils.getAll(config, filter, _ctx);
   },
 
   /**
@@ -136,8 +123,7 @@ const Public = {
    */
   getAllByIDs: async (ids, projection, _ctx) => {
     const config = await Private.getConfig(_ctx);
-    let r = await BaseServiceUtils.getAllByIDs(config, ids, projection, _ctx);
-    return await Private.fillSchoolsInfo(r, _ctx);
+    return await BaseServiceUtils.getAllByIDs(config, ids, projection, _ctx);
   },
 
   /**
@@ -153,15 +139,14 @@ const Public = {
    * post
    */
   post: async (objInfo, _ctx) => {
-    // add default status if not set
-    objInfo.status = objInfo.status || UsersConstants.Status.Pending;
     objInfo.type = UsersConstants.Type;
+    objInfo.status = objInfo.status || UsersConstants.Status.Pending; // add default status if not set
     objInfo.name = `${objInfo.firstName} ${objInfo.lastName}`;
 
     // TODO add translations
 
     const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.post({ ...config, schema: Validators.Post }, objInfo, _ctx);
+    return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
   },
 
   /**
@@ -179,7 +164,12 @@ const Public = {
     // TODO add translations
 
     const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.put(config, objID, objInfo, _ctx);
+    return await BaseServiceUtils.put(
+      { ...config, schema: Validators.Put, fillReferences: true },
+      objID,
+      objInfo,
+      _ctx
+    );
   },
 
   /**
@@ -191,7 +181,12 @@ const Public = {
     // TODO implement add/remove schools/roles
 
     const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.patch({ ...config, schema: Validators.Patch }, objID, patchInfo, _ctx);
+    return await BaseServiceUtils.patch(
+      { ...config, schema: Validators.Patch, fillReferences: true },
+      objID,
+      patchInfo,
+      _ctx
+    );
   },
 };
 

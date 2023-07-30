@@ -19,6 +19,8 @@ describe('Base Service', function () {
       description: Joi.string().min(0).max(1024).allow(null),
     }),
     collection: 'collection',
+    references: [{ fieldName: 'field', service: { getAllByIDs: () => {} }, projection: null /*default*/ }],
+    fillReferences: false,
   };
 
   before(async function () {});
@@ -42,12 +44,24 @@ describe('Base Service', function () {
 
     sinon.stub(DbOpsUtils, 'getAll').returns({
       status: 200,
-      value: [{ id: 'id1' }],
+      value: [{ id: 'id1', field: 'idf1' }],
     });
 
     sinon.stub(DbOpsUtils, 'getAllCount').returns({
       status: 200,
       value: 1,
+    });
+
+    config.fillReferences = true;
+    sinon.stub(config.references[0].service, 'getAllByIDs').callsFake(() => {
+      return {
+        value: [
+          {
+            id: 'idf1',
+            name: 'name1',
+          },
+        ],
+      };
     });
 
     // call
@@ -61,6 +75,10 @@ describe('Base Service', function () {
         data: [
           {
             id: 'id1',
+            field: {
+              id: 'idf1',
+              name: 'name1',
+            },
           },
         ],
         meta: {

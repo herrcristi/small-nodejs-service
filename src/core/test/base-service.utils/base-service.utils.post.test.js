@@ -14,9 +14,11 @@ describe('Base Service', function () {
     serviceName: 'service',
     schema: Joi.object().keys({
       name: Joi.string().min(1).max(64),
-      description: Joi.string().min(0).max(1024).allow(null),
+      field: Joi.string().min(0).max(1024).allow(null),
     }),
     collection: 'collection',
+    references: [{ fieldName: 'field', service: { getAllByIDs: () => {} }, projection: null /*default*/ }],
+    fillReferences: false,
   };
 
   before(async function () {});
@@ -35,11 +37,33 @@ describe('Base Service', function () {
   it('should call post with success', async () => {
     const objInfo = {
       name: 'name',
-      description: 'description',
+      field: 'idf1',
     };
 
+    config.fillReferences = true;
+    sinon.stub(config.references[0].service, 'getAllByIDs').callsFake(() => {
+      return {
+        value: [
+          {
+            id: 'idf1',
+            name: 'name1',
+          },
+        ],
+      };
+    });
+
     // stub
-    sinon.stub(DbOpsUtils, 'post').callsFake((conf, obj) => {
+    sinon.stub(DbOpsUtils, 'post').callsFake((config, obj) => {
+      console.log(`\nDbOpsUtils.post called with obj ${JSON.stringify(obj, null, 2)}\n`);
+
+      chai.expect(obj).to.deep.equal({
+        name: 'name',
+        field: {
+          id: 'idf1',
+          name: 'name1',
+        },
+      });
+
       return {
         status: 200,
         value: {
@@ -114,5 +138,49 @@ describe('Base Service', function () {
     // check
     chai.expect(res.status).to.equal(500);
     chai.expect(res.error.message).to.include('Test message error');
+  }).timeout(10000);
+
+  /**
+   * post with references fail
+   */
+  it('should call post with references fail', async () => {
+    const objInfo = {
+      name: 'name',
+      field: 'idf1',
+    };
+
+    config.fillReferences = true;
+    sinon.stub(config.references[0].service, 'getAllByIDs').callsFake(() => {
+      return {
+        status: 400,
+        error: { message: 'Test error message', error: new Error('Test error').toString() },
+      };
+    });
+
+    // stub
+    sinon.stub(DbOpsUtils, 'post').callsFake((config, obj) => {
+      console.log(`\nDbOpsUtils.post called with obj ${JSON.stringify(obj, null, 2)}\n`);
+
+      return {
+        status: 200,
+        value: {
+          id: 'id1',
+          ...obj,
+        },
+      };
+    });
+
+    // call
+    let res = await BaseServiceUtils.post(config, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 400,
+      error: {
+        message: 'Test error message',
+        error: 'Error: Test error',
+      },
+    });
   }).timeout(10000);
 });
