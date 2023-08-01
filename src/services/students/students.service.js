@@ -8,20 +8,27 @@ const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 
 const UsersRest = require('../rest/users.rest.js');
 const StudentsConstants = require('./students.constants.js');
-const StudentsDatabase = require('./students.constants.js');
+const StudentsDatabase = require('./students.database.js');
 
 /**
  * validation
  */
+const SchemaClasses = Joi.array().items(
+  Joi.object().keys({
+    id: Joi.string().min(1).max(64).required(),
+  })
+);
+
 const Schema = {
   Student: Joi.object().keys({
-    id: Joi.string().min(1).max(64),
-    classes: Joi.array().items(Joi.string().min(1).max(64)),
+    classes: SchemaClasses,
   }),
 };
 
 const Validators = {
-  Post: Schema.Student.fork(['id', 'classes'], (x) => x.required() /*make required */),
+  Post: Schema.Student.fork(['classes'], (x) => x.required() /*make required */).keys({
+    id: Joi.string().min(1).max(64).required(),
+  }),
 
   Put: Schema.Student,
 
@@ -29,10 +36,10 @@ const Validators = {
     // for patch allowed operations are add, remove, set
     set: Schema.Student,
     add: Joi.object().keys({
-      classes: Joi.array().items(Joi.string().min(1).max(64)),
+      classes: SchemaClasses,
     }),
     remove: Joi.object().keys({
-      classes: Joi.array().items(Joi.string().min(1).max(64)),
+      classes: SchemaClasses,
     }),
   }),
 };
@@ -49,7 +56,7 @@ const Private = {
       schema: Schema.Student,
       references: [{ fieldName: '', service: UsersRest, projection: { id: 1, name: 1 } }],
       //fillReferences: false,
-      fillReferences: true, // TODO implement schools notification and here onSchoolNotification instead of fill schools name and status
+      fillReferences: true, // TODO implement users notification and here onUsersNotification instead of fill schools name and status on GET
     };
     return config;
   },
@@ -113,8 +120,6 @@ const Public = {
    * post
    */
   post: async (objInfo, _ctx) => {
-    // add default status if not set
-    objInfo.status = objInfo.status || StudentsConstants.Status.Pending;
     objInfo.type = StudentsConstants.Type;
 
     // TODO add translations

@@ -28,7 +28,7 @@ describe('Schools Controller', function () {
     const testSchools = _.cloneDeep(TestConstants.Schools);
 
     // stub
-    let stubService = sinon.stub(SchoolsService, 'getAllForReq').callsFake((filter) => {
+    let stubService = sinon.stub(SchoolsService, 'getAllForReq').callsFake(() => {
       console.log(`\nSchoolsService.getAllForReq called\n`);
       return {
         status: 200,
@@ -64,7 +64,7 @@ describe('Schools Controller', function () {
     const testSchool = testSchools[0];
 
     // stub
-    let stubService = sinon.stub(SchoolsService, 'getOne').callsFake((filter) => {
+    let stubService = sinon.stub(SchoolsService, 'getOne').callsFake(() => {
       console.log(`\nSchoolsService.getOne called\n`);
       return {
         status: 200,
@@ -92,7 +92,7 @@ describe('Schools Controller', function () {
     const testSchool = testSchools[0];
 
     // stub
-    let stubService = sinon.stub(SchoolsService, 'post').callsFake((filter) => {
+    let stubService = sinon.stub(SchoolsService, 'post').callsFake(() => {
       console.log(`\nSchoolsService.post called\n`);
       return {
         status: 201,
@@ -123,7 +123,7 @@ describe('Schools Controller', function () {
     const testSchool = testSchools[0];
 
     // stub
-    let stubService = sinon.stub(SchoolsService, 'delete').callsFake((filter) => {
+    let stubService = sinon.stub(SchoolsService, 'delete').callsFake(() => {
       console.log(`\nSchoolsService.delete called\n`);
       return {
         status: 200,
@@ -151,7 +151,7 @@ describe('Schools Controller', function () {
     const testSchool = testSchools[0];
 
     // stub
-    let stubService = sinon.stub(SchoolsService, 'put').callsFake((filter) => {
+    let stubService = sinon.stub(SchoolsService, 'put').callsFake(() => {
       console.log(`\nSchoolsService.put called\n`);
       return {
         status: 200,
@@ -182,7 +182,7 @@ describe('Schools Controller', function () {
     const testSchool = testSchools[0];
 
     // stub
-    let stubService = sinon.stub(SchoolsService, 'patch').callsFake((filter) => {
+    let stubService = sinon.stub(SchoolsService, 'patch').callsFake(() => {
       console.log(`\nSchoolsService.patch called\n`);
       return {
         status: 200,
