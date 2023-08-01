@@ -73,6 +73,24 @@ const Public = {
       ],
     },
   ],
+
+  /**
+   * students
+   */
+  Students: [
+    {
+      id: 'user1',
+      name: 'Big Ben',
+      type: 'student',
+      classes: [],
+    },
+    {
+      id: 'user2',
+      name: 'John Bravo',
+      type: 'student',
+      classes: [],
+    },
+  ],
 };
 
 module.exports = { ...Public };

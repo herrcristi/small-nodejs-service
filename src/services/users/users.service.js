@@ -75,7 +75,7 @@ const Private = {
       schema: Schema.User,
       references: [{ fieldName: 'schools', service: SchoolsRest, projection: null /*default*/ }],
       //fillReferences: false,
-      fillReferences: true, // TODO implement schools notification and here onSchoolNotification instead of fill schools name and status
+      fillReferences: true, // TODO implement schools notification and here onSchoolsNotification instead of fill schools name and status on GET
     };
     return config;
   },

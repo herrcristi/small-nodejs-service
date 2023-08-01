@@ -4,5 +4,14 @@
  * include them in order
  */
 
-// students tests
-require('./students.controller.getAll.test');
+// controller tests
+require('./students.controller.all.test.js');
+
+// rest tests
+require('./students.rest.test.js');
+
+// service tests
+require('./students.service.all.test.js');
+
+// schema tests
+require('./students.service.schema.test.js');
