@@ -1,38 +1,36 @@
 /**
- * Schools service
+ * Events service
  */
+
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 
-const EventsRest = require('../rest/events.rest.js');
-const SchoolsConstants = require('./schools.constants.js');
-const SchoolsDatabase = require('./schools.database.js');
+const EventsConstants = require('./events.constants.js');
+const EventsDatabase = require('./events.database.js');
 
 /**
  * validation
  */
 const Schema = {
-  School: Joi.object().keys({
-    name: Joi.string().min(1).max(64),
-    description: Joi.string().min(0).max(1024).allow(null),
-    status: Joi.string()
-      .min(1)
-      .max(64)
-      .valid(...Object.values(SchoolsConstants.Status)),
+  Event: Joi.object().keys({
+    severity: Joi.string().valid(...Object.values(BaseServiceUtils.Constants.Severity)),
+    messageID: Joi.string().min(1).max(128),
+    target: Joi.object().keys({
+      id: Joi.string().min(1).max(64).required(),
+      name: Joi.string().min(1).max(128).required(),
+      type: Joi.string().min(1).max(64).required(),
+    }),
+    args: Joi.array().items(Joi.string().min(1).max(512)),
+    user: Joi.object().keys({
+      id: Joi.string().min(1).max(64).required(),
+      name: Joi.string().min(1).max(128).required(),
+    }),
   }),
 };
 
 const Validators = {
-  Post: Schema.School.fork(['name'], (x) => x.required() /*make required */),
-
-  Put: Schema.School,
-
-  Patch: Joi.object().keys({
-    // for patch allowed operations are add, remove, set, unset
-    set: Schema.School,
-    unset: Joi.array().items(Joi.string().min(1).max(128).valid('description')),
-  }),
+  Post: Schema.Event.fork(['severity', 'messageID', 'target', 'user'], (x) => x.required() /*make required */),
 };
 
 const Private = {
@@ -42,12 +40,12 @@ const Private = {
    */
   getConfig: async (_ctx) => {
     const config = {
-      serviceName: SchoolsConstants.ServiceName,
-      collection: await SchoolsDatabase.collection(_ctx),
-      schema: Schema.School,
-      references: [], // to be populated (like foreign keys)
+      serviceName: EventsConstants.ServiceName,
+      collection: await EventsDatabase.collection(_ctx),
+      schema: Schema.Event,
+      references: [],
       fillReferences: false,
-      events: { service: EventsRest },
+      events: null,
     };
     return config;
   },
@@ -111,41 +109,13 @@ const Public = {
    * post
    */
   post: async (objInfo, _ctx) => {
-    objInfo.type = SchoolsConstants.Type;
-    objInfo.status = objInfo.status || SchoolsConstants.Status.Pending; // add default status if not set
+    objInfo.type = EventsConstants.Type;
 
     // TODO add translations
+    objInfo.name = objInfo.messageID;
 
     const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.post({ ...config, schema: Validators.Post }, objInfo, _ctx);
-  },
-
-  /**
-   * delete
-   */
-  delete: async (objID, _ctx) => {
-    const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.delete(config, objID, _ctx);
-  },
-
-  /**
-   * put
-   */
-  put: async (objID, objInfo, _ctx) => {
-    // TODO add translations for status
-
-    const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.put({ ...config, schema: Validators.Put }, objID, objInfo, _ctx);
-  },
-
-  /**
-   * patch
-   */
-  patch: async (objID, patchInfo, _ctx) => {
-    // TODO add translations for status
-
-    const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.patch({ ...config, schema: Validators.Patch }, objID, patchInfo, _ctx);
+    return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
   },
 };
 

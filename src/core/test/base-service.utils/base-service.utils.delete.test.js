@@ -26,6 +26,7 @@ describe('Base Service', function () {
   beforeEach(async function () {});
 
   afterEach(async function () {
+    delete config.events;
     sinon.restore();
   });
 
@@ -35,6 +36,48 @@ describe('Base Service', function () {
    * delete with success
    */
   it('should call delete with success', async () => {
+    // stub
+    sinon.stub(DbOpsUtils, 'delete').callsFake((conf, objID) => {
+      return {
+        status: 200,
+        value: {
+          id: objID,
+          name: 'name',
+          type: undefined,
+          status: undefined,
+        },
+      };
+    });
+
+    config.events = {
+      service: {
+        post: sinon.stub().callsFake((event) => {
+          console.log(`\nEvents called with ${JSON.stringify(event, null, 2)}\n`);
+        }),
+      },
+    };
+
+    // call
+    let res = await BaseServiceUtils.delete(config, 'id1', _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        id: 'id1',
+        name: 'name',
+        status: undefined,
+        type: undefined,
+      },
+    });
+    chai.expect(config.events.service.post.callCount).to.equal(1);
+  }).timeout(10000);
+
+  /**
+   * delete with success with no events
+   */
+  it('should call delete with success with no events', async () => {
     // stub
     sinon.stub(DbOpsUtils, 'delete').callsFake((conf, objID) => {
       return {

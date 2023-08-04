@@ -7,6 +7,29 @@ const DbOpsUtils = require('./db-ops.utils.js');
 const RestApiUtils = require('./rest-api.utils');
 const CommonUtils = require('./common.utils');
 
+const Constants = {
+  /**
+   * action
+   */
+  Action: {
+    GetAll: 'getAll',
+    GetOne: 'getOne',
+    Post: 'post',
+    Delete: 'delete',
+    Put: 'put',
+    Patch: 'patch',
+  },
+
+  /**
+   * severity
+   */
+  Severity: {
+    Informational: 'info',
+    Warning: 'warning',
+    Critical: 'critical',
+  },
+};
+
 const Utils = {
   /**
    * get ids from fieldName
@@ -76,7 +99,7 @@ const Utils = {
 const Public = {
   /**
    * get all for a requst
-   * config: { serviceName, collection, schema, references, fillReferences }
+   * config: { serviceName, collection, schema, references, fillReferences, events }
    * req: { query }
    * returns: { status, value: {data, meta} } or { status, error }
    */
@@ -120,7 +143,7 @@ const Public = {
 
   /**
    * get all
-   * config: { serviceName, collection, schema, references, fillReferences }
+   * config: { serviceName, collection, schema, references, fillReferences, events }
    * filter: { filter, projection, limit, skip, sort }
    * returns: { status, value } or { status, error }
    */
@@ -160,7 +183,7 @@ const Public = {
 
   /**
    * get one
-   * config: { serviceName, collection, schema, references, fillReferences }
+   * config: { serviceName, collection, schema, references, fillReferences, events }
    * returns: { status, value } or { status, error }
    */
   getOne: async (config, objID, projection, _ctx) => {
@@ -180,7 +203,7 @@ const Public = {
 
   /**
    * post
-   * config: { serviceName, collection, schema, references, fillReferences }
+   * config: { serviceName, collection, schema, references, fillReferences, events }
    * returns: { status, value } or { status, error }
    */
   post: async (config, objInfo, _ctx) => {
@@ -212,6 +235,20 @@ const Public = {
 
     console.log(`Post succesful new object with id: ${r.value.id}, name: ${r.value.name}`);
 
+    // raise event
+    if (config.events?.service) {
+      await config.events.service.post(
+        {
+          severity: Constants.Severity.Informational,
+          messageID: `${config.serviceName}.${Constants.Action.Post}`,
+          target: { id: r.value.id, name: r.value.name, type: r.value.type },
+          args: [JSON.stringify(CommonUtils.protectData(objInfo))],
+          user: { id: _ctx.userid, name: _ctx.username },
+        },
+        _ctx
+      );
+    }
+
     // TODO raise notification
 
     // success
@@ -220,7 +257,7 @@ const Public = {
 
   /**
    * delete
-   * config: { serviceName, collection, schema, references, fillReferences }
+   * config: { serviceName, collection, schema, references, fillReferences, events }
    * returns: { status, value } or { status, error }
    */
   delete: async (config, objID, _ctx) => {
@@ -230,6 +267,20 @@ const Public = {
       return r;
     }
 
+    // raise event
+    if (config.events?.service) {
+      await config.events.service.post(
+        {
+          severity: Constants.Severity.Informational,
+          messageID: `${config.serviceName}.${Constants.Action.Delete}`,
+          target: { id: r.value.id, name: r.value.name, type: r.value.type },
+          args: [],
+          user: { id: _ctx.userid, name: _ctx.username },
+        },
+        _ctx
+      );
+    }
+
     // TODO raise notification
 
     return r;
@@ -237,7 +288,7 @@ const Public = {
 
   /**
    * put
-   * config: { serviceName, collection, schema, references, fillReferences }
+   * config: { serviceName, collection, schema, references, fillReferences, events }
    * returns: { status, value } or { status, error }
    */
   put: async (config, objID, objInfo, _ctx) => {
@@ -261,6 +312,20 @@ const Public = {
       return r;
     }
 
+    // raise event
+    if (config.events?.service) {
+      await config.events.service.post(
+        {
+          severity: Constants.Severity.Informational,
+          messageID: `${config.serviceName}.${Constants.Action.Put}`,
+          target: { id: r.value.id, name: r.value.name, type: r.value.type },
+          args: [JSON.stringify(CommonUtils.protectData(objInfo))],
+          user: { id: _ctx.userid, name: _ctx.username },
+        },
+        _ctx
+      );
+    }
+
     // TODO raise notification
 
     return r;
@@ -268,7 +333,7 @@ const Public = {
 
   /**
    * patch
-   * config: { serviceName, collection, schema, references, fillReferences }
+   * config: { serviceName, collection, schema, references, fillReferences, events }
    * patchInfo: { set, unset, add, remove }
    * returns: { status, value } or { status, error }
    */
@@ -295,6 +360,20 @@ const Public = {
     const r = await DbOpsUtils.patch(config, objID, patchInfo, projection, _ctx);
     if (r.error) {
       return r;
+    }
+
+    // raise event
+    if (config.events?.service) {
+      await config.events.service.post(
+        {
+          severity: Constants.Severity.Informational,
+          messageID: `${config.serviceName}.${Constants.Action.Patch}`,
+          target: { id: r.value.id, name: r.value.name, type: r.value.type },
+          args: [JSON.stringify(CommonUtils.protectData(patchInfo))],
+          user: { id: _ctx.userid, name: _ctx.username },
+        },
+        _ctx
+      );
     }
 
     // TODO raise notification
@@ -374,4 +453,4 @@ const Public = {
   },
 };
 
-module.exports = { ...Public };
+module.exports = { ...Public, Constants };

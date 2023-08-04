@@ -75,6 +75,48 @@ const Public = {
   ],
 
   /**
+   * events
+   */
+  Events: [
+    {
+      id: 'event1',
+      severity: 'info',
+      messageID: 'schools.post',
+      name: 'schools.post',
+      target: {
+        id: 'school-univ1',
+        name: 'GitHub University',
+        type: 'school',
+      },
+      args: [],
+      user: {
+        id: 'user1',
+        name: 'Big Ben',
+      },
+      type: 'event',
+      createdTimestamp: '2023-08-04T12:12:12.001Z',
+    },
+    {
+      id: 'event2',
+      severity: 'info',
+      messageID: 'users.post',
+      name: 'users.post',
+      target: {
+        id: 'user2',
+        name: 'John Bravo',
+        type: 'user',
+      },
+      args: [],
+      user: {
+        id: 'user1',
+        name: 'Big Ben',
+      },
+      type: 'event',
+      createdTimestamp: '2023-08-04T12:12:12.001Z',
+    },
+  ],
+
+  /**
    * students
    */
   Students: [

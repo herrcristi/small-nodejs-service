@@ -6,6 +6,7 @@ const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 
+const EventsRest = require('../rest/events.rest.js');
 const UsersRest = require('../rest/users.rest.js');
 const StudentsConstants = require('./students.constants.js');
 const StudentsDatabase = require('./students.database.js');
@@ -47,7 +48,7 @@ const Validators = {
 const Private = {
   /**
    * config
-   * returns { serviceName, collection, schema, references, fillReferences }
+   * returns { serviceName, collection, schema, references, fillReferences, events }
    */
   getConfig: async (_ctx) => {
     const config = {
@@ -57,6 +58,7 @@ const Private = {
       references: [{ fieldName: '', service: UsersRest, projection: { id: 1, name: 1 } }],
       //fillReferences: false,
       fillReferences: true, // TODO implement users notification and here onUsersNotification instead of fill schools name and status on GET
+      events: { service: EventsRest },
     };
     return config;
   },

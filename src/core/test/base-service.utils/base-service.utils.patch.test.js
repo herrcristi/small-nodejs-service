@@ -31,6 +31,7 @@ describe('Base Service', function () {
   beforeEach(async function () {});
 
   afterEach(async function () {
+    delete config.events;
     sinon.restore();
   });
 
@@ -70,6 +71,71 @@ describe('Base Service', function () {
             id: 'idf1',
             name: 'name1',
           },
+        },
+      });
+
+      return {
+        status: 200,
+        value: {
+          id: objID,
+          name: patch.set.name,
+          type: undefined,
+          status: undefined,
+        },
+      };
+    });
+
+    config.events = {
+      service: {
+        post: sinon.stub().callsFake((event) => {
+          console.log(`\nEvents called with ${JSON.stringify(event, null, 2)}\n`);
+        }),
+      },
+    };
+
+    // call
+    let res = await BaseServiceUtils.patch(config, 'id1', patchInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        id: 'id1',
+        name: 'name',
+        status: undefined,
+        type: undefined,
+      },
+    });
+    chai.expect(config.events.service.post.callCount).to.equal(1);
+  }).timeout(10000);
+
+  /**
+   * patch with success with no events
+   */
+  it('should call patch with success with no events', async () => {
+    const patchInfo = {
+      set: {
+        name: 'name',
+        field: 'idf1',
+      },
+    };
+
+    config.fillReferences = true;
+    sinon.stub(config.references[0].service, 'getAllByIDs').callsFake(() => {
+      return {
+        value: [{ id: 'idf1', name: 'name1' }],
+      };
+    });
+
+    // stub
+    sinon.stub(DbOpsUtils, 'patch').callsFake((conf, objID, patch) => {
+      console.log(`\nDbOpsUtils.patch called with objid ${objID} and patch ${JSON.stringify(patch, null, 2)}\n`);
+
+      chai.expect(patch).to.deep.equal({
+        set: {
+          name: 'name',
+          field: { id: 'idf1', name: 'name1' },
         },
       });
 
