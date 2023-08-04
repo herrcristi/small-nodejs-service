@@ -26,7 +26,7 @@ describe('Events Service', function () {
     };
     delete postReq.id;
     delete postReq.type;
-    delete postReq.name;
+    delete postReq.createdTimestamp;
   });
 
   afterEach(async function () {
@@ -48,313 +48,292 @@ describe('Events Service', function () {
   }).timeout(10000);
 
   /**
-   * schema post email
+   * schema post severity
    */
   it('should validate post schema for email', async () => {
-    // email is required
-    delete postReq.email;
+    // severity is required
+    delete postReq.severity;
     let res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"email" is required');
+    chai.expect(res.error.details[0].message).to.include('"severity" is required');
 
-    // email is number
-    postReq.email = 1;
+    // severity is number
+    postReq.severity = 1;
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"email" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"severity" must be one of [info, warning, critical]');
 
-    // email is null
-    postReq.email = null;
+    // severity is null
+    postReq.severity = null;
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"email" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"severity" must be one of [info, warning, critical]');
 
-    // email empty
-    postReq.email = '';
+    // severity empty
+    postReq.severity = '';
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"email" is not allowed to be empty');
+    chai.expect(res.error.details[0].message).to.include('"severity" must be one of [info, warning, critical]');
 
-    // email not valid
-    postReq.email = 'email';
+    // severity not valid
+    postReq.severity = 'severity';
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"email" must be a valid email');
+    chai.expect(res.error.details[0].message).to.include('"severity" must be one of [info, warning, critical]');
   }).timeout(10000);
 
   /**
-   * schema post firstName
+   * schema post messageID
    */
-  it('should validate post schema for firstName', async () => {
-    // firstName is required
-    delete postReq.firstName;
+  it('should validate post schema for messageID', async () => {
+    // messageID is required
+    delete postReq.messageID;
     let res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"firstName" is required');
+    chai.expect(res.error.details[0].message).to.include('"messageID" is required');
 
-    // firstName is number
-    postReq.firstName = 1;
+    // messageID is number
+    postReq.messageID = 1;
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"firstName" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"messageID" must be a string');
 
-    // firstName is null
-    postReq.firstName = null;
+    // messageID is null
+    postReq.messageID = null;
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"firstName" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"messageID" must be a string');
 
-    // firstName empty
-    postReq.firstName = '';
+    // messageID empty
+    postReq.messageID = '';
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"firstName" is not allowed to be empty');
+    chai.expect(res.error.details[0].message).to.include('"messageID" is not allowed to be empty');
   }).timeout(10000);
 
   /**
-   * schema post lastName
+   * schema post target
    */
-  it('should validate post schema for lastName', async () => {
-    // lastName is required
-    delete postReq.lastName;
+  it('should validate post schema for target', async () => {
+    // target is required
+    let target = _.cloneDeep(postReq.target);
+
+    delete postReq.target;
     let res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"lastName" is required');
+    chai.expect(res.error.details[0].message).to.include('"target" is required');
 
-    // lastName is number
-    postReq.lastName = 1;
+    // target.id is required
+    postReq.target = _.cloneDeep(target);
+    delete postReq.target.id;
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"lastName" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"target.id" is required');
 
-    // lastName is null
-    postReq.lastName = null;
+    // target.name is required
+    postReq.target = _.cloneDeep(target);
+    delete postReq.target.name;
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"lastName" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"target.name" is required');
 
-    // lastName empty
-    postReq.lastName = '';
+    // target.type is required
+    postReq.target = _.cloneDeep(target);
+    delete postReq.target.type;
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"lastName" is not allowed to be empty');
+    chai.expect(res.error.details[0].message).to.include('"target.type" is required');
+
+    // target is number
+    postReq.target = 1;
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"target" must be of type object');
+
+    // target is null
+    postReq.target = null;
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"target" must be of type object');
+
+    // target.id is number
+    postReq.target = _.cloneDeep(target);
+    postReq.target.id = 1;
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"target.id" must be a string');
+
+    // target.id is null
+    postReq.target = _.cloneDeep(target);
+    postReq.target.id = null;
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"target.id" must be a string');
+
+    // target.id empty
+    postReq.target = _.cloneDeep(target);
+    postReq.target.id = '';
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"target.id" is not allowed to be empty');
+
+    // target.name is number
+    postReq.target = _.cloneDeep(target);
+    postReq.target.name = 1;
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"target.name" must be a string');
+
+    // target.name is null
+    postReq.target = _.cloneDeep(target);
+    postReq.target.name = null;
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"target.name" must be a string');
+
+    // target.name empty
+    postReq.target = _.cloneDeep(target);
+    postReq.target.name = '';
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"target.name" is not allowed to be empty');
+
+    // target.type is number
+    postReq.target = _.cloneDeep(target);
+    postReq.target.type = 1;
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"target.type" must be a string');
+
+    // target.type is null
+    postReq.target = _.cloneDeep(target);
+    postReq.target.type = null;
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"target.type" must be a string');
+
+    // target.type empty
+    postReq.target = _.cloneDeep(target);
+    postReq.target.type = '';
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"target.type" is not allowed to be empty');
   }).timeout(10000);
 
   /**
-   * schema post address
+   * schema post user
    */
-  it('should validate post schema for address', async () => {
-    // address is required
-    delete postReq.address;
+  it('should validate post schema for user', async () => {
+    // user is required
+    let user = _.cloneDeep(postReq.user);
+
+    delete postReq.user;
     let res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"address" is required');
+    chai.expect(res.error.details[0].message).to.include('"user" is required');
 
-    // address is number
-    postReq.address = 1;
+    // user.id is required
+    postReq.user = _.cloneDeep(user);
+    delete postReq.user.id;
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"address" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"user.id" is required');
 
-    // address is null
-    postReq.address = null;
+    // user.name is required
+    postReq.user = _.cloneDeep(user);
+    delete postReq.user.name;
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"address" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"user.name" is required');
 
-    // address empty
-    postReq.address = '';
+    // user is number
+    postReq.user = 1;
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"address" is not allowed to be empty');
+    chai.expect(res.error.details[0].message).to.include('"user" must be of type object');
+
+    // user is null
+    postReq.user = null;
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"user" must be of type object');
+
+    // user.id is number
+    postReq.user = _.cloneDeep(user);
+    postReq.user.id = 1;
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"user.id" must be a string');
+
+    // user.id is null
+    postReq.user = _.cloneDeep(user);
+    postReq.user.id = null;
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"user.id" must be a string');
+
+    // user.id empty
+    postReq.user = _.cloneDeep(user);
+    postReq.user.id = '';
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"user.id" is not allowed to be empty');
+
+    // user.name is number
+    postReq.user = _.cloneDeep(user);
+    postReq.user.name = 1;
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"user.name" must be a string');
+
+    // user.name is null
+    postReq.user = _.cloneDeep(user);
+    postReq.user.name = null;
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"user.name" must be a string');
+
+    // user.name empty
+    postReq.user = _.cloneDeep(user);
+    postReq.user.name = '';
+    res = EventsService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"user.name" is not allowed to be empty');
   }).timeout(10000);
 
   /**
-   * schema post phoneNumber
+   * schema post args
    */
-  it('should validate post schema for phoneNumber', async () => {
-    // phoneNumber is number
-    postReq.phoneNumber = 1;
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"phoneNumber" must be a string');
-
-    // phoneNumber is null
-    postReq.phoneNumber = null;
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"phoneNumber" must be a string');
-
-    // phoneNumber empty
-    postReq.phoneNumber = '';
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"phoneNumber" is not allowed to be empty');
-
-    // phoneNumber not valid
-    postReq.phoneNumber = 'phoneNumber';
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('fails to match the required pattern');
-  }).timeout(10000);
-
-  /**
-   * schema post birthday
-   */
-  it('should validate post schema for birthday', async () => {
-    // birthday is required
-    delete postReq.birthday;
+  it('should validate post schema for args', async () => {
+    // args must be an array
+    postReq.args = 1;
     let res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"birthday" is required');
+    chai.expect(res.error.details[0].message).to.include('"args" must be an array');
 
-    // birthday is number
-    postReq.birthday = 1;
+    // args null
+    postReq.args = null;
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"birthday" must be a valid date');
+    chai.expect(res.error.details[0].message).to.include('"args" must be an array');
 
-    // birthday is null
-    postReq.birthday = null;
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"birthday" must be a valid date');
-
-    // birthday empty
-    postReq.birthday = '';
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"birthday" must be in ISO 8601 date format');
-
-    // birthday not valid
-    postReq.birthday = 'birthday';
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"birthday" must be in ISO 8601 date format');
-
-    // birthday not valid
-    postReq.birthday = '01-1908';
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"birthday" must be in ISO 8601 date format');
-
-    // birthday valid
-    postReq.birthday = '1980';
+    // args empty allowed
+    postReq.args = [];
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
-  }).timeout(10000);
 
-  /**
-   * schema post status
-   */
-  it('should validate post schema for status', async () => {
-    // status must be a string
-    postReq.status = 1;
-    let res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
-
-    // status null
-    postReq.status = null;
+    // args invalid value
+    postReq.args = [{}];
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
+    chai.expect(res.error.details[0].message).to.include('"args[0]" must be a string');
 
-    // status empty
-    postReq.status = '';
+    // args empty
+    postReq.args = [''];
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
-
-    // status invalid value
-    postReq.status = 'some value';
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
-
-    // status value
-    postReq.status = EventsConstants.Status.Active;
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
-  }).timeout(10000);
-
-  /**
-   * schema post schools
-   */
-  it('should validate post schema for schools', async () => {
-    // schools must be a string
-    postReq.schools = 1;
-    let res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"schools" must be an array');
-
-    // schools null
-    postReq.schools = null;
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"schools" must be an array');
-
-    // schools empty allowed
-    postReq.schools = [];
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
-
-    // schools invalid value
-    postReq.schools = ['some value'];
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"schools[0]" must be of type object');
-
-    // schools id is required
-    postReq.schools = [{}];
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"schools[0].id" is required');
-
-    // schools id must be a string
-    postReq.schools = [{ id: 1 }];
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"schools[0].id" must be a string');
-
-    // schools empty
-    postReq.schools = [{ id: '' }];
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"schools[0].id" is not allowed to be empty');
-
-    // schools roles is required
-    postReq.schools = [{ id: 'id1' }];
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"schools[0].roles" is required');
-
-    // schools roles must be an array
-    postReq.schools = [{ id: 'id1', roles: 1 }];
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"schools[0].roles" must be an array');
-
-    // schools roles must have 1 el
-    postReq.schools = [{ id: 'id1', roles: [] }];
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"schools[0].roles" does not contain 1 required value(s)');
-
-    // schools roles must be strings
-    postReq.schools = [{ id: 'id1', roles: [{}] }];
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"schools[0].roles[0]" must be a string');
-
-    // schools roles must be strings
-    postReq.schools = [{ id: 'id1', roles: [''] }];
-    res = EventsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"schools[0].roles[0]" is not allowed to be empty');
+    chai.expect(res.error.details[0].message).to.include('"args[0]" is not allowed to be empty');
   }).timeout(10000);
 
   /**
@@ -366,252 +345,5 @@ describe('Events Service', function () {
     let res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
-  }).timeout(10000);
-
-  /**
-   * schema put
-   * is the same as post - add only the extra cases
-   */
-  it('should validate put schema', async () => {
-    // nothing is required
-    let putReq = {};
-    let res = EventsService.Validators.Put.validate(putReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
-
-    // other params
-    putReq = {
-      extra: 1,
-    };
-    res = EventsService.Validators.Put.validate(putReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
-  }).timeout(10000);
-
-  /**
-   * schema patch
-   * is the same as post - add only the extra cases
-   */
-  it('should validate patch schema set', async () => {
-    // nothing is required
-    let patchReq = {};
-    let res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
-
-    // other params
-    patchReq = {
-      extra: 1,
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
-
-    // set must be an object
-    patchReq = {
-      set: 1,
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"set" must be of type object');
-
-    // set empty is allowed
-    patchReq = {
-      set: {},
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
-  }).timeout(10000);
-
-  /**
-   * schema patch.unset
-   */
-  it('should validate patch schema unset', async () => {
-    // unset must be an object
-    let patchReq = {
-      unset: 1,
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"unset" must be an array');
-
-    // unset empty is allowed
-    patchReq = {
-      unset: [],
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
-
-    // unset invalid
-    patchReq = {
-      unset: ['extra'],
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"unset[0]" must be [phoneNumber]');
-  }).timeout(10000);
-
-  /**
-   * schema patch.add
-   */
-  it('should validate patch schema add', async () => {
-    // add must be an object
-    let patchReq = {
-      add: 1,
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"add" must be of type object');
-
-    // add empty is allowed
-    patchReq = {
-      add: {},
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
-
-    // add extra
-    patchReq = {
-      add: {
-        extra: 1,
-      },
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"add.extra" is not allowed');
-
-    // add schools
-    patchReq = {
-      add: {
-        schools: 1,
-      },
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"add.schools" must be an array');
-
-    // add schools empty
-    patchReq = {
-      add: {
-        schools: [{}],
-      },
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('add.schools[0].id" is required');
-
-    // add schools roles req
-    patchReq = {
-      add: {
-        schools: [
-          {
-            id: 'id1',
-          },
-        ],
-      },
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"add.schools[0].roles" is required');
-
-    // add schools roles
-    patchReq = {
-      add: {
-        schools: [
-          {
-            id: 'id1',
-            roles: [],
-          },
-        ],
-      },
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"add.schools[0].roles" does not contain 1 required value(s)');
-  }).timeout(10000);
-
-  /**
-   * schema patch.remove
-   */
-  it('should validate patch schema remove', async () => {
-    // remove must be an object
-    let patchReq = {
-      remove: 1,
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"remove" must be of type object');
-
-    // remove empty is allowed
-    patchReq = {
-      remove: {},
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
-
-    // remove extra
-    patchReq = {
-      remove: {
-        extra: 1,
-      },
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"remove.extra" is not allowed');
-
-    // remove schools
-    patchReq = {
-      remove: {
-        schools: 1,
-      },
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"remove.schools" must be an array');
-
-    // remove schools empty
-    patchReq = {
-      remove: {
-        schools: [{}],
-      },
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('remove.schools[0].id" is required');
-
-    // remove schools roles req
-    patchReq = {
-      remove: {
-        schools: [
-          {
-            id: 'id1',
-          },
-        ],
-      },
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"remove.schools[0].roles" is required');
-
-    // remove schools roles
-    patchReq = {
-      remove: {
-        schools: [
-          {
-            id: 'id1',
-            roles: [],
-          },
-        ],
-      },
-    };
-    res = EventsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai
-      .expect(res.error.details[0].message)
-      .to.include('"remove.schools[0].roles" does not contain 1 required value(s)');
   }).timeout(10000);
 });

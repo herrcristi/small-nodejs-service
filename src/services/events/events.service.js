@@ -21,11 +21,7 @@ const Schema = {
       name: Joi.string().min(1).max(128).required(),
       type: Joi.string().min(1).max(64).required(),
     }),
-    args: Joi.array().items(
-      Joi.object().keys({
-        id: Joi.string().min(1).max(512).required(),
-      })
-    ),
+    args: Joi.array().items(Joi.string().min(1).max(512)),
     user: Joi.object().keys({
       id: Joi.string().min(1).max(64).required(),
       name: Joi.string().min(1).max(128).required(),
