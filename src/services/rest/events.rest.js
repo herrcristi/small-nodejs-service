@@ -27,10 +27,10 @@ const Public = {
   },
 
   /**
-   * post
+   * post (is internal)
    */
   post: async (objInfo, _ctx) => {
-    return await RestCommsUtils.post(EventsConstants.ServiceName, objInfo, _ctx);
+    return await RestCommsUtils.post(EventsConstants.ServiceNameInternal, objInfo, _ctx);
   },
 };
 

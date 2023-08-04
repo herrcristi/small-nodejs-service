@@ -9,11 +9,11 @@ chai.use(chaiHttp);
 const BaseServiceUtils = require('../../../core/utils/base-service.utils');
 
 const TestConstants = require('../../test-constants.js');
-const UsersConstants = require('../../../services/users/users.constants.js');
-const UsersService = require('../../../services/users/users.service.js');
+const EventsConstants = require('../../../services/events/events.constants.js');
+const EventsService = require('../../../services/events/events.service.js');
 
-describe('Users Service', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
+describe('Events Service', function () {
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Events' };
 
   before(async function () {});
 
@@ -29,7 +29,7 @@ describe('Users Service', function () {
    * getAllForReq with success
    */
   it('should getAllForReq with success', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testEvents = _.cloneDeep(TestConstants.Events);
 
     // stub
     let stubBase = sinon.stub(BaseServiceUtils, 'getAllForReq').callsFake((config, filter) => {
@@ -37,14 +37,14 @@ describe('Users Service', function () {
       return {
         status: 200,
         value: {
-          data: _.cloneDeep(testUsers),
-          meta: { count: testUsers.length },
+          data: _.cloneDeep(testEvents),
+          meta: { count: testEvents.length },
         },
       };
     });
 
     // call
-    let res = await UsersService.getAllForReq({ query: {} }, _ctx);
+    let res = await EventsService.getAllForReq({ query: {} }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -52,8 +52,8 @@ describe('Users Service', function () {
 
     chai.expect(res.status).to.equal(200);
     chai.expect(res.value).to.deep.equal({
-      data: _.cloneDeep(testUsers),
-      meta: { count: testUsers.length },
+      data: _.cloneDeep(testEvents),
+      meta: { count: testEvents.length },
     });
   }).timeout(10000);
 
@@ -61,7 +61,7 @@ describe('Users Service', function () {
    * getAllForReq failed
    */
   it('should getAllForReq failed', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testEvents = _.cloneDeep(TestConstants.Events);
 
     // stub
     let stubBase = sinon.stub(BaseServiceUtils, 'getAllForReq').callsFake((config, filter) => {
@@ -70,7 +70,7 @@ describe('Users Service', function () {
     });
 
     // call
-    let res = await UsersService.getAllForReq({ query: {} }, _ctx);
+    let res = await EventsService.getAllForReq({ query: {} }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -88,19 +88,19 @@ describe('Users Service', function () {
    * getAll with success
    */
   it('should getAll with success', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testEvents = _.cloneDeep(TestConstants.Events);
 
     // stub
     let stubBase = sinon.stub(BaseServiceUtils, 'getAll').callsFake((config, filter) => {
       console.log(`\nBaseServiceUtils.getAll called\n`);
       return {
         status: 200,
-        value: _.cloneDeep(testUsers),
+        value: _.cloneDeep(testEvents),
       };
     });
 
     // call
-    let res = await UsersService.getAll({ filter: {} }, _ctx);
+    let res = await EventsService.getAll({ filter: {} }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -108,7 +108,7 @@ describe('Users Service', function () {
 
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: _.cloneDeep(testUsers),
+      value: _.cloneDeep(testEvents),
     });
   }).timeout(10000);
 
@@ -116,7 +116,7 @@ describe('Users Service', function () {
    * getAllCount with success
    */
   it('should getAllCount with success', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testEvents = _.cloneDeep(TestConstants.Events);
 
     // stub
     let stubBase = sinon.stub(BaseServiceUtils, 'getAllCount').callsFake((config, filter) => {
@@ -125,7 +125,7 @@ describe('Users Service', function () {
     });
 
     // call
-    let res = await UsersService.getAllCount({}, _ctx);
+    let res = await EventsService.getAllCount({}, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -140,19 +140,19 @@ describe('Users Service', function () {
    * getAllByIDs with success
    */
   it('should getAllByIDs with success', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testEvents = _.cloneDeep(TestConstants.Events);
 
     // stub
     let stubBase = sinon.stub(BaseServiceUtils, 'getAllByIDs').callsFake((config, ids, projection) => {
       console.log(`\nBaseServiceUtils.getAllByIDs called\n`);
       return {
         status: 200,
-        value: _.cloneDeep(testUsers),
+        value: _.cloneDeep(testEvents),
       };
     });
 
     // call
-    let res = await UsersService.getAllByIDs(['id1'], { id: 1 }, _ctx);
+    let res = await EventsService.getAllByIDs(['id1'], { id: 1 }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -160,7 +160,7 @@ describe('Users Service', function () {
 
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: _.cloneDeep(testUsers),
+      value: _.cloneDeep(testEvents),
     });
   }).timeout(10000);
 
@@ -168,24 +168,24 @@ describe('Users Service', function () {
    * getOne with success
    */
   it('should getOne with success', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
-    const testUser = testUsers[0];
+    const testEvents = _.cloneDeep(TestConstants.Events);
+    const testEvent = testEvents[0];
 
     // stub
     let stubBase = sinon.stub(BaseServiceUtils, 'getOne').callsFake(() => {
       console.log(`\nBaseServiceUtils.getOne called\n`);
-      return { status: 200, value: { ...testUser } };
+      return { status: 200, value: { ...testEvent } };
     });
 
     // call
-    let res = await UsersService.getOne(testUser.id, { id: 1 }, _ctx);
+    let res = await EventsService.getOne(testEvent.id, { id: 1 }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: { ...testUser },
+      value: { ...testEvent },
     });
   }).timeout(10000);
 
@@ -193,14 +193,14 @@ describe('Users Service', function () {
    * post with success
    */
   it('should post with success', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
-    const testUser = testUsers[0];
+    const testEvents = _.cloneDeep(TestConstants.Events);
+    const testEvent = testEvents[0];
 
     const postReq = {
-      ...testUser,
+      ...testEvent,
       id: undefined,
       type: undefined,
-      name: undefined,
+      createdTimestamp: undefined,
     };
 
     // stub
@@ -208,152 +208,19 @@ describe('Users Service', function () {
       console.log(`\nBaseServiceUtils.post called\n`);
       return {
         status: 201,
-        value: { ...postObj, id: testUser.id },
+        value: { ...postObj, id: testEvent.id },
       };
     });
 
     // call
-    let res = await UsersService.post(postReq, _ctx);
+    let res = await EventsService.post(postReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 201,
-      value: { ...testUser },
-    });
-  }).timeout(10000);
-
-  /**
-   * post with success with defaults
-   */
-  it('should post one with success with defaults', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
-    const testUser = testUsers[0];
-
-    const postReq = {
-      ...testUser,
-      id: undefined,
-      status: undefined,
-      type: undefined,
-      name: undefined,
-    };
-
-    // stub
-    let stubBase = sinon.stub(BaseServiceUtils, 'post').callsFake((config, postObj) => {
-      console.log(`\nBaseServiceUtils.post called\n`);
-      return {
-        status: 201,
-        value: { ...postObj, id: testUser.id },
-      };
-    });
-
-    // call
-    let res = await UsersService.post(postReq, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 201,
-      value: {
-        ...testUser,
-        status: UsersConstants.Status.Pending,
-      },
-    });
-  }).timeout(10000);
-
-  /**
-   * delete with success
-   */
-  it('should delete with success', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
-    const testUser = testUsers[0];
-
-    // stub
-    let stubBase = sinon.stub(BaseServiceUtils, 'delete').callsFake(() => {
-      console.log(`\nBaseServiceUtils.delete called\n`);
-      return { status: 200, value: { ...testUser } };
-    });
-
-    // call
-    let res = await UsersService.delete(testUser.id, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: { ...testUser },
-    });
-  }).timeout(10000);
-
-  /**
-   * put with success
-   */
-  it('should put with success', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
-    const testUser = testUsers[0];
-
-    const putReq = {
-      ...testUser,
-      id: undefined,
-    };
-
-    // stub
-    let stubBase = sinon.stub(BaseServiceUtils, 'put').callsFake(() => {
-      console.log(`\nBaseServiceUtils.put called\n`);
-      return {
-        status: 200,
-        value: { ...testUser },
-      };
-    });
-
-    // call
-    let res = await UsersService.put(putReq, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: { ...testUser },
-    });
-  }).timeout(10000);
-
-  /**
-   * patch with success
-   */
-  it('should patch with success', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
-    const testUser = testUsers[0];
-
-    const patchReq = {
-      set: {
-        ...testUser,
-        id: undefined,
-        type: undefined,
-      },
-    };
-
-    // stub
-    let stubBase = sinon.stub(BaseServiceUtils, 'patch').callsFake(() => {
-      console.log(`\nBaseServiceUtils.patch called\n`);
-      return {
-        status: 200,
-        value: { ...testUser },
-      };
-    });
-
-    // call
-    let res = await UsersService.patch(patchReq, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: { ...testUser },
+      value: { ...testEvent, createdTimestamp: undefined },
     });
   }).timeout(10000);
 });

@@ -15,27 +15,26 @@ const EventsDatabase = require('./events.database.js');
 const Schema = {
   Event: Joi.object().keys({
     severity: Joi.string().valid(...Object.values(EventsConstants.Severity)),
-    service: Joi.string().min(1).max(128),
-    action: Joi.string()
-      .min(1)
-      .max(128)
-      .valid(...Object.values(BaseServiceUtils.Constants.ActionType)),
+    messageID: Joi.string().min(1).max(128),
     target: Joi.object().keys({
-      id: Joi.string().min(1).max(64),
-      name: Joi.string().min(1).max(128),
-      type: Joi.string().min(1).max(64),
+      id: Joi.string().min(1).max(64).required(),
+      name: Joi.string().min(1).max(128).required(),
+      type: Joi.string().min(1).max(64).required(),
     }),
     args: Joi.array().items(
       Joi.object().keys({
         id: Joi.string().min(1).max(512).required(),
       })
     ),
-    user: Joi.string().min(1).max(128),
+    user: Joi.object().keys({
+      id: Joi.string().min(1).max(64).required(),
+      name: Joi.string().min(1).max(128).required(),
+    }),
   }),
 };
 
 const Validators = {
-  Post: Schema.Event.fork(['severity', 'service', 'action', 'target'], (x) => x.required() /*make required */),
+  Post: Schema.Event.fork(['severity', 'messageID', 'target', 'user'], (x) => x.required() /*make required */),
 };
 
 const Private = {
@@ -114,8 +113,6 @@ const Public = {
    */
   post: async (objInfo, _ctx) => {
     objInfo.type = EventsConstants.Type;
-    objInfo.status = objInfo.status || EventsConstants.Status.Pending; // add default status if not set
-    objInfo.name = `${objInfo.firstName} ${objInfo.lastName}`;
 
     // TODO add translations
 

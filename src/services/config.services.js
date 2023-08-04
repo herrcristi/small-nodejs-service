@@ -47,6 +47,9 @@ const Public = {
         [UsersConstants.ServiceName]: UsersService,
         [EventsConstants.ServiceName]: EventsService,
         [StudentsConstants.ServiceName]: StudentsService,
+
+        // internal calls only
+        [EventsConstants.ServiceNameInternal]: EventsService,
       },
       rest: {
         [SchoolsConstants.ServiceName]: {
@@ -72,6 +75,14 @@ const Public = {
           host: 'localhost',
           port: WebConstants.Port,
           path: StudentsConstants.ApiPath,
+        },
+
+        // internal calls only
+        [EventsConstants.ServiceNameInternal]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: WebConstants.Port,
+          path: EventsConstants.ApiPathInternal,
         },
       },
     };

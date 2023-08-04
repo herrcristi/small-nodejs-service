@@ -7,22 +7,22 @@ const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
 const TestConstants = require('../../test-constants.js');
-const UsersConstants = require('../../../services/users/users.constants.js');
-const UsersService = require('../../../services/users/users.service.js');
+const EventsConstants = require('../../../services/events/events.constants.js');
+const EventsService = require('../../../services/events/events.service.js');
 
-describe('Users Service', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
+describe('Events Service', function () {
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Events' };
   let postReq = {};
 
   before(async function () {});
 
   beforeEach(async function () {
-    const testUsers = _.cloneDeep(TestConstants.Users);
-    const testUser = testUsers[0];
+    const testEvents = _.cloneDeep(TestConstants.Events);
+    const testEvent = testEvents[0];
 
     // valid post req
     postReq = {
-      ...testUser,
+      ...testEvent,
     };
     delete postReq.id;
     delete postReq.type;
@@ -40,7 +40,7 @@ describe('Users Service', function () {
    */
   it('should validate post schema with success', async () => {
     // call
-    let res = UsersService.Validators.Post.validate(postReq);
+    let res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -53,31 +53,31 @@ describe('Users Service', function () {
   it('should validate post schema for email', async () => {
     // email is required
     delete postReq.email;
-    let res = UsersService.Validators.Post.validate(postReq);
+    let res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"email" is required');
 
     // email is number
     postReq.email = 1;
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"email" must be a string');
 
     // email is null
     postReq.email = null;
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"email" must be a string');
 
     // email empty
     postReq.email = '';
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"email" is not allowed to be empty');
 
     // email not valid
     postReq.email = 'email';
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"email" must be a valid email');
   }).timeout(10000);
@@ -88,25 +88,25 @@ describe('Users Service', function () {
   it('should validate post schema for firstName', async () => {
     // firstName is required
     delete postReq.firstName;
-    let res = UsersService.Validators.Post.validate(postReq);
+    let res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"firstName" is required');
 
     // firstName is number
     postReq.firstName = 1;
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"firstName" must be a string');
 
     // firstName is null
     postReq.firstName = null;
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"firstName" must be a string');
 
     // firstName empty
     postReq.firstName = '';
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"firstName" is not allowed to be empty');
   }).timeout(10000);
@@ -117,25 +117,25 @@ describe('Users Service', function () {
   it('should validate post schema for lastName', async () => {
     // lastName is required
     delete postReq.lastName;
-    let res = UsersService.Validators.Post.validate(postReq);
+    let res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"lastName" is required');
 
     // lastName is number
     postReq.lastName = 1;
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"lastName" must be a string');
 
     // lastName is null
     postReq.lastName = null;
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"lastName" must be a string');
 
     // lastName empty
     postReq.lastName = '';
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"lastName" is not allowed to be empty');
   }).timeout(10000);
@@ -146,25 +146,25 @@ describe('Users Service', function () {
   it('should validate post schema for address', async () => {
     // address is required
     delete postReq.address;
-    let res = UsersService.Validators.Post.validate(postReq);
+    let res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"address" is required');
 
     // address is number
     postReq.address = 1;
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"address" must be a string');
 
     // address is null
     postReq.address = null;
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"address" must be a string');
 
     // address empty
     postReq.address = '';
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"address" is not allowed to be empty');
   }).timeout(10000);
@@ -175,25 +175,25 @@ describe('Users Service', function () {
   it('should validate post schema for phoneNumber', async () => {
     // phoneNumber is number
     postReq.phoneNumber = 1;
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"phoneNumber" must be a string');
 
     // phoneNumber is null
     postReq.phoneNumber = null;
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"phoneNumber" must be a string');
 
     // phoneNumber empty
     postReq.phoneNumber = '';
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"phoneNumber" is not allowed to be empty');
 
     // phoneNumber not valid
     postReq.phoneNumber = 'phoneNumber';
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('fails to match the required pattern');
   }).timeout(10000);
@@ -204,43 +204,43 @@ describe('Users Service', function () {
   it('should validate post schema for birthday', async () => {
     // birthday is required
     delete postReq.birthday;
-    let res = UsersService.Validators.Post.validate(postReq);
+    let res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"birthday" is required');
 
     // birthday is number
     postReq.birthday = 1;
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"birthday" must be a valid date');
 
     // birthday is null
     postReq.birthday = null;
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"birthday" must be a valid date');
 
     // birthday empty
     postReq.birthday = '';
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"birthday" must be in ISO 8601 date format');
 
     // birthday not valid
     postReq.birthday = 'birthday';
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"birthday" must be in ISO 8601 date format');
 
     // birthday not valid
     postReq.birthday = '01-1908';
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"birthday" must be in ISO 8601 date format');
 
     // birthday valid
     postReq.birthday = '1980';
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
   }).timeout(10000);
@@ -251,31 +251,31 @@ describe('Users Service', function () {
   it('should validate post schema for status', async () => {
     // status must be a string
     postReq.status = 1;
-    let res = UsersService.Validators.Post.validate(postReq);
+    let res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
 
     // status null
     postReq.status = null;
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
 
     // status empty
     postReq.status = '';
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
 
     // status invalid value
     postReq.status = 'some value';
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
 
     // status value
-    postReq.status = UsersConstants.Status.Active;
-    res = UsersService.Validators.Post.validate(postReq);
+    postReq.status = EventsConstants.Status.Active;
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
   }).timeout(10000);
@@ -286,73 +286,73 @@ describe('Users Service', function () {
   it('should validate post schema for schools', async () => {
     // schools must be a string
     postReq.schools = 1;
-    let res = UsersService.Validators.Post.validate(postReq);
+    let res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"schools" must be an array');
 
     // schools null
     postReq.schools = null;
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"schools" must be an array');
 
     // schools empty allowed
     postReq.schools = [];
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
 
     // schools invalid value
     postReq.schools = ['some value'];
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"schools[0]" must be of type object');
 
     // schools id is required
     postReq.schools = [{}];
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"schools[0].id" is required');
 
     // schools id must be a string
     postReq.schools = [{ id: 1 }];
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"schools[0].id" must be a string');
 
     // schools empty
     postReq.schools = [{ id: '' }];
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"schools[0].id" is not allowed to be empty');
 
     // schools roles is required
     postReq.schools = [{ id: 'id1' }];
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"schools[0].roles" is required');
 
     // schools roles must be an array
     postReq.schools = [{ id: 'id1', roles: 1 }];
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"schools[0].roles" must be an array');
 
     // schools roles must have 1 el
     postReq.schools = [{ id: 'id1', roles: [] }];
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"schools[0].roles" does not contain 1 required value(s)');
 
     // schools roles must be strings
     postReq.schools = [{ id: 'id1', roles: [{}] }];
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"schools[0].roles[0]" must be a string');
 
     // schools roles must be strings
     postReq.schools = [{ id: 'id1', roles: [''] }];
-    res = UsersService.Validators.Post.validate(postReq);
+    res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"schools[0].roles[0]" is not allowed to be empty');
   }).timeout(10000);
@@ -363,7 +363,7 @@ describe('Users Service', function () {
   it('should validate post schema for extra', async () => {
     // extra is not allowed
     postReq.extra = 1;
-    let res = UsersService.Validators.Post.validate(postReq);
+    let res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
   }).timeout(10000);
@@ -375,7 +375,7 @@ describe('Users Service', function () {
   it('should validate put schema', async () => {
     // nothing is required
     let putReq = {};
-    let res = UsersService.Validators.Put.validate(putReq);
+    let res = EventsService.Validators.Put.validate(putReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
 
@@ -383,7 +383,7 @@ describe('Users Service', function () {
     putReq = {
       extra: 1,
     };
-    res = UsersService.Validators.Put.validate(putReq);
+    res = EventsService.Validators.Put.validate(putReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
   }).timeout(10000);
@@ -395,7 +395,7 @@ describe('Users Service', function () {
   it('should validate patch schema set', async () => {
     // nothing is required
     let patchReq = {};
-    let res = UsersService.Validators.Patch.validate(patchReq);
+    let res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
 
@@ -403,7 +403,7 @@ describe('Users Service', function () {
     patchReq = {
       extra: 1,
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
 
@@ -411,7 +411,7 @@ describe('Users Service', function () {
     patchReq = {
       set: 1,
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"set" must be of type object');
 
@@ -419,7 +419,7 @@ describe('Users Service', function () {
     patchReq = {
       set: {},
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
   }).timeout(10000);
@@ -432,7 +432,7 @@ describe('Users Service', function () {
     let patchReq = {
       unset: 1,
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"unset" must be an array');
 
@@ -440,7 +440,7 @@ describe('Users Service', function () {
     patchReq = {
       unset: [],
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
 
@@ -448,7 +448,7 @@ describe('Users Service', function () {
     patchReq = {
       unset: ['extra'],
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"unset[0]" must be [phoneNumber]');
   }).timeout(10000);
@@ -461,7 +461,7 @@ describe('Users Service', function () {
     let patchReq = {
       add: 1,
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"add" must be of type object');
 
@@ -469,7 +469,7 @@ describe('Users Service', function () {
     patchReq = {
       add: {},
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
 
@@ -479,7 +479,7 @@ describe('Users Service', function () {
         extra: 1,
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"add.extra" is not allowed');
 
@@ -489,7 +489,7 @@ describe('Users Service', function () {
         schools: 1,
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"add.schools" must be an array');
 
@@ -499,7 +499,7 @@ describe('Users Service', function () {
         schools: [{}],
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('add.schools[0].id" is required');
 
@@ -513,7 +513,7 @@ describe('Users Service', function () {
         ],
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"add.schools[0].roles" is required');
 
@@ -528,7 +528,7 @@ describe('Users Service', function () {
         ],
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"add.schools[0].roles" does not contain 1 required value(s)');
   }).timeout(10000);
@@ -541,7 +541,7 @@ describe('Users Service', function () {
     let patchReq = {
       remove: 1,
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"remove" must be of type object');
 
@@ -549,7 +549,7 @@ describe('Users Service', function () {
     patchReq = {
       remove: {},
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
 
@@ -559,7 +559,7 @@ describe('Users Service', function () {
         extra: 1,
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"remove.extra" is not allowed');
 
@@ -569,7 +569,7 @@ describe('Users Service', function () {
         schools: 1,
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"remove.schools" must be an array');
 
@@ -579,7 +579,7 @@ describe('Users Service', function () {
         schools: [{}],
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('remove.schools[0].id" is required');
 
@@ -593,7 +593,7 @@ describe('Users Service', function () {
         ],
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"remove.schools[0].roles" is required');
 
@@ -608,7 +608,7 @@ describe('Users Service', function () {
         ],
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = EventsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai
       .expect(res.error.details[0].message)
