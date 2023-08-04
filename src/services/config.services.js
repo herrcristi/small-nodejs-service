@@ -15,6 +15,11 @@ const UsersService = require('./users/users.service.js');
 const UsersDatabase = require('./users/users.database.js');
 const UsersRouter = require('../services/users/users.router.js');
 
+const EventsConstants = require('./events/events.constants.js');
+const EventsService = require('./events/events.service.js');
+const EventsDatabase = require('./events/events.database.js');
+const EventsRouter = require('../services/events/events.router.js');
+
 const StudentsConstants = require('./students/students.constants.js');
 const StudentsService = require('./students/students.service.js');
 const StudentsDatabase = require('./students/students.database.js');
@@ -26,12 +31,12 @@ const Public = {
    */
   init: async () => {
     // init databases
-    for (const database of [SchoolsDatabase, UsersDatabase, StudentsDatabase]) {
+    for (const database of [SchoolsDatabase, UsersDatabase, EventsDatabase, StudentsDatabase]) {
       await database.init();
     }
 
     // init services
-    for (const service of [SchoolsService, UsersService, StudentsService]) {
+    for (const service of [SchoolsService, UsersService, EventsService, StudentsService]) {
       await service.init();
     }
 
@@ -40,6 +45,7 @@ const Public = {
       local: {
         [SchoolsConstants.ServiceName]: SchoolsService,
         [UsersConstants.ServiceName]: UsersService,
+        [EventsConstants.ServiceName]: EventsService,
         [StudentsConstants.ServiceName]: StudentsService,
       },
       rest: {
@@ -54,6 +60,12 @@ const Public = {
           host: 'localhost',
           port: WebConstants.Port,
           path: UsersConstants.ApiPath,
+        },
+        [EventsConstants.ServiceName]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: WebConstants.Port,
+          path: EventsConstants.ApiPath,
         },
         [StudentsConstants.ServiceName]: {
           protocol: 'http',
@@ -71,7 +83,7 @@ const Public = {
    * get routes
    */
   getRoutes: () => {
-    return [SchoolsRouter, UsersRouter, StudentsRouter];
+    return [SchoolsRouter, UsersRouter, EventsRouter, StudentsRouter];
   },
 };
 

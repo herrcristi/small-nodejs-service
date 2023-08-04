@@ -7,11 +7,11 @@ const Public = {
   // paths
   ApiPath: `${WebConstants.BaseApiPath}/students`,
 
-  // Type
-  Type: 'student',
-
   // service name
   ServiceName: 'students',
+
+  // Type
+  Type: 'student',
 };
 
 module.exports = { ...Public };

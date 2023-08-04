@@ -7,6 +7,20 @@ const DbOpsUtils = require('./db-ops.utils.js');
 const RestApiUtils = require('./rest-api.utils');
 const CommonUtils = require('./common.utils');
 
+const Constants = {
+  /**
+   * action
+   */
+  ActionType: {
+    GetAll: 'getAll',
+    GetOne: 'getOne',
+    Post: 'post',
+    Delete: 'delete',
+    Put: 'put',
+    Patch: 'patch',
+  },
+};
+
 const Utils = {
   /**
    * get ids from fieldName
@@ -374,4 +388,4 @@ const Public = {
   },
 };
 
-module.exports = { ...Public };
+module.exports = { ...Public, Constants };
