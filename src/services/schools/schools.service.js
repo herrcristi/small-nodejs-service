@@ -5,6 +5,7 @@ const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 
+const EventsRest = require('../rest/events.rest.js');
 const SchoolsConstants = require('./schools.constants.js');
 const SchoolsDatabase = require('./schools.database.js');
 
@@ -37,7 +38,7 @@ const Validators = {
 const Private = {
   /**
    * config
-   * returns { serviceName, collection, schema, references, fillReferences }
+   * returns { serviceName, collection, schema, references, fillReferences, events }
    */
   getConfig: async (_ctx) => {
     const config = {
@@ -46,6 +47,7 @@ const Private = {
       schema: Schema.School,
       references: [], // to be populated (like foreign keys)
       fillReferences: false,
+      events: { service: EventsRest },
     };
     return config;
   },

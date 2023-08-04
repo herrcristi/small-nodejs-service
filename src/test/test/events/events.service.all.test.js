@@ -200,6 +200,7 @@ describe('Events Service', function () {
       ...testEvent,
       id: undefined,
       type: undefined,
+      name: undefined,
       createdTimestamp: undefined,
     };
 

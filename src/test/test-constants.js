@@ -81,7 +81,8 @@ const Public = {
     {
       id: 'event1',
       severity: 'info',
-      messageID: 'schools_post',
+      messageID: 'schools.post',
+      name: 'schools.post',
       target: {
         id: 'school-univ1',
         name: 'GitHub University',
@@ -98,7 +99,8 @@ const Public = {
     {
       id: 'event2',
       severity: 'info',
-      messageID: 'users_post',
+      messageID: 'users.post',
+      name: 'users.post',
       target: {
         id: 'user2',
         name: 'John Bravo',

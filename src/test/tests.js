@@ -5,7 +5,7 @@
 // core tests
 require('../core/test/core.all.tests.js');
 
-// // services tests
+// services tests
 require('./test/schools/schools.all.tests.js');
 require('./test/users/users.all.tests.js');
 require('./test/events/events.all.tests.js');

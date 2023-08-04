@@ -26,6 +26,7 @@ describe('Events Service', function () {
     };
     delete postReq.id;
     delete postReq.type;
+    delete postReq.name;
     delete postReq.createdTimestamp;
   });
 

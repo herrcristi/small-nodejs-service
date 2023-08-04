@@ -14,7 +14,7 @@ const EventsDatabase = require('./events.database.js');
  */
 const Schema = {
   Event: Joi.object().keys({
-    severity: Joi.string().valid(...Object.values(EventsConstants.Severity)),
+    severity: Joi.string().valid(...Object.values(BaseServiceUtils.Constants.Severity)),
     messageID: Joi.string().min(1).max(128),
     target: Joi.object().keys({
       id: Joi.string().min(1).max(64).required(),
@@ -36,7 +36,7 @@ const Validators = {
 const Private = {
   /**
    * config
-   * returns { serviceName, collection, schema, references, fillReferences  }
+   * returns { serviceName, collection, schema, references, fillReferences, events }
    */
   getConfig: async (_ctx) => {
     const config = {
@@ -45,6 +45,7 @@ const Private = {
       schema: Schema.Event,
       references: [],
       fillReferences: false,
+      events: null,
     };
     return config;
   },
@@ -111,6 +112,7 @@ const Public = {
     objInfo.type = EventsConstants.Type;
 
     // TODO add translations
+    objInfo.name = objInfo.messageID;
 
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);

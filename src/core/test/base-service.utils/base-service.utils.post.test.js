@@ -26,6 +26,7 @@ describe('Base Service', function () {
   beforeEach(async function () {});
 
   afterEach(async function () {
+    delete config.events;
     sinon.restore();
   });
 
@@ -47,6 +48,7 @@ describe('Base Service', function () {
           {
             id: 'idf1',
             name: 'name1',
+            type: 'typef1',
           },
         ],
       };
@@ -61,17 +63,27 @@ describe('Base Service', function () {
         field: {
           id: 'idf1',
           name: 'name1',
+          type: 'typef1',
         },
       });
 
       return {
         status: 200,
         value: {
-          id: 'id1',
           ...obj,
+          id: 'id1',
+          type: 'type',
         },
       };
     });
+
+    config.events = {
+      service: {
+        post: sinon.stub().callsFake((event) => {
+          console.log(`\nEvents called with ${JSON.stringify(event, null, 2)}\n`);
+        }),
+      },
+    };
 
     // call
     let res = await BaseServiceUtils.post(config, objInfo, _ctx);
@@ -83,10 +95,11 @@ describe('Base Service', function () {
       value: {
         id: 'id1',
         name: 'name',
+        type: 'type',
         status: undefined,
-        type: undefined,
       },
     });
+    chai.expect(config.events.service.post.callCount).to.equal(1);
   }).timeout(10000);
 
   /**
@@ -180,6 +193,57 @@ describe('Base Service', function () {
       error: {
         message: 'Test error message',
         error: 'Error: Test error',
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * post with success with no events
+   */
+  it('should call post with success with no events', async () => {
+    const objInfo = {
+      name: 'name',
+      field: 'idf1',
+    };
+
+    config.fillReferences = true;
+    sinon.stub(config.references[0].service, 'getAllByIDs').callsFake(() => {
+      return {
+        value: [{ id: 'idf1', name: 'name1', type: 'typef1' }],
+      };
+    });
+
+    // stub
+    sinon.stub(DbOpsUtils, 'post').callsFake((config, obj) => {
+      console.log(`\nDbOpsUtils.post called with obj ${JSON.stringify(obj, null, 2)}\n`);
+
+      chai.expect(obj).to.deep.equal({
+        name: 'name',
+        field: { id: 'idf1', name: 'name1', type: 'typef1' },
+      });
+
+      return {
+        status: 200,
+        value: {
+          ...obj,
+          id: 'id1',
+          type: 'type',
+        },
+      };
+    });
+
+    // call
+    let res = await BaseServiceUtils.post(config, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        id: 'id1',
+        name: 'name',
+        type: 'type',
+        status: undefined,
       },
     });
   }).timeout(10000);
