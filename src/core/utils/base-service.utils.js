@@ -30,6 +30,25 @@ const Constants = {
   },
 };
 
+const SchemaNotificationsObjects = Joi.array()
+  .items(
+    Joi.object()
+      .keys({ id: Joi.string().min(1).max(64).required() })
+      .unknown(true)
+  )
+  .required();
+
+const Schema = {
+  /**
+   * notification schema
+   */
+  Notification: Joi.object().keys({
+    added: SchemaNotificationsObjects,
+    modified: SchemaNotificationsObjects,
+    removed: SchemaNotificationsObjects,
+  }),
+};
+
 const Utils = {
   /**
    * get ids from fieldName
@@ -94,12 +113,54 @@ const Utils = {
       }
     }
   },
+
+  /**
+   * get combined projection from all subscribers
+   */
+  getSubscribersProjection: (subscribers, _ctx) => {
+    let projection = { id: 1, name: 1, type: 1, status: 1 };
+
+    for (const sub of subscribers || []) {
+      if (!sub.projection) {
+        continue;
+      }
+      for (const field in sub.projection) {
+        if (sub.projection[field]) {
+          projection[field] = 1;
+        }
+      }
+    }
+    return projection;
+  },
+
+  /**
+   * raise sync notification
+   * subscribers: { serviceName, service, projection }
+   */
+  raiseNotification: async (action, obj, subscribers, _ctx) => {
+    const defaultProjection = { id: 1, name: 1, type: 1, status: 1 };
+
+    for (const sub of subscribers || []) {
+      let objProjected = {};
+      for (const field of sub.projection || defaultProjection) {
+        objProjected[field] = obj[field];
+      }
+
+      // do a sync notification
+      sub.service?.notification(
+        {
+          [action]: [objProjected],
+        },
+        _ctx
+      );
+    }
+  },
 };
 
 const Public = {
   /**
    * get all for a requst
-   * config: { serviceName, collection, schema, references, fillReferences, events }
+   * config: { serviceName, collection, schema, references, fillReferences, events, subscribers }
    * req: { query }
    * returns: { status, value: {data, meta} } or { status, error }
    */
@@ -143,7 +204,7 @@ const Public = {
 
   /**
    * get all
-   * config: { serviceName, collection, schema, references, fillReferences, events }
+   * config: { serviceName, collection, schema, references, fillReferences, events, subscribers }
    * filter: { filter, projection, limit, skip, sort }
    * returns: { status, value } or { status, error }
    */
@@ -183,7 +244,7 @@ const Public = {
 
   /**
    * get one
-   * config: { serviceName, collection, schema, references, fillReferences, events }
+   * config: { serviceName, collection, schema, references, fillReferences, events, subscribers }
    * returns: { status, value } or { status, error }
    */
   getOne: async (config, objID, projection, _ctx) => {
@@ -203,7 +264,7 @@ const Public = {
 
   /**
    * post
-   * config: { serviceName, collection, schema, references, fillReferences, events }
+   * config: { serviceName, collection, schema, references, fillReferences, events, subscribers }
    * returns: { status, value } or { status, error }
    */
   post: async (config, objInfo, _ctx) => {
@@ -257,11 +318,11 @@ const Public = {
 
   /**
    * delete
-   * config: { serviceName, collection, schema, references, fillReferences, events }
+   * config: { serviceName, collection, schema, references, fillReferences, events, subscribers }
    * returns: { status, value } or { status, error }
    */
   delete: async (config, objID, _ctx) => {
-    const projection = { id: 1, name: 1, type: 1, status: 1 };
+    const projection = Utils.getSubscribersProjection(config.subscribers, _ctx);
     const r = await DbOpsUtils.delete(config, objID, projection, _ctx);
     if (r.error) {
       return r;
@@ -288,7 +349,7 @@ const Public = {
 
   /**
    * put
-   * config: { serviceName, collection, schema, references, fillReferences, events }
+   * config: { serviceName, collection, schema, references, fillReferences, events, subscribers }
    * returns: { status, value } or { status, error }
    */
   put: async (config, objID, objInfo, _ctx) => {
@@ -306,7 +367,7 @@ const Public = {
     }
 
     // put
-    const projection = { id: 1, name: 1, type: 1, status: 1 };
+    const projection = Utils.getSubscribersProjection(config.subscribers, _ctx);
     const r = await DbOpsUtils.put(config, objID, objInfo, projection, _ctx);
     if (r.error) {
       return r;
@@ -333,7 +394,7 @@ const Public = {
 
   /**
    * patch
-   * config: { serviceName, collection, schema, references, fillReferences, events }
+   * config: { serviceName, collection, schema, references, fillReferences, events, subscribers }
    * patchInfo: { set, unset, add, remove }
    * returns: { status, value } or { status, error }
    */
@@ -356,7 +417,7 @@ const Public = {
       return rfa;
     }
 
-    const projection = { id: 1, name: 1, type: 1, status: 1 };
+    const projection = Utils.getSubscribersProjection(config.subscribers, _ctx);
     const r = await DbOpsUtils.patch(config, objID, patchInfo, projection, _ctx);
     if (r.error) {
       return r;
@@ -450,6 +511,48 @@ const Public = {
     }
 
     return { value: true }; // success
+  },
+
+  /**
+   * internal sync notification
+   * config: { serviceName, collection, schema, references, fillReferences, events, subscribers }
+   * notification: { added: [ { id, ... } ]. removed, modified  }
+   * returns: { status, value } or { status, error }
+   */
+  notification: async (config, notification, _ctx) => {
+    // validate
+    const v = Schema.Notification.validate(notification);
+    if (v.error) {
+      const err = v.error.details[0].message;
+      return { status: 400, error: { message: err, error: new Error(err) } };
+    }
+
+    // TODO
+    let r = { status: 200, value: true };
+
+    // // populate references
+    // let rf = await Public.populateReferences(config, objInfo, _ctx);
+    // if (rf.error) {
+    //   return rf;
+    // }
+
+    // // post
+    // const r = await DbOpsUtils.post(config, objInfo, _ctx);
+    // if (r.error) {
+    //   return r;
+    // }
+
+    // r.value = {
+    //   id: r.value.id,
+    //   name: r.value.name,
+    //   type: r.value.type,
+    //   status: r.value.status,
+    // };
+
+    console.log(`${config.serviceName}: Notification processed succesful for : ${JSON.stringify(notification)}`);
+
+    // success
+    return r;
   },
 };
 

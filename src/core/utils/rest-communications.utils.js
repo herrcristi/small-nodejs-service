@@ -236,6 +236,17 @@ const Public = {
     }
     return await Private.restCall({ serviceName, method: 'PATCH', path: `/${objID}`, body: patchInfo }, _ctx);
   },
+
+  /**
+   * notification
+   */
+  notification: async (serviceName, notification, _ctx) => {
+    const localService = Private.Config.local[serviceName];
+    if (localService) {
+      return await localService.notification(notification, _ctx);
+    }
+    return await Private.restCall({ serviceName, method: 'POST', path: '', body: notification }, _ctx);
+  },
 };
 
 module.exports = { ...Public };

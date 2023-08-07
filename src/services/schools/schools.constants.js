@@ -6,9 +6,11 @@ const WebConstants = require('../../web-server/web-server.constants.js');
 const Public = {
   // paths
   ApiPath: `${WebConstants.BaseApiPath}/schools`,
+  ApiPathInternal: `${WebConstants.BaseApiPathInternal}/schools`,
 
   // service name
   ServiceName: 'schools',
+  ServiceNameInternal: 'schools-internal',
 
   // type
   Type: 'school',

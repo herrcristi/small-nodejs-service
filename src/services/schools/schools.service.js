@@ -37,6 +37,11 @@ const Validators = {
 
 const Private = {
   /**
+   * subscribers for notifications { serviceName, service, projection }
+   */
+  Subscribers: [],
+
+  /**
    * config
    * returns { serviceName, collection, schema, references, fillReferences, events }
    */
@@ -48,6 +53,7 @@ const Private = {
       references: [], // to be populated (like foreign keys)
       fillReferences: false,
       events: { service: EventsRest },
+      subscribers: Private.Subscribers,
     };
     return config;
   },
@@ -117,7 +123,7 @@ const Public = {
     // TODO add translations
 
     const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.post({ ...config, schema: Validators.Post }, objInfo, _ctx);
+    return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
   },
 
   /**
@@ -135,7 +141,12 @@ const Public = {
     // TODO add translations for status
 
     const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.put({ ...config, schema: Validators.Put }, objID, objInfo, _ctx);
+    return await BaseServiceUtils.put(
+      { ...config, schema: Validators.Put, fillReferences: true },
+      objID,
+      objInfo,
+      _ctx
+    );
   },
 
   /**
@@ -145,7 +156,29 @@ const Public = {
     // TODO add translations for status
 
     const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.patch({ ...config, schema: Validators.Patch }, objID, patchInfo, _ctx);
+    return await BaseServiceUtils.patch(
+      { ...config, schema: Validators.Patch, fillReferences: true },
+      objID,
+      patchInfo,
+      _ctx
+    );
+  },
+
+  /**
+   * subscribe to receive notifications
+   * subscriber: { serviceName, service, projection }
+   */
+  subscribe: async (subscriber, _ctx) => {
+    Private.Subscribers.push(subscriber);
+    return { status: 200, value: true };
+  },
+
+  /**
+   * notification
+   */
+  notification: async (notification, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    return await BaseServiceUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
   },
 };
 

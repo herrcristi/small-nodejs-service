@@ -15,7 +15,11 @@ const router = express.Router();
 router.route(`${EventsConstants.ApiPath}`).get(EventsController.getAll);
 router.route(`${EventsConstants.ApiPath}/:id`).get(EventsController.getOne);
 
-// post is internal
+/**
+ * Internal
+ */
 router.route(`${EventsConstants.ApiPathInternal}`).post(EventsController.post);
+
+router.route(`${EventsConstants.ApiPathInternal}/notifications`).post(EventsController.notification);
 
 module.exports = router;

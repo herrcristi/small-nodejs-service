@@ -49,8 +49,12 @@ const Public = {
         [StudentsConstants.ServiceName]: StudentsService,
 
         // internal calls only
+        [SchoolsConstants.ServiceNameInternal]: SchoolsService,
+        [UsersConstants.ServiceNameInternal]: UsersService,
         [EventsConstants.ServiceNameInternal]: EventsService,
+        [StudentsConstants.ServiceNameInternal]: StudentsService,
       },
+
       rest: {
         [SchoolsConstants.ServiceName]: {
           protocol: 'http',
@@ -78,11 +82,29 @@ const Public = {
         },
 
         // internal calls only
+        [SchoolsConstants.ServiceNameInternal]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: WebConstants.Port,
+          path: SchoolsConstants.ApiPathInternal,
+        },
+        [UsersConstants.ServiceNameInternal]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: WebConstants.Port,
+          path: UsersConstants.ApiPathInternal,
+        },
         [EventsConstants.ServiceNameInternal]: {
           protocol: 'http',
           host: 'localhost',
           port: WebConstants.Port,
           path: EventsConstants.ApiPathInternal,
+        },
+        [StudentsConstants.ServiceNameInternal]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: WebConstants.Port,
+          path: StudentsConstants.ApiPathInternal,
         },
       },
     };

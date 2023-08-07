@@ -20,4 +20,9 @@ router.route(`${UsersConstants.ApiPath}/:id`).delete(UsersController.delete);
 router.route(`${UsersConstants.ApiPath}/:id`).put(UsersController.put);
 router.route(`${UsersConstants.ApiPath}/:id`).patch(UsersController.patch);
 
+/**
+ * Internal
+ */
+router.route(`${UserssConstants.ApiPathInternal}/notifications`).post(UsersController.notification);
+
 module.exports = router;

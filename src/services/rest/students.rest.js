@@ -53,6 +53,13 @@ const Public = {
   patch: async (objID, patchInfo, _ctx) => {
     return await RestCommsUtils.patch(StudentsConstants.ServiceName, objID, patchInfo, _ctx);
   },
+
+  /**
+   * notification (is internal)
+   */
+  notification: async (notification, _ctx) => {
+    return await RestCommsUtils.notification(StudentsConstants.ServiceNameInternal, notification, _ctx);
+  },
 };
 
 module.exports = { ...Public };

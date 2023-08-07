@@ -28,6 +28,19 @@ const Public = {
     },
   ],
 
+  SchoolsNotifications: [
+    {
+      modified: [
+        {
+          id: 'school-univ1',
+          name: 'GitHub University',
+          type: 'school',
+          status: 'active',
+        },
+      ],
+    },
+  ],
+
   /**
    * users
    */

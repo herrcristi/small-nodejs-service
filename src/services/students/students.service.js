@@ -47,6 +47,11 @@ const Validators = {
 
 const Private = {
   /**
+   * subscribers for notifications { serviceName, service, projection }
+   */
+  Subscribers: [],
+
+  /**
    * config
    * returns { serviceName, collection, schema, references, fillReferences, events }
    */
@@ -56,9 +61,9 @@ const Private = {
       collection: await StudentsDatabase.collection(_ctx),
       schema: Schema.Student,
       references: [{ fieldName: '', service: UsersRest, projection: { id: 1, name: 1 } }],
-      //fillReferences: false,
-      fillReferences: true, // TODO implement users notification and here onUsersNotification instead of fill schools name and status on GET
+      fillReferences: false,
       events: { service: EventsRest },
+      subscribers: Private.Subscribers,
     };
     return config;
   },
@@ -166,6 +171,23 @@ const Public = {
       patchInfo,
       _ctx
     );
+  },
+
+  /**
+   * subscribe to receive notifications
+   * subscriber: { serviceName, service, projection }
+   */
+  subscribe: async (subscriber, _ctx) => {
+    Private.Subscribers.push(subscriber);
+    return { status: 200, value: true };
+  },
+
+  /**
+   * notification
+   */
+  notification: async (notification, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    return await BaseServiceUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
   },
 };
 

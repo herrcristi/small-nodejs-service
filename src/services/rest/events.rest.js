@@ -32,6 +32,13 @@ const Public = {
   post: async (objInfo, _ctx) => {
     return await RestCommsUtils.post(EventsConstants.ServiceNameInternal, objInfo, _ctx);
   },
+
+  /**
+   * notification (is internal)
+   */
+  notification: async (notification, _ctx) => {
+    return await RestCommsUtils.notification(EventsConstants.ServiceNameInternal, notification, _ctx);
+  },
 };
 
 module.exports = { ...Public };

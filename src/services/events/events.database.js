@@ -14,6 +14,7 @@ const Public = {
    * get collection
    */
   collection: async (_ctx) => {
+    // TODO events can be per portal or per school
     return null;
   },
 };

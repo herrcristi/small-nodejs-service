@@ -35,6 +35,11 @@ const Validators = {
 
 const Private = {
   /**
+   * subscribers for notifications { serviceName, service, projection }
+   */
+  Subscribers: [],
+
+  /**
    * config
    * returns { serviceName, collection, schema, references, fillReferences, events }
    */
@@ -46,6 +51,7 @@ const Private = {
       references: [],
       fillReferences: false,
       events: null,
+      subscribers: Private.Subscribers,
     };
     return config;
   },
@@ -116,6 +122,23 @@ const Public = {
 
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
+  },
+
+  /**
+   * subscribe to receive notifications (called from config)
+   * subscriber: { serviceName, service, projection }
+   */
+  subscribe: async (subscriber, _ctx) => {
+    Private.Subscribers.push(subscriber);
+    return { status: 200, value: true };
+  },
+
+  /**
+   * notification
+   */
+  notification: async (notification, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    return await BaseServiceUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
   },
 };
 

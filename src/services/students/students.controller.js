@@ -34,6 +34,10 @@ const Public = {
   patch: async (req, res, next) => {
     await BaseControllerUtils.patch(StudentsService, StudentsConstants.ServiceName, req, res, next);
   },
+
+  notification: async (req, res, next) => {
+    await BaseControllerUtils.notification(StudentsService, StudentsConstants.ServiceName, req, res, next);
+  },
 };
 
 module.exports = { ...Public };
