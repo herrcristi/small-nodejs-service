@@ -62,4 +62,4 @@ const Public = {
   },
 };
 
-module.exports = { ...Public };
+module.exports = { ...Public, Constants: SchoolsConstants };

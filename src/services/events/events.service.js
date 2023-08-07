@@ -145,4 +145,5 @@ const Public = {
 module.exports = {
   ...Public,
   Validators,
+  Constants: EventsConstants,
 };

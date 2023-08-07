@@ -104,6 +104,38 @@ const Public = {
     // 200, 404
     return Utils.error('Not implemented', time, _ctx);
   },
+
+  /**
+   * references update many
+   * config: { serviceName, collection }
+   * return: { status, value } or { status, error: { message, error } }
+   */
+  updateManyReferences: async (config, fieldName, objInfo, _ctx) => {
+    const time = new Date();
+    //set.lastModifiedTimestamp = new Date();
+
+    let filterField = fieldName ? `${fieldName}.id` : `id`;
+    // filterField === objInfo.id -> set fieldName.field = objInfo.field
+
+    // 200, 404
+    return Utils.error('Not implemented', time, _ctx);
+  },
+
+  /**
+   * references delete many
+   * config: { serviceName, collection }
+   * return: { status, value } or { status, error: { message, error } }
+   */
+  deleteManyReferences: async (config, fieldName, objInfo, _ctx) => {
+    const time = new Date();
+    //set.lastModifiedTimestamp = new Date();
+
+    let filterField = fieldName ? `${fieldName}.id` : `id`;
+    // filterField === objInfo.id -> set fieldName.field = objInfo.field
+
+    // 200, 404
+    return Utils.error('Not implemented', time, _ctx);
+  },
 };
 
 module.exports = { ...Public };

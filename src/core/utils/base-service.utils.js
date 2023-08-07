@@ -52,6 +52,7 @@ const Schema = {
    * notification schema
    */
   Notification: Joi.object().keys({
+    serviceName: Joi.string().min(1).max(64).required(),
     added: SchemaNotificationsObjects,
     modified: SchemaNotificationsObjects,
     removed: SchemaNotificationsObjects,
@@ -144,12 +145,13 @@ const Utils = {
 
   /**
    * raise sync notification
-   * subscribers: { serviceName, service, projection }
+   * config: { serviceName, collection, schema, references, fillReferences, events, subscribers }
+   * subscribers: { service, projection }
    */
-  raiseNotification: async (action, obj, subscribers, _ctx) => {
+  raiseNotification: async (config, action, obj, _ctx) => {
     const defaultProjection = { id: 1, name: 1, type: 1, status: 1 };
 
-    for (const sub of subscribers || []) {
+    for (const sub of config.subscribers || []) {
       let objProjected = {};
       for (const field of sub.projection || defaultProjection) {
         objProjected[field] = obj[field];
@@ -158,6 +160,7 @@ const Utils = {
       // do a sync notification
       let r = sub.service?.notification(
         {
+          serviceName: config.serviceName,
           [action]: [objProjected],
         },
         _ctx
@@ -325,7 +328,7 @@ const Public = {
     }
 
     // raise a sync notification
-    let rn = await Utils.raiseNotification(Constants.Notification.Added, objInfo, config.subscribers, _ctx);
+    let rn = await Utils.raiseNotification(config, Constants.Notification.Added, objInfo, _ctx);
 
     // success
     return r;
@@ -358,7 +361,7 @@ const Public = {
     }
 
     // raise a sync notification
-    let rn = await Utils.raiseNotification(Constants.Notification.Removed, r.value, config.subscribers, _ctx);
+    let rn = await Utils.raiseNotification(config, Constants.Notification.Removed, r.value, _ctx);
 
     return r;
   },
@@ -404,7 +407,7 @@ const Public = {
     }
 
     // raise a sync notification
-    let rn = await Utils.raiseNotification(Constants.Notification.Modified, r.value, config.subscribers, _ctx);
+    let rn = await Utils.raiseNotification(config, Constants.Notification.Modified, r.value, _ctx);
 
     return r;
   },
@@ -455,7 +458,7 @@ const Public = {
     }
 
     // raise a sync notification
-    let rn = await Utils.raiseNotification(Constants.Notification.Modified, r.value, config.subscribers, _ctx);
+    let rn = await Utils.raiseNotification(config, Constants.Notification.Modified, r.value, _ctx);
 
     return r;
   },
@@ -549,35 +552,46 @@ const Public = {
       return { status: 400, error: { message: err, error: new Error(err) } };
     }
 
-    // TODO
-    let r = { status: 200, value: true };
-
+    // configRef: { fieldName, service, projection }
     for (const configRef of config.references) {
+      if (configRef.service?.Constants?.ServiceName !== notification.serviceName) {
+        console.log(`${config.serviceName}: For ${configRef.fieldName} notification is ignored`);
+        continue;
+      }
+
+      if (notification.modified) {
+        console.log(
+          `${config.serviceName}: For ${configRef.fieldName} apply changes from notification ${notification}`
+        );
+
+        // apply modified changes one by one
+        for (const refObj of notification.modified) {
+          const rn = await DbOpsUtils.updateManyReferences(config, configRef.fieldName, refObj, _ctx);
+          if (rn.error) {
+            return rn;
+          }
+        }
+      } else if (notification.removed) {
+        console.log(
+          `${config.serviceName}: For ${configRef.fieldName} apply deletion from notification ${notification}`
+        );
+
+        // apply deleted changes one by one
+        for (const refObj of notification.removed) {
+          const rn = await DbOpsUtils.deleteManyReferences(config, configRef.fieldName, refObj, _ctx);
+          if (rn.error) {
+            return rn;
+          }
+        }
+      } else {
+        console.log(`${config.serviceName}: For ${configRef.fieldName} skip notification`);
+      }
     }
 
-    // // populate references
-    // let rf = await Public.populateReferences(config, objInfo, _ctx);
-    // if (rf.error) {
-    //   return rf;
-    // }
-
-    // // post
-    // const r = await DbOpsUtils.post(config, objInfo, _ctx);
-    // if (r.error) {
-    //   return r;
-    // }
-
-    // r.value = {
-    //   id: r.value.id,
-    //   name: r.value.name,
-    //   type: r.value.type,
-    //   status: r.value.status,
-    // };
-
-    console.log(`${config.serviceName}: Notification processed succesful for : ${JSON.stringify(notification)}`);
+    console.log(`${config.serviceName}: Notification processed succesfully: ${JSON.stringify(notification)}`);
 
     // success
-    return r;
+    return { status: 200, value: true };
   },
 };
 

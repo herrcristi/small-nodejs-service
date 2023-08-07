@@ -194,4 +194,5 @@ const Public = {
 module.exports = {
   ...Public,
   Validators,
+  Constants: StudentsConstants,
 };
