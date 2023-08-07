@@ -23,6 +23,6 @@ router.route(`${UsersConstants.ApiPath}/:id`).patch(UsersController.patch);
 /**
  * Internal
  */
-router.route(`${UserssConstants.ApiPathInternal}/notifications`).post(UsersController.notification);
+router.route(`${UsersConstants.ApiPathInternal}/notifications`).post(UsersController.notification);
 
 module.exports = router;

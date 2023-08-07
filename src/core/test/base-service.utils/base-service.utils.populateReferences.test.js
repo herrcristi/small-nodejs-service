@@ -67,6 +67,7 @@ describe('Base Service', function () {
     // check
     chai.expect(config.references[0].service.getAllByIDs.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
+      status: 200,
       value: true,
     });
     chai.expect(objs).to.deep.equal([
@@ -122,6 +123,7 @@ describe('Base Service', function () {
     // check
     chai.expect(refConfig.references[0].service.getAllByIDs.callCount).to.equal(0);
     chai.expect(res).to.deep.equal({
+      status: 200,
       value: null,
     });
     chai.expect(objs).to.deep.equal([
@@ -159,6 +161,7 @@ describe('Base Service', function () {
     // check
     chai.expect(config.references[0].service.getAllByIDs.callCount).to.equal(0);
     chai.expect(res).to.deep.equal({
+      status: 200,
       value: null,
     });
   }).timeout(10000);
@@ -199,6 +202,7 @@ describe('Base Service', function () {
     // check
     chai.expect(config.references[0].service.getAllByIDs.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
+      status: 200,
       value: true,
     });
     chai.expect(objs).to.deep.equal([
