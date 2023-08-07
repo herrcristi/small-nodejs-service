@@ -28,6 +28,15 @@ const Constants = {
     Warning: 'warning',
     Critical: 'critical',
   },
+
+  /**
+   * notification
+   */
+  Notification: {
+    Added: 'added',
+    Modified: 'modified',
+    Removed: 'removed',
+  },
 };
 
 const SchemaNotificationsObjects = Joi.array()
@@ -147,13 +156,18 @@ const Utils = {
       }
 
       // do a sync notification
-      sub.service?.notification(
+      let r = sub.service?.notification(
         {
           [action]: [objProjected],
         },
         _ctx
       );
+      if (!r) {
+        return r;
+      }
     }
+
+    return { status: 200, value: true };
   },
 };
 
@@ -310,7 +324,8 @@ const Public = {
       );
     }
 
-    // TODO raise notification
+    // raise a sync notification
+    let rn = await Utils.raiseNotification(Constants.Notification.Added, objInfo, config.subscribers, _ctx);
 
     // success
     return r;
@@ -342,7 +357,8 @@ const Public = {
       );
     }
 
-    // TODO raise notification
+    // raise a sync notification
+    let rn = await Utils.raiseNotification(Constants.Notification.Removed, r.value, config.subscribers, _ctx);
 
     return r;
   },
@@ -387,7 +403,8 @@ const Public = {
       );
     }
 
-    // TODO raise notification
+    // raise a sync notification
+    let rn = await Utils.raiseNotification(Constants.Notification.Modified, r.value, config.subscribers, _ctx);
 
     return r;
   },
@@ -437,7 +454,8 @@ const Public = {
       );
     }
 
-    // TODO raise notification
+    // raise a sync notification
+    let rn = await Utils.raiseNotification(Constants.Notification.Modified, r.value, config.subscribers, _ctx);
 
     return r;
   },
@@ -492,11 +510,11 @@ const Public = {
    */
   populateReferences: async (config, objs, _ctx) => {
     if (!config.fillReferences) {
-      return { value: null }; // skipped
+      return { status: 200, value: null }; // skipped
     }
 
     if (!objs) {
-      return { value: null }; // skipped
+      return { status: 200, value: null }; // skipped
     }
 
     if (!Array.isArray(objs)) {
@@ -510,16 +528,20 @@ const Public = {
       }
     }
 
-    return { value: true }; // success
+    return { status: 200, value: true }; // success
   },
 
   /**
    * internal sync notification
    * config: { serviceName, collection, schema, references, fillReferences, events, subscribers }
-   * notification: { added: [ { id, ... } ]. removed, modified  }
+   * notification: { added: [ { id, ... } ], removed, modified  }
    * returns: { status, value } or { status, error }
    */
   notification: async (config, notification, _ctx) => {
+    if (!config.fillReferences) {
+      return { status: 200, value: null }; // skipped
+    }
+
     // validate
     const v = Schema.Notification.validate(notification);
     if (v.error) {
@@ -529,6 +551,9 @@ const Public = {
 
     // TODO
     let r = { status: 200, value: true };
+
+    for (const configRef of config.references) {
+    }
 
     // // populate references
     // let rf = await Public.populateReferences(config, objInfo, _ctx);

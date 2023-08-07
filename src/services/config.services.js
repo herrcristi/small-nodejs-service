@@ -8,22 +8,26 @@ const WebConstants = require('../web-server/web-server.constants.js');
 const SchoolsConstants = require('./schools/schools.constants.js');
 const SchoolsService = require('./schools/schools.service.js');
 const SchoolsDatabase = require('./schools/schools.database.js');
-const SchoolsRouter = require('../services/schools/schools.router.js');
+const SchoolsRouter = require('./schools/schools.router.js');
+const SchoolsRest = require('./rest/schools.rest.js');
 
 const UsersConstants = require('./users/users.constants.js');
 const UsersService = require('./users/users.service.js');
 const UsersDatabase = require('./users/users.database.js');
-const UsersRouter = require('../services/users/users.router.js');
+const UsersRouter = require('./users/users.router.js');
+const UsersRest = require('./rest/users.rest.js');
 
 const EventsConstants = require('./events/events.constants.js');
 const EventsService = require('./events/events.service.js');
 const EventsDatabase = require('./events/events.database.js');
-const EventsRouter = require('../services/events/events.router.js');
+const EventsRouter = require('./events/events.router.js');
+const EventsRest = require('./rest/events.rest.js');
 
 const StudentsConstants = require('./students/students.constants.js');
 const StudentsService = require('./students/students.service.js');
 const StudentsDatabase = require('./students/students.database.js');
 const StudentsRouter = require('../services/students/students.router.js');
+const StudentsRest = require('./rest/students.rest.js');
 
 const Public = {
   /**
@@ -39,6 +43,18 @@ const Public = {
     for (const service of [SchoolsService, UsersService, EventsService, StudentsService]) {
       await service.init();
     }
+
+    // add subscribers
+    await SchoolsService.subscribe({
+      serviceName: UsersConstants.ServiceName,
+      service: UsersRest,
+      projection: null /*default*/,
+    });
+    await UsersService.subscribe({
+      serviceName: StudentsConstants.ServiceName,
+      service: StudentsRest,
+      projection: { id: 1, name: 1 },
+    });
 
     // init the communication
     const config = {
