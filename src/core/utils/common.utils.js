@@ -83,7 +83,7 @@ const Public = {
     let objProjected = {};
 
     for (const field in projection) {
-      if (projection[field]) {
+      if (projection[field] && obj[field] !== undefined) {
         objProjected[field] = obj[field];
       }
     }
