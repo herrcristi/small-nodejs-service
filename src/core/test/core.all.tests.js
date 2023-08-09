@@ -10,4 +10,6 @@ require('./rest-messages.utils/rest-messages.utils.all.tests.js');
 require('./rest-communications.utils/rest-communications.utils.all.tests.js');
 
 require('./base-controller.utils/base-controller.utils.all.tests.js');
+
 require('./base-service.utils/base-service.utils.all.tests.js');
+require('./base-service.references.utils/base-service.references.utils.all.tests.js');

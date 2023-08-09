@@ -156,6 +156,8 @@ const Public = {
       return { status: 200, value: null }; // skipped
     }
 
+    let processed = null;
+
     // configRef: { fieldName, service, projection }
     for (const configRef of config.references) {
       if (configRef.service?.Constants?.ServiceName !== notification.serviceName) {
@@ -170,6 +172,7 @@ const Public = {
           )}`
         );
 
+        processed = true;
         // apply modified changes one by one
         for (const refObj of notification.modified) {
           const rn = await DbOpsUtils.updateManyReferences(config, configRef.fieldName, refObj, _ctx);
@@ -184,6 +187,7 @@ const Public = {
           )}`
         );
 
+        processed = true;
         // apply deleted changes one by one
         for (const refObj of notification.removed) {
           const rn = await DbOpsUtils.deleteManyReferences(config, configRef.fieldName, refObj, _ctx);
@@ -201,7 +205,7 @@ const Public = {
     );
 
     // success
-    return { status: 200, value: true };
+    return { status: 200, value: processed };
   },
 };
 
