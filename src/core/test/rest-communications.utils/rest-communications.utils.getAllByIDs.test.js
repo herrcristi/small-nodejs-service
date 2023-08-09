@@ -40,6 +40,7 @@ describe('Rest Communications Utils', function () {
         [serviceName]: {
           getAllByIDs: sinon.stub().callsFake((ids, projection) => {
             return {
+              status: 200,
               value: [
                 {
                   id: 'id1',
@@ -60,6 +61,7 @@ describe('Rest Communications Utils', function () {
     chai.expect(localConfig.local[serviceName].getAllByIDs.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
+      status: 200,
       value: [
         {
           id: 'id1',

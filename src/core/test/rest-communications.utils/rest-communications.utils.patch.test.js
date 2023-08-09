@@ -40,6 +40,7 @@ describe('Rest Communications Utils', function () {
         [serviceName]: {
           patch: sinon.stub().callsFake((objID, patchInfo) => {
             return {
+              status: 200,
               value: {
                 id: objID,
                 name: 'name',
@@ -60,6 +61,7 @@ describe('Rest Communications Utils', function () {
     chai.expect(localConfig.local[serviceName].patch.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
+      status: 200,
       value: {
         id: 'id1',
         name: 'name',

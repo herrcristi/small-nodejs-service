@@ -41,6 +41,7 @@ describe('Rest Communications Utils', function () {
         [serviceName]: {
           delete: sinon.stub().callsFake((objID) => {
             return {
+              status: 200,
               value: {
                 id: objID,
                 name: 'name',
@@ -61,6 +62,7 @@ describe('Rest Communications Utils', function () {
     chai.expect(localConfig.local[serviceName].delete.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
+      status: 200,
       value: {
         id: 'id1',
         name: 'name',
