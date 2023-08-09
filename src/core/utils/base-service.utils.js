@@ -215,7 +215,7 @@ const Public = {
       );
     }
 
-    // raise a sync notification
+    // raise a notification
     if (config.notifications?.service) {
       let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
       let rn = await config.notifications.service.raiseNotification(Constants.Notification.Added, [rp.value], _ctx);
@@ -253,7 +253,7 @@ const Public = {
       );
     }
 
-    // raise a sync notification
+    // raise a notification
     if (config.notifications?.service) {
       let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
       let rn = await config.notifications.service.raiseNotification(Constants.Notification.Removed, [rp.value], _ctx);
@@ -307,7 +307,7 @@ const Public = {
       );
     }
 
-    // raise a sync notification
+    // raise a notification
     if (config.notifications?.service) {
       let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
       let rn = await config.notifications.service.raiseNotification(Constants.Notification.Modified, [rp.value], _ctx);
@@ -368,7 +368,7 @@ const Public = {
       );
     }
 
-    // raise a sync notification
+    // raise a notification
     if (config.notifications?.service) {
       let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
       let rn = await config.notifications.service.raiseNotification(Constants.Notification.Modified, [rp.value], _ctx);
