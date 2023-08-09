@@ -165,7 +165,9 @@ const Public = {
 
       if (notification.modified) {
         console.log(
-          `${config.serviceName}: For ${configRef.fieldName} apply changes from notification ${notification}`
+          `${config.serviceName}: For ${configRef.fieldName} apply changes from notification ${JSON.stringify(
+            notification
+          )}`
         );
 
         // apply modified changes one by one
@@ -177,7 +179,9 @@ const Public = {
         }
       } else if (notification.removed) {
         console.log(
-          `${config.serviceName}: For ${configRef.fieldName} apply deletion from notification ${notification}`
+          `${config.serviceName}: For ${configRef.fieldName} apply deletion from notification ${JSON.stringify(
+            notification
+          )}`
         );
 
         // apply deleted changes one by one

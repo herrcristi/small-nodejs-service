@@ -32,6 +32,7 @@ describe('Base Service', function () {
 
   afterEach(async function () {
     delete config.events;
+    delete config.notifications;
     sinon.restore();
   });
 
@@ -93,6 +94,21 @@ describe('Base Service', function () {
       },
     };
 
+    config.notifications = {
+      service: {
+        raiseNotification: sinon.stub().callsFake((notificationType, objs) => {
+          console.log(`\nNotification called with ${notificationType} and ${JSON.stringify(objs, null, 2)}\n`);
+          chai.expect(notificationType).to.equal('modified');
+          chai.expect(objs).to.deep.equal([
+            {
+              id: 'id1',
+            },
+          ]);
+        }),
+      },
+      projection: { id: 1 },
+    };
+
     // call
     let res = await BaseServiceUtils.patch(config, 'id1', patchInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -103,17 +119,16 @@ describe('Base Service', function () {
       value: {
         id: 'id1',
         name: 'name',
-        status: undefined,
-        type: undefined,
       },
     });
     chai.expect(config.events.service.post.callCount).to.equal(1);
+    chai.expect(config.notifications.service.raiseNotification.callCount).to.equal(1);
   }).timeout(10000);
 
   /**
-   * patch with success with no events
+   * patch with success with no events and no notifications
    */
-  it('should call patch with success with no events', async () => {
+  it('should call patch with success with no events and no notifications', async () => {
     const patchInfo = {
       set: {
         name: 'name',
@@ -160,8 +175,6 @@ describe('Base Service', function () {
       value: {
         id: 'id1',
         name: 'name',
-        status: undefined,
-        type: undefined,
       },
     });
   }).timeout(10000);

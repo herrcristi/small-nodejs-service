@@ -61,10 +61,6 @@ const Utils = {
    * config: { notifications: { projection } }
    */
   getProjectedResponse: (r, projection, _ctx) => {
-    if (r.error) {
-      return r;
-    }
-
     const projectedValue = CommonUtils.getProjectedObj(r.value, projection || { id: 1, name: 1, type: 1, status: 1 });
     return {
       ...r,
@@ -203,7 +199,7 @@ const Public = {
       return r;
     }
 
-    console.log(`Post succesfully new object: ${CommonUtils.protectData(r.value)}`);
+    console.log(`Post succesfully new object: ${JSON.stringify(CommonUtils.protectData(r.value))}`);
 
     // raise event
     if (config.events?.service) {
@@ -241,7 +237,7 @@ const Public = {
       return r;
     }
 
-    console.log(`Delete succesfully object: ${CommonUtils.protectData(r.value)}`);
+    console.log(`Delete succesfully object: ${JSON.stringify(CommonUtils.protectData(r.value))}`);
 
     // raise event
     if (config.events?.service) {
@@ -293,7 +289,9 @@ const Public = {
       return r;
     }
 
-    console.log(`Put succesfully ${JSON.stringify(objInfo)}. Result object: ${CommonUtils.protectData(r.value)}`);
+    console.log(
+      `Put succesfully ${JSON.stringify(objInfo)}. Result object: ${JSON.stringify(CommonUtils.protectData(r.value))}`
+    );
 
     // raise event
     if (config.events?.service) {
@@ -350,7 +348,11 @@ const Public = {
       return r;
     }
 
-    console.log(`Patch succesfully ${JSON.stringify(patchInfo)}. Result object: ${CommonUtils.protectData(r.value)}`);
+    console.log(
+      `Patch succesfully ${JSON.stringify(patchInfo)}. Result object: ${JSON.stringify(
+        CommonUtils.protectData(r.value)
+      )}`
+    );
 
     // raise event
     if (config.events?.service) {

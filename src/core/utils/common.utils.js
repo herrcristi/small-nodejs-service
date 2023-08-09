@@ -80,6 +80,13 @@ const Public = {
    * get projected object
    */
   getProjectedObj: (obj, projection) => {
+    if (obj === undefined) {
+      return undefined;
+    }
+    if (obj === null) {
+      return null;
+    }
+
     let objProjected = {};
 
     for (const field in projection) {

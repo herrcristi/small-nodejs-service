@@ -42,4 +42,28 @@ describe('Common Utils', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res).to.deep.equal({});
   }).timeout(10000);
+
+  /**
+   * null obj
+   */
+  it('should project nu ', async () => {
+    let projection = { name: 1, type: 0, status: 1 };
+
+    // undefined
+    let obj = undefined;
+
+    // call
+    let res = CommonUtils.getProjectedObj(obj, projection);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.equal(undefined);
+
+    // null
+    obj = null;
+
+    res = CommonUtils.getProjectedObj(obj, projection);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res).to.equal(null);
+  }).timeout(10000);
 });
