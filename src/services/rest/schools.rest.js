@@ -2,13 +2,14 @@
  * Schools service
  */
 
+const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 const RestCommsUtils = require('../../core/utils/rest-communications.utils.js');
 
 const SchoolsConstants = require('../schools/schools.constants');
 
 const Private = {
   /**
-   * subscribers for notifications { serviceName, service, projection }
+   * subscribers for notifications { service, projection }
    */
   Subscribers: [],
 };
@@ -62,8 +63,15 @@ const Public = {
   },
 
   /**
-   * subscribe to receive notifications
-   * subscriber: { serviceName, service, projection }
+   * (internal) notification endpoint for sync processing
+   */
+  notification: async (notification, _ctx) => {
+    return await RestCommsUtils.notification(SchoolsConstants.ServiceNameInternal, notification, _ctx);
+  },
+
+  /**
+   * subscribe to receive sync notifications (this is called in the same service as the implementation)
+   * subscriber: { service, projection }
    */
   subscribe: async (subscriber, _ctx) => {
     Private.Subscribers.push(subscriber);
@@ -71,10 +79,20 @@ const Public = {
   },
 
   /**
-   * notification (is internal)
+   * subscribe to receive async notifications (via a queue)
    */
-  notification: async (notification, _ctx) => {
-    return await RestCommsUtils.notification(SchoolsConstants.ServiceNameInternal, notification, _ctx);
+  listen: async (projection, _ctx) => {
+    return await NotificationsUtils.listen(projection, _ctx);
+  },
+
+  /**
+   * raise notification (sync + async)
+   * notificationType: 'added', 'modified', 'removed'
+   * subscribers: [{ service, projection }]
+   */
+  raiseNotification: async (notificationType, objs, _ctx) => {
+    const config = { serviceName: SchoolsConstants.ServiceName, subscribers: Private.Subscribers };
+    return await NotificationsUtils.raiseNotification(config, notificationType, objs, _ctx);
   },
 };
 

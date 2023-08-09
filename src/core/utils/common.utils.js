@@ -75,6 +75,21 @@ const Public = {
 
     return newObj;
   },
+
+  /**
+   * get projected object
+   */
+  getProjectedObj: (obj, projection) => {
+    let objProjected = {};
+
+    for (const field in projection) {
+      if (projection[field]) {
+        objProjected[field] = obj[field];
+      }
+    }
+
+    return objProjected;
+  },
 };
 
 module.exports = { ...Public };

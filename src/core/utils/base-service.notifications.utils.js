@@ -38,29 +38,23 @@ const Schema = {
 };
 
 const Public = {
-  
-
   /**
    * raise notification and sync notify all subscribers
-   * config: { ..., serviceName, subscribers }
+   * config: { ..., serviceName, subscribers: [{ service, projection }] }
    * notificationType: Constants.Notification  - 'added', 'modified', 'removed'
-   * subscribers: { service, projection }
    */
-  raiseNotificationSync: async (config, notificationType, objs, _ctx) => {
+  raiseNotification: async (config, notificationType, objs, _ctx) => {
     const defaultProjection = { id: 1, name: 1, type: 1, status: 1 };
 
     for (const sub of config.subscribers || []) {
       let notifyObjs = [];
       for (const obj of objs) {
-        let objProjected = {};
-        for (const field of sub.projection || defaultProjection) {
-          objProjected[field] = obj[field];
-        }
+        const objProjected = CommonUtils.getProjectedObj(obj, sub.projection || defaultProjection);
         notifyObjs.push(objProjected);
       }
 
       // do a sync notification
-      let r = sub.service?.notification(
+      let r = sub.service.notification(
         {
           serviceName: config.serviceName,
           [notificationType]: notifyObjs,
@@ -72,6 +66,22 @@ const Public = {
       }
     }
 
+    return await Public.broadcast(config, notificationType, objs, _ctx);
+  },
+
+  /**
+   * broadcast to send async notifications (via an exchange)
+   */
+  broadcast: async (config, notificationType, objs, _ctx) => {
+    // TODO impl
+    return { status: 200, value: true };
+  },
+
+  /**
+   * subscribe to receive async notifications (via a queue)
+   */
+  listen: async (projection, _ctx) => {
+    // TODO impl
     return { status: 200, value: true };
   },
 

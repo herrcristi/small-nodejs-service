@@ -55,6 +55,22 @@ const Utils = {
 
     return projection;
   },
+
+  /**
+   * get projected object from
+   * config: { notifications: { projection } }
+   */
+  getProjectedResponse: (r, projection, _ctx) => {
+    if (r.error) {
+      return r;
+    }
+
+    const projectedValue = CommonUtils.getProjectedObj(r.value, projection || { id: 1, name: 1, type: 1, status: 1 });
+    return {
+      ...r,
+      value: projectedValue,
+    };
+  },
 };
 
 const Public = {
@@ -187,14 +203,7 @@ const Public = {
       return r;
     }
 
-    r.value = {
-      id: r.value.id,
-      name: r.value.name,
-      type: r.value.type,
-      status: r.value.status,
-    };
-
-    console.log(`Post succesful new object with id: ${r.value.id}, name: ${r.value.name}`);
+    console.log(`Post succesfully new object: ${CommonUtils.protectData(r.value)}`);
 
     // raise event
     if (config.events?.service) {
@@ -203,7 +212,7 @@ const Public = {
           severity: Constants.Severity.Informational,
           messageID: `${config.serviceName}.${Constants.Action.Post}`,
           target: { id: r.value.id, name: r.value.name, type: r.value.type },
-          args: [JSON.stringify(CommonUtils.protectData(objInfo))],
+          args: [JSON.stringify(CommonUtils.protectData(r.value))],
           user: { id: _ctx.userid, name: _ctx.username },
         },
         _ctx
@@ -212,12 +221,12 @@ const Public = {
 
     // raise a sync notification
     if (config.notifications?.service) {
-      // project object first
-      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Added, [objInfo], _ctx);
+      let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
+      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Added, [rp.value], _ctx);
     }
 
     // success
-    return r;
+    return Utils.getProjectedResponse(r, null, _ctx);
   },
 
   /**
@@ -231,6 +240,8 @@ const Public = {
     if (r.error) {
       return r;
     }
+
+    console.log(`Delete succesfully object: ${CommonUtils.protectData(r.value)}`);
 
     // raise event
     if (config.events?.service) {
@@ -248,12 +259,12 @@ const Public = {
 
     // raise a sync notification
     if (config.notifications?.service) {
-      // TODO get only projection info
-      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Removed, [r.value], _ctx);
+      let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
+      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Removed, [rp.value], _ctx);
     }
 
-    // TODO get only default projection info
-    return r;
+    // use the default projection
+    return Utils.getProjectedResponse(r, null, _ctx);
   },
 
   /**
@@ -282,6 +293,8 @@ const Public = {
       return r;
     }
 
+    console.log(`Put succesfully ${JSON.stringify(objInfo)}. Result object: ${CommonUtils.protectData(r.value)}`);
+
     // raise event
     if (config.events?.service) {
       await config.events.service.post(
@@ -298,10 +311,12 @@ const Public = {
 
     // raise a sync notification
     if (config.notifications?.service) {
-      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Modified, [r.value], _ctx);
+      let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
+      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Modified, [rp.value], _ctx);
     }
 
-    return r;
+    // use the default projection
+    return Utils.getProjectedResponse(r, null, _ctx);
   },
 
   /**
@@ -335,6 +350,8 @@ const Public = {
       return r;
     }
 
+    console.log(`Patch succesfully ${JSON.stringify(patchInfo)}. Result object: ${CommonUtils.protectData(r.value)}`);
+
     // raise event
     if (config.events?.service) {
       await config.events.service.post(
@@ -351,10 +368,12 @@ const Public = {
 
     // raise a sync notification
     if (config.notifications?.service) {
-      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Modified, [r.value], _ctx);
+      let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
+      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Modified, [rp.value], _ctx);
     }
 
-    return r;
+    // use the default projection
+    return Utils.getProjectedResponse(r, null, _ctx);
   },
 
   /**
