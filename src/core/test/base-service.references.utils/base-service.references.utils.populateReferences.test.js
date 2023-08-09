@@ -5,7 +5,7 @@ const chai = require('chai');
 const sinon = require('sinon');
 const Joi = require('joi');
 
-const BaseServiceUtils = require('../../utils/base-service.utils.js');
+const ReferencesUtils = require('../../utils/base-service.references.utils.js');
 const DbOpsUtils = require('../../utils/db-ops.utils.js');
 
 describe('Base Service', function () {
@@ -60,7 +60,7 @@ describe('Base Service', function () {
 
     // call
 
-    let res = await BaseServiceUtils.populateReferences(config, objs, _ctx);
+    let res = await ReferencesUtils.populateReferences(config, objs, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     console.log(`\nObjs returned: ${JSON.stringify(objs, null, 2)}\n`);
 
@@ -116,7 +116,7 @@ describe('Base Service', function () {
 
     // call
 
-    let res = await BaseServiceUtils.populateReferences(refConfig, objs, _ctx);
+    let res = await ReferencesUtils.populateReferences(refConfig, objs, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     console.log(`\nObjs returned: ${JSON.stringify(objs, null, 2)}\n`);
 
@@ -155,7 +155,7 @@ describe('Base Service', function () {
     });
 
     // call
-    let res = await BaseServiceUtils.populateReferences(config, objs, _ctx);
+    let res = await ReferencesUtils.populateReferences(config, objs, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -195,7 +195,7 @@ describe('Base Service', function () {
 
     // call
 
-    let res = await BaseServiceUtils.populateReferences(config, objs[0], _ctx);
+    let res = await ReferencesUtils.populateReferences(config, objs[0], _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     console.log(`\nObjs returned: ${JSON.stringify(objs, null, 2)}\n`);
 
@@ -248,7 +248,7 @@ describe('Base Service', function () {
 
     // call
 
-    let res = await BaseServiceUtils.populateReferences(config, objs, _ctx);
+    let res = await ReferencesUtils.populateReferences(config, objs, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     console.log(`\nObjs returned: ${JSON.stringify(objs, null, 2)}\n`);
 

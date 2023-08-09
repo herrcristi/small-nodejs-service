@@ -6,6 +6,7 @@ const Joi = require('joi');
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 
 const EventsRest = require('../rest/events.rest.js');
+const SchoolsRest = require('../rest/schools.rest.js');
 const SchoolsConstants = require('./schools.constants.js');
 const SchoolsDatabase = require('./schools.database.js');
 
@@ -37,11 +38,6 @@ const Validators = {
 
 const Private = {
   /**
-   * subscribers for notifications { serviceName, service, projection }
-   */
-  Subscribers: [],
-
-  /**
    * config
    * returns { serviceName, collection, schema, references, fillReferences, events }
    */
@@ -53,7 +49,7 @@ const Private = {
       references: [], // to be populated (like foreign keys)
       fillReferences: false,
       events: { service: EventsRest },
-      subscribers: Private.Subscribers,
+      notifications: { service: SchoolsRest, projection: null /*default*/ },
     };
     return config;
   },
@@ -162,15 +158,6 @@ const Public = {
       patchInfo,
       _ctx
     );
-  },
-
-  /**
-   * subscribe to receive notifications
-   * subscriber: { serviceName, service, projection }
-   */
-  subscribe: async (subscriber, _ctx) => {
-    Private.Subscribers.push(subscriber);
-    return { status: 200, value: true };
   },
 
   /**

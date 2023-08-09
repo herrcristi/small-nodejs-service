@@ -6,6 +6,7 @@ const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 
+const EventsRest = require('../rest/events.rest.js');
 const EventsConstants = require('./events.constants.js');
 const EventsDatabase = require('./events.database.js');
 
@@ -35,11 +36,6 @@ const Validators = {
 
 const Private = {
   /**
-   * subscribers for notifications { serviceName, service, projection }
-   */
-  Subscribers: [],
-
-  /**
    * config
    * returns { serviceName, collection, schema, references, fillReferences, events }
    */
@@ -51,7 +47,7 @@ const Private = {
       references: [],
       fillReferences: false,
       events: null,
-      subscribers: Private.Subscribers,
+      notifications: { service: EventsRest, projection: { severity: 1, messageID: 1, target: 1, args: 1, user: 1 } },
     };
     return config;
   },
@@ -122,15 +118,6 @@ const Public = {
 
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
-  },
-
-  /**
-   * subscribe to receive notifications (called from config)
-   * subscriber: { serviceName, service, projection }
-   */
-  subscribe: async (subscriber, _ctx) => {
-    Private.Subscribers.push(subscriber);
-    return { status: 200, value: true };
   },
 
   /**

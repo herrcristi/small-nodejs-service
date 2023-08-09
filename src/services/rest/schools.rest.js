@@ -6,6 +6,13 @@ const RestCommsUtils = require('../../core/utils/rest-communications.utils.js');
 
 const SchoolsConstants = require('../schools/schools.constants');
 
+const Private = {
+  /**
+   * subscribers for notifications { serviceName, service, projection }
+   */
+  Subscribers: [],
+};
+
 const Public = {
   /**
    * get all
@@ -52,6 +59,15 @@ const Public = {
    */
   patch: async (objID, patchInfo, _ctx) => {
     return await RestCommsUtils.patch(SchoolsConstants.ServiceName, objID, patchInfo, _ctx);
+  },
+
+  /**
+   * subscribe to receive notifications
+   * subscriber: { serviceName, service, projection }
+   */
+  subscribe: async (subscriber, _ctx) => {
+    Private.Subscribers.push(subscriber);
+    return { status: 200, value: true };
   },
 
   /**

@@ -8,6 +8,7 @@ const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 
 const EventsRest = require('../rest/events.rest.js');
 const UsersRest = require('../rest/users.rest.js');
+const StudentsRest = require('../rest/students.rest.js');
 const StudentsConstants = require('./students.constants.js');
 const StudentsDatabase = require('./students.database.js');
 
@@ -47,11 +48,6 @@ const Validators = {
 
 const Private = {
   /**
-   * subscribers for notifications { serviceName, service, projection }
-   */
-  Subscribers: [],
-
-  /**
    * config
    * returns { serviceName, collection, schema, references, fillReferences, events }
    */
@@ -63,7 +59,7 @@ const Private = {
       references: [{ fieldName: '', service: UsersRest, projection: { id: 1, name: 1 } }],
       fillReferences: false,
       events: { service: EventsRest },
-      subscribers: Private.Subscribers,
+      notifications: { service: StudentsRest, projection: null /*default*/ },
     };
     return config;
   },
@@ -171,15 +167,6 @@ const Public = {
       patchInfo,
       _ctx
     );
-  },
-
-  /**
-   * subscribe to receive notifications
-   * subscriber: { serviceName, service, projection }
-   */
-  subscribe: async (subscriber, _ctx) => {
-    Private.Subscribers.push(subscriber);
-    return { status: 200, value: true };
   },
 
   /**
