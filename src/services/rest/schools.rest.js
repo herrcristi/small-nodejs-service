@@ -80,9 +80,10 @@ const Public = {
 
   /**
    * subscribe to receive async notifications (via a queue)
+   * subscriber: {callback, projection }
    */
-  consume: async (callback, projection, _ctx) => {
-    return await NotificationsUtils.listen(callback, projection, _ctx);
+  consume: async (subscriber, _ctx) => {
+    return await NotificationsUtils.consume(subscriber, _ctx);
   },
 
   /**

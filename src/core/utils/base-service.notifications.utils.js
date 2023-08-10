@@ -78,8 +78,9 @@ const Public = {
 
   /**
    * subscribe to receive async notifications (via a queue)
+   * subscriber: {callback, projection }
    */
-  consume: async (callback, projection, _ctx) => {
+  consume: async (subscriber, _ctx) => {
     // TODO impl
     return { status: 200, value: true };
   },

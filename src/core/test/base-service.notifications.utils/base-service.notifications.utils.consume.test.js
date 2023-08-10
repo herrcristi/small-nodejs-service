@@ -49,7 +49,7 @@ describe('Base Service', function () {
     let callback = sinon.stub();
 
     // call
-    let res = await NotificationsUtils.consume(callback, projection, _ctx);
+    let res = await NotificationsUtils.consume({ callback, projection }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
