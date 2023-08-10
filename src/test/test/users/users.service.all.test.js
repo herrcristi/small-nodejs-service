@@ -356,4 +356,32 @@ describe('Users Service', function () {
       value: { ...testUser },
     });
   }).timeout(10000);
+
+  /**
+   * notification with success
+   */
+  it('should do notification with success', async () => {
+    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
+    const notif = notifications[0];
+
+    // stub
+    let stubBase = sinon.stub(BaseServiceUtils, 'notification').callsFake((config, notification) => {
+      console.log(`\nBaseServiceUtils.notification called\n`);
+      return {
+        status: 200,
+        value: true,
+      };
+    });
+
+    // call
+    let res = await UsersService.notification(notif, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubBase.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: true,
+    });
+  }).timeout(10000);
 });
