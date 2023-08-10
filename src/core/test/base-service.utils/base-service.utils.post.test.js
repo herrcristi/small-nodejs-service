@@ -27,6 +27,7 @@ describe('Base Service', function () {
 
   afterEach(async function () {
     delete config.events;
+    delete config.notifications;
     sinon.restore();
   });
 
@@ -85,6 +86,21 @@ describe('Base Service', function () {
       },
     };
 
+    config.notifications = {
+      service: {
+        raiseNotification: sinon.stub().callsFake((notificationType, objs) => {
+          console.log(`\nNotification called with ${notificationType} and ${JSON.stringify(objs, null, 2)}\n`);
+          chai.expect(notificationType).to.equal('added');
+          chai.expect(objs).to.deep.equal([
+            {
+              id: 'id1',
+            },
+          ]);
+        }),
+      },
+      projection: { id: 1 },
+    };
+
     // call
     let res = await BaseServiceUtils.post(config, objInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -96,10 +112,10 @@ describe('Base Service', function () {
         id: 'id1',
         name: 'name',
         type: 'type',
-        status: undefined,
       },
     });
     chai.expect(config.events.service.post.callCount).to.equal(1);
+    chai.expect(config.notifications.service.raiseNotification.callCount).to.equal(1);
   }).timeout(10000);
 
   /**
@@ -198,9 +214,9 @@ describe('Base Service', function () {
   }).timeout(10000);
 
   /**
-   * post with success with no events
+   * post with success with no events and no notifications
    */
-  it('should call post with success with no events', async () => {
+  it('should call post with success with no events and no notifications', async () => {
     const objInfo = {
       name: 'name',
       field: 'idf1',
@@ -243,8 +259,76 @@ describe('Base Service', function () {
         id: 'id1',
         name: 'name',
         type: 'type',
-        status: undefined,
       },
     });
+  }).timeout(10000);
+
+  /**
+   * post with success with default notifications
+   */
+  it('should call post with success with default notifications', async () => {
+    const objInfo = {
+      name: 'name',
+      field: 'idf1',
+    };
+
+    config.fillReferences = true;
+    sinon.stub(config.references[0].service, 'getAllByIDs').callsFake(() => {
+      return {
+        value: [{ id: 'idf1', name: 'name1', type: 'typef1' }],
+      };
+    });
+
+    // stub
+    sinon.stub(DbOpsUtils, 'post').callsFake((config, obj) => {
+      console.log(`\nDbOpsUtils.post called with obj ${JSON.stringify(obj, null, 2)}\n`);
+
+      chai.expect(obj).to.deep.equal({
+        name: 'name',
+        field: { id: 'idf1', name: 'name1', type: 'typef1' },
+      });
+
+      return {
+        status: 200,
+        value: {
+          ...obj,
+          id: 'id1',
+          type: 'type',
+        },
+      };
+    });
+
+    config.notifications = {
+      service: {
+        raiseNotification: sinon.stub().callsFake((notificationType, objs) => {
+          console.log(`\nNotification called with ${notificationType} and ${JSON.stringify(objs, null, 2)}\n`);
+          chai.expect(notificationType).to.equal('added');
+          chai.expect(objs).to.deep.equal([
+            {
+              id: 'id1',
+              name: 'name',
+              type: 'type',
+            },
+          ]);
+        }),
+      },
+      projection: null,
+    };
+
+    // call
+    let res = await BaseServiceUtils.post(config, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        id: 'id1',
+        name: 'name',
+        type: 'type',
+      },
+    });
+
+    chai.expect(config.notifications.service.raiseNotification.callCount).to.equal(1);
   }).timeout(10000);
 });

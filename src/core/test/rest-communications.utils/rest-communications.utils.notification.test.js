@@ -8,7 +8,6 @@ const axios = require('axios');
 const MockAdapter = require('axios-mock-adapter');
 
 const RestCommsUtils = require('../../utils/rest-communications.utils.js');
-const RestApiUtils = require('../../utils/rest-api.utils.js');
 
 describe('Rest Communications Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
@@ -31,22 +30,18 @@ describe('Rest Communications Utils', function () {
   after(async function () {});
 
   /**
-   * getAll local with success
+   * notification local with success
    */
-  it('should call getAll local with success', async () => {
+  it('should call notification local with success', async () => {
     // local config
     let serviceName = 'Service';
     let localConfig = {
       local: {
         [serviceName]: {
-          getAll: sinon.stub().callsFake((filter) => {
+          notification: sinon.stub().callsFake((notificationInfo) => {
             return {
               status: 200,
-              value: [
-                {
-                  id: 'id1',
-                },
-              ],
+              value: true,
             };
           }),
         },
@@ -55,58 +50,51 @@ describe('Rest Communications Utils', function () {
 
     // call
     await RestCommsUtils.init(localConfig);
-    let res = await RestCommsUtils.getAll(serviceName, { filter: {} }, _ctx);
+    let res = await RestCommsUtils.notification(
+      serviceName,
+      { serviceName, added: [{ id: 'id', name: 'name' }] },
+      _ctx
+    );
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(localConfig.local[serviceName].getAll.callCount).to.equal(1);
+    chai.expect(localConfig.local[serviceName].notification.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: [
-        {
-          id: 'id1',
-        },
-      ],
+      value: true,
     });
   }).timeout(10000);
 
   /**
-   * getAll local fail
+   * notification local fail
    */
-  it('should call getAll local and fail', async () => {
+  it('should call notification local and fail', async () => {
     // local config
     let serviceName = 'Service';
     let localConfig = {
       local: {
         [serviceName]: {
-          getAll: sinon.stub().callsFake((filter) => {
-            return {
-              value: [
-                {
-                  id: 'id1',
-                },
-              ],
-            };
+          notification: sinon.stub().callsFake((notificationInfo) => {
+            return { error: { message: 'Test error message', error: new Error('Test error').toString() } };
           }),
         },
       },
     };
 
-    sinon.stub(RestApiUtils, 'buildMongoFilterFromReq').returns({
-      error: { message: 'Test error message', error: new Error('Test error').toString() },
-    });
-
     // call
     await RestCommsUtils.init(localConfig);
-    let res = await RestCommsUtils.getAll(serviceName, { filter: {} }, _ctx);
+    let res = await RestCommsUtils.notification(
+      serviceName,
+      { serviceName, added: [{ id: 'id', name: 'name' }] },
+      _ctx
+    );
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(localConfig.local[serviceName].getAll.callCount).to.equal(0);
+    chai.expect(localConfig.local[serviceName].notification.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 400,
       error: {
         error: 'Error: Test error',
         message: 'Test error message',
@@ -115,9 +103,9 @@ describe('Rest Communications Utils', function () {
   }).timeout(10000);
 
   /**
-   * getAll remote with success
+   * notification remote with success
    */
-  it('should call getAll remote with success', async () => {
+  it('should call notification remote with success', async () => {
     // local config
     let serviceName = 'Service';
     let restConfig = {
@@ -126,42 +114,34 @@ describe('Rest Communications Utils', function () {
           protocol: 'http',
           host: 'localhost',
           port: process.env.PORT, // see test.utils.js
-          path: '/api/v1/service',
+          path: '/api/internal_v1/service/notifications',
         },
       },
     };
 
     // stub
-    mockAxios.onGet().reply(200, {
-      data: [{ id: 'id1' }],
-      meta: { count: 1, limit: 0, skip: 0 },
-    });
+    mockAxios.onPost().reply(200, true);
 
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.getAll(serviceName, `?id=id1&sort=id&limit=10`, _ctx);
+    let res = await RestCommsUtils.notification(
+      serviceName,
+      { serviceName, added: [{ id: 'id', name: 'name' }] },
+      _ctx
+    );
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: [
-        {
-          id: 'id1',
-        },
-      ],
-      meta: {
-        count: 1,
-        limit: 0,
-        skip: 0,
-      },
+      value: true,
     });
   }).timeout(10000);
 
   /**
-   * getAll remote with failure
+   * notification remote with failure
    */
-  it('should call getAll remote with failure', async () => {
+  it('should call notification remote with failure', async () => {
     // local config
     let serviceName = 'Service';
     let restConfig = {
@@ -170,22 +150,26 @@ describe('Rest Communications Utils', function () {
           protocol: 'http',
           host: 'localhost',
           port: process.env.PORT, // see test.utils.js
-          path: '/api/v1/service',
+          path: '/api/internal_v1/service/notifications',
         },
       },
     };
 
     // stub
-    mockAxios.onGet().reply(500, {});
+    mockAxios.onPost().reply(500, {});
 
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.getAll(serviceName, `?id=id1&sort=id&limit=10`, _ctx);
+    let res = await RestCommsUtils.notification(
+      serviceName,
+      { serviceName, added: [{ id: 'id', name: 'name' }] },
+      _ctx
+    );
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai
       .expect(res.error.message)
-      .to.include('Calling GET http://localhost:8080/api/v1/service?id=id1&sort=id&limit=10 failed with status 500');
+      .to.include('Calling POST http://localhost:8080/api/internal_v1/service/notifications failed with status 500');
   }).timeout(10000);
 });

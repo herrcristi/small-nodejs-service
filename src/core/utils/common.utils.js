@@ -75,6 +75,28 @@ const Public = {
 
     return newObj;
   },
+
+  /**
+   * get projected object
+   */
+  getProjectedObj: (obj, projection) => {
+    if (obj === undefined) {
+      return undefined;
+    }
+    if (obj === null) {
+      return null;
+    }
+
+    let objProjected = {};
+
+    for (const field in projection) {
+      if (projection[field] && obj[field] !== undefined) {
+        objProjected[field] = obj[field];
+      }
+    }
+
+    return objProjected;
+  },
 };
 
 module.exports = { ...Public };

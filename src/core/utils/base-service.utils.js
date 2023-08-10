@@ -6,6 +6,8 @@ const Joi = require('joi');
 const DbOpsUtils = require('./db-ops.utils.js');
 const RestApiUtils = require('./rest-api.utils');
 const CommonUtils = require('./common.utils');
+const ReferencesUtils = require('./base-service.references.utils.js');
+const NotificationsUtils = require('./base-service.notifications.utils.js');
 
 const Constants = {
   /**
@@ -28,78 +30,50 @@ const Constants = {
     Warning: 'warning',
     Critical: 'critical',
   },
+
+  /**
+   * notification
+   */
+  Notification: NotificationsUtils.Constants.Notification,
 };
 
 const Utils = {
   /**
-   * get ids from fieldName
+   * get combined projection from notifications
+   * config: { notifications: { projection } }
    */
-  collectIDs: (targetsMap, objs, i, fieldName) => {
-    let obj = objs[i];
-    if (obj && fieldName) {
-      obj = obj[fieldName];
-    }
-    if (!obj) {
-      return;
+  getProjection: (config, _ctx) => {
+    let projection = { id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, lastModifiedTimestamp: 1 };
+
+    if (config.notifications?.projection) {
+      for (const field in config.notifications.projection) {
+        if (config.notifications.projection[field]) {
+          projection[field] = 1;
+        }
+      }
     }
 
-    // there are 4 situations: string, object.id, array of strings, array of object.id
-    if (Array.isArray(obj)) {
-      for (const i in obj) {
-        Utils.collectIDs(targetsMap, obj, i, '');
-      }
-    } else if (typeof obj === 'string') {
-      // assume string is the id
-      targetsMap[obj] = 1;
-    } else if (typeof obj === 'object') {
-      if (obj.id) {
-        targetsMap[obj.id] = 1;
-      }
-    }
+    return projection;
   },
 
   /**
-   * populate
+   * get projected object from
+   * config: { notifications: { projection } }
    */
-  populate: (targetsMap, objs, i, fieldName) => {
-    let obj = objs[i];
-    if (obj && fieldName) {
-      obj = obj[fieldName];
-    }
-    if (!obj) {
-      return;
-    }
-
-    // there are 4 situations: string, object.id, array of strings, array of object.id
-    if (Array.isArray(obj)) {
-      for (const i in obj) {
-        Utils.populate(targetsMap, obj, i, '');
-      }
-    } else if (typeof obj === 'string') {
-      const details = targetsMap[obj];
-      if (details) {
-        // must set in parent
-        if (fieldName) {
-          objs[i][fieldName] = details;
-        } else {
-          objs[i] = details;
-        }
-      }
-    } else if (typeof obj === 'object') {
-      if (obj.id) {
-        const details = targetsMap[obj.id];
-        if (details) {
-          Object.assign(obj, details);
-        }
-      }
-    }
+  getProjectedResponse: (r, projection, _ctx) => {
+    projection = projection || { id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, lastModifiedTimestamp: 1 };
+    const projectedValue = CommonUtils.getProjectedObj(r.value, projection);
+    return {
+      ...r,
+      value: projectedValue,
+    };
   },
 };
 
 const Public = {
   /**
    * get all for a requst
-   * config: { serviceName, collection, schema, references, fillReferences, events }
+   * config: { serviceName, collection, schema, references, fillReferences, events, notifications }
    * req: { query }
    * returns: { status, value: {data, meta} } or { status, error }
    */
@@ -143,7 +117,7 @@ const Public = {
 
   /**
    * get all
-   * config: { serviceName, collection, schema, references, fillReferences, events }
+   * config: { serviceName, collection, schema, references, fillReferences, events, notifications }
    * filter: { filter, projection, limit, skip, sort }
    * returns: { status, value } or { status, error }
    */
@@ -154,7 +128,7 @@ const Public = {
     }
 
     // populate references
-    let rf = await Public.populateReferences(config, r.value, _ctx);
+    let rf = await ReferencesUtils.populateReferences(config, r.value, _ctx);
     if (rf.error) {
       return rf;
     }
@@ -173,7 +147,7 @@ const Public = {
     }
 
     // populate references
-    let rf = await Public.populateReferences(config, r.value, _ctx);
+    let rf = await ReferencesUtils.populateReferences(config, r.value, _ctx);
     if (rf.error) {
       return rf;
     }
@@ -183,7 +157,7 @@ const Public = {
 
   /**
    * get one
-   * config: { serviceName, collection, schema, references, fillReferences, events }
+   * config: { serviceName, collection, schema, references, fillReferences, events, notifications }
    * returns: { status, value } or { status, error }
    */
   getOne: async (config, objID, projection, _ctx) => {
@@ -193,7 +167,7 @@ const Public = {
     }
 
     // populate references
-    let rf = await Public.populateReferences(config, r.value, _ctx);
+    let rf = await ReferencesUtils.populateReferences(config, r.value, _ctx);
     if (rf.error) {
       return rf;
     }
@@ -203,7 +177,7 @@ const Public = {
 
   /**
    * post
-   * config: { serviceName, collection, schema, references, fillReferences, events }
+   * config: { serviceName, collection, schema, references, fillReferences, events, notifications }
    * returns: { status, value } or { status, error }
    */
   post: async (config, objInfo, _ctx) => {
@@ -215,7 +189,7 @@ const Public = {
     }
 
     // populate references
-    let rf = await Public.populateReferences(config, objInfo, _ctx);
+    let rf = await ReferencesUtils.populateReferences(config, objInfo, _ctx);
     if (rf.error) {
       return rf;
     }
@@ -226,14 +200,7 @@ const Public = {
       return r;
     }
 
-    r.value = {
-      id: r.value.id,
-      name: r.value.name,
-      type: r.value.type,
-      status: r.value.status,
-    };
-
-    console.log(`Post succesful new object with id: ${r.value.id}, name: ${r.value.name}`);
+    console.log(`Post succesfully new object: ${JSON.stringify(CommonUtils.protectData(r.value))}`);
 
     // raise event
     if (config.events?.service) {
@@ -242,30 +209,36 @@ const Public = {
           severity: Constants.Severity.Informational,
           messageID: `${config.serviceName}.${Constants.Action.Post}`,
           target: { id: r.value.id, name: r.value.name, type: r.value.type },
-          args: [JSON.stringify(CommonUtils.protectData(objInfo))],
+          args: [JSON.stringify(CommonUtils.protectData(r.value))],
           user: { id: _ctx.userid, name: _ctx.username },
         },
         _ctx
       );
     }
 
-    // TODO raise notification
+    // raise a notification
+    if (config.notifications?.service) {
+      let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
+      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Added, [rp.value], _ctx);
+    }
 
     // success
-    return r;
+    return Utils.getProjectedResponse(r, null, _ctx);
   },
 
   /**
    * delete
-   * config: { serviceName, collection, schema, references, fillReferences, events }
+   * config: { serviceName, collection, schema, references, fillReferences, events, notifications }
    * returns: { status, value } or { status, error }
    */
   delete: async (config, objID, _ctx) => {
-    const projection = { id: 1, name: 1, type: 1, status: 1 };
+    const projection = Utils.getProjection(config, _ctx);
     const r = await DbOpsUtils.delete(config, objID, projection, _ctx);
     if (r.error) {
       return r;
     }
+
+    console.log(`Delete succesfully object: ${JSON.stringify(CommonUtils.protectData(r.value))}`);
 
     // raise event
     if (config.events?.service) {
@@ -281,14 +254,19 @@ const Public = {
       );
     }
 
-    // TODO raise notification
+    // raise a notification
+    if (config.notifications?.service) {
+      let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
+      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Removed, [rp.value], _ctx);
+    }
 
-    return r;
+    // use the default projection
+    return Utils.getProjectedResponse(r, null, _ctx);
   },
 
   /**
    * put
-   * config: { serviceName, collection, schema, references, fillReferences, events }
+   * config: { serviceName, collection, schema, references, fillReferences, events, notifications }
    * returns: { status, value } or { status, error }
    */
   put: async (config, objID, objInfo, _ctx) => {
@@ -300,17 +278,21 @@ const Public = {
     }
 
     // populate references
-    let rf = await Public.populateReferences(config, objInfo, _ctx);
+    let rf = await ReferencesUtils.populateReferences(config, objInfo, _ctx);
     if (rf.error) {
       return rf;
     }
 
     // put
-    const projection = { id: 1, name: 1, type: 1, status: 1 };
+    const projection = Utils.getProjection(config, _ctx);
     const r = await DbOpsUtils.put(config, objID, objInfo, projection, _ctx);
     if (r.error) {
       return r;
     }
+
+    console.log(
+      `Put succesfully ${JSON.stringify(objInfo)}. Result object: ${JSON.stringify(CommonUtils.protectData(r.value))}`
+    );
 
     // raise event
     if (config.events?.service) {
@@ -326,14 +308,19 @@ const Public = {
       );
     }
 
-    // TODO raise notification
+    // raise a notification
+    if (config.notifications?.service) {
+      let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
+      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Modified, [rp.value], _ctx);
+    }
 
-    return r;
+    // use the default projection
+    return Utils.getProjectedResponse(r, null, _ctx);
   },
 
   /**
    * patch
-   * config: { serviceName, collection, schema, references, fillReferences, events }
+   * config: { serviceName, collection, schema, references, fillReferences, events, notifications }
    * patchInfo: { set, unset, add, remove }
    * returns: { status, value } or { status, error }
    */
@@ -346,21 +333,27 @@ const Public = {
     }
 
     // populate references
-    let rf = await Public.populateReferences(config, patchInfo.set, _ctx);
+    let rf = await ReferencesUtils.populateReferences(config, patchInfo.set, _ctx);
     if (rf.error) {
       return rf;
     }
 
-    let rfa = await Public.populateReferences(config, patchInfo.add, _ctx);
+    let rfa = await ReferencesUtils.populateReferences(config, patchInfo.add, _ctx);
     if (rfa.error) {
       return rfa;
     }
 
-    const projection = { id: 1, name: 1, type: 1, status: 1 };
+    const projection = Utils.getProjection(config, _ctx);
     const r = await DbOpsUtils.patch(config, objID, patchInfo, projection, _ctx);
     if (r.error) {
       return r;
     }
+
+    console.log(
+      `Patch succesfully ${JSON.stringify(patchInfo)}. Result object: ${JSON.stringify(
+        CommonUtils.protectData(r.value)
+      )}`
+    );
 
     // raise event
     if (config.events?.service) {
@@ -376,80 +369,24 @@ const Public = {
       );
     }
 
-    // TODO raise notification
+    // raise a notification
+    if (config.notifications?.service) {
+      let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
+      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Modified, [rp.value], _ctx);
+    }
 
-    return r;
+    // use the default projection
+    return Utils.getProjectedResponse(r, null, _ctx);
   },
 
   /**
-   * populate the field by getting the detail info via rest
-   * config: {fieldName, service, projection}
-   *          fieldName: if empty take data from current object
+   * process notification
+   * config: { serviceName, collection, ..., references, fillReferences }
+   * notification: { added: [ { id, ... } ], removed, modified  }
+   * returns: { status, value } or { status, error }
    */
-  populate: async (config, objs, _ctx) => {
-    // get all ids first
-    let targetsMap = {};
-    for (const i in objs) {
-      Utils.collectIDs(targetsMap, objs, i, config.fieldName);
-    }
-
-    let targetsIDs = Object.keys(targetsMap);
-    if (!targetsIDs.length) {
-      console.log(`Skipping calling targets to populate info for field ${config.fieldName}`);
-      return objs;
-    }
-
-    // get all targets
-    const projection = config.projection || { id: 1, name: 1, type: 1, status: 1 };
-    let rs = await config.service.getAllByIDs(targetsIDs, projection, _ctx);
-    if (rs.error) {
-      return rs;
-    }
-
-    if (targetsIDs.length != rs.value.length) {
-      console.log(`Not all targets were found for field ${config.fieldName}`);
-    }
-
-    targetsMap = {};
-    for (const obj of rs.value) {
-      targetsMap[obj.id] = obj;
-    }
-
-    // update info
-    for (let i in objs) {
-      Utils.populate(targetsMap, objs, i, config.fieldName);
-    }
-
-    console.log(`Targets expanded for field ${config.fieldName}`);
-
-    return objs;
-  },
-
-  /**
-   * populate references
-   * config: { ..., fillReferences, references: [ {fieldName, service, projection} ] }
-   */
-  populateReferences: async (config, objs, _ctx) => {
-    if (!config.fillReferences) {
-      return { value: null }; // skipped
-    }
-
-    if (!objs) {
-      return { value: null }; // skipped
-    }
-
-    if (!Array.isArray(objs)) {
-      objs = [objs];
-    }
-
-    for (const configRef of config.references) {
-      let r = await Public.populate(configRef, objs, _ctx);
-      if (r.error) {
-        return r;
-      }
-    }
-
-    return { value: true }; // success
+  notification: async (config, notification, _ctx) => {
+    return await NotificationsUtils.notification(config, notification, _ctx);
   },
 };
 

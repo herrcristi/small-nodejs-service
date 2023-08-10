@@ -27,6 +27,7 @@ describe('Base Service', function () {
 
   afterEach(async function () {
     delete config.events;
+    delete config.notifications;
     sinon.restore();
   });
 
@@ -83,6 +84,21 @@ describe('Base Service', function () {
       },
     };
 
+    config.notifications = {
+      service: {
+        raiseNotification: sinon.stub().callsFake((notificationType, objs) => {
+          console.log(`\nNotification called with ${notificationType} and ${JSON.stringify(objs, null, 2)}\n`);
+          chai.expect(notificationType).to.equal('modified');
+          chai.expect(objs).to.deep.equal([
+            {
+              id: 'id1',
+            },
+          ]);
+        }),
+      },
+      projection: { id: 1 },
+    };
+
     // call
     let res = await BaseServiceUtils.put(config, 'id1', objInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -93,17 +109,16 @@ describe('Base Service', function () {
       value: {
         id: 'id1',
         name: 'name',
-        status: undefined,
-        type: undefined,
       },
     });
     chai.expect(config.events.service.post.callCount).to.equal(1);
+    chai.expect(config.notifications.service.raiseNotification.callCount).to.equal(1);
   }).timeout(10000);
 
   /**
-   * put with success with no events
+   * put with success with no events and no notifications
    */
-  it('should call put with success no events', async () => {
+  it('should call put with success no events and no notifications', async () => {
     const objInfo = {
       name: 'name',
       field: 'idf1',
@@ -145,8 +160,6 @@ describe('Base Service', function () {
       value: {
         id: 'id1',
         name: 'name',
-        status: undefined,
-        type: undefined,
       },
     });
   }).timeout(10000);

@@ -20,4 +20,9 @@ router.route(`${StudentsConstants.ApiPath}/:id`).delete(StudentsController.delet
 router.route(`${StudentsConstants.ApiPath}/:id`).put(StudentsController.put);
 router.route(`${StudentsConstants.ApiPath}/:id`).patch(StudentsController.patch);
 
+/**
+ * Internal
+ */
+router.route(`${StudentsConstants.ApiPathInternal}/notifications`).post(StudentsController.notification);
+
 module.exports = router;

@@ -1,10 +1,17 @@
 /**
  * Events service
  */
-
+const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 const RestCommsUtils = require('../../core/utils/rest-communications.utils.js');
 
 const EventsConstants = require('../events/events.constants.js');
+
+const Private = {
+  /**
+   * subscribers for notifications { callback, projection }
+   */
+  Subscribers: [],
+};
 
 const Public = {
   /**
@@ -32,6 +39,40 @@ const Public = {
   post: async (objInfo, _ctx) => {
     return await RestCommsUtils.post(EventsConstants.ServiceNameInternal, objInfo, _ctx);
   },
+
+  /**
+   * notification (is internal)
+   */
+  notification: async (notification, _ctx) => {
+    return await RestCommsUtils.notification(EventsConstants.ServiceNameInternal, notification, _ctx);
+  },
+
+  /**
+   * subscribe to receive sync notifications (this is called in the same service as the implementation)
+   * subscriber: {callback, projection }
+   */
+  subscribe: async (subscriber, _ctx) => {
+    Private.Subscribers.push(subscriber);
+    return { status: 200, value: true };
+  },
+
+  /**
+   * subscribe to receive async notifications (via a queue)
+   * subscriber: {callback, projection }
+   */
+  consume: async (subscriber, _ctx) => {
+    return await NotificationsUtils.consume(subscriber, _ctx);
+  },
+
+  /**
+   * raise notification (sync + async)
+   * notificationType: 'added', 'modified', 'removed'
+   * subscribers: [{ callback, projection }]
+   */
+  raiseNotification: async (notificationType, objs, _ctx) => {
+    const config = { serviceName: EventsConstants.ServiceName, subscribers: Private.Subscribers };
+    return await NotificationsUtils.raiseNotification(config, notificationType, objs, _ctx);
+  },
 };
 
-module.exports = { ...Public };
+module.exports = { ...Public, Constants: EventsConstants };

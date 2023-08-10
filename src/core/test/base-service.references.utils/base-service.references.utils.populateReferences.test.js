@@ -5,7 +5,7 @@ const chai = require('chai');
 const sinon = require('sinon');
 const Joi = require('joi');
 
-const BaseServiceUtils = require('../../utils/base-service.utils.js');
+const ReferencesUtils = require('../../utils/base-service.references.utils.js');
 const DbOpsUtils = require('../../utils/db-ops.utils.js');
 
 describe('Base Service', function () {
@@ -60,13 +60,14 @@ describe('Base Service', function () {
 
     // call
 
-    let res = await BaseServiceUtils.populateReferences(config, objs, _ctx);
+    let res = await ReferencesUtils.populateReferences(config, objs, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     console.log(`\nObjs returned: ${JSON.stringify(objs, null, 2)}\n`);
 
     // check
     chai.expect(config.references[0].service.getAllByIDs.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
+      status: 200,
       value: true,
     });
     chai.expect(objs).to.deep.equal([
@@ -115,13 +116,14 @@ describe('Base Service', function () {
 
     // call
 
-    let res = await BaseServiceUtils.populateReferences(refConfig, objs, _ctx);
+    let res = await ReferencesUtils.populateReferences(refConfig, objs, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     console.log(`\nObjs returned: ${JSON.stringify(objs, null, 2)}\n`);
 
     // check
     chai.expect(refConfig.references[0].service.getAllByIDs.callCount).to.equal(0);
     chai.expect(res).to.deep.equal({
+      status: 200,
       value: null,
     });
     chai.expect(objs).to.deep.equal([
@@ -153,12 +155,13 @@ describe('Base Service', function () {
     });
 
     // call
-    let res = await BaseServiceUtils.populateReferences(config, objs, _ctx);
+    let res = await ReferencesUtils.populateReferences(config, objs, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(config.references[0].service.getAllByIDs.callCount).to.equal(0);
     chai.expect(res).to.deep.equal({
+      status: 200,
       value: null,
     });
   }).timeout(10000);
@@ -192,13 +195,14 @@ describe('Base Service', function () {
 
     // call
 
-    let res = await BaseServiceUtils.populateReferences(config, objs[0], _ctx);
+    let res = await ReferencesUtils.populateReferences(config, objs[0], _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     console.log(`\nObjs returned: ${JSON.stringify(objs, null, 2)}\n`);
 
     // check
     chai.expect(config.references[0].service.getAllByIDs.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
+      status: 200,
       value: true,
     });
     chai.expect(objs).to.deep.equal([
@@ -244,7 +248,7 @@ describe('Base Service', function () {
 
     // call
 
-    let res = await BaseServiceUtils.populateReferences(config, objs, _ctx);
+    let res = await ReferencesUtils.populateReferences(config, objs, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     console.log(`\nObjs returned: ${JSON.stringify(objs, null, 2)}\n`);
 

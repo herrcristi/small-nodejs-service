@@ -22,6 +22,10 @@ const Public = {
   post: async (req, res, next) => {
     await BaseControllerUtils.post(EventsService, EventsConstants.ServiceName, req, res, next);
   },
+
+  notification: async (req, res, next) => {
+    await BaseControllerUtils.notification(EventsService, EventsConstants.ServiceName, req, res, next);
+  },
 };
 
 module.exports = { ...Public };

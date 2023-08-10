@@ -6,6 +6,7 @@ const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 
+const EventsRest = require('../rest/events.rest.js');
 const EventsConstants = require('./events.constants.js');
 const EventsDatabase = require('./events.database.js');
 
@@ -46,6 +47,10 @@ const Private = {
       references: [],
       fillReferences: false,
       events: null,
+      notifications: {
+        service: EventsRest,
+        projection: { id: 1, severity: 1, messageID: 1, name: 1, target: 1, args: 1, user: 1, type: 1 },
+      },
     };
     return config;
   },
@@ -117,9 +122,18 @@ const Public = {
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
   },
+
+  /**
+   * notification
+   */
+  notification: async (notification, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    return await BaseServiceUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
+  },
 };
 
 module.exports = {
   ...Public,
   Validators,
+  Constants: EventsConstants,
 };

@@ -7,6 +7,7 @@ const Joi = require('joi');
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 
 const EventsRest = require('../rest/events.rest.js');
+const UsersRest = require('../rest/users.rest.js');
 const SchoolsRest = require('../rest/schools.rest.js');
 const UsersConstants = require('./users.constants.js');
 const UsersDatabase = require('./users.database.js');
@@ -75,9 +76,9 @@ const Private = {
       collection: await UsersDatabase.collection(_ctx),
       schema: Schema.User,
       references: [{ fieldName: 'schools', service: SchoolsRest, projection: null /*default*/ }],
-      //fillReferences: false,
-      fillReferences: true, // TODO implement schools notification and here onSchoolsNotification instead of fill schools name and status on GET
+      fillReferences: false,
       events: { service: EventsRest },
+      notifications: { service: UsersRest, projection: null /*default*/ },
     };
     return config;
   },
@@ -190,9 +191,18 @@ const Public = {
       _ctx
     );
   },
+
+  /**
+   * notification
+   */
+  notification: async (notification, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    return await BaseServiceUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
+  },
 };
 
 module.exports = {
   ...Public,
   Validators,
+  Constants: UsersConstants,
 };

@@ -6,6 +6,7 @@ const Joi = require('joi');
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 
 const EventsRest = require('../rest/events.rest.js');
+const SchoolsRest = require('../rest/schools.rest.js');
 const SchoolsConstants = require('./schools.constants.js');
 const SchoolsDatabase = require('./schools.database.js');
 
@@ -48,6 +49,7 @@ const Private = {
       references: [], // to be populated (like foreign keys)
       fillReferences: false,
       events: { service: EventsRest },
+      notifications: { service: SchoolsRest, projection: null /*default*/ },
     };
     return config;
   },
@@ -117,7 +119,7 @@ const Public = {
     // TODO add translations
 
     const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.post({ ...config, schema: Validators.Post }, objInfo, _ctx);
+    return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
   },
 
   /**
@@ -135,7 +137,12 @@ const Public = {
     // TODO add translations for status
 
     const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.put({ ...config, schema: Validators.Put }, objID, objInfo, _ctx);
+    return await BaseServiceUtils.put(
+      { ...config, schema: Validators.Put, fillReferences: true },
+      objID,
+      objInfo,
+      _ctx
+    );
   },
 
   /**
@@ -145,11 +152,25 @@ const Public = {
     // TODO add translations for status
 
     const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.patch({ ...config, schema: Validators.Patch }, objID, patchInfo, _ctx);
+    return await BaseServiceUtils.patch(
+      { ...config, schema: Validators.Patch, fillReferences: true },
+      objID,
+      patchInfo,
+      _ctx
+    );
+  },
+
+  /**
+   * notification
+   */
+  notification: async (notification, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    return await BaseServiceUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
   },
 };
 
 module.exports = {
   ...Public,
   Validators,
+  Constants: SchoolsConstants,
 };
