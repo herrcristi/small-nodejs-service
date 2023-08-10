@@ -43,7 +43,7 @@ const Utils = {
    * config: { notifications: { projection } }
    */
   getProjection: (config, _ctx) => {
-    let projection = { id: 1, name: 1, type: 1, status: 1 };
+    let projection = { id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, lastModifiedTimestamp: 1 };
 
     if (config.notifications?.projection) {
       for (const field in config.notifications.projection) {
@@ -61,7 +61,8 @@ const Utils = {
    * config: { notifications: { projection } }
    */
   getProjectedResponse: (r, projection, _ctx) => {
-    const projectedValue = CommonUtils.getProjectedObj(r.value, projection || { id: 1, name: 1, type: 1, status: 1 });
+    projection = projection || { id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, lastModifiedTimestamp: 1 };
+    const projectedValue = CommonUtils.getProjectedObj(r.value, projection);
     return {
       ...r,
       value: projectedValue,

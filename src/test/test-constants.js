@@ -30,6 +30,7 @@ const Public = {
 
   SchoolsNotifications: [
     {
+      serviceName: 'schools',
       modified: [
         {
           id: 'school-univ1',
@@ -87,6 +88,20 @@ const Public = {
     },
   ],
 
+  UsersNotifications: [
+    {
+      serviceName: 'users',
+      modified: [
+        {
+          id: 'user1',
+          name: 'Big Ben',
+          type: 'user',
+          status: 'active',
+        },
+      ],
+    },
+  ],
+
   /**
    * events
    */
@@ -129,6 +144,31 @@ const Public = {
     },
   ],
 
+  EventsNotifications: [
+    {
+      serviceName: 'events',
+      modified: [
+        {
+          id: 'event1',
+          severity: 'info',
+          messageID: 'schools.post',
+          name: 'schools.post',
+          target: {
+            id: 'school-univ1',
+            name: 'GitHub University',
+            type: 'school',
+          },
+          args: [],
+          user: {
+            id: 'user1',
+            name: 'Big Ben',
+          },
+          type: 'event',
+        },
+      ],
+    },
+  ],
+
   /**
    * students
    */
@@ -144,6 +184,19 @@ const Public = {
       name: 'John Bravo',
       type: 'student',
       classes: [],
+    },
+  ],
+
+  StudentsNotifications: [
+    {
+      serviceName: 'students',
+      modified: [
+        {
+          id: 'user1',
+          name: 'Big Ben',
+          type: 'student',
+        },
+      ],
     },
   ],
 };

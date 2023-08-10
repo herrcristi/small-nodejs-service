@@ -114,4 +114,33 @@ describe('Events Controller', function () {
       ...testEvent,
     });
   }).timeout(10000);
+
+  /**
+   * notification with success
+   */
+  it('should do notification with success', async () => {
+    const notifications = _.cloneDeep(TestConstants.EventsNotifications);
+    const notif = notifications[0];
+
+    // stub
+    let stubService = sinon.stub(EventsService, 'notification').callsFake(() => {
+      console.log(`\nEventsService.notification called\n`);
+      return {
+        status: 200,
+        value: true,
+      };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .post(`${EventsConstants.ApiPathInternal}/notifications`)
+      .send({ ...notif });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal(true);
+  }).timeout(10000);
 });
