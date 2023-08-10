@@ -13,3 +13,4 @@ require('./base-controller.utils/base-controller.utils.all.tests.js');
 
 require('./base-service.utils/base-service.utils.all.tests.js');
 require('./base-service.references.utils/base-service.references.utils.all.tests.js');
+require('./base-service.notifications.utils/base-service.notifications.utils.all.tests.js');

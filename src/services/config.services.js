@@ -45,8 +45,8 @@ const Public = {
     }
 
     // add subscribers
-    await SchoolsRest.subscribe({ service: UsersRest, projection: null /*default*/ });
-    await UsersRest.subscribe({ service: StudentsRest, projection: { id: 1, name: 1 } });
+    await SchoolsRest.subscribe({ callback: UsersRest.notification, projection: null /*default*/ });
+    await UsersRest.subscribe({ callback: StudentsRest.notification, projection: { id: 1, name: 1 } });
 
     // init the communication
     const config = {

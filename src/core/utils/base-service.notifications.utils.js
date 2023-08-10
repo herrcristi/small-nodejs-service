@@ -17,14 +17,11 @@ const Constants = {
   },
 };
 
-const SchemaNotificationsObjects = Joi.array()
-  .items(
-    Joi.object()
-      .keys({ id: Joi.string().min(1).max(64).required() })
-      .unknown(true)
-  )
-  .required();
-
+const SchemaNotificationsObjects = Joi.array().items(
+  Joi.object()
+    .keys({ id: Joi.string().min(1).max(64).required() })
+    .unknown(true)
+);
 const Schema = {
   /**
    * notification schema
@@ -40,7 +37,7 @@ const Schema = {
 const Public = {
   /**
    * raise notification and sync notify all subscribers
-   * config: { ..., serviceName, subscribers: [{ service, projection }] }
+   * config: { ..., serviceName, subscribers: [{ callback, projection }] }
    * notificationType: Constants.Notification  - 'added', 'modified', 'removed'
    */
   raiseNotification: async (config, notificationType, objs, _ctx) => {
@@ -53,16 +50,18 @@ const Public = {
         notifyObjs.push(objProjected);
       }
 
+      const notification = {
+        serviceName: config.serviceName,
+        [notificationType]: notifyObjs,
+      };
+
       // do a sync notification
-      let r = sub.service.notification(
-        {
-          serviceName: config.serviceName,
-          [notificationType]: notifyObjs,
-        },
-        _ctx
-      );
-      if (!r) {
-        return r;
+      try {
+        if (sub.callback) {
+          await sub.callback(notification, _ctx);
+        }
+      } catch (e) {
+        console.log(`Error processing notification ${JSON.stringify(notification)}. Error ${e.stack ? e.stack : e}`);
       }
     }
 
@@ -80,7 +79,7 @@ const Public = {
   /**
    * subscribe to receive async notifications (via a queue)
    */
-  listen: async (projection, _ctx) => {
+  consume: async (callback, projection, _ctx) => {
     // TODO impl
     return { status: 200, value: true };
   },

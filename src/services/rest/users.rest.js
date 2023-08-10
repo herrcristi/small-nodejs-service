@@ -8,7 +8,7 @@ const UsersConstants = require('../users/users.constants.js');
 
 const Private = {
   /**
-   * subscribers for notifications { service, projection }
+   * subscribers for notifications { callback, projection }
    */
   Subscribers: [],
 };
@@ -70,7 +70,7 @@ const Public = {
 
   /**
    * subscribe to receive sync notifications (this is called in the same service as the implementation)
-   * subscriber: { service, projection }
+   * subscriber: {callback, projection }
    */
   subscribe: async (subscriber, _ctx) => {
     Private.Subscribers.push(subscriber);
@@ -80,14 +80,14 @@ const Public = {
   /**
    * subscribe to receive async notifications (via a queue)
    */
-  listen: async (projection, _ctx) => {
-    return await NotificationsUtils.listen(projection, _ctx);
+  consume: async (callback, projection, _ctx) => {
+    return await NotificationsUtils.listen(callback, projection, _ctx);
   },
 
   /**
    * raise notification (sync + async)
    * notificationType: 'added', 'modified', 'removed'
-   * subscribers: [{ service, projection }]
+   * subscribers: [{ callback, projection }]
    */
   raiseNotification: async (notificationType, objs, _ctx) => {
     const config = { serviceName: UsersConstants.ServiceName, subscribers: Private.Subscribers };
