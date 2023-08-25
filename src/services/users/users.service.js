@@ -5,6 +5,7 @@
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
+const TranslationsUtils = require('../../core/utils/translations.utils.js');
 
 const EventsRest = require('../rest/events.rest.js');
 const UsersRest = require('../rest/users.rest.js');
@@ -74,6 +75,7 @@ const Private = {
     const config = {
       serviceName: UsersConstants.ServiceName,
       collection: await UsersDatabase.collection(_ctx),
+      translate: Public.translate,
       schema: Schema.User,
       references: [{ fieldName: 'schools', service: SchoolsRest, projection: null /*default*/ }],
       fillReferences: false,
@@ -146,8 +148,6 @@ const Public = {
     objInfo.status = objInfo.status || UsersConstants.Status.Pending; // add default status if not set
     objInfo.name = `${objInfo.firstName} ${objInfo.lastName}`;
 
-    // TODO add translations
-
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
   },
@@ -164,8 +164,6 @@ const Public = {
    * put
    */
   put: async (objID, objInfo, _ctx) => {
-    // TODO add translations
-
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.put(
       { ...config, schema: Validators.Put, fillReferences: true },
@@ -179,8 +177,6 @@ const Public = {
    * patch
    */
   patch: async (objID, patchInfo, _ctx) => {
-    // TODO add translations
-
     // TODO implement add/remove schools/roles
 
     const config = await Private.getConfig(_ctx);
@@ -198,6 +194,16 @@ const Public = {
   notification: async (notification, _ctx) => {
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
+  },
+
+  /**
+   * translate
+   */
+  translate: async (obj, _ctx) => {
+    const translations = {
+      status: TranslationsUtils.string(obj?.status, _ctx),
+    };
+    return await TranslationsUtils.addTranslations(obj, translations, _ctx);
   },
 };
 

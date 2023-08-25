@@ -118,8 +118,6 @@ const Public = {
     objInfo.type = SchoolsConstants.Type;
     objInfo.status = objInfo.status || SchoolsConstants.Status.Pending; // add default status if not set
 
-    // TODO add translations
-
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
   },
@@ -136,8 +134,6 @@ const Public = {
    * put
    */
   put: async (objID, objInfo, _ctx) => {
-    // TODO add translations for status
-
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.put(
       { ...config, schema: Validators.Put, fillReferences: true },
@@ -151,8 +147,6 @@ const Public = {
    * patch
    */
   patch: async (objID, patchInfo, _ctx) => {
-    // TODO add translations for status
-
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.patch(
       { ...config, schema: Validators.Patch, fillReferences: true },

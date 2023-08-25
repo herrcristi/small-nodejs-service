@@ -215,7 +215,7 @@ const Public = {
           severity: Constants.Severity.Informational,
           messageID: `${config.serviceName}.${Constants.Action.Post}`,
           target: { id: r.value.id, name: r.value.name, type: r.value.type },
-          args: [JSON.stringify(CommonUtils.protectData(r.value))],
+          args: [r.value.name, JSON.stringify(CommonUtils.protectData(r.value))],
           user: { id: _ctx.userid, name: _ctx.username },
         },
         _ctx
@@ -253,7 +253,7 @@ const Public = {
           severity: Constants.Severity.Informational,
           messageID: `${config.serviceName}.${Constants.Action.Delete}`,
           target: { id: r.value.id, name: r.value.name, type: r.value.type },
-          args: [],
+          args: [r.value.name],
           user: { id: _ctx.userid, name: _ctx.username },
         },
         _ctx
@@ -312,7 +312,7 @@ const Public = {
           severity: Constants.Severity.Informational,
           messageID: `${config.serviceName}.${Constants.Action.Put}`,
           target: { id: r.value.id, name: r.value.name, type: r.value.type },
-          args: [JSON.stringify(CommonUtils.protectData(objInfo))],
+          args: [r.value.name, JSON.stringify(CommonUtils.protectData(objInfo))],
           user: { id: _ctx.userid, name: _ctx.username },
         },
         _ctx
@@ -378,7 +378,7 @@ const Public = {
           severity: Constants.Severity.Informational,
           messageID: `${config.serviceName}.${Constants.Action.Patch}`,
           target: { id: r.value.id, name: r.value.name, type: r.value.type },
-          args: [JSON.stringify(CommonUtils.protectData(patchInfo))],
+          args: [r.value.name, JSON.stringify(CommonUtils.protectData(patchInfo))],
           user: { id: _ctx.userid, name: _ctx.username },
         },
         _ctx

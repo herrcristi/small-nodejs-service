@@ -1,5 +1,17 @@
 {
   "active": "Active",
   "pending": "Pending",
-  "disabled": "Disabled"
+  "disabled": "Disabled",
+  "schools.post": "School {0} added",
+  "schools.delete": "School {0} removed",
+  "schools.put": "School {0} modified",
+  "schools.patch": "School {0} modified",
+  "users.post": "User {0} added",
+  "users.delete": "User {0} removed",
+  "users.put": "User {0} modified",
+  "users.patch": "User {0} modified",
+  "students.post": "Student {0} added",
+  "students.delete": "Student {0} removed",
+  "students.put": "Student {0} modified",
+  "students.patch": "Student {0} modified"
 }
