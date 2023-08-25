@@ -65,26 +65,23 @@ describe('Translations Utils', function () {
     });
   }).timeout(10000);
 
-  // /**
-  //  * add other translations to object
-  //  */
-  // it('should add other translations to object', async () => {
-  //   let obj = {
-  //     prop: 'val',
-  //   };
+  /**
+   * add translations to null object
+   */
+  it('should add translations to null object', async () => {
+    let obj = null;
 
-  //   let translations = {
-  //     prop: {},
-  //   };
+    let translations = {
+      prop: {
+        en: 'Prop',
+      },
+    };
 
-  //   // call
-  //   let res = TranslationsUtils.addTranslations(obj, translations, _ctx);
-  //   console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    // call
+    let res = TranslationsUtils.addTranslations(obj, translations, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-  //   // check
-  //   chai.expect(res).to.deep.equal({
-  //     prop: 'val',
-  //     '_lang_en.prop': undefined,
-  //   });
-  // }).timeout(10000);
+    // check
+    chai.expect(res).to.equal(null);
+  }).timeout(10000);
 });

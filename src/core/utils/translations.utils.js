@@ -61,6 +61,10 @@ const Public = {
    * add translations props to object (as patch to not override existing translations)
    */
   addTranslations: (obj, translations, _ctx) => {
+    if (!obj) {
+      return obj;
+    }
+
     for (const prop in translations) {
       for (const lang in Private.Languages) {
         // added as _lang_en to be easily projected
