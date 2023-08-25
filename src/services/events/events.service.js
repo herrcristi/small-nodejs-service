@@ -136,9 +136,13 @@ const Public = {
    * translate
    */
   translate: async (obj, _ctx) => {
+    let args = [obj?.target.name, obj?.user?.name];
+    if (obj?.args) {
+      args = [...args, ...obj.args];
+    }
     const translations = {
       severity: TranslationsUtils.string(obj?.severity, _ctx),
-      message: TranslationsUtils.string(obj?.messageID, _ctx, obj?.args),
+      message: TranslationsUtils.string(obj?.messageID, _ctx, args),
     };
     return await TranslationsUtils.addTranslations(obj, translations, _ctx);
   },
