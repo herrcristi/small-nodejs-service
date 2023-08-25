@@ -4,6 +4,7 @@
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
+const TranslationsUtils = require('../../core/utils/translations.utils.js');
 
 const EventsRest = require('../rest/events.rest.js');
 const SchoolsRest = require('../rest/schools.rest.js');
@@ -39,12 +40,13 @@ const Validators = {
 const Private = {
   /**
    * config
-   * returns { serviceName, collection, schema, references, fillReferences, events }
+   * returns { serviceName, collection, schema, translate, references, fillReferences, events }
    */
   getConfig: async (_ctx) => {
     const config = {
       serviceName: SchoolsConstants.ServiceName,
       collection: await SchoolsDatabase.collection(_ctx),
+      translate: Public.translate,
       schema: Schema.School,
       references: [], // to be populated (like foreign keys)
       fillReferences: false,
@@ -166,6 +168,16 @@ const Public = {
   notification: async (notification, _ctx) => {
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
+  },
+
+  /**
+   * translate
+   */
+  translate: async (obj, _ctx) => {
+    const translations = {
+      status: TranslationsUtils.string(obj?.status, _ctx),
+    };
+    return await TranslationsUtils.addTranslations(obj, translations, _ctx);
   },
 };
 

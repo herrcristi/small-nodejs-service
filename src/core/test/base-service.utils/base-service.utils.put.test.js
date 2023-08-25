@@ -17,6 +17,7 @@ describe('Base Service', function () {
       field: Joi.string().min(0).max(1024).allow(null),
     }),
     collection: 'collection',
+    translate: () => {},
     references: [{ fieldName: 'field', service: { getAllByIDs: () => {} }, projection: null /*default*/ }],
     fillReferences: false,
   };
@@ -173,17 +174,6 @@ describe('Base Service', function () {
       prop: 'prop',
     };
 
-    // stub
-    sinon.stub(DbOpsUtils, 'put').callsFake((conf, objID, obj) => {
-      return {
-        status: 200,
-        value: {
-          id: objID,
-          ...obj,
-        },
-      };
-    });
-
     // call
     let res = await BaseServiceUtils.put(config, 'id1', objInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -207,7 +197,7 @@ describe('Base Service', function () {
     });
 
     // call
-    let res = await BaseServiceUtils.put(config, 'id1', objInfo, _ctx);
+    let res = await BaseServiceUtils.put({ ...config, translate: null }, 'id1', objInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

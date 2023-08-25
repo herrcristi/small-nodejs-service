@@ -22,6 +22,7 @@ describe('Base Service', function () {
       }),
     }),
     collection: 'collection',
+    translate: () => {},
     references: [{ fieldName: 'field', service: { getAllByIDs: () => {} }, projection: null /*default*/ }],
     fillReferences: false,
   };
@@ -190,17 +191,6 @@ describe('Base Service', function () {
       },
     };
 
-    // stub
-    sinon.stub(DbOpsUtils, 'patch').callsFake((conf, objID, patch) => {
-      return {
-        status: 200,
-        value: {
-          id: objID,
-          name: patch.set.name,
-        },
-      };
-    });
-
     // call
     let res = await BaseServiceUtils.patch(config, 'id1', patchInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -226,7 +216,7 @@ describe('Base Service', function () {
     });
 
     // call
-    let res = await BaseServiceUtils.patch(config, 'id1', patchInfo, _ctx);
+    let res = await BaseServiceUtils.patch({ ...config, translate: null }, 'id1', patchInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

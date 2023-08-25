@@ -177,7 +177,7 @@ const Public = {
 
   /**
    * post
-   * config: { serviceName, collection, schema, references, fillReferences, events, notifications }
+   * config: { serviceName, collection, translate, schema, references, fillReferences, events, notifications }
    * returns: { status, value } or { status, error }
    */
   post: async (config, objInfo, _ctx) => {
@@ -192,6 +192,12 @@ const Public = {
     let rf = await ReferencesUtils.populateReferences(config, objInfo, _ctx);
     if (rf.error) {
       return rf;
+    }
+
+    // translate
+    if (config.translate) {
+      await config.translate(objInfo, _ctx);
+      objInfo = CommonUtils.patch2obj(objInfo);
     }
 
     // post
@@ -266,7 +272,7 @@ const Public = {
 
   /**
    * put
-   * config: { serviceName, collection, schema, references, fillReferences, events, notifications }
+   * config: { serviceName, collection, translate, schema, references, fillReferences, events, notifications }
    * returns: { status, value } or { status, error }
    */
   put: async (config, objID, objInfo, _ctx) => {
@@ -281,6 +287,11 @@ const Public = {
     let rf = await ReferencesUtils.populateReferences(config, objInfo, _ctx);
     if (rf.error) {
       return rf;
+    }
+
+    // translate
+    if (config.translate) {
+      await config.translate(objInfo, _ctx);
     }
 
     // put
@@ -320,7 +331,7 @@ const Public = {
 
   /**
    * patch
-   * config: { serviceName, collection, schema, references, fillReferences, events, notifications }
+   * config: { serviceName, collection, translate, schema, references, fillReferences, events, notifications }
    * patchInfo: { set, unset, add, remove }
    * returns: { status, value } or { status, error }
    */
@@ -341,6 +352,11 @@ const Public = {
     let rfa = await ReferencesUtils.populateReferences(config, patchInfo.add, _ctx);
     if (rfa.error) {
       return rfa;
+    }
+
+    // translate
+    if (config.translate) {
+      await config.translate(patchInfo.set, _ctx);
     }
 
     const projection = Utils.getProjection(config, _ctx);
