@@ -245,7 +245,7 @@ const Public = {
     if (localService) {
       return await localService.notification(notification, _ctx);
     }
-    return await Private.restCall({ serviceName, method: 'POST', path: '', body: notification }, _ctx);
+    return await Private.restCall({ serviceName, method: 'POST', path: '/notifications', body: notification }, _ctx);
   },
 };
 

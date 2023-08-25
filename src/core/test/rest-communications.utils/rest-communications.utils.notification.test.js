@@ -150,7 +150,7 @@ describe('Rest Communications Utils', function () {
           protocol: 'http',
           host: 'localhost',
           port: process.env.PORT, // see test.utils.js
-          path: '/api/internal_v1/service/notifications',
+          path: '/api/internal_v1/service',
         },
       },
     };

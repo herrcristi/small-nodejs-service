@@ -174,30 +174,31 @@ describe('Students Rest', function () {
    * subscribe
    */
   it('should do subscribe', async () => {
-    // stub
-    let stub = sinon.stub(RestCommsUtils, 'notification').callsFake(() => {
-      console.log(`\nRestCommUtils.notification called\n`);
-      return { status: 200, value: true };
-    });
-
     // call
     let res = await StudentsRest.subscribe({ callback: null, projection: { id: 1 } }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stub.callCount).to.equal(1);
+
     chai.expect(res?.value).to.equal(true);
   }).timeout(10000);
 
   /**
    * consume
    */
-  it('should do subscribe', async () => {
+  it('should do consume', async () => {
+    // stub
+    let stub = sinon.stub(NotificationsUtils, 'consume').callsFake(() => {
+      console.log(`\nNotificationsUtils.consume called\n`);
+      return { status: 200, value: true };
+    });
+
     // call
     let res = await StudentsRest.consume({ callback: null, projection: { id: 1 } }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal(true);
   }).timeout(10000);
 

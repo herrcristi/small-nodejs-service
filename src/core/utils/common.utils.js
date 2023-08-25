@@ -97,6 +97,67 @@ const Public = {
 
     return objProjected;
   },
+
+  /**
+   * convert obj to patch
+   * { "a": { "b":1 } } to { "a.b": 1 }
+   */
+  obj2patch: (obj) => {
+    if (Array.isArray(obj) || typeof obj !== 'object') {
+      return obj;
+    }
+
+    let r = {};
+    for (const key in obj) {
+      const val = obj[key];
+      const newVal = Public.obj2patch(val);
+
+      if (Array.isArray(newVal) || typeof newVal !== 'object') {
+        r[key] = newVal;
+      } else {
+        for (const innerKey in newVal) {
+          r[`${key}.${innerKey}`] = newVal[innerKey];
+        }
+      }
+    }
+
+    return r;
+  },
+
+  /**
+   * convert patch to obj
+   * { "a.b": 1 } to { "a": { "b":1 } }
+   */
+  patch2obj: (obj) => {
+    if (Array.isArray(obj) || typeof obj !== 'object') {
+      return obj;
+    }
+
+    let r = {};
+    for (const key in obj) {
+      const val = obj[key];
+
+      // split key
+      const multiKeys = key.split('.');
+
+      let p = r;
+      for (let i = 0; i < multiKeys.length - 1; ++i) {
+        const keySegment = multiKeys[i];
+
+        const valSegm = p[keySegment];
+        if (!valSegm || Array.isArray(valSegm) || typeof valSegm !== 'object') {
+          p[keySegment] = {};
+        }
+        p = p[keySegment];
+      }
+
+      // add last key segment with value
+      const lastKeySegment = multiKeys[multiKeys.length - 1];
+      p[lastKeySegment] = Public.patch2obj(val);
+    }
+
+    return r;
+  },
 };
 
 module.exports = { ...Public };
