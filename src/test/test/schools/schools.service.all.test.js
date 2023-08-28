@@ -7,6 +7,7 @@ const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
 const BaseServiceUtils = require('../../../core/utils/base-service.utils');
+const TranslationsUtils = require('../../../core/utils/translations.utils');
 
 const TestConstants = require('../../test-constants.js');
 const SchoolsConstants = require('../../../services/schools/schools.constants.js');
@@ -373,5 +374,32 @@ describe('Schools Service', function () {
       status: 200,
       value: true,
     });
+  }).timeout(10000);
+
+  /**
+   * translate with success
+   */
+  it('should do translate with success', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+    const testSchool = testSchools[0];
+
+    // stub
+    let stubString = sinon.stub(TranslationsUtils, 'string').callsFake(() => {
+      console.log(`\nTranslationsUtils.string called\n`);
+      return {};
+    });
+
+    let stubAddTranslations = sinon.stub(TranslationsUtils, 'addTranslations').callsFake((obj, translations) => {
+      console.log(`\nTranslationsUtils.addTranslations called\n`);
+      return {};
+    });
+
+    // call
+    let res = await SchoolsService.translate(testSchool, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubString.callCount).to.equal(1);
+    chai.expect(stubAddTranslations.callCount).to.equal(1);
   }).timeout(10000);
 });

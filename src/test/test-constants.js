@@ -18,6 +18,9 @@ const Public = {
       type: 'school',
       status: 'active',
       description: 'GitHub University. The place to code.',
+      _lang_en: {
+        status: 'Active',
+      },
     },
     {
       id: 'school-high2',
@@ -25,6 +28,9 @@ const Public = {
       type: 'school',
       status: 'active',
       description: '',
+      _lang_en: {
+        status: 'Active',
+      },
     },
   ],
 
@@ -67,6 +73,9 @@ const Public = {
           roles: ['teacher', 'admin'],
         },
       ],
+      _lang_en: {
+        status: 'Active',
+      },
     },
     {
       id: 'user2',
@@ -85,6 +94,9 @@ const Public = {
           roles: ['teacher'],
         },
       ],
+      _lang_en: {
+        status: 'Active',
+      },
     },
   ],
 
@@ -123,6 +135,10 @@ const Public = {
       },
       type: 'event',
       createdTimestamp: '2023-08-04T12:12:12.001Z',
+      _lang_en: {
+        severity: 'Info',
+        message: "School 'GitHub University' added",
+      },
     },
     {
       id: 'event2',
@@ -141,6 +157,10 @@ const Public = {
       },
       type: 'event',
       createdTimestamp: '2023-08-04T12:12:12.001Z',
+      _lang_en: {
+        severity: 'Info',
+        message: "User 'John Bravo' added",
+      },
     },
   ],
 

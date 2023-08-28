@@ -5,6 +5,7 @@
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
+const TranslationsUtils = require('../../core/utils/translations.utils.js');
 
 const EventsRest = require('../rest/events.rest.js');
 const EventsConstants = require('./events.constants.js');
@@ -43,6 +44,7 @@ const Private = {
     const config = {
       serviceName: EventsConstants.ServiceName,
       collection: await EventsDatabase.collection(_ctx),
+      translate: Public.translate,
       schema: Schema.Event,
       references: [],
       fillReferences: false,
@@ -116,7 +118,6 @@ const Public = {
   post: async (objInfo, _ctx) => {
     objInfo.type = EventsConstants.Type;
 
-    // TODO add translations
     objInfo.name = objInfo.messageID;
 
     const config = await Private.getConfig(_ctx);
@@ -129,6 +130,21 @@ const Public = {
   notification: async (notification, _ctx) => {
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
+  },
+
+  /**
+   * translate
+   */
+  translate: async (obj, _ctx) => {
+    let args = [obj?.target.name, obj?.user?.name];
+    if (obj?.args) {
+      args = [...args, ...obj.args];
+    }
+    const translations = {
+      severity: TranslationsUtils.string(obj?.severity, _ctx),
+      message: TranslationsUtils.string(obj?.messageID, _ctx, args),
+    };
+    return await TranslationsUtils.addTranslations(obj, translations, _ctx);
   },
 };
 

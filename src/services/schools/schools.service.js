@@ -4,6 +4,7 @@
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
+const TranslationsUtils = require('../../core/utils/translations.utils.js');
 
 const EventsRest = require('../rest/events.rest.js');
 const SchoolsRest = require('../rest/schools.rest.js');
@@ -39,12 +40,13 @@ const Validators = {
 const Private = {
   /**
    * config
-   * returns { serviceName, collection, schema, references, fillReferences, events }
+   * returns { serviceName, collection, schema, translate, references, fillReferences, events }
    */
   getConfig: async (_ctx) => {
     const config = {
       serviceName: SchoolsConstants.ServiceName,
       collection: await SchoolsDatabase.collection(_ctx),
+      translate: Public.translate,
       schema: Schema.School,
       references: [], // to be populated (like foreign keys)
       fillReferences: false,
@@ -116,8 +118,6 @@ const Public = {
     objInfo.type = SchoolsConstants.Type;
     objInfo.status = objInfo.status || SchoolsConstants.Status.Pending; // add default status if not set
 
-    // TODO add translations
-
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
   },
@@ -134,8 +134,6 @@ const Public = {
    * put
    */
   put: async (objID, objInfo, _ctx) => {
-    // TODO add translations for status
-
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.put(
       { ...config, schema: Validators.Put, fillReferences: true },
@@ -149,8 +147,6 @@ const Public = {
    * patch
    */
   patch: async (objID, patchInfo, _ctx) => {
-    // TODO add translations for status
-
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.patch(
       { ...config, schema: Validators.Patch, fillReferences: true },
@@ -166,6 +162,16 @@ const Public = {
   notification: async (notification, _ctx) => {
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
+  },
+
+  /**
+   * translate
+   */
+  translate: async (obj, _ctx) => {
+    const translations = {
+      status: TranslationsUtils.string(obj?.status, _ctx),
+    };
+    return await TranslationsUtils.addTranslations(obj, translations, _ctx);
   },
 };
 

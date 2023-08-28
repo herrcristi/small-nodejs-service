@@ -5,6 +5,7 @@
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
+const TranslationsUtils = require('../../core/utils/translations.utils.js');
 
 const EventsRest = require('../rest/events.rest.js');
 const UsersRest = require('../rest/users.rest.js');
@@ -55,6 +56,7 @@ const Private = {
     const config = {
       serviceName: StudentsConstants.ServiceName,
       collection: await StudentsDatabase.collection(_ctx),
+      translate: Public.translate,
       schema: Schema.Student,
       references: [{ fieldName: '', service: UsersRest, projection: { id: 1, name: 1 } }],
       fillReferences: false,
@@ -125,8 +127,6 @@ const Public = {
   post: async (objInfo, _ctx) => {
     objInfo.type = StudentsConstants.Type;
 
-    // TODO add translations
-
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
   },
@@ -143,8 +143,6 @@ const Public = {
    * put
    */
   put: async (objID, objInfo, _ctx) => {
-    // TODO add translations
-
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.put(
       { ...config, schema: Validators.Put, fillReferences: true },
@@ -158,8 +156,6 @@ const Public = {
    * patch
    */
   patch: async (objID, patchInfo, _ctx) => {
-    // TODO add translations
-
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.patch(
       { ...config, schema: Validators.Patch, fillReferences: true },
@@ -175,6 +171,14 @@ const Public = {
   notification: async (notification, _ctx) => {
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
+  },
+
+  /**
+   * translate
+   */
+  translate: async (obj, _ctx) => {
+    const translations = {};
+    return await TranslationsUtils.addTranslations(obj, translations, _ctx);
   },
 };
 
