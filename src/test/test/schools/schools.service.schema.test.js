@@ -28,6 +28,7 @@ describe('Schools Service', function () {
     };
     delete postReq.id;
     delete postReq.type;
+    delete postReq._lang_en;
   });
 
   afterEach(async function () {

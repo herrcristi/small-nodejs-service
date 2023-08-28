@@ -28,6 +28,7 @@ describe('Events Service', function () {
     delete postReq.type;
     delete postReq.name;
     delete postReq.createdTimestamp;
+    delete postReq._lang_en;
   });
 
   afterEach(async function () {

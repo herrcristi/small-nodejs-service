@@ -26,6 +26,7 @@ describe('Students Service', function () {
     };
     delete postReq.type;
     delete postReq.name;
+    delete postReq._lang_en;
   });
 
   afterEach(async function () {

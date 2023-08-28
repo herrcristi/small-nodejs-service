@@ -27,6 +27,7 @@ describe('Users Service', function () {
     delete postReq.id;
     delete postReq.type;
     delete postReq.name;
+    delete postReq._lang_en;
   });
 
   afterEach(async function () {
