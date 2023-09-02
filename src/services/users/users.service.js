@@ -50,7 +50,7 @@ const Validators = {
     ['email', 'firstName', 'lastName', 'birthday', 'address', 'schools'],
     (x) => x.required() /*make required */
   ).keys({
-    type: Joi.string().valid(SchoolsConstants.Type),
+    type: Joi.string().valid(UsersConstants.Type),
     name: Joi.string(),
   }),
 
