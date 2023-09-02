@@ -1,14 +1,15 @@
 version: '3.9'
 services:
   mongodb:
-    image: 'mongo:4.4.24'
+    image: 'mongo:latest'
+    # image: 'mongo:4.4.24'
     container_name: 'mongodb'
     restart: always
     # If you need to connect to your db from outside this container
     # network_mode: host
     environment:
-      MONGO_INITDB_ROOT_USERNAME: local-admin
-      MONGO_INITDB_ROOT_PASSWORD: local-pass
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_ROOT_PASSWORD}
     ports:
       - '27017:27017'
     volumes:
@@ -19,9 +20,9 @@ services:
   #   image: 'mongo-express:latest'
   #   container_name: 'mongo-express'
   #   environment:
-  #     ME_CONFIG_MONGODB_ADMINUSERNAME: local-admin
-  #     ME_CONFIG_MONGODB_ADMINPASSWORD: local-pass
-  #     ME_CONFIG_MONGODB_URL: mongodb://local-admin:local-pass@mongo:27017/
+  #     ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGODB_ROOT_USERNAME}
+  #     ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGODB_ROOT_PASSWORD}
+  #     ME_CONFIG_MONGODB_URL: mongodb://${MONGODB_ROOT_USERNAME}:${MONGODB_ROOT_PASSWORD}@mongo:27017/
   #   ports:
   #     - '8081:8081'
 

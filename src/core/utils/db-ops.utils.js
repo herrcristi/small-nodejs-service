@@ -153,9 +153,9 @@ const Public = {
       const value = await config.collection.insertOne(objInfo);
 
       console.log(
-        `DB Calling: ${config.serviceName} post for ${JSON.stringify(objInfo)} returned ${JSON.stringify(
-          value
-        )}. Finished in ${new Date() - time} ms`
+        `DB Calling: ${config.serviceName} post for ${objInfo.id} returned ${JSON.stringify(value)}. Finished in ${
+          new Date() - time
+        } ms`
       );
 
       // not succeeded
