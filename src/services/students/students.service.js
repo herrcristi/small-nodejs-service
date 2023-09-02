@@ -31,6 +31,7 @@ const Schema = {
 const Validators = {
   Post: Schema.Student.fork(['classes'], (x) => x.required() /*make required */).keys({
     id: Joi.string().min(1).max(64).required(),
+    type: Joi.string().valid(StudentsConstants.Type),
   }),
 
   Put: Schema.Student,

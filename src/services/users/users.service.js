@@ -49,7 +49,10 @@ const Validators = {
   Post: Schema.User.fork(
     ['email', 'firstName', 'lastName', 'birthday', 'address', 'schools'],
     (x) => x.required() /*make required */
-  ),
+  ).keys({
+    type: Joi.string().valid(SchoolsConstants.Type),
+    name: Joi.string(),
+  }),
 
   Put: Schema.User,
 

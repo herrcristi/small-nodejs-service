@@ -55,7 +55,7 @@ const Public = {
       await client.db('admin').command({ ping: 1 });
       console.log(`Ping successfully for ${dbName}`);
 
-      return client.db();
+      return client.db(dbName);
     } catch (e) {
       console.log(`Failed to connect to mongo for ${dbName}. Error: ${e.stack ? e.stack : e}`);
       console.log(`Exit process`);
