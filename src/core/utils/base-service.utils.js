@@ -421,7 +421,7 @@ const Public = {
     let rfa = await ReferencesUtils.populateReferences(config, patchInfo.add, _ctx);
     if (rfa.error) {
       console.log(
-        `${config.serviceName}: Failed to put object ${objID}: ${JSON.stringify(
+        `${config.serviceName}: Failed to patch object ${objID}: ${JSON.stringify(
           CommonUtils.protectData(patchInfo)
         )} due to populateReferences for add. Error: ${JSON.stringify(rfa.error)}`
       );
