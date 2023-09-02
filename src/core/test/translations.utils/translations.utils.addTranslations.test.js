@@ -35,6 +35,7 @@ describe('Translations Utils', function () {
       val: {
         en: 'Val',
       },
+      notExisting: undefined,
     };
 
     // call

@@ -66,6 +66,10 @@ const Public = {
     }
 
     for (const prop in translations) {
+      if (!translations[prop]) {
+        continue;
+      }
+
       for (const lang in Private.Languages) {
         // added as _lang_en to be easily projected
         obj[`_lang_${lang}.${prop}`] = translations[prop][lang] || translations[prop]['en'];

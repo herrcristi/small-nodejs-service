@@ -7,12 +7,27 @@ const Utils = {
   /**
    * error
    */
-  error: (msg, time, _ctx) => {
+  error: (status, msg, time, _ctx) => {
     return {
-      time: new Date() - time /*milliseconds*/,
-      status: 500,
+      status,
       error: { message: msg, error: new Error(msg) },
+      time: new Date() - time /*milliseconds*/,
     };
+  },
+
+  exception: (e, time, _ctx) => {
+    return {
+      status: 500,
+      error: { message: e.message || e, error: e },
+      time: new Date() - time /*milliseconds*/,
+    };
+  },
+
+  /**
+   * stringify a regexp
+   */
+  stringifyFilter: (key, value) => {
+    return value instanceof RegExp ? value.toString() : value;
   },
 };
 
@@ -26,13 +41,62 @@ const Public = {
   getAll: async (config, filter, _ctx) => {
     const time = new Date();
 
-    return Utils.error('Not implemented', time, _ctx);
+    try {
+      const { filter: findFilter, projection, limit, skip, sort } = filter;
+      const values = await config.collection
+        .find(findFilter)
+        .project(projection)
+        .sort(sort)
+        .skip(skip || 0)
+        .limit(limit || 0)
+        .toArray();
+
+      const logValues = values.map((item) => {
+        return { id: item.id, name: item.name, status: item.status };
+      });
+
+      console.log(
+        `DB Calling: ${config.serviceName} getAll with filter ${JSON.stringify(
+          filter,
+          Utils.stringifyFilter
+        )} returned ${values.length} objs: ${JSON.stringify(logValues)}. Finished in ${new Date() - time} ms`
+      );
+
+      return { status: 200, value: values, time: new Date() - time };
+    } catch (e) {
+      console.log(
+        `DB Calling Failed: ${config.serviceName} getAll with filter ${JSON.stringify(
+          filter,
+          Utils.stringifyFilter
+        )}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
+      );
+      return Utils.exception(e, time, _ctx);
+    }
   },
 
   getAllCount: async (config, filter, _ctx) => {
     const time = new Date();
 
-    return Utils.error('Not implemented', time, _ctx);
+    try {
+      const count = await config.collection.count(filter.filter);
+
+      console.log(
+        `DB Calling: ${config.serviceName} getAllCount with filter ${JSON.stringify(
+          filter,
+          Utils.stringifyFilter
+        )} returned ${count} objs count. Finished in ${new Date() - time} ms`
+      );
+
+      return { status: 200, value: count, time: new Date() - time };
+    } catch (e) {
+      console.log(
+        `DB Calling Failed: ${config.serviceName} getAllCount with filter ${JSON.stringify(
+          filter,
+          Utils.stringifyFilter
+        )}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
+      );
+      return Utils.exception(e, time, _ctx);
+    }
   },
 
   getAllByIDs: async (config, ids, projection, _ctx) => {
@@ -47,8 +111,30 @@ const Public = {
   getOne: async (config, objID, projection, _ctx) => {
     const time = new Date();
 
-    // 200, 404
-    return Utils.error('Not implemented', time, _ctx);
+    try {
+      const filter = { id: objID };
+      const value = await config.collection.findOne(filter, { projection });
+
+      console.log(
+        `DB Calling: ${config.serviceName} getOne for ${objID} returned ${JSON.stringify(value)}. Finished in ${
+          new Date() - time
+        } ms`
+      );
+
+      // not found
+      if (!value) {
+        return Utils.error(404, `Not found ${objID}`, time, _ctx);
+      }
+
+      return { status: 200, value: value, time: new Date() - time };
+    } catch (e) {
+      console.log(
+        `DB Calling Failed: ${config.serviceName} getOne for  ${objID}. Error ${e.stack ? e.stack : e}. Finished in ${
+          new Date() - time
+        } ms`
+      );
+      return Utils.exception(e, time, _ctx);
+    }
   },
 
   /**
@@ -63,8 +149,29 @@ const Public = {
     objInfo.createdTimestamp = new Date();
     objInfo.lastModifiedTimestamp = objInfo.createdTimestamp;
 
-    // 201
-    return Utils.error('Not implemented', time, _ctx);
+    try {
+      const value = await config.collection.insertOne(objInfo);
+
+      console.log(
+        `DB Calling: ${config.serviceName} post for ${JSON.stringify(objInfo)} returned ${JSON.stringify(
+          value
+        )}. Finished in ${new Date() - time} ms`
+      );
+
+      // not succeeded
+      if (!value.insertedId) {
+        return Utils.error(500, `Failed to post ${JSON.stringify(objInfo)}`, time, _ctx);
+      }
+
+      return { status: 201, value: objInfo, time: new Date() - time };
+    } catch (e) {
+      console.log(
+        `DB Calling Failed: ${config.serviceName} post for ${JSON.stringify(objInfo)}. Error ${
+          e.stack ? e.stack : e
+        }. Finished in ${new Date() - time} ms`
+      );
+      return Utils.exception(e, time, _ctx);
+    }
   },
 
   /**
@@ -75,8 +182,30 @@ const Public = {
   delete: async (config, objID, projection, _ctx) => {
     const time = new Date();
 
-    // 200, 404
-    return Utils.error('Not implemented', time, _ctx);
+    try {
+      const filter = { id: objID };
+      const r = await config.collection.findOneAndDelete(filter, { projection, includeResultMetadata: true });
+
+      console.log(
+        `DB Calling: ${config.serviceName} delete for ${objID} returned ${JSON.stringify(r)}. Finished in ${
+          new Date() - time
+        } ms`
+      );
+
+      // not found
+      if (r.lastErrorObject?.n === 0) {
+        return Utils.error(404, `Not found ${objID}`, time, _ctx);
+      }
+
+      return { status: 200, value: r.value, time: new Date() - time };
+    } catch (e) {
+      console.log(
+        `DB Calling Failed: ${config.serviceName} delete for ${objID}. Error ${e.stack ? e.stack : e}. Finished in ${
+          new Date() - time
+        } ms`
+      );
+      return Utils.exception(e, time, _ctx);
+    }
   },
 
   /**
@@ -85,16 +214,14 @@ const Public = {
    * return: { status, value } or { status, error: { message, error } }
    */
   put: async (config, objID, objInfo, projection, _ctx) => {
-    const time = new Date();
-    objInfo.lastModifiedTimestamp = new Date();
-
-    // 200, 404
-    return Utils.error('Not implemented', time, _ctx);
+    // treat put like a patch
+    return await Public.patch(config, objID, { set: objInfo }, projection, _ctx);
   },
 
   /**
    * patch
    * config: { serviceName, collection }
+   * patchInfo: { set, unset, add, remove }
    * return: { status, value } or { status, error: { message, error } }
    */
   patch: async (config, objID, patchInfo, projection, _ctx) => {
@@ -102,7 +229,7 @@ const Public = {
     //patchInfo.set.lastModifiedTimestamp = new Date();
 
     // 200, 404
-    return Utils.error('Not implemented', time, _ctx);
+    return Utils.error(500, 'Not implemented', time, _ctx);
   },
 
   /**
@@ -118,7 +245,7 @@ const Public = {
     // filterField === objInfo.id -> set fieldName.field = objInfo.field
 
     // 200, 404
-    return Utils.error('Not implemented', time, _ctx);
+    return Utils.error(500, 'Not implemented', time, _ctx);
   },
 
   /**
@@ -134,7 +261,7 @@ const Public = {
     // filterField === objInfo.id -> set fieldName.field = objInfo.field
 
     // 200, 404
-    return Utils.error('Not implemented', time, _ctx);
+    return Utils.error(500, 'Not implemented', time, _ctx);
   },
 };
 

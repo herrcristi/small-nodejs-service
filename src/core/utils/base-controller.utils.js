@@ -42,7 +42,7 @@ const Public = {
       const objID = req.params.id;
 
       // get
-      const r = await service.getOne(objID, _ctx);
+      const r = await service.getOne(objID, null, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
@@ -66,7 +66,7 @@ const Public = {
       console.log(`${_ctx.serviceName}: Post called, body ${JSON.stringify(CommonUtils.protectData(req.body))}`);
 
       // post
-      const r = service.post(req.body, _ctx);
+      const r = await service.post(req.body, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
@@ -149,7 +149,7 @@ const Public = {
       const objID = req.params.id;
 
       // patch
-      const r = service.patch(objID, req.body, _ctx);
+      const r = await service.patch(objID, req.body, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
@@ -175,7 +175,7 @@ const Public = {
       );
 
       // post
-      const r = service.notification(req.body, _ctx);
+      const r = await service.notification(req.body, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }

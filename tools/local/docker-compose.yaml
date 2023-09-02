@@ -1,0 +1,34 @@
+version: '3.9'
+services:
+  mongodb:
+    image: 'mongo:4.4.24'
+    container_name: 'mongodb'
+    restart: always
+    # If you need to connect to your db from outside this container
+    # network_mode: host
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: local-admin
+      MONGO_INITDB_ROOT_PASSWORD: local-pass
+    ports:
+      - '27017:27017'
+    volumes:
+      - /tmp/data/mongodb:/data/db
+    command: mongod --auth --wiredTigerCacheSizeGB 1.0
+
+  # mongo-express:
+  #   image: 'mongo-express:latest'
+  #   container_name: 'mongo-express'
+  #   environment:
+  #     ME_CONFIG_MONGODB_ADMINUSERNAME: local-admin
+  #     ME_CONFIG_MONGODB_ADMINPASSWORD: local-pass
+  #     ME_CONFIG_MONGODB_URL: mongodb://local-admin:local-pass@mongo:27017/
+  #   ports:
+  #     - '8081:8081'
+
+  # rabbitmq:
+  #   image: 'rabbitmq:latest'
+  #   container_name: 'rabbitmq'
+  #   ports:
+  #     - '5672:5672'
+  #   volumes:
+  #     - /tmp/data/rabbitmq:/data/rabbitmq

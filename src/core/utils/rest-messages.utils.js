@@ -4,6 +4,12 @@
 
 const CommonUtils = require('./common.utils');
 
+const Private = {
+  toString: (err) => {
+    return typeof err === 'string' ? err : JSON.stringify(err);
+  },
+};
+
 const Public = {
   /**
    * request is not valid
@@ -15,7 +21,7 @@ const Public = {
 
     // detailed error in debug
     if (CommonUtils.isDebug()) {
-      msg.error = error;
+      msg.error = Private.toString(error);
     }
 
     console.log(`Status message: ${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
@@ -33,7 +39,7 @@ const Public = {
 
     // detailed error in debug
     if (CommonUtils.isDebug()) {
-      msg.error = `${error}`;
+      msg.error = Private.toString(error);
     }
 
     console.log(`Status message: ${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
@@ -51,7 +57,7 @@ const Public = {
 
     // detailed error in debug
     if (CommonUtils.isDebug()) {
-      msg.error = error.stack || error;
+      msg.error = error.stack || Private.toString(error);
     }
 
     console.log(`Status message: ${msg.message}. Stack: ${error.stack}. Request: ${JSON.stringify(_ctx)}`);

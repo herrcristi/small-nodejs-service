@@ -26,7 +26,9 @@ const Schema = {
 };
 
 const Validators = {
-  Post: Schema.School.fork(['name'], (x) => x.required() /*make required */),
+  Post: Schema.School.fork(['name'], (x) => x.required() /*make required */).keys({
+    type: Joi.string().valid(SchoolsConstants.Type),
+  }),
 
   Put: Schema.School,
 
