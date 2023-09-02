@@ -280,7 +280,7 @@ const Public = {
     const projection = Utils.getProjection(config, _ctx);
     const r = await DbOpsUtils.delete(config, objID, projection, _ctx);
     if (r.error) {
-      console.log(`${config.serviceName}: Failed to delete object ${objID}. Error: ${JSON.stringify(r.err)}`);
+      console.log(`${config.serviceName}: Failed to delete object ${objID}. Error: ${JSON.stringify(r.error)}`);
       return r;
     }
 
