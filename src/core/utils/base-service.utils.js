@@ -81,7 +81,9 @@ const Public = {
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
     const filter = await RestApiUtils.buildMongoFilterFromReq(req, config.schema, _ctx);
     if (filter.error) {
-      console.log(`${config.serviceName}: Failed to build mongo filter from ${req.quey}`);
+      console.log(
+        `${config.serviceName}: Failed to build mongo filter from ${req.quey}. Error: ${JSON.stringify(filter.error)}`
+      );
       return { status: 400, error: filter.error };
     }
 
