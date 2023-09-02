@@ -346,13 +346,18 @@ const Public = {
     const projection = Utils.getProjection(config, _ctx);
     const r = await DbOpsUtils.put(config, objID, objInfo, projection, _ctx);
     if (r.error) {
+      console.log(
+        `${config.serviceName} Failed to put object ${objID}: ${JSON.stringify(
+          CommonUtils.protectData(objInfo)
+        )}. Error: ${JSON.stringify(r.error)}`
+      );
       return r;
     }
 
     console.log(
-      `${config.serviceName} Succesfully put ${JSON.stringify(objInfo)}. Result object: ${JSON.stringify(
-        CommonUtils.protectData(r.value)
-      )}`
+      `${config.serviceName} Succesfully put object ${objID}: ${JSON.stringify(
+        objInfo
+      )}. Result object: ${JSON.stringify(CommonUtils.protectData(r.value))}`
     );
 
     // raise event
@@ -401,11 +406,21 @@ const Public = {
     // populate references
     let rf = await ReferencesUtils.populateReferences(config, patchInfo.set, _ctx);
     if (rf.error) {
+      console.log(
+        `${config.serviceName} Failed to patch object ${objID}: ${JSON.stringify(
+          CommonUtils.protectData(patchInfo)
+        )} due to populateReferences for set. Error: ${JSON.stringify(rf.error)}`
+      );
       return rf;
     }
 
     let rfa = await ReferencesUtils.populateReferences(config, patchInfo.add, _ctx);
     if (rfa.error) {
+      console.log(
+        `${config.serviceName} Failed to put object ${objID}: ${JSON.stringify(
+          CommonUtils.protectData(patchInfo)
+        )} due to populateReferences for add. Error: ${JSON.stringify(rfa.error)}`
+      );
       return rfa;
     }
 
@@ -417,13 +432,18 @@ const Public = {
     const projection = Utils.getProjection(config, _ctx);
     const r = await DbOpsUtils.patch(config, objID, patchInfo, projection, _ctx);
     if (r.error) {
+      console.log(
+        `${config.serviceName} Failed to patch object ${objID}: ${JSON.stringify(
+          CommonUtils.protectData(patchInfo)
+        )}. Error: ${JSON.stringify(r.error)}`
+      );
       return r;
     }
 
     console.log(
-      `${config.serviceName} Patch succesfully ${JSON.stringify(patchInfo)}. Result object: ${JSON.stringify(
-        CommonUtils.protectData(r.value)
-      )}`
+      `${config.serviceName} Succesfully patch object ${objID}: ${JSON.stringify(
+        patchInfo
+      )}. Result object: ${JSON.stringify(CommonUtils.protectData(r.value))}`
     );
 
     // raise event
