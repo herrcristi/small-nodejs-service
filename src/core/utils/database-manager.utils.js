@@ -5,6 +5,13 @@ const MongoDB = require('mongodb');
 
 const Private = {
   /**
+   * clients
+   */
+  DBClients: {},
+
+  DBIndexes: {},
+
+  /**
    * add connection handlers
    */
   addConnectionHandlers: async (database, dbName) => {
@@ -33,16 +40,15 @@ const Private = {
 };
 
 const Public = {
-  connect: async (dbName, _ctx) => {
-    const dbUrl = `mongodb://localhost:27017/${dbName}`;
-    const options = {
-      auth: {
-        username: '',
-        password: '',
-      },
-    };
-
+  /**
+   * connect to db
+   */
+  connect: async (dbUrl, dbName, _ctx) => {
     try {
+      if (Private.DBClients[dbUrl]) {
+        return Private.DBClients[dbUrl].db(dbName);
+      }
+      const options = {};
       let client = await MongoDB.MongoClient.connect(dbUrl, options);
       if (!client) {
         throw new Error('Cannot connect');
@@ -50,10 +56,11 @@ const Public = {
 
       // add connection handlers
       await Private.addConnectionHandlers(client);
+      Private.DBClients[dbUrl] = client;
 
       // Send a ping to confirm a successful connection
       await client.db('admin').command({ ping: 1 });
-      console.log(`Ping successfully for ${dbName}`);
+      console.log(`Ping successfully admin for ${dbName}`);
 
       return client.db(dbName);
     } catch (e) {
@@ -61,6 +68,27 @@ const Public = {
       console.log(`Exit process`);
       process.exit(1);
     }
+  },
+
+  /**
+   * check if need to add indexes
+   */
+  addIndexes: async (db, collectionName, _ctx) => {
+    if (!db) {
+      return null;
+    }
+
+    Private.DBIndexes[db] ??= {};
+
+    // check if it was already added
+    if (Private.DBIndexes[db][collectionName]) {
+      return false;
+    }
+
+    // add it
+    Private.DBIndexes[db][collectionName] = 1;
+    console.log(`Add indexes for ${collectionName}`);
+    return true;
   },
 };
 
