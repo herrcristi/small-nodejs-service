@@ -32,7 +32,8 @@ const Public = {
    */
   createIndexes: async (_ctx) => {
     let collName = StudentsConstants.ServiceName + `_${_ctx.tenantID}`;
-    if (!DBMgr.addIndexes(Private.DB, collName, _ctx)) {
+    let addIndex = await DBMgr.addIndexes(Private.DB, collName, _ctx);
+    if (!addIndex) {
       return;
     }
 

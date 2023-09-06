@@ -33,7 +33,8 @@ const Public = {
    */
   createIndexes: async (_ctx) => {
     let collName = EventsConstants.ServiceName + (_ctx.tenantID ? `_${_ctx.tenantID}` : '');
-    if (!DBMgr.addIndexes(Private.DB, collName, _ctx)) {
+    let addIndex = await DBMgr.addIndexes(Private.DB, collName, _ctx);
+    if (!addIndex) {
       return;
     }
 

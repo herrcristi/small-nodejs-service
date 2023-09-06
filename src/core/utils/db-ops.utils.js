@@ -226,7 +226,96 @@ const Public = {
    */
   patch: async (config, objID, patchInfo, projection, _ctx) => {
     const time = new Date();
-    //patchInfo.set.lastModifiedTimestamp = new Date();
+
+    try {
+      const filter = { id: objID };
+
+      const updateOperations = [];
+      // set
+      if (Object.keys(patchInfo.set || {})) {
+        updateOperations.push({
+          updateOne: {
+            filter,
+            update: { $set: patchInfo.set },
+          },
+        });
+      }
+      // unset
+      if (Array.isArray(patchInfo.unset) && patchInfo.unset.length) {
+        updateOperations.push({
+          updateOne: {
+            filter,
+            update: { $unset: patchInfo.unset },
+          },
+        });
+      }
+      // add
+      for (let field in Object.keys(patchInfo.add || {})) {
+        updateOperations.push({
+          updateOne: {
+            filter,
+            update: { $addToSet: { [field]: { $each: patchInfo.add[field] } } },
+          },
+        });
+      }
+      // remove
+      for (let field in Object.keys(patchInfo.remove || {})) {
+        updateOperations.push({
+          updateOne: {
+            filter,
+            update: { $pull: { [field]: { $each: patchInfo.remove[field] } } },
+          },
+        });
+      }
+
+      // set lastModified timestamp
+      if (updateOperations.length) {
+        updateOperations.push({
+          updateOne: {
+            filter,
+            update: { $set: { lastModifiedTimestamp: new Date() } },
+          },
+        });
+
+        const r = await config.collection.bulkWrite(updateOperations, { ordered: false });
+        console.log(
+          `DB Calling: ${config.serviceName} patch for ${objID} with ops: ${JSON.stringify(
+            updateOperations,
+            null,
+            2
+          )} returned ${JSON.stringify(r)}. Finished in ${new Date() - time} ms`
+        );
+
+        if (!r.matchedCount) {
+          return Utils.error(404, `Not found ${objID}`, time, _ctx);
+        }
+      }
+
+      // const r = await config.collection.findOneAndUpdate(filter, patchInfo.set, { projection, includeResultMetadata: true });
+
+      // get
+      const value = await config.collection.findOne(filter, { projection });
+
+      console.log(
+        `DB Calling: ${config.serviceName} patch.getOne for ${objID} returned ${JSON.stringify(value)}. Finished in ${
+          new Date() - time
+        } ms`
+      );
+
+      // not found
+      if (!value) {
+        return Utils.error(404, `Not found ${objID}`, time, _ctx);
+      }
+
+      return { status: 200, value: value, time: new Date() - time };
+    } catch (e) {
+      console.log(
+        `DB Calling Failed: ${config.serviceName} patch for ${objID}. Error ${e.stack ? e.stack : e}. Finished in ${
+          new Date() - time
+        } ms`
+      );
+      return Utils.exception(e, time, _ctx);
+    }
 
     // 200, 404
     return Utils.error(500, 'Not implemented', time, _ctx);
