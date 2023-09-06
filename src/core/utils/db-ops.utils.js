@@ -31,6 +31,57 @@ const Utils = {
   },
 };
 
+const Private = {
+  /**
+   * patch
+   * config: { serviceName, collection }
+   * patchInfo: { set, unset } only set and unset are supported
+   * return: { status, value } or { status, error: { message, error } }
+   */
+  patchSet: async (config, objID, patchInfo, projection, _ctx) => {
+    const time = new Date();
+    const filter = { id: objID };
+
+    const updateOperations = [];
+    // set
+    if (Object.keys(patchInfo.set || {})) {
+      updateOperations.push({
+        $set: patchInfo.set,
+      });
+    }
+    // unset
+    if (Array.isArray(patchInfo.unset) && patchInfo.unset.length) {
+      updateOperations.push({
+        $unset: patchInfo.unset,
+      });
+    }
+
+    // set lastModified timestamp
+    let value = null;
+    if (updateOperations.length) {
+      updateOperations.push({
+        $set: { lastModifiedTimestamp: new Date() },
+      });
+
+      const r = await config.collection.findOneAndUpdate(filter, updateOperations, {
+        returnDocument: 'after',
+        includeResultMetadata: true,
+      });
+      value = r.value;
+    } else {
+      // do a simple get
+      value = await config.collection.findOne(filter, { projection });
+    }
+
+    // not found
+    if (!value) {
+      return Utils.error(404, `Not found ${objID}`, time, _ctx);
+    }
+
+    return { status: 200, value: value, time: new Date() - time };
+  },
+};
+
 const Public = {
   /**
    * get all
@@ -214,8 +265,26 @@ const Public = {
    * return: { status, value } or { status, error: { message, error } }
    */
   put: async (config, objID, objInfo, projection, _ctx) => {
-    // treat put like a patch
-    return await Public.patch(config, objID, { set: objInfo }, projection, _ctx);
+    const time = new Date();
+
+    try {
+      const r = await Private.patchSet(config, objID, { set: objInfo }, projection, _ctx);
+
+      console.log(
+        `DB Calling: ${config.serviceName} put for ${objID} returned ${JSON.stringify(r)}. Finished in ${
+          new Date() - time
+        } ms`
+      );
+
+      return r;
+    } catch (e) {
+      console.log(
+        `DB Calling Failed: ${config.serviceName} put for ${objID}. Error ${e.stack ? e.stack : e}. Finished in ${
+          new Date() - time
+        } ms`
+      );
+      return Utils.exception(e, time, _ctx);
+    }
   },
 
   /**
@@ -230,6 +299,22 @@ const Public = {
     try {
       const filter = { id: objID };
 
+      // if add or remove does not exists use the simple patchSet
+      let addKeys = Object.keys(patchInfo.add || {});
+      let removeKeys = Object.keys(patchInfo.remove || {});
+      if (addKeys.length == 0 && removeKeys.length == 0) {
+        const r = await Private.patchSet(config, objID, patchInfo, projection, _ctx);
+
+        console.log(
+          `DB Calling: ${config.serviceName} patch.set for ${objID} returned ${JSON.stringify(r)}. Finished in ${
+            new Date() - time
+          } ms`
+        );
+
+        return r;
+      }
+
+      // do a bulk operations
       const updateOperations = [];
       // set
       if (Object.keys(patchInfo.set || {})) {
@@ -240,17 +325,10 @@ const Public = {
           },
         });
       }
-      // unset
-      if (Array.isArray(patchInfo.unset) && patchInfo.unset.length) {
-        updateOperations.push({
-          updateOne: {
-            filter,
-            update: { $unset: patchInfo.unset },
-          },
-        });
-      }
+
       // add
-      for (let field in Object.keys(patchInfo.add || {})) {
+      for (const field of addKeys) {
+        console.log('f=', field);
         updateOperations.push({
           updateOne: {
             filter,
@@ -258,12 +336,27 @@ const Public = {
           },
         });
       }
+
       // remove
-      for (let field in Object.keys(patchInfo.remove || {})) {
+      for (const field of removeKeys) {
         updateOperations.push({
           updateOne: {
             filter,
-            update: { $pull: { [field]: { $each: patchInfo.remove[field] } } },
+            update: { $pull: { [field]: { $in: patchInfo.remove[field] } } },
+          },
+        });
+      }
+
+      // unset
+      if (Array.isArray(patchInfo.unset) && patchInfo.unset.length) {
+        // convert array to document
+        let unset = {};
+        patchInfo.unset.forEach((item) => (unset[item] = 1));
+
+        updateOperations.push({
+          updateOne: {
+            filter,
+            update: { $unset: unset },
           },
         });
       }
@@ -277,12 +370,19 @@ const Public = {
           },
         });
 
-        const r = await config.collection.bulkWrite(updateOperations, { ordered: false });
         console.log(
-          `DB Calling: ${config.serviceName} patch for ${objID} with ops: ${JSON.stringify(
+          `DB Calling: ${config.serviceName} patch for ${objID} current ops: ${JSON.stringify(
             updateOperations,
             null,
             2
+          )} `
+        );
+
+        // bulk write
+        const r = await config.collection.bulkWrite(updateOperations, { ordered: false });
+        console.log(
+          `DB Calling: ${config.serviceName} patch for ${objID} with ops: ${JSON.stringify(
+            updateOperations
           )} returned ${JSON.stringify(r)}. Finished in ${new Date() - time} ms`
         );
 
@@ -290,8 +390,6 @@ const Public = {
           return Utils.error(404, `Not found ${objID}`, time, _ctx);
         }
       }
-
-      // const r = await config.collection.findOneAndUpdate(filter, patchInfo.set, { projection, includeResultMetadata: true });
 
       // get
       const value = await config.collection.findOne(filter, { projection });
@@ -316,9 +414,6 @@ const Public = {
       );
       return Utils.exception(e, time, _ctx);
     }
-
-    // 200, 404
-    return Utils.error(500, 'Not implemented', time, _ctx);
   },
 
   /**
