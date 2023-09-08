@@ -260,10 +260,61 @@ describe('Events Service', function () {
   it('should do translate with success', async () => {
     const testEvents = _.cloneDeep(TestConstants.Events);
     const testEvent = testEvents[0];
+    testEvent.args = ['other'];
 
     // stub
-    let stubString = sinon.stub(TranslationsUtils, 'string').callsFake(() => {
-      console.log(`\nTranslationsUtils.string called\n`);
+    let stubString = sinon.stub(TranslationsUtils, 'string');
+    stubString.onCall(0).callsFake((string, ctx, args) => {
+      console.log(`\nTranslationsUtils.string called`);
+      console.log(`args=${JSON.stringify(args, null, 2)}\n`);
+
+      chai.expect(args).to.equal(undefined);
+      return {};
+    });
+    stubString.onCall(1).callsFake((string, ctx, args) => {
+      console.log(`\nTranslationsUtils.string called`);
+      console.log(`args=${JSON.stringify(args, null, 2)}\n`);
+
+      chai.expect(args).to.deep.equal(['GitHub University', 'Big Ben', 'other']);
+      return {};
+    });
+
+    let stubAddTranslations = sinon.stub(TranslationsUtils, 'addTranslations').callsFake((obj, translations) => {
+      console.log(`\nTranslationsUtils.addTranslations called\n`);
+      return {};
+    });
+
+    // call
+    let res = await EventsService.translate(testEvent, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubString.callCount).to.equal(2);
+    chai.expect(stubAddTranslations.callCount).to.equal(1);
+  }).timeout(10000);
+
+  /**
+   * translate with success - obj with no args
+   */
+  it('should do translate with success', async () => {
+    const testEvents = _.cloneDeep(TestConstants.Events);
+    const testEvent = testEvents[0];
+    delete testEvent.args;
+
+    // stub
+    let stubString = sinon.stub(TranslationsUtils, 'string');
+    stubString.onCall(0).callsFake((string, ctx, args) => {
+      console.log(`\nTranslationsUtils.string called`);
+      console.log(`args=${JSON.stringify(args, null, 2)}\n`);
+
+      chai.expect(args).to.equal(undefined);
+      return {};
+    });
+    stubString.onCall(1).callsFake((string, ctx, args) => {
+      console.log(`\nTranslationsUtils.string called`);
+      console.log(`args=${JSON.stringify(args, null, 2)}\n`);
+
+      chai.expect(args).to.deep.equal(['GitHub University', 'Big Ben']);
       return {};
     });
 

@@ -13,7 +13,7 @@ const TestConstants = require('../../test-constants.js');
 const StudentsRest = require('../../../services/rest/students.rest.js');
 
 describe('Students Rest', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Students' };
+  const _ctx = { tenantID: 'school-univ1', reqID: 'testReq', lang: 'en', service: 'Service' };
 
   before(async function () {});
 

@@ -1,6 +1,7 @@
 /**
  * Entry point of the service
  */
+const fs = require('fs');
 const path = require('path');
 
 const TranslationsUtils = require('./core/utils/translations.utils.js');
@@ -18,12 +19,23 @@ const Languages = ['en', 'ro'];
 const init = async () => {
   console.log('Init service');
 
+  // init env
+  console.log(`Current env: ${process.env.NODE_ENV}`);
+  const envFile = path.resolve(__dirname, `./.${process.env.NODE_ENV}.env`);
+  if (fs.existsSync(envFile)) {
+    let config = require('dotenv').config({ path: envFile, override: true });
+    require('dotenv-expand').expand(config);
+  }
+
+  // init web server
   await WebServer.init();
 
+  // init language
   for (const lang of Languages) {
     await TranslationsUtils.initLanguage(lang, path.resolve(__dirname, `translations/${lang}.json`));
   }
 
+  // init services
   await ConfigServices.init();
 
   // emit that service was inited

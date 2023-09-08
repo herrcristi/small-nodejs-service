@@ -14,7 +14,7 @@ const StudentsConstants = require('../../../services/students/students.constants
 const StudentsService = require('../../../services/students/students.service.js');
 
 describe('Students Service', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Students' };
+  const _ctx = { tenantID: 'school-univ1', reqID: 'testReq', lang: 'en', service: 'Service' };
 
   before(async function () {});
 
@@ -271,7 +271,7 @@ describe('Students Service', function () {
     });
 
     // call
-    let res = await StudentsService.put(putReq, _ctx);
+    let res = await StudentsService.put(testStudent.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -307,7 +307,7 @@ describe('Students Service', function () {
     });
 
     // call
-    let res = await StudentsService.patch(patchReq, _ctx);
+    let res = await StudentsService.patch(testStudent.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

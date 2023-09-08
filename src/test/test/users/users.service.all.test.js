@@ -311,7 +311,7 @@ describe('Users Service', function () {
     });
 
     // call
-    let res = await UsersService.put(putReq, _ctx);
+    let res = await UsersService.put(testUser.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -347,7 +347,7 @@ describe('Users Service', function () {
     });
 
     // call
-    let res = await UsersService.patch(patchReq, _ctx);
+    let res = await UsersService.patch(testUser.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

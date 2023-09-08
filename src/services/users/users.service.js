@@ -49,7 +49,10 @@ const Validators = {
   Post: Schema.User.fork(
     ['email', 'firstName', 'lastName', 'birthday', 'address', 'schools'],
     (x) => x.required() /*make required */
-  ),
+  ).keys({
+    type: Joi.string().valid(UsersConstants.Type),
+    name: Joi.string(),
+  }),
 
   Put: Schema.User,
 
@@ -148,6 +151,8 @@ const Public = {
     objInfo.status = objInfo.status || UsersConstants.Status.Pending; // add default status if not set
     objInfo.name = `${objInfo.firstName} ${objInfo.lastName}`;
 
+    // TODO process roles
+
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
   },
@@ -164,6 +169,7 @@ const Public = {
    * put
    */
   put: async (objID, objInfo, _ctx) => {
+    // TODO if objInfo has firstName or lastName get obj and add the name too
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.put(
       { ...config, schema: Validators.Put, fillReferences: true },
@@ -177,6 +183,8 @@ const Public = {
    * patch
    */
   patch: async (objID, patchInfo, _ctx) => {
+    // TODO if objInfo has firstName or lastName get obj and add the name too
+
     // TODO implement add/remove schools/roles
 
     const config = await Private.getConfig(_ctx);

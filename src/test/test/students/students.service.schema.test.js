@@ -11,7 +11,7 @@ const StudentsConstants = require('../../../services/students/students.constants
 const StudentsService = require('../../../services/students/students.service.js');
 
 describe('Students Service', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Students' };
+  const _ctx = { tenantID: 'school-univ1', reqID: 'testReq', lang: 'en', service: 'Service' };
   let postReq = {};
 
   before(async function () {});

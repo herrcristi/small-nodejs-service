@@ -11,6 +11,8 @@ const StudentsConstants = require('../../../services/students/students.constants
 const StudentsService = require('../../../services/students/students.service.js');
 
 describe('Students Controller', function () {
+  const _ctx = { tenantID: 'school-univ1', reqID: 'testReq', lang: 'en', service: 'Service' };
+
   before(async function () {});
 
   beforeEach(async function () {});
@@ -40,7 +42,10 @@ describe('Students Controller', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${StudentsConstants.ApiPath}`);
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${StudentsConstants.ApiPath}`)
+      .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -73,7 +78,10 @@ describe('Students Controller', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${StudentsConstants.ApiPath}/${testStudent.id}`);
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${StudentsConstants.ApiPath}/${testStudent.id}`)
+      .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -104,6 +112,7 @@ describe('Students Controller', function () {
     let res = await chai
       .request(TestConstants.WebServer)
       .post(`${StudentsConstants.ApiPath}`)
+      .set('x-tenant-id', _ctx.tenantID)
       .send({ ...testStudent });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -132,7 +141,10 @@ describe('Students Controller', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).delete(`${StudentsConstants.ApiPath}/${testStudent.id}`);
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .delete(`${StudentsConstants.ApiPath}/${testStudent.id}`)
+      .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -163,6 +175,7 @@ describe('Students Controller', function () {
     let res = await chai
       .request(TestConstants.WebServer)
       .put(`${StudentsConstants.ApiPath}/${testStudent.id}`)
+      .set('x-tenant-id', _ctx.tenantID)
       .send({ ...testStudent });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -194,6 +207,7 @@ describe('Students Controller', function () {
     let res = await chai
       .request(TestConstants.WebServer)
       .patch(`${StudentsConstants.ApiPath}/${testStudent.id}`)
+      .set('x-tenant-id', _ctx.tenantID)
       .send({ set: { ...testStudent } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -225,6 +239,7 @@ describe('Students Controller', function () {
     let res = await chai
       .request(TestConstants.WebServer)
       .post(`${StudentsConstants.ApiPathInternal}/notifications`)
+      .set('x-tenant-id', _ctx.tenantID)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 

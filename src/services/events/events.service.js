@@ -23,7 +23,7 @@ const Schema = {
       name: Joi.string().min(1).max(128).required(),
       type: Joi.string().min(1).max(64).required(),
     }),
-    args: Joi.array().items(Joi.string().min(1).max(512)),
+    args: Joi.array().items(Joi.string().min(1).max(16384)),
     user: Joi.object().keys({
       id: Joi.string().min(1).max(64).required(),
       name: Joi.string().min(1).max(128).required(),
@@ -32,7 +32,10 @@ const Schema = {
 };
 
 const Validators = {
-  Post: Schema.Event.fork(['severity', 'messageID', 'target', 'user'], (x) => x.required() /*make required */),
+  Post: Schema.Event.fork(['severity', 'messageID', 'target', 'user'], (x) => x.required() /*make required */).keys({
+    type: Joi.string().valid(EventsConstants.Type),
+    name: Joi.string(),
+  }),
 };
 
 const Private = {
@@ -117,7 +120,6 @@ const Public = {
    */
   post: async (objInfo, _ctx) => {
     objInfo.type = EventsConstants.Type;
-
     objInfo.name = objInfo.messageID;
 
     const config = await Private.getConfig(_ctx);

@@ -301,7 +301,7 @@ describe('Schools Service', function () {
     });
 
     // call
-    let res = await SchoolsService.put(putReq, _ctx);
+    let res = await SchoolsService.put(testSchool.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -337,7 +337,7 @@ describe('Schools Service', function () {
     });
 
     // call
-    let res = await SchoolsService.patch(patchReq, _ctx);
+    let res = await SchoolsService.patch(testSchool.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
