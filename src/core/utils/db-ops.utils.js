@@ -239,7 +239,7 @@ const Public = {
       const r = await config.collection.findOneAndUpdate(
         { id: objID },
         { $set: { ...objInfo, lastModifiedTimestamp: new Date() } },
-        { returnDocument: 'after', includeResultMetadata: true, projection, explain: 'executionStats' }
+        { returnDocument: 'after', includeResultMetadata: true, projection }
       );
 
       console.log(
@@ -315,8 +315,7 @@ const Public = {
       if (CommonUtils.hasCommonFields(Object.values(updateOperation))) {
         // do a bulk write operation followed by a get
         updateOperation = Private.convertPatchUpdateToBulkOps(filter, updateOperation, _ctx);
-        r = await config.collection.bulkWrite(updateOperation, { ordered: false }, { explain: 'executionStats' });
-        console.log(r);
+        r = await config.collection.bulkWrite(updateOperation, { ordered: false });
 
         if (r.matchedCount) {
           r.value = await config.collection.findOne(filter, { projection });
@@ -332,7 +331,6 @@ const Public = {
           returnDocument: 'after',
           includeResultMetadata: true,
           projection,
-          explain: 'executionStats',
         });
       }
 
