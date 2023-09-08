@@ -366,9 +366,9 @@ const Public = {
 
     try {
       let filterField = fieldName ? `${fieldName}.id` : `id`;
-      // set fieldName.$.field = objInfo.field
+      // if array set fieldName.$.field = objInfo.field
       // TODO isArray
-      fieldName = /* isArray */ true ? `${fieldName}.$` : fieldName;
+      fieldName = /* isArray */ fieldName ? `${fieldName}.$` : fieldName;
       let setObj = {};
       for (const key in objInfo) {
         const setKey = fieldName ? `${fieldName}.${key}` : key;
@@ -414,11 +414,17 @@ const Public = {
 
     try {
       let filterField = fieldName ? `${fieldName}.id` : `id`;
+      let isArray = fieldName ? true : false; // TODO isArray
 
-      // TODO isArray
+      let setObj = {};
+      for (const key in objInfo) {
+        const setKey = fieldName ? `${fieldName}.${key}` : key;
+        setObj[setKey] = objInfo[key];
+      }
+
       // update obj
       let r = null;
-      if (true /* isArray */) {
+      if (isArray) {
         r = await config.collection.updateMany(
           { [filterField]: objInfo.id },
           {
@@ -431,7 +437,17 @@ const Public = {
           }
         );
       } else {
-        // TODO
+        r = await config.collection.updateMany(
+          { [filterField]: objInfo.id },
+          {
+            $unset: {
+              ...Object.keys(setObj),
+            },
+            $set: {
+              lastModifiedTimestamp: new Date(),
+            },
+          }
+        );
       }
 
       console.log(
