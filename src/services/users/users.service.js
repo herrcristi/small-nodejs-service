@@ -167,6 +167,7 @@ const Public = {
    * put
    */
   put: async (objID, objInfo, _ctx) => {
+    // TODO if objInfo has firstName or lastName get obj and add the name too
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.put(
       { ...config, schema: Validators.Put, fillReferences: true },
@@ -180,6 +181,8 @@ const Public = {
    * patch
    */
   patch: async (objID, patchInfo, _ctx) => {
+    // TODO if objInfo has firstName or lastName get obj and add the name too
+
     // TODO implement add/remove schools/roles
 
     const config = await Private.getConfig(_ctx);

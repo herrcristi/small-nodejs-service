@@ -239,7 +239,7 @@ const Public = {
       const r = await config.collection.findOneAndUpdate(
         { id: objID },
         { $set: { ...objInfo, lastModifiedTimestamp: new Date() } },
-        { returnDocument: 'after', includeResultMetadata: true, projection }
+        { returnDocument: 'after', includeResultMetadata: true, projection, explain: 'executionStats' }
       );
 
       console.log(
@@ -315,7 +315,8 @@ const Public = {
       if (CommonUtils.hasCommonFields(Object.values(updateOperation))) {
         // do a bulk write operation followed by a get
         updateOperation = Private.convertPatchUpdateToBulkOps(filter, updateOperation, _ctx);
-        r = await config.collection.bulkWrite(updateOperation, { ordered: false });
+        r = await config.collection.bulkWrite(updateOperation, { ordered: false }, { explain: 'executionStats' });
+        console.log(r);
 
         if (r.matchedCount) {
           r.value = await config.collection.findOne(filter, { projection });
@@ -331,6 +332,7 @@ const Public = {
           returnDocument: 'after',
           includeResultMetadata: true,
           projection,
+          explain: 'executionStats',
         });
       }
 
@@ -363,13 +365,44 @@ const Public = {
    */
   updateManyReferences: async (config, fieldName, objInfo, _ctx) => {
     const time = new Date();
-    //set.lastModifiedTimestamp = new Date();
 
-    let filterField = fieldName ? `${fieldName}.id` : `id`;
-    // filterField === objInfo.id -> set fieldName.field = objInfo.field
+    try {
+      let filterField = fieldName ? `${fieldName}.id` : `id`;
+      // set fieldName.$.field = objInfo.field
+      fieldName = /* isArray */ true ? `${fieldName}.$` : fieldName;
+      let setObj = {};
+      for (const key in objInfo) {
+        const setKey = fieldName ? `${fieldName}.${key}` : key;
+        setObj[setKey] = objInfo[key];
+      }
 
-    // 200, 404
-    return Utils.error(500, 'Not implemented', time, _ctx);
+      // update obj
+      const r = await config.collection.updateMany(
+        { [filterField]: objInfo.id },
+        {
+          $set: {
+            ...setObj,
+            lastModifiedTimestamp: new Date(),
+          },
+        }
+        // {explain: 'executionStats'}
+      );
+
+      console.log(
+        `DB Calling: ${config.serviceName} updateManyReferences for ${fieldName} with info ${JSON.stringify(
+          objInfo
+        )} returned ${JSON.stringify(r)}. Finished in ${new Date() - time} ms`
+      );
+
+      return { status: 200, value: r.modifiedCount, time: new Date() - time };
+    } catch (e) {
+      console.log(
+        `DB Calling Failed: ${config.serviceName} updateManyReferences for ${fieldName} with info ${JSON.stringify(
+          objInfo
+        )}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
+      );
+      return Utils.exception(e, time, _ctx);
+    }
   },
 
   /**

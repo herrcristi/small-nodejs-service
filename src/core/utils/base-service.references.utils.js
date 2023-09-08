@@ -165,6 +165,8 @@ const Public = {
         continue;
       }
 
+      const projection = configRef.projection || { id: 1, name: 1, type: 1, status: 1 };
+
       if (notification.modified) {
         console.log(
           `${config.serviceName}: For ${configRef.fieldName} apply changes from notification ${JSON.stringify(
@@ -175,7 +177,8 @@ const Public = {
         processed = true;
         // apply modified changes one by one
         for (const refObj of notification.modified) {
-          const rn = await DbOpsUtils.updateManyReferences(config, configRef.fieldName, refObj, _ctx);
+          const projectedValue = CommonUtils.getProjectedObj(refObj, projection);
+          const rn = await DbOpsUtils.updateManyReferences(config, configRef.fieldName, projectedValue, _ctx);
           if (rn.error) {
             return rn;
           }
@@ -190,7 +193,8 @@ const Public = {
         processed = true;
         // apply deleted changes one by one
         for (const refObj of notification.removed) {
-          const rn = await DbOpsUtils.deleteManyReferences(config, configRef.fieldName, refObj, _ctx);
+          const projectedValue = CommonUtils.getProjectedObj(refObj, projection);
+          const rn = await DbOpsUtils.deleteManyReferences(config, configRef.fieldName, projectedValue, _ctx);
           if (rn.error) {
             return rn;
           }
