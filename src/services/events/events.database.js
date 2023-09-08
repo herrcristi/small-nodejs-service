@@ -40,6 +40,7 @@ const Public = {
 
     let coll = Private.DB?.collection(collName);
     await coll?.createIndex({ id: 1 }, { unique: true });
+    await coll?.createIndex({ createdTimestamp: -1 });
     await coll?.createIndex({ severity: 1 });
     await coll?.createIndex({ messageID: 1 });
     await coll?.createIndex({ 'target.id': 1 });
