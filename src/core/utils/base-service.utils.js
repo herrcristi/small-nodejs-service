@@ -43,7 +43,7 @@ const Utils = {
    * config: { notifications: { projection } }
    */
   getProjection: (config, _ctx) => {
-    let projection = { id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, lastModifiedTimestamp: 1 };
+    let projection = { _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, lastModifiedTimestamp: 1 };
 
     if (config.notifications?.projection) {
       for (const field in config.notifications.projection) {

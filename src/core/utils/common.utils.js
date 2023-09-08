@@ -158,6 +158,28 @@ const Public = {
 
     return r;
   },
+
+  /**
+   * has conflicting members (if same member appear in multiple fields) used by patch
+   * ex: [{ field1 }, {field2 }, { field3 }, { field4 }]
+   */
+  hasCommonFields: (objs) => {
+    if (!Array.isArray(objs)) {
+      return false;
+    }
+
+    let fieldsMap = {};
+    for (const currentObj of objs) {
+      for (const field of Object.keys(currentObj)) {
+        if (fieldsMap[field]) {
+          return true;
+        }
+        fieldsMap[field] = 1;
+      }
+    }
+
+    return false;
+  },
 };
 
 module.exports = { ...Public };

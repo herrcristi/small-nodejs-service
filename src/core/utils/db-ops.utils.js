@@ -33,52 +33,20 @@ const Utils = {
 
 const Private = {
   /**
-   * patch
-   * config: { serviceName, collection }
-   * patchInfo: { set, unset } only set and unset are supported
-   * return: { status, value } or { status, error: { message, error } }
+   * convert path update to bulk write operations
    */
-  patchSet: async (config, objID, patchInfo, projection, _ctx) => {
-    const time = new Date();
-    const filter = { id: objID };
-
-    const updateOperations = [];
-    // set
-    if (Object.keys(patchInfo.set || {})) {
-      updateOperations.push({
-        $set: patchInfo.set,
-      });
-    }
-    // unset
-    if (Array.isArray(patchInfo.unset) && patchInfo.unset.length) {
-      updateOperations.push({
-        $unset: patchInfo.unset,
+  convertPatchUpdateToBulkOps: (filter, patchOperation, _ctx) => {
+    let bulkOperations = [];
+    for (const op in patchOperation) {
+      bulkOperations.push({
+        updateOne: {
+          filter,
+          update: { [op]: patchOperation[op] },
+        },
       });
     }
 
-    // set lastModified timestamp
-    let value = null;
-    if (updateOperations.length) {
-      updateOperations.push({
-        $set: { lastModifiedTimestamp: new Date() },
-      });
-
-      const r = await config.collection.findOneAndUpdate(filter, updateOperations, {
-        returnDocument: 'after',
-        includeResultMetadata: true,
-      });
-      value = r.value;
-    } else {
-      // do a simple get
-      value = await config.collection.findOne(filter, { projection });
-    }
-
-    // not found
-    if (!value) {
-      return Utils.error(404, `Not found ${objID}`, time, _ctx);
-    }
-
-    return { status: 200, value: value, time: new Date() - time };
+    return bulkOperations;
   },
 };
 
@@ -268,7 +236,11 @@ const Public = {
     const time = new Date();
 
     try {
-      const r = await Private.patchSet(config, objID, { set: objInfo }, projection, _ctx);
+      const r = await config.collection.findOneAndUpdate(
+        { id: objID },
+        { $set: { ...objInfo, lastModifiedTimestamp: new Date() } },
+        { returnDocument: 'after', includeResultMetadata: true, projection }
+      );
 
       console.log(
         `DB Calling: ${config.serviceName} put for ${objID} returned ${JSON.stringify(r)}. Finished in ${
@@ -276,7 +248,12 @@ const Public = {
         } ms`
       );
 
-      return r;
+      // not found
+      if (r.lastErrorObject?.n === 0) {
+        return Utils.error(404, `Not found ${objID}`, time, _ctx);
+      }
+
+      return { status: 200, value: r.value, time: new Date() - time };
     } catch (e) {
       console.log(
         `DB Calling Failed: ${config.serviceName} put for ${objID}. Error ${e.stack ? e.stack : e}. Finished in ${
@@ -296,55 +273,33 @@ const Public = {
   patch: async (config, objID, patchInfo, projection, _ctx) => {
     const time = new Date();
 
+    // create operation
+    let updateOperation = {};
+
     try {
       const filter = { id: objID };
 
-      // if add or remove does not exists use the simple patchSet
-      let addKeys = Object.keys(patchInfo.add || {});
-      let removeKeys = Object.keys(patchInfo.remove || {});
-      if (addKeys.length == 0 && removeKeys.length == 0) {
-        const r = await Private.patchSet(config, objID, patchInfo, projection, _ctx);
-
-        console.log(
-          `DB Calling: ${config.serviceName} patch.set for ${objID} returned ${JSON.stringify(r)}. Finished in ${
-            new Date() - time
-          } ms`
-        );
-
-        return r;
-      }
-
-      // do a bulk operations
-      const updateOperations = [];
+      // order is set, add, remove, unset
       // set
-      if (Object.keys(patchInfo.set || {})) {
-        updateOperations.push({
-          updateOne: {
-            filter,
-            update: { $set: patchInfo.set },
-          },
-        });
-      }
+      updateOperation.$set = patchInfo.set || {};
+      updateOperation.$set.lastModifiedTimestamp = new Date();
 
       // add
-      for (const field of addKeys) {
-        console.log('f=', field);
-        updateOperations.push({
-          updateOne: {
-            filter,
-            update: { $addToSet: { [field]: { $each: patchInfo.add[field] } } },
-          },
-        });
+      let addKeys = Object.keys(patchInfo.add || {});
+      if (addKeys.length) {
+        updateOperation.$addToSet = {};
+        for (const field of addKeys) {
+          updateOperation.$addToSet[field] = { $each: patchInfo.add[field] };
+        }
       }
 
       // remove
-      for (const field of removeKeys) {
-        updateOperations.push({
-          updateOne: {
-            filter,
-            update: { $pull: { [field]: { $in: patchInfo.remove[field] } } },
-          },
-        });
+      let removeKeys = Object.keys(patchInfo.remove || {});
+      if (removeKeys.length) {
+        updateOperation.$pull = {};
+        for (const field of removeKeys) {
+          updateOperation.$pull[field] = { $in: patchInfo.remove[field] };
+        }
       }
 
       // unset
@@ -352,65 +307,50 @@ const Public = {
         // convert array to document
         let unset = {};
         patchInfo.unset.forEach((item) => (unset[item] = 1));
-
-        updateOperations.push({
-          updateOne: {
-            filter,
-            update: { $unset: unset },
-          },
-        });
+        updateOperation.$unset = unset;
       }
 
-      // set lastModified timestamp
-      if (updateOperations.length) {
-        updateOperations.push({
-          updateOne: {
-            filter,
-            update: { $set: { lastModifiedTimestamp: new Date() } },
-          },
-        });
+      // has conflicting operations when same field is used in multiple operators
+      let r = null;
+      if (CommonUtils.hasCommonFields(Object.values(updateOperation))) {
+        // do a bulk write operation followed by a get
+        updateOperation = Private.convertPatchUpdateToBulkOps(filter, updateOperation, _ctx);
+        r = await config.collection.bulkWrite(updateOperation, { ordered: false });
 
-        console.log(
-          `DB Calling: ${config.serviceName} patch for ${objID} current ops: ${JSON.stringify(
-            updateOperations,
-            null,
-            2
-          )} `
-        );
-
-        // bulk write
-        const r = await config.collection.bulkWrite(updateOperations, { ordered: false });
-        console.log(
-          `DB Calling: ${config.serviceName} patch for ${objID} with ops: ${JSON.stringify(
-            updateOperations
-          )} returned ${JSON.stringify(r)}. Finished in ${new Date() - time} ms`
-        );
-
-        if (!r.matchedCount) {
-          return Utils.error(404, `Not found ${objID}`, time, _ctx);
+        if (r.matchedCount) {
+          r.value = await config.collection.findOne(filter, { projection });
         }
-      }
 
-      // get
-      const value = await config.collection.findOne(filter, { projection });
+        // not found
+        if (!r.value) {
+          r.lastErrorObject = { n: 0 };
+        }
+      } else {
+        // normal op
+        r = await config.collection.findOneAndUpdate(filter, updateOperation, {
+          returnDocument: 'after',
+          includeResultMetadata: true,
+          projection,
+        });
+      }
 
       console.log(
-        `DB Calling: ${config.serviceName} patch.getOne for ${objID} returned ${JSON.stringify(value)}. Finished in ${
-          new Date() - time
-        } ms`
+        `DB Calling: ${config.serviceName} patch for ${objID} with ops: ${JSON.stringify(
+          updateOperation
+        )} returned ${JSON.stringify(r)}. Finished in ${new Date() - time} ms`
       );
 
       // not found
-      if (!value) {
+      if (r.lastErrorObject?.n === 0) {
         return Utils.error(404, `Not found ${objID}`, time, _ctx);
       }
 
-      return { status: 200, value: value, time: new Date() - time };
+      return { status: 200, value: r.value, time: new Date() - time };
     } catch (e) {
       console.log(
-        `DB Calling Failed: ${config.serviceName} patch for ${objID}. Error ${e.stack ? e.stack : e}. Finished in ${
-          new Date() - time
-        } ms`
+        `DB Calling Failed: ${config.serviceName} patch for ${objID} with operation ${JSON.stringify(
+          updateOperation
+        )}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
     }
