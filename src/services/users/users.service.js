@@ -151,6 +151,8 @@ const Public = {
     objInfo.status = objInfo.status || UsersConstants.Status.Pending; // add default status if not set
     objInfo.name = `${objInfo.firstName} ${objInfo.lastName}`;
 
+    // TODO process roles
+
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
   },

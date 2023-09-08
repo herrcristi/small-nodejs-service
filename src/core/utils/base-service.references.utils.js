@@ -93,7 +93,7 @@ const Public = {
     }
 
     // get all targets
-    const projection = config.projection || { id: 1, name: 1, type: 1, status: 1 };
+    const projection = config.projection || { _id: 0, id: 1, name: 1, type: 1, status: 1 };
     let rs = await config.service.getAllByIDs(targetsIDs, projection, _ctx);
     if (rs.error) {
       return rs;

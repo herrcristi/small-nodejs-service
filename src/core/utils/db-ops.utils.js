@@ -367,6 +367,7 @@ const Public = {
     try {
       let filterField = fieldName ? `${fieldName}.id` : `id`;
       // set fieldName.$.field = objInfo.field
+      // TODO isArray
       fieldName = /* isArray */ true ? `${fieldName}.$` : fieldName;
       let setObj = {};
       for (const key in objInfo) {
@@ -410,13 +411,44 @@ const Public = {
    */
   deleteManyReferences: async (config, fieldName, objInfo, _ctx) => {
     const time = new Date();
-    //set.lastModifiedTimestamp = new Date();
 
-    let filterField = fieldName ? `${fieldName}.id` : `id`;
-    // filterField === objInfo.id -> set fieldName.field = objInfo.field
+    try {
+      let filterField = fieldName ? `${fieldName}.id` : `id`;
 
-    // 200, 404
-    return Utils.error(500, 'Not implemented', time, _ctx);
+      // TODO isArray
+      // update obj
+      let r = null;
+      if (true /* isArray */) {
+        r = await config.collection.updateMany(
+          { [filterField]: objInfo.id },
+          {
+            $pull: {
+              [fieldName]: { id: objInfo.id },
+            },
+            $set: {
+              lastModifiedTimestamp: new Date(),
+            },
+          }
+        );
+      } else {
+        // TODO
+      }
+
+      console.log(
+        `DB Calling: ${config.serviceName} deleteManyReferences for ${fieldName} with info ${JSON.stringify(
+          objInfo
+        )} returned ${JSON.stringify(r)}. Finished in ${new Date() - time} ms`
+      );
+
+      return { status: 200, value: r.deletedCount, time: new Date() - time };
+    } catch (e) {
+      console.log(
+        `DB Calling Failed: ${config.serviceName} deleteManyReferences for ${fieldName} with info ${JSON.stringify(
+          objInfo
+        )}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
+      );
+      return Utils.exception(e, time, _ctx);
+    }
   },
 };
 
