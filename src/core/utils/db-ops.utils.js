@@ -388,7 +388,7 @@ const Public = {
       );
 
       console.log(
-        `DB Calling: ${config.serviceName} updateManyReferences for ${ref.fieldName} with info ${JSON.stringify(
+        `DB Calling: ${config.serviceName} updateManyReferences for '${ref.fieldName}' with info ${JSON.stringify(
           objInfo
         )} returned ${JSON.stringify(r)}. Finished in ${new Date() - time} ms`
       );
@@ -396,9 +396,9 @@ const Public = {
       return { status: 200, value: r.modifiedCount, time: new Date() - time };
     } catch (e) {
       console.log(
-        `DB Calling Failed: ${config.serviceName} updateManyReferences for ${ref.fieldName} with info ${JSON.stringify(
-          objInfo
-        )}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
+        `DB Calling Failed: ${config.serviceName} updateManyReferences for '${
+          ref.fieldName
+        }' with info ${JSON.stringify(objInfo)}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
     }
@@ -426,6 +426,7 @@ const Public = {
       // update obj
       let r = null;
       if (ref.isArray) {
+        // remove from array
         r = await config.collection.updateMany(
           { [filterField]: objInfo.id },
           {
@@ -452,7 +453,7 @@ const Public = {
       }
 
       console.log(
-        `DB Calling: ${config.serviceName} deleteManyReferences for ${ref.fieldName} with info ${JSON.stringify(
+        `DB Calling: ${config.serviceName} deleteManyReferences for '${ref.fieldName}' with info ${JSON.stringify(
           objInfo
         )} returned ${JSON.stringify(r)}. Finished in ${new Date() - time} ms`
       );
@@ -460,9 +461,9 @@ const Public = {
       return { status: 200, value: r.deletedCount, time: new Date() - time };
     } catch (e) {
       console.log(
-        `DB Calling Failed: ${config.serviceName} deleteManyReferences for ${ref.fieldName} with info ${JSON.stringify(
-          objInfo
-        )}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
+        `DB Calling Failed: ${config.serviceName} deleteManyReferences for '${
+          ref.fieldName
+        }' with info ${JSON.stringify(objInfo)}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
     }

@@ -55,8 +55,6 @@ const Public = {
     {
       id: 'user1',
       email: 'big.ben@testdomain.test',
-      firstName: 'Big',
-      lastName: 'Ben',
       name: 'Big Ben',
       type: 'user',
       status: 'active',
@@ -80,8 +78,6 @@ const Public = {
     {
       id: 'user2',
       email: 'john.bravo@testdomain.test',
-      firstName: 'John',
-      lastName: 'Bravo',
       name: 'John Bravo',
       type: 'user',
       status: 'active',

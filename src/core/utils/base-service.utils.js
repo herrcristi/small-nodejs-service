@@ -477,7 +477,7 @@ const Public = {
   /**
    * process notification
    * config: { serviceName, collection, ..., references, fillReferences }
-   * notification: { added: [ { id, ... } ], removed, modified  }
+   * notification: { serviceName, added: [ { id, ... } ], removed, modified  }
    * returns: { status, value } or { status, error }
    */
   notification: async (config, notification, _ctx) => {

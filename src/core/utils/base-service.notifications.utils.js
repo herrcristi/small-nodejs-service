@@ -88,7 +88,7 @@ const Public = {
   /**
    * process notification
    * config: { serviceName, collection, ..., references, fillReferences }
-   * notification: { added: [ { id, ... } ], removed, modified  }
+   * notification: { serviceName, added: [ { id, ... } ], removed, modified  }
    * returns: { status, value } or { status, error }
    */
   notification: async (config, notification, _ctx) => {
@@ -100,6 +100,11 @@ const Public = {
     const v = Schema.Notification.validate(notification);
     if (v.error) {
       const err = v.error.details[0].message;
+      console.log(
+        `${config.serviceName}: Failed to validate notification: ${JSON.stringify(
+          notification
+        )}. Error: ${JSON.stringify(err)}`
+      );
       return { status: 400, error: { message: err, error: new Error(err) } };
     }
 
