@@ -26,7 +26,6 @@ describe('Users Service', function () {
     };
     delete postReq.id;
     delete postReq.type;
-    delete postReq.name;
     delete postReq._lang_en;
   });
 
@@ -84,61 +83,32 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * schema post firstName
+   * schema post name
    */
-  it('should validate post schema for firstName', async () => {
-    // firstName is required
-    delete postReq.firstName;
+  it('should validate post schema for name', async () => {
+    // name is required
+    delete postReq.name;
     let res = UsersService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"firstName" is required');
+    chai.expect(res.error.details[0].message).to.include('"name" is required');
 
-    // firstName is number
-    postReq.firstName = 1;
+    // name is number
+    postReq.name = 1;
     res = UsersService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"firstName" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"name" must be a string');
 
-    // firstName is null
-    postReq.firstName = null;
+    // name is null
+    postReq.name = null;
     res = UsersService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"firstName" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"name" must be a string');
 
-    // firstName empty
-    postReq.firstName = '';
+    // name empty
+    postReq.name = '';
     res = UsersService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"firstName" is not allowed to be empty');
-  }).timeout(10000);
-
-  /**
-   * schema post lastName
-   */
-  it('should validate post schema for lastName', async () => {
-    // lastName is required
-    delete postReq.lastName;
-    let res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"lastName" is required');
-
-    // lastName is number
-    postReq.lastName = 1;
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"lastName" must be a string');
-
-    // lastName is null
-    postReq.lastName = null;
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"lastName" must be a string');
-
-    // lastName empty
-    postReq.lastName = '';
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"lastName" is not allowed to be empty');
+    chai.expect(res.error.details[0].message).to.include('"name" is not allowed to be empty');
   }).timeout(10000);
 
   /**

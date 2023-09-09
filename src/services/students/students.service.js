@@ -59,12 +59,62 @@ const Private = {
       collection: await StudentsDatabase.collection(_ctx),
       translate: Public.translate,
       schema: Schema.Student,
-      references: [{ fieldName: '', service: UsersRest, projection: { id: 1, name: 1 } }],
+      references: [{ fieldName: '', service: UsersRest, isArray: false, projection: { id: 1, name: 1 } }],
       fillReferences: false,
       events: { service: EventsRest },
       notifications: { service: StudentsRest, projection: null /*default*/ },
     };
     return config;
+  },
+
+  /**
+   * user notification must be split in mutiple notifications due to school acting as tenant
+   * notification: { serviceName, added: [ { id, ... } ], removed, modified  }
+   */
+  splitNotification: (notification, _ctx) => {
+    let newNotifications = [];
+
+    const actions = ['added', 'modified', 'removed'];
+    let n = {
+      ...notification,
+    };
+    for (const action of actions) {
+      delete n[action];
+    }
+
+    // currently if a role is removed from an org the students entry will still be kept
+
+    if (notification.serviceName === UsersRest.Constants?.ServiceName) {
+      // user: { id, name, type, status, schools: [{id, roles}] }
+
+      for (const action of actions) {
+        const users = notification[action];
+        for (const user of users || []) {
+          let u = { ...user };
+          delete u.schools;
+
+          for (const school of user.schools || []) {
+            for (const role of school.roles || []) {
+              // only student accepted in this service
+              if (role !== StudentsConstants.Type) {
+                continue;
+              }
+
+              newNotifications.push({
+                ...n,
+                schoolID: school.id,
+                [action]: [{ ...u }],
+              });
+            }
+          }
+        }
+      }
+    } else {
+      newNotifications.push(notification);
+    }
+
+    console.log(`Notification converted to student notifications: ${JSON.stringify(newNotifications)}`);
+    return newNotifications;
   },
 };
 
@@ -132,6 +182,42 @@ const Public = {
     return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
   },
 
+  postForUsers: async (users, _ctx) => {
+    // check if already exists first
+    const usersIDs = users.map((item) => item.id);
+    let existingStudentsMap = {};
+    if (usersIDs.length) {
+      let r = await Public.getAllByIDs(usersIDs, { _id: 0, id: 1 }, _ctx);
+      if (r.error) {
+        return r;
+      }
+      r.value?.forEach((item) => (existingStudentsMap[item.id] = true));
+    }
+
+    let newUsersCount = 0;
+    for (const user of users) {
+      if (existingStudentsMap[user.id]) {
+        console.log(`Skipping create student ${user.id}`);
+        continue;
+      }
+
+      // create
+      r = await Public.post(
+        {
+          id: user.id,
+          classes: [],
+        },
+        _ctx
+      );
+      if (r.error) {
+        return r;
+      }
+      newUsersCount++;
+    }
+
+    return { status: 200, value: newUsersCount };
+  },
+
   /**
    * delete
    */
@@ -168,10 +254,34 @@ const Public = {
 
   /**
    * notification
+   * notification: { serviceName, added: [ { id, ... } ], removed, modified  }
    */
   notification: async (notification, _ctx) => {
-    const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
+    // user notification must be split in mutiple notifications due to school acting as tenant
+    const newNotifications = Private.splitNotification(notification, _ctx);
+    for (const notif of newNotifications) {
+      const nCtx = { ..._ctx, tenantID: notif.schoolID || _ctx.tenantID };
+      let config = await Private.getConfig(nCtx);
+      config = { ...config, fillReferences: true };
+
+      // if there is user added create the corresponding entry for student
+      if (notif.serviceName === UsersRest.Constants?.ServiceName) {
+        const newUsers = (notif.added || []).concat(notif.modified || []);
+        const rN = await Public.postForUsers(newUsers, nCtx);
+        if (rN.error) {
+          return rN;
+        }
+      }
+
+      // process notification for specific tenant
+      let n = { ...notif };
+      delete n.schoolID;
+      let r = await BaseServiceUtils.notification(config, n, nCtx);
+      if (r.error) {
+        return r;
+      }
+    }
+    return { status: 200, value: true };
   },
 
   /**

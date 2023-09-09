@@ -22,6 +22,10 @@ const Public = {
    * get collection
    */
   collection: async (_ctx) => {
+    if (!_ctx.tenantID) {
+      console.log(`No tenant for getting students collection`);
+      return null;
+    }
     // students collections are per tenant
     await Public.createIndexes(_ctx);
     return Private.DB?.collection(StudentsConstants.ServiceName + `_${_ctx.tenantID}`);

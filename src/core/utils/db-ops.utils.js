@@ -359,16 +359,16 @@ const Public = {
   /**
    * references update many
    * config: { serviceName, collection }
+   * ref: { fieldName, isArray }
    * return: { status, value } or { status, error: { message, error } }
    */
-  updateManyReferences: async (config, fieldName, objInfo, _ctx) => {
+  updateManyReferences: async (config, ref, objInfo, _ctx) => {
     const time = new Date();
 
     try {
-      let filterField = fieldName ? `${fieldName}.id` : `id`;
+      const filterField = ref.fieldName ? `${ref.fieldName}.id` : `id`;
       // if array set fieldName.$.field = objInfo.field
-      // TODO isArray
-      fieldName = /* isArray */ fieldName ? `${fieldName}.$` : fieldName;
+      const fieldName = ref.isArray ? `${ref.fieldName}.$` : ref.fieldName;
       let setObj = {};
       for (const key in objInfo) {
         const setKey = fieldName ? `${fieldName}.${key}` : key;
@@ -388,7 +388,7 @@ const Public = {
       );
 
       console.log(
-        `DB Calling: ${config.serviceName} updateManyReferences for ${fieldName} with info ${JSON.stringify(
+        `DB Calling: ${config.serviceName} updateManyReferences for '${ref.fieldName}' with info ${JSON.stringify(
           objInfo
         )} returned ${JSON.stringify(r)}. Finished in ${new Date() - time} ms`
       );
@@ -396,9 +396,9 @@ const Public = {
       return { status: 200, value: r.modifiedCount, time: new Date() - time };
     } catch (e) {
       console.log(
-        `DB Calling Failed: ${config.serviceName} updateManyReferences for ${fieldName} with info ${JSON.stringify(
-          objInfo
-        )}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
+        `DB Calling Failed: ${config.serviceName} updateManyReferences for '${
+          ref.fieldName
+        }' with info ${JSON.stringify(objInfo)}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
     }
@@ -407,14 +407,15 @@ const Public = {
   /**
    * references delete many
    * config: { serviceName, collection }
+   * ref: { fieldName, isArray }
    * return: { status, value } or { status, error: { message, error } }
    */
-  deleteManyReferences: async (config, fieldName, objInfo, _ctx) => {
+  deleteManyReferences: async (config, ref, objInfo, _ctx) => {
     const time = new Date();
 
     try {
-      let filterField = fieldName ? `${fieldName}.id` : `id`;
-      let isArray = fieldName ? true : false; // TODO isArray
+      const filterField = ref.fieldName ? `${ref.fieldName}.id` : `id`;
+      const fieldName = ref.fieldName;
 
       let setObj = {};
       for (const key in objInfo) {
@@ -424,7 +425,8 @@ const Public = {
 
       // update obj
       let r = null;
-      if (isArray) {
+      if (ref.isArray) {
+        // remove from array
         r = await config.collection.updateMany(
           { [filterField]: objInfo.id },
           {
@@ -451,7 +453,7 @@ const Public = {
       }
 
       console.log(
-        `DB Calling: ${config.serviceName} deleteManyReferences for ${fieldName} with info ${JSON.stringify(
+        `DB Calling: ${config.serviceName} deleteManyReferences for '${ref.fieldName}' with info ${JSON.stringify(
           objInfo
         )} returned ${JSON.stringify(r)}. Finished in ${new Date() - time} ms`
       );
@@ -459,9 +461,9 @@ const Public = {
       return { status: 200, value: r.deletedCount, time: new Date() - time };
     } catch (e) {
       console.log(
-        `DB Calling Failed: ${config.serviceName} deleteManyReferences for ${fieldName} with info ${JSON.stringify(
-          objInfo
-        )}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
+        `DB Calling Failed: ${config.serviceName} deleteManyReferences for '${
+          ref.fieldName
+        }' with info ${JSON.stringify(objInfo)}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
     }

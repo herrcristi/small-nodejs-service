@@ -17,6 +17,7 @@ describe('Base Service', function () {
       {
         fieldName: 'target',
         service: { getAllByIDs: () => {}, Constants: { ServiceName: 'service' } },
+        isArray: false,
         projection: null /*default*/,
       },
     ],
@@ -125,11 +126,13 @@ describe('Base Service', function () {
       ],
     };
 
-    let stubDB = sinon.stub(DbOpsUtils, 'updateManyReferences').callsFake((config, field, obj) => {
+    let stubDB = sinon.stub(DbOpsUtils, 'updateManyReferences').callsFake((config, ref, obj) => {
       console.log(
-        `\nDbOpsUtils.updateManyReferences service called with field ${field} and obj ${JSON.stringify(obj)}`
+        `\nDbOpsUtils.updateManyReferences service called with ref ${JSON.stringify(ref)} and obj ${JSON.stringify(
+          obj
+        )}`
       );
-      chai.expect(field).to.deep.equal('target');
+      chai.expect(ref).to.deep.include({ fieldName: 'target', isArray: false });
       chai.expect(obj).to.deep.equal({ id: 'id1', name: 'name1' });
 
       return {
@@ -164,9 +167,11 @@ describe('Base Service', function () {
       ],
     };
 
-    let stubDB = sinon.stub(DbOpsUtils, 'updateManyReferences').callsFake((config, field, obj) => {
+    let stubDB = sinon.stub(DbOpsUtils, 'updateManyReferences').callsFake((config, ref, obj) => {
       console.log(
-        `\nDbOpsUtils.updateManyReferences service called with field ${field} and obj ${JSON.stringify(obj)}`
+        `\nDbOpsUtils.updateManyReferences service called with ref ${JSON.stringify(ref)} and obj ${JSON.stringify(
+          obj
+        )}`
       );
       return {
         error: { message: 'Test error message', error: new Error('Test error').toString() },
@@ -201,11 +206,13 @@ describe('Base Service', function () {
       ],
     };
 
-    let stubDB = sinon.stub(DbOpsUtils, 'deleteManyReferences').callsFake((config, field, obj) => {
+    let stubDB = sinon.stub(DbOpsUtils, 'deleteManyReferences').callsFake((config, ref, obj) => {
       console.log(
-        `\nDbOpsUtils.deleteManyReferences service called with field ${field} and obj ${JSON.stringify(obj)}`
+        `\nDbOpsUtils.deleteManyReferences service called with ref ${JSON.stringify(ref)} and obj ${JSON.stringify(
+          obj
+        )}`
       );
-      chai.expect(field).to.deep.equal('target');
+      chai.expect(ref).to.deep.include({ fieldName: 'target', isArray: false });
       chai.expect(obj).to.deep.equal({ id: 'id1', name: 'name1' });
 
       return {
@@ -240,9 +247,11 @@ describe('Base Service', function () {
       ],
     };
 
-    let stubDB = sinon.stub(DbOpsUtils, 'deleteManyReferences').callsFake((config, field, obj) => {
+    let stubDB = sinon.stub(DbOpsUtils, 'deleteManyReferences').callsFake((config, ref, obj) => {
       console.log(
-        `\nDbOpsUtils.deleteManyReferences service called with field ${field} and obj ${JSON.stringify(obj)}`
+        `\nDbOpsUtils.deleteManyReferences service called with ref ${JSON.stringify(ref)} and obj ${JSON.stringify(
+          obj
+        )}`
       );
       return {
         error: { message: 'Test error message', error: new Error('Test error').toString() },

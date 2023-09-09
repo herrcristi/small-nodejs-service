@@ -33,8 +33,7 @@ const Schema = {
       .min(1)
       .max(64)
       .valid(...Object.values(UsersConstants.Status)),
-    firstName: Joi.string().min(1).max(64),
-    lastName: Joi.string().min(1).max(64),
+    name: Joi.string().min(1).max(128),
     birthday: Joi.date().iso(),
     phoneNumber: Joi.string()
       .min(1)
@@ -47,11 +46,10 @@ const Schema = {
 
 const Validators = {
   Post: Schema.User.fork(
-    ['email', 'firstName', 'lastName', 'birthday', 'address', 'schools'],
+    ['email', 'name', 'birthday', 'address', 'schools'],
     (x) => x.required() /*make required */
   ).keys({
     type: Joi.string().valid(UsersConstants.Type),
-    name: Joi.string(),
   }),
 
   Put: Schema.User,
@@ -80,10 +78,13 @@ const Private = {
       collection: await UsersDatabase.collection(_ctx),
       translate: Public.translate,
       schema: Schema.User,
-      references: [{ fieldName: 'schools', service: SchoolsRest, projection: null /*default*/ }],
+      references: [{ fieldName: 'schools', service: SchoolsRest, isArray: true, projection: null /*default*/ }],
       fillReferences: false,
       events: { service: EventsRest },
-      notifications: { service: UsersRest, projection: null /*default*/ },
+      notifications: {
+        service: UsersRest,
+        projection: { id: 1, name: 1, type: 1, status: 1, schools: 1 },
+      },
     };
     return config;
   },
@@ -149,9 +150,6 @@ const Public = {
   post: async (objInfo, _ctx) => {
     objInfo.type = UsersConstants.Type;
     objInfo.status = objInfo.status || UsersConstants.Status.Pending; // add default status if not set
-    objInfo.name = `${objInfo.firstName} ${objInfo.lastName}`;
-
-    // TODO process roles
 
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
@@ -169,7 +167,7 @@ const Public = {
    * put
    */
   put: async (objID, objInfo, _ctx) => {
-    // TODO if objInfo has firstName or lastName get obj and add the name too
+    // TODO must take diff before and after for schools and trigger notification for deleted changes
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.put(
       { ...config, schema: Validators.Put, fillReferences: true },
@@ -183,10 +181,7 @@ const Public = {
    * patch
    */
   patch: async (objID, patchInfo, _ctx) => {
-    // TODO if objInfo has firstName or lastName get obj and add the name too
-
-    // TODO implement add/remove schools/roles
-
+    // TODO must take diff before and after for schools and trigger notification for deleted changes
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.patch(
       { ...config, schema: Validators.Patch, fillReferences: true },
