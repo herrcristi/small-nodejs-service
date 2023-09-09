@@ -201,7 +201,6 @@ describe('Users Service', function () {
       ...testUser,
       id: undefined,
       type: undefined,
-      name: undefined,
     };
 
     // stub
@@ -237,7 +236,6 @@ describe('Users Service', function () {
       id: undefined,
       status: undefined,
       type: undefined,
-      name: undefined,
     };
 
     // stub

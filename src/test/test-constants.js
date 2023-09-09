@@ -105,6 +105,16 @@ const Public = {
           name: 'Big Ben',
           type: 'user',
           status: 'active',
+          schools: [
+            {
+              id: 'school-univ1',
+              roles: ['student'],
+            },
+            {
+              id: 'school-high2',
+              roles: ['teacher', 'admin'],
+            },
+          ],
         },
       ],
     },

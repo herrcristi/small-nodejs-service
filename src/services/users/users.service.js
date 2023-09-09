@@ -50,7 +50,6 @@ const Validators = {
     (x) => x.required() /*make required */
   ).keys({
     type: Joi.string().valid(UsersConstants.Type),
-    name: Joi.string(),
   }),
 
   Put: Schema.User,
