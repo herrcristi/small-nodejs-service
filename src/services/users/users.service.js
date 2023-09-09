@@ -80,10 +80,13 @@ const Private = {
       collection: await UsersDatabase.collection(_ctx),
       translate: Public.translate,
       schema: Schema.User,
-      references: [{ fieldName: 'schools', service: SchoolsRest, projection: null /*default*/ }],
+      references: [{ fieldName: 'schools', service: SchoolsRest, isArray: true, projection: null /*default*/ }],
       fillReferences: false,
       events: { service: EventsRest },
-      notifications: { service: UsersRest, projection: null /*default*/ },
+      notifications: {
+        service: UsersRest,
+        projection: { id: 1, name: 1, type: 1, status: 1, schools: 1 },
+      },
     };
     return config;
   },
@@ -152,6 +155,8 @@ const Public = {
     objInfo.name = `${objInfo.firstName} ${objInfo.lastName}`;
 
     // TODO process roles
+
+    // TODO send multiple notifications? for each school/tenant?
 
     const config = await Private.getConfig(_ctx);
     return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);

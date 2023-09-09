@@ -59,7 +59,7 @@ const Private = {
       collection: await StudentsDatabase.collection(_ctx),
       translate: Public.translate,
       schema: Schema.Student,
-      references: [{ fieldName: '', service: UsersRest, projection: { id: 1, name: 1 } }],
+      references: [{ fieldName: '', service: UsersRest, isArray: false, projection: { id: 1, name: 1 } }],
       fillReferences: false,
       events: { service: EventsRest },
       notifications: { service: StudentsRest, projection: null /*default*/ },
