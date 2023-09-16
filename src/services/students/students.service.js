@@ -93,6 +93,11 @@ const Private = {
           let u = { ...user };
           delete u.schools;
 
+          // on user removed keep current info in the student
+          if (action === 'removed') {
+            continue;
+          }
+
           for (const school of user.schools || []) {
             for (const role of school.roles || []) {
               // only student accepted in this service

@@ -16,3 +16,5 @@ require('./base-service.references.utils/base-service.references.utils.all.tests
 require('./base-service.notifications.utils/base-service.notifications.utils.all.tests.js');
 
 require('./translations.utils/translations.utils.all.tests.js');
+
+require('./db-ops.utils/db-ops.utils.all.tests.js');

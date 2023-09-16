@@ -21,6 +21,13 @@ const Public = {
     Active: 'active',
     Disabled: 'disabled',
   },
+
+  // roles (must match the services types)
+  Roles: {
+    Admin: 'admin',
+    Teacher: 'teacher',
+    Student: 'student',
+  },
 };
 
 module.exports = { ...Public };

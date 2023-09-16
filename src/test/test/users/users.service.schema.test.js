@@ -319,13 +319,17 @@ describe('Users Service', function () {
     postReq.schools = [{ id: 'id1', roles: [{}] }];
     res = UsersService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"schools[0].roles[0]" must be a string');
+    chai
+      .expect(res.error.details[0].message)
+      .to.include('"schools[0].roles[0]" must be one of [admin, teacher, student]');
 
     // schools roles must be strings
     postReq.schools = [{ id: 'id1', roles: [''] }];
     res = UsersService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"schools[0].roles[0]" is not allowed to be empty');
+    chai
+      .expect(res.error.details[0].message)
+      .to.include('"schools[0].roles[0]" must be one of [admin, teacher, student]');
   }).timeout(10000);
 
   /**
