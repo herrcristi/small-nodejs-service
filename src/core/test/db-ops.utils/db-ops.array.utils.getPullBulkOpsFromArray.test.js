@@ -49,9 +49,27 @@ describe('DB-Ops Utils', function () {
   }).timeout(10000);
 
   /**
-   * getPullBulkOpsFromArray
+   * getPullBulkOpsFromArray no array
    */
-  it('should getPullBulkOpsFromArray', async () => {
+  it('should getPullBulkOpsFromArray no array', async () => {
+    let filter = { id: 'objid' };
+
+    let removeInfo = {
+      schools: 'schoolid1',
+    };
+
+    // call
+    let bulkOps = DbOpsUtils.getPullBulkOpsFromArray(filter, removeInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
+
+    // check
+    chai.expect(bulkOps).to.deep.equal([]);
+  }).timeout(10000);
+
+  /**
+   * getPullBulkOpsFromArray schools roles
+   */
+  it('should getPullBulkOpsFromArray schools roles', async () => {
     let filter = { id: 'objid' };
 
     let removeInfo = {
@@ -66,37 +84,6 @@ describe('DB-Ops Utils', function () {
         {
           id: 'schooldid3',
           roles: ['role1', 'role2'],
-        },
-        {
-          id: 'schooldid4',
-          name: 'name4',
-          roles: ['role3', 'role4'],
-          principals: [
-            {
-              name: 'principal1',
-            },
-          ],
-          building: [
-            {
-              id: 'b1',
-              tags: ['t1', 't2'],
-            },
-            {
-              id: 'b2',
-            },
-          ],
-          classes: [
-            {
-              tags: ['c1', 'c2'],
-            },
-          ],
-        },
-        {
-          id: 'schooldid5',
-          address: {
-            street: 'str',
-            numbers: ['n1'],
-          },
         },
       ],
     };
@@ -141,6 +128,50 @@ describe('DB-Ops Utils', function () {
           arrayFilters: [{ 'schools.id': 'schooldid3' }],
         },
       },
+    ]);
+  }).timeout(10000);
+
+  /**
+   * getPullBulkOpsFromArray more nested arrays
+   */
+  it('should getPullBulkOpsFromArray more nested arrays', async () => {
+    let filter = { id: 'objid' };
+
+    let removeInfo = {
+      schools: [
+        {
+          id: 'schooldid4',
+          name: 'name4',
+          roles: ['role3', 'role4'],
+          principals: [
+            {
+              name: 'principal1',
+            },
+          ],
+          building: [
+            {
+              id: 'b1',
+              tags: ['t1', 't2'],
+            },
+            {
+              id: 'b2',
+            },
+          ],
+          classes: [
+            {
+              tags: ['c1', 'c2'],
+            },
+          ],
+        },
+      ],
+    };
+
+    // call
+    let bulkOps = DbOpsUtils.getPullBulkOpsFromArray(filter, removeInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
+
+    // check
+    chai.expect(bulkOps).to.deep.equal([
       {
         updateMany: {
           filter: { id: 'objid' },
@@ -224,6 +255,33 @@ describe('DB-Ops Utils', function () {
           ],
         },
       },
+    ]);
+  }).timeout(10000);
+
+  /**
+   * getPullBulkOpsFromArray nested objects
+   */
+  it('should getPullBulkOpsFromArray nested objects', async () => {
+    let filter = { id: 'objid' };
+
+    let removeInfo = {
+      schools: [
+        {
+          id: 'schooldid5',
+          address: {
+            street: 'str',
+            numbers: ['n1'],
+          },
+        },
+      ],
+    };
+
+    // call
+    let bulkOps = DbOpsUtils.getPullBulkOpsFromArray(filter, removeInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
+
+    // check
+    chai.expect(bulkOps).to.deep.equal([
       {
         updateMany: {
           filter: { id: 'objid' },
