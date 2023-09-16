@@ -19,7 +19,16 @@ const UsersDatabase = require('./users.database.js');
 const SchemaSchools = Joi.array().items(
   Joi.object().keys({
     id: Joi.string().min(1).max(64).required(),
-    roles: Joi.array().items(Joi.string().min(1).max(32).required()).min(1).required(),
+    roles: Joi.array()
+      .items(
+        Joi.string()
+          .min(1)
+          .max(32)
+          .required()
+          .valid(...Object.values(UsersConstants.Roles))
+      )
+      .min(1)
+      .required(),
   })
 );
 

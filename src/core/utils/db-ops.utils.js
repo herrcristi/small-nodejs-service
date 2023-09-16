@@ -1,7 +1,8 @@
 /**
  * Database operation utils
  */
-const CommonUtils = require('./common.utils');
+const CommonUtils = require('./common.utils.js');
+const DbOpsArrayUtils = require('./db-ops.array.utils.js');
 
 const Utils = {
   /**
@@ -279,6 +280,8 @@ const Public = {
     try {
       const filter = { id: objID };
 
+      // for add/remove when fields are array of objects with id the operations must be transformed into bulk ops
+
       // order is set, add, remove, unset
       // set
       updateOperation.$set = patchInfo.set || {};
@@ -418,9 +421,13 @@ const Public = {
       const fieldName = ref.fieldName;
 
       let setObj = {};
+      let setProps = {};
       for (const key in objInfo) {
         const setKey = fieldName ? `${fieldName}.${key}` : key;
-        setObj[setKey] = objInfo[key];
+        if (key !== 'id') {
+          setObj[setKey] = objInfo[key];
+          setProps[setKey] = 1;
+        }
       }
 
       // update obj
@@ -442,9 +449,7 @@ const Public = {
         r = await config.collection.updateMany(
           { [filterField]: objInfo.id },
           {
-            $unset: {
-              ...Object.keys(setObj),
-            },
+            $unset: setProps,
             $set: {
               lastModifiedTimestamp: new Date(),
             },
