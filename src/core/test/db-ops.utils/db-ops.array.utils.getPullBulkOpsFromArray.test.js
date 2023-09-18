@@ -43,6 +43,7 @@ describe('DB-Ops Utils', function () {
               schools: { $in: ['schoolid1'] },
             },
           },
+          arrayFilters: [],
         },
       },
     ]);
@@ -79,7 +80,10 @@ describe('DB-Ops Utils', function () {
         },
         {
           id: 'schoolid2',
-          name: 'name2',
+          name: 'name2', // this will be ignored because id exists
+        },
+        {
+          name: 'name2', // this will be taken into consideration
         },
         {
           id: 'schooldid3',
@@ -102,19 +106,25 @@ describe('DB-Ops Utils', function () {
               schools: { id: 'schoolid1' },
             },
           },
+          arrayFilters: [],
         },
       },
       {
         updateMany: {
           filter: { id: 'objid' },
           update: {
-            $pull: {
-              schools: {
-                id: 'schoolid2',
-                name: 'name2',
-              },
-            },
+            $pull: { schools: { id: 'schoolid2' } },
           },
+          arrayFilters: [],
+        },
+      },
+      {
+        updateMany: {
+          filter: { id: 'objid' },
+          update: {
+            $pull: { schools: { name: 'name2' } },
+          },
+          arrayFilters: [],
         },
       },
       {
@@ -141,7 +151,7 @@ describe('DB-Ops Utils', function () {
       schools: [
         {
           id: 'schooldid4',
-          name: 'name4',
+          name: 'name4', // this will be ignored because id exists
           roles: ['role3', 'role4'],
           principals: [
             {
@@ -176,46 +186,29 @@ describe('DB-Ops Utils', function () {
         updateMany: {
           filter: { id: 'objid' },
           update: {
-            $pull: {
-              'schools.$[schools].roles': { $in: ['role3', 'role4'] },
-            },
+            $pull: { 'schools.$[schools].roles': { $in: ['role3', 'role4'] } },
           },
-          arrayFilters: [
-            {
-              'schools.id': 'schooldid4',
-              'schools.name': 'name4',
-            },
-          ],
+          arrayFilters: [{ 'schools.id': 'schooldid4' }],
         },
       },
       {
         updateMany: {
           filter: { id: 'objid' },
           update: {
-            $pull: {
-              'schools.$[schools].principals': { name: 'principal1' },
-            },
+            $pull: { 'schools.$[schools].principals': { name: 'principal1' } },
           },
-          arrayFilters: [
-            {
-              'schools.id': 'schooldid4',
-              'schools.name': 'name4',
-            },
-          ],
+          arrayFilters: [{ 'schools.id': 'schooldid4' }],
         },
       },
       {
         updateMany: {
           filter: { id: 'objid' },
           update: {
-            $pull: {
-              'schools.$[schools].building.$[building].tags': { $in: ['t1', 't2'] },
-            },
+            $pull: { 'schools.$[schools].building.$[building].tags': { $in: ['t1', 't2'] } },
           },
           arrayFilters: [
             {
               'schools.id': 'schooldid4',
-              'schools.name': 'name4',
             },
             {
               'building.id': 'b1',
@@ -227,32 +220,18 @@ describe('DB-Ops Utils', function () {
         updateMany: {
           filter: { id: 'objid' },
           update: {
-            $pull: {
-              'schools.$[schools].building': { id: 'b2' },
-            },
+            $pull: { 'schools.$[schools].building': { id: 'b2' } },
           },
-          arrayFilters: [
-            {
-              'schools.id': 'schooldid4',
-              'schools.name': 'name4',
-            },
-          ],
+          arrayFilters: [{ 'schools.id': 'schooldid4' }],
         },
       },
       {
         updateMany: {
           filter: { id: 'objid' },
           update: {
-            $pull: {
-              'schools.$[schools].classes.$[].tags': { $in: ['c1', 'c2'] },
-            },
+            $pull: { 'schools.$[schools].classes.$[].tags': { $in: ['c1', 'c2'] } },
           },
-          arrayFilters: [
-            {
-              'schools.id': 'schooldid4',
-              'schools.name': 'name4',
-            },
-          ],
+          arrayFilters: [{ 'schools.id': 'schooldid4' }],
         },
       },
     ]);
@@ -269,7 +248,13 @@ describe('DB-Ops Utils', function () {
         {
           id: 'schooldid5',
           address: {
-            street: 'str',
+            street: 'str', // this will be ignored because id exists
+            numbers: ['n1'],
+          },
+        },
+        {
+          address: {
+            street: 'str', // this will matter
             numbers: ['n1'],
           },
         },
@@ -286,16 +271,18 @@ describe('DB-Ops Utils', function () {
         updateMany: {
           filter: { id: 'objid' },
           update: {
-            $pull: {
-              'schools.$[schools].address.numbers': { $in: ['n1'] },
-            },
+            $pull: { 'schools.$[schools].address.numbers': { $in: ['n1'] } },
           },
-          arrayFilters: [
-            {
-              'schools.id': 'schooldid5',
-              'schools.address.street': 'str',
-            },
-          ],
+          arrayFilters: [{ 'schools.id': 'schooldid5' }],
+        },
+      },
+      {
+        updateMany: {
+          filter: { id: 'objid' },
+          update: {
+            $pull: { 'schools.$[schools].address.numbers': { $in: ['n1'] } },
+          },
+          arrayFilters: [{ 'schools.address.street': 'str' }],
         },
       },
     ]);
