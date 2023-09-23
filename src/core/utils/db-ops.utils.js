@@ -23,32 +23,6 @@ const Utils = {
       time: new Date() - time /*milliseconds*/,
     };
   },
-
-  /**
-   * stringify a regexp
-   */
-  stringifyFilter: (key, value) => {
-    return value instanceof RegExp ? value.toString() : value;
-  },
-};
-
-const Private = {
-  /**
-   * convert path update to bulk write operations
-   */
-  convertPatchUpdateToBulkOps: (filter, patchOperation, _ctx) => {
-    let bulkOperations = [];
-    for (const op in patchOperation) {
-      bulkOperations.push({
-        updateOne: {
-          filter,
-          update: { [op]: patchOperation[op] },
-        },
-      });
-    }
-
-    return bulkOperations;
-  },
 };
 
 const Public = {
@@ -78,8 +52,9 @@ const Public = {
       console.log(
         `DB Calling: ${config.serviceName} getAll with filter ${JSON.stringify(
           filter,
-          Utils.stringifyFilter
-        )} returned ${values.length} objs: ${JSON.stringify(logValues)}. Finished in ${new Date() - time} ms`
+          CommonUtils.stringifyFilter,
+          2
+        )} returned ${values.length} objs: ${JSON.stringify(logValues, null, 2)}. Finished in ${new Date() - time} ms`
       );
 
       return { status: 200, value: values, time: new Date() - time };
@@ -87,7 +62,8 @@ const Public = {
       console.log(
         `DB Calling Failed: ${config.serviceName} getAll with filter ${JSON.stringify(
           filter,
-          Utils.stringifyFilter
+          CommonUtils.stringifyFilter,
+          2
         )}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
@@ -103,7 +79,8 @@ const Public = {
       console.log(
         `DB Calling: ${config.serviceName} getAllCount with filter ${JSON.stringify(
           filter,
-          Utils.stringifyFilter
+          CommonUtils.stringifyFilter,
+          2
         )} returned ${count} objs count. Finished in ${new Date() - time} ms`
       );
 
@@ -112,7 +89,8 @@ const Public = {
       console.log(
         `DB Calling Failed: ${config.serviceName} getAllCount with filter ${JSON.stringify(
           filter,
-          Utils.stringifyFilter
+          CommonUtils.stringifyFilter,
+          2
         )}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
@@ -136,7 +114,7 @@ const Public = {
       const value = await config.collection.findOne(filter, { projection });
 
       console.log(
-        `DB Calling: ${config.serviceName} getOne for ${objID} returned ${JSON.stringify(value)}. Finished in ${
+        `DB Calling: ${config.serviceName} getOne for ${objID} returned ${value ? 'found' : 'not found'}. Finished in ${
           new Date() - time
         } ms`
       );
@@ -149,7 +127,7 @@ const Public = {
       return { status: 200, value: value, time: new Date() - time };
     } catch (e) {
       console.log(
-        `DB Calling Failed: ${config.serviceName} getOne for  ${objID}. Error ${e.stack ? e.stack : e}. Finished in ${
+        `DB Calling Failed: ${config.serviceName} getOne for ${objID}. Error ${e.stack ? e.stack : e}. Finished in ${
           new Date() - time
         } ms`
       );
@@ -166,29 +144,31 @@ const Public = {
     const time = new Date();
 
     objInfo.id = objInfo.id || CommonUtils.uuidc();
-    objInfo.createdTimestamp = new Date();
+    objInfo.createdTimestamp = new Date().toISOString();
     objInfo.lastModifiedTimestamp = objInfo.createdTimestamp;
 
     try {
       const value = await config.collection.insertOne(objInfo);
 
       console.log(
-        `DB Calling: ${config.serviceName} post for ${objInfo.id} returned ${JSON.stringify(value)}. Finished in ${
-          new Date() - time
-        } ms`
+        `DB Calling: ${config.serviceName} post for ${objInfo.id} returned ${JSON.stringify(
+          value,
+          null,
+          2
+        )}. Finished in ${new Date() - time} ms`
       );
 
       // not succeeded
-      if (!value.insertedId) {
-        return Utils.error(500, `Failed to post ${JSON.stringify(objInfo)}`, time, _ctx);
+      if (!value?.insertedId) {
+        return Utils.error(500, `Failed to post ${objInfo.id}`, time, _ctx);
       }
 
       return { status: 201, value: objInfo, time: new Date() - time };
     } catch (e) {
       console.log(
-        `DB Calling Failed: ${config.serviceName} post for ${JSON.stringify(objInfo)}. Error ${
-          e.stack ? e.stack : e
-        }. Finished in ${new Date() - time} ms`
+        `DB Calling Failed: ${config.serviceName} post for ${objInfo.id}. Error ${e.stack ? e.stack : e}. Finished in ${
+          new Date() - time
+        } ms`
       );
       return Utils.exception(e, time, _ctx);
     }
@@ -207,9 +187,11 @@ const Public = {
       const r = await config.collection.findOneAndDelete(filter, { projection, includeResultMetadata: true });
 
       console.log(
-        `DB Calling: ${config.serviceName} delete for ${objID} returned ${JSON.stringify(r)}. Finished in ${
-          new Date() - time
-        } ms`
+        `DB Calling: ${config.serviceName} delete for ${objID} returned ${JSON.stringify(
+          { ...r, value: r.value?.id },
+          null,
+          2
+        )}. Finished in ${new Date() - time} ms`
       );
 
       // not found
@@ -239,14 +221,16 @@ const Public = {
     try {
       const r = await config.collection.findOneAndUpdate(
         { id: objID },
-        { $set: { ...objInfo, lastModifiedTimestamp: new Date() } },
+        { $set: { ...objInfo, lastModifiedTimestamp: new Date().toISOString() } },
         { returnDocument: 'after', includeResultMetadata: true, projection }
       );
 
       console.log(
-        `DB Calling: ${config.serviceName} put for ${objID} returned ${JSON.stringify(r)}. Finished in ${
-          new Date() - time
-        } ms`
+        `DB Calling: ${config.serviceName} put for ${objID} returned ${JSON.stringify(
+          { ...r, value: r.value?.id },
+          null,
+          2
+        )}. Finished in ${new Date() - time} ms`
       );
 
       // not found
@@ -275,84 +259,65 @@ const Public = {
     const time = new Date();
 
     // create operation
-    let updateOperation = {};
+    let bulkOperations = [];
 
     try {
       const filter = { id: objID };
 
-      // for add/remove when fields are array of objects with id the operations must be transformed into bulk ops
-
       // order is set, add, remove, unset
+
       // set
-      updateOperation.$set = patchInfo.set || {};
-      updateOperation.$set.lastModifiedTimestamp = new Date();
+      bulkOperations.push({
+        updateOne: {
+          filter,
+          update: {
+            $set: {
+              ...(patchInfo.set || {}),
+              lastModifiedTimestamp: new Date().toISOString(),
+            },
+          },
+        },
+      });
 
       // add
-      let addKeys = Object.keys(patchInfo.add || {});
-      if (addKeys.length) {
-        updateOperation.$addToSet = {};
-        for (const field of addKeys) {
-          updateOperation.$addToSet[field] = { $each: patchInfo.add[field] };
-        }
-      }
+      bulkOperations = bulkOperations.concat(DbOpsArrayUtils.getPushBulkOpsFromArray(filter, patchInfo.add, _ctx));
 
       // remove
-      let removeKeys = Object.keys(patchInfo.remove || {});
-      if (removeKeys.length) {
-        updateOperation.$pull = {};
-        for (const field of removeKeys) {
-          updateOperation.$pull[field] = { $in: patchInfo.remove[field] };
-        }
-      }
+      bulkOperations = bulkOperations.concat(DbOpsArrayUtils.getPullBulkOpsFromArray(filter, patchInfo.remove, _ctx));
 
       // unset
       if (Array.isArray(patchInfo.unset) && patchInfo.unset.length) {
         // convert array to document
         let unset = {};
         patchInfo.unset.forEach((item) => (unset[item] = 1));
-        updateOperation.$unset = unset;
-      }
-
-      // has conflicting operations when same field is used in multiple operators
-      let r = null;
-      if (CommonUtils.hasCommonFields(Object.values(updateOperation))) {
-        // do a bulk write operation followed by a get
-        updateOperation = Private.convertPatchUpdateToBulkOps(filter, updateOperation, _ctx);
-        r = await config.collection.bulkWrite(updateOperation, { ordered: false });
-
-        if (r.matchedCount) {
-          r.value = await config.collection.findOne(filter, { projection });
-        }
-
-        // not found
-        if (!r.value) {
-          r.lastErrorObject = { n: 0 };
-        }
-      } else {
-        // normal op
-        r = await config.collection.findOneAndUpdate(filter, updateOperation, {
-          returnDocument: 'after',
-          includeResultMetadata: true,
-          projection,
+        bulkOperations.push({
+          updateOne: { filter, update: { $unset: unset } },
         });
       }
 
+      // do a bulk write operation followed by a get
+      let r = await config.collection.bulkWrite(bulkOperations, { ordered: true });
       console.log(
         `DB Calling: ${config.serviceName} patch for ${objID} with ops: ${JSON.stringify(
-          updateOperation
-        )} returned ${JSON.stringify(r)}. Finished in ${new Date() - time} ms`
+          bulkOperations
+        )} returned ${JSON.stringify(r, null, 2)}. Finished in ${new Date() - time} ms`
       );
 
-      // not found
-      if (r.lastErrorObject?.n === 0) {
-        return Utils.error(404, `Not found ${objID}`, time, _ctx);
+      if (!r?.matchedCount) {
+        return Utils.error(404, `Not found: patch ${objID}`, time, _ctx);
       }
 
-      return { status: 200, value: r.value, time: new Date() - time };
+      // get
+      let value = await config.collection.findOne(filter, { projection });
+      if (!value) {
+        return Utils.error(404, `Not found: get ${objID}`, time, _ctx);
+      }
+
+      return { status: 200, value, time: new Date() - time };
     } catch (e) {
       console.log(
         `DB Calling Failed: ${config.serviceName} patch for ${objID} with operation ${JSON.stringify(
-          updateOperation
+          bulkOperations
         )}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
@@ -393,7 +358,7 @@ const Public = {
       console.log(
         `DB Calling: ${config.serviceName} updateManyReferences for '${ref.fieldName}' with info ${JSON.stringify(
           objInfo
-        )} returned ${JSON.stringify(r)}. Finished in ${new Date() - time} ms`
+        )} returned ${JSON.stringify(r, null, 2)}. Finished in ${new Date() - time} ms`
       );
 
       return { status: 200, value: r.modifiedCount, time: new Date() - time };
@@ -460,10 +425,10 @@ const Public = {
       console.log(
         `DB Calling: ${config.serviceName} deleteManyReferences for '${ref.fieldName}' with info ${JSON.stringify(
           objInfo
-        )} returned ${JSON.stringify(r)}. Finished in ${new Date() - time} ms`
+        )} returned ${JSON.stringify(r, null, 2)}. Finished in ${new Date() - time} ms`
       );
 
-      return { status: 200, value: r.deletedCount, time: new Date() - time };
+      return { status: 200, value: r.modifiedCount, time: new Date() - time };
     } catch (e) {
       console.log(
         `DB Calling Failed: ${config.serviceName} deleteManyReferences for '${

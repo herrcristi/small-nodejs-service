@@ -55,13 +55,17 @@ const Public = {
         [notificationType]: notifyObjs,
       };
 
+      console.log(`${config.serviceName}: Raise notification ${JSON.stringify(notification, null, 2)}`);
+
       // do a sync notification
       try {
         if (sub.callback) {
           await sub.callback(notification, _ctx);
         }
       } catch (e) {
-        console.log(`Error processing notification ${JSON.stringify(notification)}. Error ${e.stack ? e.stack : e}`);
+        console.log(
+          `Error processing notification ${JSON.stringify(notification, null, 2)}. Error ${e.stack ? e.stack : e}`
+        );
       }
     }
 
@@ -102,7 +106,9 @@ const Public = {
       const err = v.error.details[0].message;
       console.log(
         `${config.serviceName}: Failed to validate notification: ${JSON.stringify(
-          notification
+          notification,
+          null,
+          2
         )}. Error: ${JSON.stringify(err)}`
       );
       return { status: 400, error: { message: err, error: new Error(err) } };

@@ -4,7 +4,7 @@ const chai = require('chai');
 const sinon = require('sinon');
 const fs = require('fs');
 
-const DbOpsUtils = require('../../utils/db-ops.array.utils.js');
+const DbOpsArrayUtils = require('../../utils/db-ops.array.utils.js');
 
 describe('DB-Ops Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
@@ -30,7 +30,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -58,7 +58,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -80,7 +80,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -120,7 +120,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -146,6 +146,13 @@ describe('DB-Ops Utils', function () {
           arrayFilters: [],
         },
       },
+      {
+        updateMany: {
+          filter: { id: 'objid' },
+          update: { $set: { 'schools.$[schools].name': 'name2' } },
+          arrayFilters: [{ 'schools.id': 'schoolid2' }],
+        },
+      },
     ]);
   }).timeout(10000);
   /**
@@ -165,7 +172,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -195,6 +202,13 @@ describe('DB-Ops Utils', function () {
       {
         updateMany: {
           filter: { id: 'objid' },
+          update: { $set: { 'schools.$[schools].name': 'name3' } },
+          arrayFilters: [{ 'schools.id': 'schoolid3' }],
+        },
+      },
+      {
+        updateMany: {
+          filter: { id: 'objid' },
           update: {
             $addToSet: { 'schools.$[schools].roles': { $each: ['role1', 'role2'] } },
           },
@@ -213,7 +227,7 @@ describe('DB-Ops Utils', function () {
     let addInfo = {
       schools: [
         {
-          id: 'schooldid4',
+          id: 'schoolid4',
           name: 'name4',
           principals: [
             {
@@ -225,7 +239,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -236,14 +250,14 @@ describe('DB-Ops Utils', function () {
             $and: [
               { id: 'objid' },
               {
-                schools: { $not: { $elemMatch: { id: 'schooldid4' } } },
+                schools: { $not: { $elemMatch: { id: 'schoolid4' } } },
               },
             ],
           },
           update: {
             $push: {
               schools: {
-                id: 'schooldid4',
+                id: 'schoolid4',
                 name: 'name4',
                 principals: [{ name: 'principal1' }],
               },
@@ -254,13 +268,20 @@ describe('DB-Ops Utils', function () {
       },
       {
         updateMany: {
+          filter: { id: 'objid' },
+          update: { $set: { 'schools.$[schools].name': 'name4' } },
+          arrayFilters: [{ 'schools.id': 'schoolid4' }],
+        },
+      },
+      {
+        updateMany: {
           filter: {
             $and: [
               { id: 'objid' },
               {
                 schools: {
                   $elemMatch: {
-                    id: 'schooldid4',
+                    id: 'schoolid4',
                     principals: { $not: { $elemMatch: { name: 'principal1' } } },
                   },
                 },
@@ -270,7 +291,19 @@ describe('DB-Ops Utils', function () {
           update: {
             $push: { 'schools.$[schools].principals': { name: 'principal1' } },
           },
-          arrayFilters: [{ 'schools.id': 'schooldid4' }],
+          arrayFilters: [{ 'schools.id': 'schoolid4' }],
+        },
+      },
+      {
+        updateMany: {
+          filter: { id: 'objid' },
+          update: { $set: { 'schools.$[schools].principals.$[principals].name': 'principal1' } },
+          arrayFilters: [
+            { 'schools.id': 'schoolid4' },
+            {
+              'principals.name': 'principal1',
+            },
+          ],
         },
       },
     ]);
@@ -285,7 +318,7 @@ describe('DB-Ops Utils', function () {
     let addInfo = {
       schools: [
         {
-          id: 'schooldid4',
+          id: 'schoolid4',
           building: [
             {
               id: 'b1',
@@ -308,7 +341,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -319,14 +352,14 @@ describe('DB-Ops Utils', function () {
             $and: [
               { id: 'objid' },
               {
-                schools: { $not: { $elemMatch: { id: 'schooldid4' } } },
+                schools: { $not: { $elemMatch: { id: 'schoolid4' } } },
               },
             ],
           },
           update: {
             $push: {
               schools: {
-                id: 'schooldid4',
+                id: 'schoolid4',
                 building: [
                   { id: 'b1', tags: ['t1', 't2'] },
                   {
@@ -355,7 +388,7 @@ describe('DB-Ops Utils', function () {
               {
                 schools: {
                   $elemMatch: {
-                    id: 'schooldid4',
+                    id: 'schoolid4',
                     building: { $not: { $elemMatch: { id: 'b1' } } },
                   },
                 },
@@ -365,7 +398,7 @@ describe('DB-Ops Utils', function () {
           update: {
             $push: { 'schools.$[schools].building': { id: 'b1', tags: ['t1', 't2'] } },
           },
-          arrayFilters: [{ 'schools.id': 'schooldid4' }],
+          arrayFilters: [{ 'schools.id': 'schoolid4' }],
         },
       },
       {
@@ -375,7 +408,7 @@ describe('DB-Ops Utils', function () {
             $addToSet: { 'schools.$[schools].building.$[building].tags': { $each: ['t1', 't2'] } },
           },
           arrayFilters: [
-            { 'schools.id': 'schooldid4' },
+            { 'schools.id': 'schoolid4' },
             {
               'building.id': 'b1',
             },
@@ -390,7 +423,7 @@ describe('DB-Ops Utils', function () {
               {
                 schools: {
                   $elemMatch: {
-                    id: 'schooldid4',
+                    id: 'schoolid4',
                     building: { $not: { $elemMatch: { id: 'b2' } } },
                   },
                 },
@@ -402,7 +435,7 @@ describe('DB-Ops Utils', function () {
               'schools.$[schools].building': { id: 'b2' },
             },
           },
-          arrayFilters: [{ 'schools.id': 'schooldid4' }],
+          arrayFilters: [{ 'schools.id': 'schoolid4' }],
         },
       },
       {
@@ -413,7 +446,7 @@ describe('DB-Ops Utils', function () {
               {
                 schools: {
                   $elemMatch: {
-                    id: 'schooldid4',
+                    id: 'schoolid4',
                     building: { $not: { $elemMatch: { id: 'b3' } } },
                   },
                 },
@@ -428,7 +461,7 @@ describe('DB-Ops Utils', function () {
               },
             },
           },
-          arrayFilters: [{ 'schools.id': 'schooldid4' }],
+          arrayFilters: [{ 'schools.id': 'schoolid4' }],
         },
       },
       {
@@ -439,7 +472,7 @@ describe('DB-Ops Utils', function () {
               {
                 schools: {
                   $elemMatch: {
-                    id: 'schooldid4',
+                    id: 'schoolid4',
                     building: {
                       $elemMatch: {
                         id: 'b3',
@@ -457,7 +490,7 @@ describe('DB-Ops Utils', function () {
             },
           },
           arrayFilters: [
-            { 'schools.id': 'schooldid4' },
+            { 'schools.id': 'schoolid4' },
             {
               'building.id': 'b3',
             },
@@ -476,7 +509,7 @@ describe('DB-Ops Utils', function () {
     let addInfo = {
       schools: [
         {
-          id: 'schooldid4',
+          id: 'schoolid4',
           name: 'name4',
           classes: [
             {
@@ -488,7 +521,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -499,14 +532,14 @@ describe('DB-Ops Utils', function () {
             $and: [
               { id: 'objid' },
               {
-                schools: { $not: { $elemMatch: { id: 'schooldid4' } } },
+                schools: { $not: { $elemMatch: { id: 'schoolid4' } } },
               },
             ],
           },
           update: {
             $push: {
               schools: {
-                id: 'schooldid4',
+                id: 'schoolid4',
                 name: 'name4',
                 classes: [
                   {
@@ -521,24 +554,9 @@ describe('DB-Ops Utils', function () {
       },
       {
         updateMany: {
-          filter: {
-            $and: [
-              { id: 'objid' },
-              {
-                schools: {
-                  $elemMatch: {
-                    id: 'schooldid4',
-                  },
-                },
-              },
-            ],
-          },
-          update: {
-            $push: {
-              'schools.$[schools].classes': { tags: ['c1', 'c2'] },
-            },
-          },
-          arrayFilters: [{ 'schools.id': 'schooldid4' }],
+          filter: { id: 'objid' },
+          update: { $set: { 'schools.$[schools].name': 'name4' } },
+          arrayFilters: [{ 'schools.id': 'schoolid4' }],
         },
       },
       {
@@ -547,7 +565,7 @@ describe('DB-Ops Utils', function () {
           update: {
             $addToSet: { 'schools.$[schools].classes.$[].tags': { $each: ['c1', 'c2'] } },
           },
-          arrayFilters: [{ 'schools.id': 'schooldid4' }],
+          arrayFilters: [{ 'schools.id': 'schoolid4' }],
         },
       },
     ]);
@@ -572,7 +590,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -599,6 +617,15 @@ describe('DB-Ops Utils', function () {
             },
           },
           arrayFilters: [],
+        },
+      },
+      {
+        updateMany: {
+          filter: { id: 'objid' },
+          update: {
+            $set: { 'schools.$[schools].address.street': 'str' },
+          },
+          arrayFilters: [{ 'schools.id': 'schooldid5' }],
         },
       },
       {

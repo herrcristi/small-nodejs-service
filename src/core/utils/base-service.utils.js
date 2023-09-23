@@ -82,7 +82,11 @@ const Public = {
     const filter = await RestApiUtils.buildMongoFilterFromReq(req, config.schema, _ctx);
     if (filter.error) {
       console.log(
-        `${config.serviceName}: Failed to build mongo filter from ${req.quey}. Error: ${JSON.stringify(filter.error)}`
+        `${config.serviceName}: Failed to build mongo filter from ${JSON.stringify(
+          req.quey,
+          CommonUtils.stringifyFilter,
+          2
+        )}. Error: ${JSON.stringify(filter.error, null, 2)}`
       );
       return { status: 400, error: filter.error };
     }
@@ -127,7 +131,7 @@ const Public = {
   getAll: async (config, filter, _ctx) => {
     let r = await DbOpsUtils.getAll(config, filter, _ctx);
     if (r.error) {
-      console.log(`${config.serviceName}: Failed to getAll. Error: ${JSON.stringify(r.error)}`);
+      console.log(`${config.serviceName}: Failed to getAll. Error: ${JSON.stringify(r.error, null, 2)}`);
       return r;
     }
 
@@ -135,7 +139,7 @@ const Public = {
     let rf = await ReferencesUtils.populateReferences(config, r.value, _ctx);
     if (rf.error) {
       console.log(
-        `${config.serviceName}: Failed to getAll due to populateReferences. Error: ${JSON.stringify(rf.error)}`
+        `${config.serviceName}: Failed to getAll due to populateReferences. Error: ${JSON.stringify(rf.error, null, 2)}`
       );
       return rf;
     }
@@ -146,7 +150,7 @@ const Public = {
   getAllCount: async (config, filter, _ctx) => {
     let r = await DbOpsUtils.getAllCount(config, filter, _ctx);
     if (r.error) {
-      console.log(`${config.serviceName}: Failed to getAllCount. Error: ${JSON.stringify(r.error)}`);
+      console.log(`${config.serviceName}: Failed to getAllCount. Error: ${JSON.stringify(r.error, null, 2)}`);
       return r;
     }
     return r;
@@ -155,7 +159,7 @@ const Public = {
   getAllByIDs: async (config, ids, projection, _ctx) => {
     let r = await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx);
     if (r.error) {
-      console.log(`${config.serviceName}: Failed to getAllByIDs. Error: ${JSON.stringify(r.error)}`);
+      console.log(`${config.serviceName}: Failed to getAllByIDs. Error: ${JSON.stringify(r.error, null, 2)}`);
       return r;
     }
 
@@ -163,7 +167,11 @@ const Public = {
     let rf = await ReferencesUtils.populateReferences(config, r.value, _ctx);
     if (rf.error) {
       console.log(
-        `${config.serviceName}: Failed to getAllByIDs due to populateReferences. Error: ${JSON.stringify(rf.error)}`
+        `${config.serviceName}: Failed to getAllByIDs due to populateReferences. Error: ${JSON.stringify(
+          rf.error,
+          null,
+          2
+        )}`
       );
       return rf;
     }
@@ -179,7 +187,7 @@ const Public = {
   getOne: async (config, objID, projection, _ctx) => {
     let r = await DbOpsUtils.getOne(config, objID, projection, _ctx);
     if (r.error) {
-      console.log(`${config.serviceName}: Failed to getOne for ${objID}. Error: ${JSON.stringify(r.error)}`);
+      console.log(`${config.serviceName}: Failed to getOne for ${objID}. Error: ${JSON.stringify(r.error, null, 2)}`);
       return r;
     }
 
@@ -188,11 +196,17 @@ const Public = {
     if (rf.error) {
       console.log(
         `${config.serviceName}: Failed to getOne for ${objID} due to populateReferences. Error: ${JSON.stringify(
-          rf.error
+          rf.error,
+          null,
+          2
         )}`
       );
       return rf;
     }
+
+    console.log(
+      `${config.serviceName}: Succesfully get one object: ${JSON.stringify(CommonUtils.protectData(r.value), null, 2)}`
+    );
 
     return r;
   },
@@ -209,8 +223,10 @@ const Public = {
       const err = v.error.details[0].message;
       console.log(
         `${config.serviceName}: Failed to post object: ${JSON.stringify(
-          CommonUtils.protectData(objInfo)
-        )}. Error: ${JSON.stringify(err)}`
+          CommonUtils.protectData(objInfo),
+          null,
+          2
+        )}. Error: ${JSON.stringify(err, null, 2)}`
       );
       return { status: 400, error: { message: err, error: new Error(err) } };
     }
@@ -220,8 +236,10 @@ const Public = {
     if (rf.error) {
       console.log(
         `${config.serviceName}: Failed to post object: ${JSON.stringify(
-          CommonUtils.protectData(objInfo)
-        )} due to populateReferences. Error: ${JSON.stringify(rf.error)}`
+          CommonUtils.protectData(objInfo),
+          null,
+          2
+        )} due to populateReferences. Error: ${JSON.stringify(rf.error, null, 2)}`
       );
       return rf;
     }
@@ -237,14 +255,16 @@ const Public = {
     if (r.error) {
       console.log(
         `${config.serviceName}: Failed to post object: ${JSON.stringify(
-          CommonUtils.protectData(objInfo)
-        )}. Error: ${JSON.stringify(r.error)}`
+          CommonUtils.protectData(objInfo),
+          null,
+          2
+        )}. Error: ${JSON.stringify(r.error, null, 2)}`
       );
       return r;
     }
 
     console.log(
-      `${config.serviceName}: Succesfully post new object: ${JSON.stringify(CommonUtils.protectData(r.value))}`
+      `${config.serviceName}: Succesfully post new object: ${JSON.stringify(CommonUtils.protectData(r.value), null, 2)}`
     );
 
     // raise event
@@ -280,12 +300,14 @@ const Public = {
     const projection = Utils.getProjection(config, _ctx);
     const r = await DbOpsUtils.delete(config, objID, projection, _ctx);
     if (r.error) {
-      console.log(`${config.serviceName}: Failed to delete object ${objID}. Error: ${JSON.stringify(r.error)}`);
+      console.log(
+        `${config.serviceName}: Failed to delete object ${objID}. Error: ${JSON.stringify(r.error, null, 2)}`
+      );
       return r;
     }
 
     console.log(
-      `${config.serviceName}: Succesfully delete object: ${JSON.stringify(CommonUtils.protectData(r.value))}`
+      `${config.serviceName}: Succesfully delete object: ${JSON.stringify(CommonUtils.protectData(r.value), null, 2)}`
     );
 
     // raise event
@@ -324,8 +346,10 @@ const Public = {
       const err = v.error.details[0].message;
       console.log(
         `${config.serviceName}: Failed to put object ${objID}: ${JSON.stringify(
-          CommonUtils.protectData(objInfo)
-        )}. Error: ${JSON.stringify(err)}`
+          CommonUtils.protectData(objInfo),
+          null,
+          2
+        )}. Error: ${JSON.stringify(err, null, 2)}`
       );
       return { status: 400, error: { message: err, error: new Error(err) } };
     }
@@ -335,8 +359,10 @@ const Public = {
     if (rf.error) {
       console.log(
         `${config.serviceName}: Failed to put object ${objID}: ${JSON.stringify(
-          CommonUtils.protectData(objInfo)
-        )} due to populateReferences. Error: ${JSON.stringify(rf.error)}`
+          CommonUtils.protectData(objInfo),
+          null,
+          2
+        )} due to populateReferences. Error: ${JSON.stringify(rf.error, null, 2)}`
       );
       return rf;
     }
@@ -352,16 +378,18 @@ const Public = {
     if (r.error) {
       console.log(
         `${config.serviceName}: Failed to put object ${objID}: ${JSON.stringify(
-          CommonUtils.protectData(objInfo)
-        )}. Error: ${JSON.stringify(r.error)}`
+          CommonUtils.protectData(objInfo),
+          null,
+          2
+        )}. Error: ${JSON.stringify(r.error, null, 2)}`
       );
       return r;
     }
 
     console.log(
       `${config.serviceName}: Succesfully put object ${objID}: ${JSON.stringify(
-        objInfo
-      )}. Result object: ${JSON.stringify(CommonUtils.protectData(r.value))}`
+        CommonUtils.protectData(objInfo)
+      )}. Result object: ${JSON.stringify(CommonUtils.protectData(r.value), null, 2)}`
     );
 
     // raise event
@@ -401,8 +429,10 @@ const Public = {
       const err = v.error.details[0].message;
       console.log(
         `${config.serviceName}: Failed to patch object ${objID}: ${JSON.stringify(
-          CommonUtils.protectData(patchInfo)
-        )}. Error: ${JSON.stringify(err)}`
+          CommonUtils.protectData(patchInfo),
+          null,
+          2
+        )}. Error: ${JSON.stringify(err, null, 2)}`
       );
       return { status: 400, error: { message: err, error: new Error(err) } };
     }
@@ -412,8 +442,10 @@ const Public = {
     if (rf.error) {
       console.log(
         `${config.serviceName}: Failed to patch object ${objID}: ${JSON.stringify(
-          CommonUtils.protectData(patchInfo)
-        )} due to populateReferences for set. Error: ${JSON.stringify(rf.error)}`
+          CommonUtils.protectData(patchInfo),
+          null,
+          2
+        )} due to populateReferences for set. Error: ${JSON.stringify(rf.error, null, 2)}`
       );
       return rf;
     }
@@ -422,8 +454,10 @@ const Public = {
     if (rfa.error) {
       console.log(
         `${config.serviceName}: Failed to patch object ${objID}: ${JSON.stringify(
-          CommonUtils.protectData(patchInfo)
-        )} due to populateReferences for add. Error: ${JSON.stringify(rfa.error)}`
+          CommonUtils.protectData(patchInfo),
+          null,
+          2
+        )} due to populateReferences for add. Error: ${JSON.stringify(rfa.error, null, 2)}`
       );
       return rfa;
     }
@@ -438,16 +472,18 @@ const Public = {
     if (r.error) {
       console.log(
         `${config.serviceName}: Failed to patch object ${objID}: ${JSON.stringify(
-          CommonUtils.protectData(patchInfo)
-        )}. Error: ${JSON.stringify(r.error)}`
+          CommonUtils.protectData(patchInfo),
+          null,
+          2
+        )}. Error: ${JSON.stringify(r.error, null, 2)}`
       );
       return r;
     }
 
     console.log(
       `${config.serviceName}: Succesfully patch object ${objID}: ${JSON.stringify(
-        patchInfo
-      )}. Result object: ${JSON.stringify(CommonUtils.protectData(r.value))}`
+        CommonUtils.protectData(patchInfo)
+      )}. Result object: ${JSON.stringify(CommonUtils.protectData(r.value), null, 2)}`
     );
 
     // raise event

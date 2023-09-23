@@ -31,6 +31,13 @@ const Public = {
   },
 
   /**
+   * stringify a regexp
+   */
+  stringifyFilter: (key, value) => {
+    return value instanceof RegExp ? value.toString() : value;
+  },
+
+  /**
    * split array in chunks
    * 0 -> [1, 2, 3] -> [ [1, 2, 3] ]
    * 1 -> [1, 2, 3] -> [ [1], [2], [3] ]
@@ -66,6 +73,13 @@ const Public = {
    * hide sensitive data
    */
   protectData: (obj) => {
+    if (obj === undefined) {
+      return undefined;
+    }
+    if (obj === null) {
+      return null;
+    }
+
     let newObj = { ...obj };
     delete newObj.password;
 
