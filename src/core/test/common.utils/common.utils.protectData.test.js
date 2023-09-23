@@ -48,4 +48,27 @@ describe('Common Utils', function () {
     // check
     chai.expect(res).to.deep.equal({ name: 'user', set: { name: 'user1' } });
   }).timeout(10000);
+
+  /**
+   * protect data and remove sensitive fields
+   */
+  it('should protect data for undefined and null', async () => {
+    let data = undefined;
+
+    // call
+    let res = CommonUtils.protectData(data);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.equal(undefined);
+
+    data = null;
+
+    // call
+    res = CommonUtils.protectData(data);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.equal(null);
+  }).timeout(10000);
 });

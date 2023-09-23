@@ -206,7 +206,8 @@ const Private = {
       const f = Private.getObjectFilters(obj, workset, _ctx);
 
       // add entire object if does not exists
-      {
+      // (except if current object has only arrays and no other members to filter)
+      if (Object.keys(f.opFilters).length) {
         bulkOps.push({
           updateMany: {
             filter: { $and: [workset.mainFilter, f.pathFiltersNot] },

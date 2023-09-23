@@ -169,9 +169,9 @@ const Public = {
 
       if (notification.modified) {
         console.log(
-          `${config.serviceName}: For '${configRef.fieldName}' apply changes from notification ${JSON.stringify(
-            notification
-          )}`
+          `${config.serviceName}: For '${
+            configRef.fieldName
+          }' apply modified changes from notification ${JSON.stringify(notification)}`
         );
 
         processed = true;

@@ -521,28 +521,6 @@ describe('DB-Ops Utils', function () {
       },
       {
         updateMany: {
-          filter: {
-            $and: [
-              { id: 'objid' },
-              {
-                schools: {
-                  $elemMatch: {
-                    id: 'schooldid4',
-                  },
-                },
-              },
-            ],
-          },
-          update: {
-            $push: {
-              'schools.$[schools].classes': { tags: ['c1', 'c2'] },
-            },
-          },
-          arrayFilters: [{ 'schools.id': 'schooldid4' }],
-        },
-      },
-      {
-        updateMany: {
           filter: { id: 'objid' },
           update: {
             $addToSet: { 'schools.$[schools].classes.$[].tags': { $each: ['c1', 'c2'] } },

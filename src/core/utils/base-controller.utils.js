@@ -14,7 +14,13 @@ const Public = {
     _ctx.serviceName = serviceName;
 
     try {
-      console.log(`${_ctx.serviceName}: Get all called, query ${JSON.stringify(CommonUtils.protectData(req.query))}`);
+      console.log(
+        `${_ctx.serviceName}: Get all called, query ${JSON.stringify(
+          CommonUtils.protectData(req.query),
+          CommonUtils.stringifyFilter,
+          2
+        )}`
+      );
 
       // get all
       const r = await service.getAllForReq(req, _ctx);
@@ -38,7 +44,9 @@ const Public = {
     _ctx.serviceName = serviceName;
 
     try {
-      console.log(`${_ctx.serviceName}: Get one called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
+      console.log(
+        `${_ctx.serviceName}: Get one called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
+      );
       const objID = req.params.id;
 
       // get
@@ -63,7 +71,9 @@ const Public = {
     _ctx.serviceName = serviceName;
 
     try {
-      console.log(`${_ctx.serviceName}: Post called, body ${JSON.stringify(CommonUtils.protectData(req.body))}`);
+      console.log(
+        `${_ctx.serviceName}: Post called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+      );
 
       // post
       const r = await service.post(req.body, _ctx);
@@ -87,7 +97,9 @@ const Public = {
     _ctx.serviceName = serviceName;
 
     try {
-      console.log(`${_ctx.serviceName}: Delete called, param ${JSON.stringify(CommonUtils.protectData(req.params))}`);
+      console.log(
+        `${_ctx.serviceName}: Delete called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
+      );
       const objID = req.params.id;
 
       // delete
@@ -114,8 +126,10 @@ const Public = {
     try {
       console.log(
         `${_ctx.serviceName}: Put called, param ${JSON.stringify(
-          CommonUtils.protectData(req.params)
-        )}, body ${JSON.stringify(CommonUtils.protectData(req.body))}`
+          CommonUtils.protectData(req.params),
+          null,
+          2
+        )}, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
       const objID = req.params.id;
 
@@ -143,8 +157,10 @@ const Public = {
     try {
       console.log(
         `${_ctx.serviceName}: Patch called, param ${JSON.stringify(
-          CommonUtils.protectData(req.params)
-        )} body ${JSON.stringify(CommonUtils.protectData(req.body))}`
+          CommonUtils.protectData(req.params),
+          null,
+          2
+        )} body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
       const objID = req.params.id;
 
@@ -171,7 +187,7 @@ const Public = {
 
     try {
       console.log(
-        `${_ctx.serviceName}: Notification called, body ${JSON.stringify(CommonUtils.protectData(req.body))}`
+        `${_ctx.serviceName}: Notification called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
 
       // post

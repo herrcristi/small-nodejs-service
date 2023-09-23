@@ -5,15 +5,6 @@ const Aqs = require('api-query-params');
 
 const CommonUtils = require('./common.utils');
 
-const Utils = {
-  /**
-   * stringify a regexp
-   */
-  stringifyFilter: (key, value) => {
-    return value instanceof RegExp ? value.toString() : value;
-  },
-};
-
 const Public = {
   /**
    * validate and build Mongo filter from request
@@ -26,7 +17,7 @@ const Public = {
         projectionKey: 'projection',
       });
 
-      console.log(`Current filter ${JSON.stringify(filter, Utils.stringifyFilter, 2)}`);
+      console.log(`Current filter ${JSON.stringify(filter, CommonUtils.stringifyFilter, 2)}`);
 
       // TODO use schema to validate filter
       // if (schema) {
