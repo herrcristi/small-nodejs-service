@@ -118,7 +118,7 @@ const Private = {
       newNotifications.push(notification);
     }
 
-    console.log(`Notification converted to student notifications: ${JSON.stringify(newNotifications, null, 2)}`);
+    console.log(`Notification converted only to student notifications: ${JSON.stringify(newNotifications, null, 2)}`);
     return newNotifications;
   },
 };

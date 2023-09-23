@@ -11,7 +11,8 @@ const Private = {
    * and all array props
    */
   getObjectFilters: (obj, workset, _ctx) => {
-    let propArrays = [];
+    let arraysProps = [];
+    let nonArrayProps = {};
     let currentOpFilters = {}; // for $pull, $push
     let currentArrayFilters = {}; // for arrayFilters
     let hasIDProp = false;
@@ -23,14 +24,17 @@ const Private = {
     // otherwise conditions will be put in currentArrayFilters to be used when called for that arrays
     for (const prop of Object.keys(patchObj)) {
       if (Array.isArray(patchObj[prop])) {
-        propArrays.push({
+        arraysProps.push({
           prop: prop,
           array: patchObj[prop],
         });
         continue;
       }
 
-      // if prop id exists only this will matter
+      // keep all props which are not arrays
+      nonArrayProps[prop] = patchObj[prop];
+
+      // if prop id exists only this will matter for filtering
       if (prop === 'id') {
         hasIDProp = true;
         currentOpFilters = {};
@@ -46,31 +50,32 @@ const Private = {
     }
 
     // array
-    let hasArrays = propArrays.length > 0;
     let hasCurrentArrayFilters = Object.keys(currentArrayFilters).length > 0;
 
     // array
-    let arrayFilters = workset.arrayFilters;
-    let arrayPath = workset.arrayPath;
-    if (hasArrays) {
-      arrayFilters = [...workset.arrayFilters];
-      if (hasCurrentArrayFilters) {
-        arrayFilters.push(currentArrayFilters);
-      }
+    let arrayFilters = [...workset.arrayFilters];
+    if (hasCurrentArrayFilters) {
+      arrayFilters.push(currentArrayFilters);
+    }
 
-      arrayPath = `${arrayPath}.$[${hasCurrentArrayFilters ? workset.field : ''}]`;
+    let arrayPath = `${workset.arrayPath}.$[${hasCurrentArrayFilters ? workset.field : ''}]`;
+
+    // non array props are patched
+    let patchNonArrayProps = {};
+    for (const prop in nonArrayProps) {
+      // filter 'id' to avoid patch if only 'id' is set
+      if (prop !== 'id') {
+        patchNonArrayProps[`${arrayPath}.${prop}`] = nonArrayProps[prop];
+      }
     }
 
     // path filters for array
-    let pathFilters = _.cloneDeep(workset.pathFilters);
-
     // traverse all fields
     let paths = workset.path.split('.');
+
+    let pathFilters = _.cloneDeep(workset.pathFilters);
     let fieldPathFilter = pathFilters;
-    for (let i = 0; i < paths.length - 1; ++i) {
-      if (!fieldPathFilter[paths[i]]) {
-        break;
-      }
+    for (let i = 0; i < paths.length - 1 && fieldPathFilter[paths[i]]; ++i) {
       fieldPathFilter = fieldPathFilter[paths[i]]['$elemMatch'];
     }
     fieldPathFilter[workset.field] = { $elemMatch: currentOpFilters };
@@ -78,10 +83,7 @@ const Private = {
     // path filters for adding entire element - checking if current element not exists
     let pathFiltersNot = _.cloneDeep(workset.pathFilters);
     let fieldPathFilterNot = pathFiltersNot;
-    for (let i = 0; i < paths.length - 1; ++i) {
-      if (!fieldPathFilterNot[paths[i]]) {
-        break;
-      }
+    for (let i = 0; i < paths.length - 1 && fieldPathFilterNot[paths[i]]; ++i) {
       fieldPathFilterNot = fieldPathFilterNot[paths[i]]['$elemMatch'];
     }
     if (hasCurrentArrayFilters) {
@@ -94,8 +96,10 @@ const Private = {
       pathFilters,
       fieldPathFilter,
 
-      hasArrays: propArrays.length > 0,
-      propArrays,
+      patchNonArrayProps,
+
+      hasArrays: arraysProps.length > 0,
+      arraysProps,
       arrayPath,
       arrayFilters,
     };
@@ -151,7 +155,7 @@ const Private = {
       }
 
       // recursive apply the same for the arrays
-      for (const arr of f.propArrays) {
+      for (const arr of f.arraysProps) {
         const newworkset = {
           mainFilter: workset.mainFilter,
           field: arr.prop,
@@ -217,12 +221,23 @@ const Private = {
         });
       }
 
+      // set entire nonarray props
+      if (Object.keys(f.patchNonArrayProps).length) {
+        bulkOps.push({
+          updateMany: {
+            filter: workset.mainFilter,
+            update: { $set: f.patchNonArrayProps },
+            arrayFilters: f.arrayFilters,
+          },
+        });
+      }
+
       if (!f.hasArrays) {
         continue;
       }
 
       // recursive apply the same for the arrays
-      for (const arr of f.propArrays) {
+      for (const arr of f.arraysProps) {
         const newworkset = {
           mainFilter: workset.mainFilter,
           field: arr.prop,

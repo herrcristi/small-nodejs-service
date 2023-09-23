@@ -146,6 +146,13 @@ describe('DB-Ops Utils', function () {
           arrayFilters: [],
         },
       },
+      {
+        updateMany: {
+          filter: { id: 'objid' },
+          update: { $set: { 'schools.$[schools].name': 'name2' } },
+          arrayFilters: [{ 'schools.id': 'schoolid2' }],
+        },
+      },
     ]);
   }).timeout(10000);
   /**
@@ -195,6 +202,13 @@ describe('DB-Ops Utils', function () {
       {
         updateMany: {
           filter: { id: 'objid' },
+          update: { $set: { 'schools.$[schools].name': 'name3' } },
+          arrayFilters: [{ 'schools.id': 'schoolid3' }],
+        },
+      },
+      {
+        updateMany: {
+          filter: { id: 'objid' },
           update: {
             $addToSet: { 'schools.$[schools].roles': { $each: ['role1', 'role2'] } },
           },
@@ -213,7 +227,7 @@ describe('DB-Ops Utils', function () {
     let addInfo = {
       schools: [
         {
-          id: 'schooldid4',
+          id: 'schoolid4',
           name: 'name4',
           principals: [
             {
@@ -236,14 +250,14 @@ describe('DB-Ops Utils', function () {
             $and: [
               { id: 'objid' },
               {
-                schools: { $not: { $elemMatch: { id: 'schooldid4' } } },
+                schools: { $not: { $elemMatch: { id: 'schoolid4' } } },
               },
             ],
           },
           update: {
             $push: {
               schools: {
-                id: 'schooldid4',
+                id: 'schoolid4',
                 name: 'name4',
                 principals: [{ name: 'principal1' }],
               },
@@ -254,13 +268,20 @@ describe('DB-Ops Utils', function () {
       },
       {
         updateMany: {
+          filter: { id: 'objid' },
+          update: { $set: { 'schools.$[schools].name': 'name4' } },
+          arrayFilters: [{ 'schools.id': 'schoolid4' }],
+        },
+      },
+      {
+        updateMany: {
           filter: {
             $and: [
               { id: 'objid' },
               {
                 schools: {
                   $elemMatch: {
-                    id: 'schooldid4',
+                    id: 'schoolid4',
                     principals: { $not: { $elemMatch: { name: 'principal1' } } },
                   },
                 },
@@ -270,7 +291,19 @@ describe('DB-Ops Utils', function () {
           update: {
             $push: { 'schools.$[schools].principals': { name: 'principal1' } },
           },
-          arrayFilters: [{ 'schools.id': 'schooldid4' }],
+          arrayFilters: [{ 'schools.id': 'schoolid4' }],
+        },
+      },
+      {
+        updateMany: {
+          filter: { id: 'objid' },
+          update: { $set: { 'schools.$[schools].principals.$[principals].name': 'principal1' } },
+          arrayFilters: [
+            { 'schools.id': 'schoolid4' },
+            {
+              'principals.name': 'principal1',
+            },
+          ],
         },
       },
     ]);
@@ -285,7 +318,7 @@ describe('DB-Ops Utils', function () {
     let addInfo = {
       schools: [
         {
-          id: 'schooldid4',
+          id: 'schoolid4',
           building: [
             {
               id: 'b1',
@@ -319,14 +352,14 @@ describe('DB-Ops Utils', function () {
             $and: [
               { id: 'objid' },
               {
-                schools: { $not: { $elemMatch: { id: 'schooldid4' } } },
+                schools: { $not: { $elemMatch: { id: 'schoolid4' } } },
               },
             ],
           },
           update: {
             $push: {
               schools: {
-                id: 'schooldid4',
+                id: 'schoolid4',
                 building: [
                   { id: 'b1', tags: ['t1', 't2'] },
                   {
@@ -355,7 +388,7 @@ describe('DB-Ops Utils', function () {
               {
                 schools: {
                   $elemMatch: {
-                    id: 'schooldid4',
+                    id: 'schoolid4',
                     building: { $not: { $elemMatch: { id: 'b1' } } },
                   },
                 },
@@ -365,7 +398,7 @@ describe('DB-Ops Utils', function () {
           update: {
             $push: { 'schools.$[schools].building': { id: 'b1', tags: ['t1', 't2'] } },
           },
-          arrayFilters: [{ 'schools.id': 'schooldid4' }],
+          arrayFilters: [{ 'schools.id': 'schoolid4' }],
         },
       },
       {
@@ -375,7 +408,7 @@ describe('DB-Ops Utils', function () {
             $addToSet: { 'schools.$[schools].building.$[building].tags': { $each: ['t1', 't2'] } },
           },
           arrayFilters: [
-            { 'schools.id': 'schooldid4' },
+            { 'schools.id': 'schoolid4' },
             {
               'building.id': 'b1',
             },
@@ -390,7 +423,7 @@ describe('DB-Ops Utils', function () {
               {
                 schools: {
                   $elemMatch: {
-                    id: 'schooldid4',
+                    id: 'schoolid4',
                     building: { $not: { $elemMatch: { id: 'b2' } } },
                   },
                 },
@@ -402,7 +435,7 @@ describe('DB-Ops Utils', function () {
               'schools.$[schools].building': { id: 'b2' },
             },
           },
-          arrayFilters: [{ 'schools.id': 'schooldid4' }],
+          arrayFilters: [{ 'schools.id': 'schoolid4' }],
         },
       },
       {
@@ -413,7 +446,7 @@ describe('DB-Ops Utils', function () {
               {
                 schools: {
                   $elemMatch: {
-                    id: 'schooldid4',
+                    id: 'schoolid4',
                     building: { $not: { $elemMatch: { id: 'b3' } } },
                   },
                 },
@@ -428,7 +461,7 @@ describe('DB-Ops Utils', function () {
               },
             },
           },
-          arrayFilters: [{ 'schools.id': 'schooldid4' }],
+          arrayFilters: [{ 'schools.id': 'schoolid4' }],
         },
       },
       {
@@ -439,7 +472,7 @@ describe('DB-Ops Utils', function () {
               {
                 schools: {
                   $elemMatch: {
-                    id: 'schooldid4',
+                    id: 'schoolid4',
                     building: {
                       $elemMatch: {
                         id: 'b3',
@@ -457,7 +490,7 @@ describe('DB-Ops Utils', function () {
             },
           },
           arrayFilters: [
-            { 'schools.id': 'schooldid4' },
+            { 'schools.id': 'schoolid4' },
             {
               'building.id': 'b3',
             },
@@ -476,7 +509,7 @@ describe('DB-Ops Utils', function () {
     let addInfo = {
       schools: [
         {
-          id: 'schooldid4',
+          id: 'schoolid4',
           name: 'name4',
           classes: [
             {
@@ -499,14 +532,14 @@ describe('DB-Ops Utils', function () {
             $and: [
               { id: 'objid' },
               {
-                schools: { $not: { $elemMatch: { id: 'schooldid4' } } },
+                schools: { $not: { $elemMatch: { id: 'schoolid4' } } },
               },
             ],
           },
           update: {
             $push: {
               schools: {
-                id: 'schooldid4',
+                id: 'schoolid4',
                 name: 'name4',
                 classes: [
                   {
@@ -522,10 +555,17 @@ describe('DB-Ops Utils', function () {
       {
         updateMany: {
           filter: { id: 'objid' },
+          update: { $set: { 'schools.$[schools].name': 'name4' } },
+          arrayFilters: [{ 'schools.id': 'schoolid4' }],
+        },
+      },
+      {
+        updateMany: {
+          filter: { id: 'objid' },
           update: {
             $addToSet: { 'schools.$[schools].classes.$[].tags': { $each: ['c1', 'c2'] } },
           },
-          arrayFilters: [{ 'schools.id': 'schooldid4' }],
+          arrayFilters: [{ 'schools.id': 'schoolid4' }],
         },
       },
     ]);
@@ -577,6 +617,15 @@ describe('DB-Ops Utils', function () {
             },
           },
           arrayFilters: [],
+        },
+      },
+      {
+        updateMany: {
+          filter: { id: 'objid' },
+          update: {
+            $set: { 'schools.$[schools].address.street': 'str' },
+          },
+          arrayFilters: [{ 'schools.id': 'schooldid5' }],
         },
       },
       {

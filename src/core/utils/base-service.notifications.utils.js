@@ -55,6 +55,8 @@ const Public = {
         [notificationType]: notifyObjs,
       };
 
+      console.log(`${config.serviceName}: Raise notification ${JSON.stringify(notification, null, 2)}`);
+
       // do a sync notification
       try {
         if (sub.callback) {
