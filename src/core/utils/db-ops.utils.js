@@ -159,8 +159,8 @@ const Public = {
       );
 
       // not succeeded
-      if (!value.insertedId) {
-        return Utils.error(500, `Failed to post ${JSON.stringify(objInfo)}`, time, _ctx);
+      if (!value?.insertedId) {
+        return Utils.error(500, `Failed to post ${objInfo.id}`, time, _ctx);
       }
 
       return { status: 201, value: objInfo, time: new Date() - time };
