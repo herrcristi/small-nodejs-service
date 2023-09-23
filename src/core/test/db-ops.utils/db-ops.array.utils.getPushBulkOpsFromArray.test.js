@@ -4,7 +4,7 @@ const chai = require('chai');
 const sinon = require('sinon');
 const fs = require('fs');
 
-const DbOpsUtils = require('../../utils/db-ops.array.utils.js');
+const DbOpsArrayUtils = require('../../utils/db-ops.array.utils.js');
 
 describe('DB-Ops Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
@@ -30,7 +30,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -58,7 +58,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -80,7 +80,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -120,7 +120,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -172,7 +172,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -239,7 +239,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -341,7 +341,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -521,7 +521,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
@@ -590,7 +590,7 @@ describe('DB-Ops Utils', function () {
     };
 
     // call
-    let bulkOps = DbOpsUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
+    let bulkOps = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, addInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(bulkOps, null, 2)}\n`);
 
     // check
