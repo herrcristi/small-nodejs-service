@@ -5,7 +5,7 @@ const sinon = require('sinon');
 const fs = require('fs');
 
 const DbOpsUtils = require('../../utils/db-ops.utils.js');
-const dbOpsArrayUtils = require('../../utils/db-ops.array.utils.js');
+const DbOpsArrayUtils = require('../../utils/db-ops.array.utils.js');
 
 describe('DB-Ops Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
@@ -59,8 +59,8 @@ describe('DB-Ops Utils', function () {
       prop: 'prop1',
     });
 
-    sinon.stub(dbOpsArrayUtils, 'getPushBulkOpsFromArray').returns([]);
-    sinon.stub(dbOpsArrayUtils, 'getPullBulkOpsFromArray').returns([]);
+    sinon.stub(DbOpsArrayUtils, 'getPushBulkOpsFromArray').returns([]);
+    sinon.stub(DbOpsArrayUtils, 'getPullBulkOpsFromArray').returns([]);
 
     // call
     let res = await DbOpsUtils.patch({ ...config, collection }, 'id1', patchInfo, projection, _ctx);
@@ -105,8 +105,8 @@ describe('DB-Ops Utils', function () {
       prop: 'prop1',
     });
 
-    sinon.stub(dbOpsArrayUtils, 'getPushBulkOpsFromArray').returns([]);
-    sinon.stub(dbOpsArrayUtils, 'getPullBulkOpsFromArray').returns([]);
+    sinon.stub(DbOpsArrayUtils, 'getPushBulkOpsFromArray').returns([]);
+    sinon.stub(DbOpsArrayUtils, 'getPullBulkOpsFromArray').returns([]);
 
     // call
     let res = await DbOpsUtils.patch({ ...config, collection }, 'id1', patchInfo, projection, _ctx);
@@ -150,8 +150,8 @@ describe('DB-Ops Utils', function () {
     });
     collection.findOne = sinon.stub().returns(null);
 
-    sinon.stub(dbOpsArrayUtils, 'getPushBulkOpsFromArray').returns([]);
-    sinon.stub(dbOpsArrayUtils, 'getPullBulkOpsFromArray').returns([]);
+    sinon.stub(DbOpsArrayUtils, 'getPushBulkOpsFromArray').returns([]);
+    sinon.stub(DbOpsArrayUtils, 'getPullBulkOpsFromArray').returns([]);
 
     // call
     let res = await DbOpsUtils.patch({ ...config, collection }, 'id1', patchInfo, projection, _ctx);

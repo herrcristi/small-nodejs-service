@@ -14,3 +14,5 @@ require('./db-ops.utils.post.test.js');
 require('./db-ops.utils.delete.test.js');
 require('./db-ops.utils.put.test.js');
 require('./db-ops.utils.patch.test.js');
+require('./db-ops.utils.updateManyReferences.test.js');
+require('./db-ops.utils.deleteManyReferences.test.js');

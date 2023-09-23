@@ -428,7 +428,7 @@ const Public = {
         )} returned ${JSON.stringify(r, null, 2)}. Finished in ${new Date() - time} ms`
       );
 
-      return { status: 200, value: r.deletedCount, time: new Date() - time };
+      return { status: 200, value: r.modifiedCount, time: new Date() - time };
     } catch (e) {
       console.log(
         `DB Calling Failed: ${config.serviceName} deleteManyReferences for '${
