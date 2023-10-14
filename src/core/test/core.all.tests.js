@@ -18,3 +18,4 @@ require('./base-service.notifications.utils/base-service.notifications.utils.all
 require('./translations.utils/translations.utils.all.tests.js');
 
 require('./db-ops.utils/db-ops.utils.all.tests.js');
+require('./database-manager.utils/database-manager.utils.all.tests.js');

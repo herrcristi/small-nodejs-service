@@ -17,6 +17,8 @@ const Public = {
         projectionKey: 'projection',
       });
 
+      let testF = JSON.stringify(filter, CommonUtils.stringifyFilter, 2);
+
       // TODO use schema to validate filter
       // if (schema) {
       // }
