@@ -1,9 +1,9 @@
 /**
  * Database
  */
-const DBMgr = require('../../core/utils/database-manager.utils');
+const DBMgr = require('../../core/utils/database-manager.utils.js');
 
-const EventsConstants = require('./events.constants');
+const EventsConstants = require('./events.constants.js');
 
 const Private = {
   DB: null,
@@ -14,8 +14,15 @@ const Public = {
    * init
    */
   init: async (_ctx) => {
-    console.log('Init events database');
     Private.DB = await DBMgr.connect(process.env.DATABASE_URL, process.env.DATABASE_EVENTS, _ctx);
+    console.log('Events database inited');
+  },
+
+  /**
+   * get db
+   */
+  db: async (_ctx) => {
+    return Private.DB;
   },
 
   /**
@@ -23,9 +30,10 @@ const Public = {
    */
   collection: async (_ctx) => {
     // events can be per portal or per tenant
-
     await Public.createIndexes(_ctx);
-    return Private.DB?.collection(EventsConstants.ServiceName + (_ctx.tenantID ? `_${_ctx.tenantID}` : ''));
+    return (await Public.db(_ctx))?.collection(
+      EventsConstants.ServiceName + (_ctx.tenantID ? `_${_ctx.tenantID}` : '')
+    );
   },
 
   /**

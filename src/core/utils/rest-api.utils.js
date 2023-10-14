@@ -3,7 +3,7 @@
  */
 const Aqs = require('api-query-params');
 
-const CommonUtils = require('./common.utils');
+const CommonUtils = require('./common.utils.js');
 
 const Public = {
   /**
@@ -17,7 +17,11 @@ const Public = {
         projectionKey: 'projection',
       });
 
-      console.log(`Current filter ${JSON.stringify(filter, CommonUtils.stringifyFilter, 2)}`);
+      // _id: 0
+      filter.projection ??= {};
+      filter.projection['_id'] = 0;
+
+      let testF = JSON.stringify(filter, CommonUtils.stringifyFilter, 2);
 
       // TODO use schema to validate filter
       // if (schema) {

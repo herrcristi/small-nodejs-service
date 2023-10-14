@@ -2,9 +2,9 @@
  * Database
  */
 
-const DBMgr = require('../../core/utils/database-manager.utils');
+const DBMgr = require('../../core/utils/database-manager.utils.js');
 
-const SchoolsConstants = require('./schools.constants');
+const SchoolsConstants = require('./schools.constants.js');
 
 const Private = {
   DB: null,
@@ -15,8 +15,15 @@ const Public = {
    * init
    */
   init: async (_ctx) => {
-    console.log('Init schools database');
     Private.DB = await DBMgr.connect(process.env.DATABASE_URL, process.env.DATABASE_SCHOOLS, _ctx);
+    console.log('Schools database inited');
+  },
+
+  /**
+   * get db
+   */
+  db: async (_ctx) => {
+    return Private.DB;
   },
 
   /**
@@ -24,7 +31,7 @@ const Public = {
    */
   collection: async (_ctx) => {
     await Public.createIndexes(_ctx);
-    return Private.DB?.collection(SchoolsConstants.ServiceName);
+    return (await Public.db(_ctx))?.collection(SchoolsConstants.ServiceName);
   },
 
   /**

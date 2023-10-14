@@ -6,8 +6,8 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
-const BaseServiceUtils = require('../../../core/utils/base-service.utils');
-const TranslationsUtils = require('../../../core/utils/translations.utils');
+const BaseServiceUtils = require('../../../core/utils/base-service.utils.js');
+const TranslationsUtils = require('../../../core/utils/translations.utils.js');
 
 const TestConstants = require('../../test-constants.js');
 const StudentsConstants = require('../../../services/students/students.constants.js');
@@ -134,6 +134,35 @@ describe('Students Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: 1,
+    });
+  }).timeout(10000);
+
+  /**
+   * getAllCount failed no tenant
+   */
+  it('should getAllCount failed no tenant', async () => {
+    const testStudents = _.cloneDeep(TestConstants.Students);
+
+    // stub
+    let stubBase = sinon.stub(BaseServiceUtils, 'getAllCount').callsFake((config, filter) => {
+      console.log(`\nBaseServiceUtils.getAllCount called\n`);
+      chai.expect(config.collection).to.equal(null);
+
+      return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await StudentsService.getAllCount({}, { ..._ctx, tenantID: undefined });
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubBase.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 500,
+      error: {
+        message: 'Test error message',
+        error: 'Error: Test error',
+      },
     });
   }).timeout(10000);
 

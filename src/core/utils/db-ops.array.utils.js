@@ -2,7 +2,7 @@
  * Database operation utils
  */
 const _ = require('lodash');
-const CommonUtils = require('./common.utils');
+const CommonUtils = require('./common.utils.js');
 
 const Private = {
   /**

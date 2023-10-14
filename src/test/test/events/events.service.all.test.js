@@ -27,9 +27,9 @@ describe('Events Service', function () {
   after(async function () {});
 
   /**
-   * getAllForReq with success
+   * getAllForReq global with success
    */
-  it('should getAllForReq with success', async () => {
+  it('should getAllForReq global with success', async () => {
     const testEvents = _.cloneDeep(TestConstants.Events);
 
     // stub
@@ -46,6 +46,38 @@ describe('Events Service', function () {
 
     // call
     let res = await EventsService.getAllForReq({ query: {} }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubBase.callCount).to.equal(1);
+
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.value).to.deep.equal({
+      data: _.cloneDeep(testEvents),
+      meta: { count: testEvents.length },
+    });
+  }).timeout(10000);
+
+  /**
+   * getAllForReq for tenant with success
+   */
+  it('should getAllForReq for tenant  with success', async () => {
+    const testEvents = _.cloneDeep(TestConstants.Events);
+
+    // stub
+    let stubBase = sinon.stub(BaseServiceUtils, 'getAllForReq').callsFake((config, filter) => {
+      console.log(`\nBaseServiceUtils.getAllForReq called\n`);
+      return {
+        status: 200,
+        value: {
+          data: _.cloneDeep(testEvents),
+          meta: { count: testEvents.length },
+        },
+      };
+    });
+
+    // call
+    let res = await EventsService.getAllForReq({ query: {} }, { ..._ctx, tenantID: 'school1' });
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

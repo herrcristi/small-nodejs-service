@@ -50,7 +50,7 @@ const Public = {
       const objID = req.params.id;
 
       // get
-      const r = await service.getOne(objID, null, _ctx);
+      const r = await service.getOne(objID, { _id: 0 }, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }

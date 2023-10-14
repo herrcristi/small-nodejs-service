@@ -1,9 +1,9 @@
 /**
  * Database
  */
-const DBMgr = require('../../core/utils/database-manager.utils');
+const DBMgr = require('../../core/utils/database-manager.utils.js');
 
-const UsersConstants = require('./users.constants');
+const UsersConstants = require('./users.constants.js');
 
 const Private = {
   DB: null,
@@ -14,8 +14,15 @@ const Public = {
    * init
    */
   init: async (_ctx) => {
-    console.log('Init users database');
     Private.DB = await DBMgr.connect(process.env.DATABASE_URL, process.env.DATABASE_USERS, _ctx);
+    console.log('Users database inited');
+  },
+
+  /**
+   * get db
+   */
+  db: async (_ctx) => {
+    return Private.DB;
   },
 
   /**
@@ -23,7 +30,7 @@ const Public = {
    */
   collection: async (_ctx) => {
     await Public.createIndexes(_ctx);
-    return Private.DB?.collection(UsersConstants.ServiceName);
+    return (await Public.db(_ctx))?.collection(UsersConstants.ServiceName);
   },
 
   /**
