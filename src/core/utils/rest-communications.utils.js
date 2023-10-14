@@ -7,8 +7,8 @@
 
 const axios = require('axios');
 
-const CommonUtils = require('./common.utils');
-const RestApiUtils = require('./rest-api.utils');
+const CommonUtils = require('./common.utils.js');
+const RestApiUtils = require('./rest-api.utils.js');
 
 const Constants = {
   Timeout: 30000 /* 30s */,

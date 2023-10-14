@@ -1,9 +1,9 @@
 /**
  * Database
  */
-const DBMgr = require('../../core/utils/database-manager.utils');
+const DBMgr = require('../../core/utils/database-manager.utils.js');
 
-const UsersConstants = require('./users.constants');
+const UsersConstants = require('./users.constants.js');
 
 const Private = {
   DB: null,

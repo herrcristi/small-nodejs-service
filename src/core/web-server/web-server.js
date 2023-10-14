@@ -4,7 +4,7 @@
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
-const RequestMiddleware = require('./request.middleware');
+const RequestMiddleware = require('./request.middleware.js');
 
 const Public = {
   /**

@@ -5,7 +5,7 @@
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 const RestCommsUtils = require('../../core/utils/rest-communications.utils.js');
 
-const SchoolsConstants = require('../schools/schools.constants');
+const SchoolsConstants = require('../schools/schools.constants.js');
 
 const Private = {
   /**

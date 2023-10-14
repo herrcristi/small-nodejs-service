@@ -6,7 +6,7 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
-const BaseServiceUtils = require('../../../core/utils/base-service.utils');
+const BaseServiceUtils = require('../../../core/utils/base-service.utils.js');
 
 const TestConstants = require('../../test-constants.js');
 const SchoolsConstants = require('../../../services/schools/schools.constants.js');

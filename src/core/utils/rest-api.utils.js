@@ -3,7 +3,7 @@
  */
 const Aqs = require('api-query-params');
 
-const CommonUtils = require('./common.utils');
+const CommonUtils = require('./common.utils.js');
 
 const Public = {
   /**

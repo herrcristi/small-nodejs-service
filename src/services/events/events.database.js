@@ -1,9 +1,9 @@
 /**
  * Database
  */
-const DBMgr = require('../../core/utils/database-manager.utils');
+const DBMgr = require('../../core/utils/database-manager.utils.js');
 
-const EventsConstants = require('./events.constants');
+const EventsConstants = require('./events.constants.js');
 
 const Private = {
   DB: null,

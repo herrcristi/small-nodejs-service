@@ -2,9 +2,9 @@
  * Database
  */
 
-const DBMgr = require('../../core/utils/database-manager.utils');
+const DBMgr = require('../../core/utils/database-manager.utils.js');
 
-const SchoolsConstants = require('./schools.constants');
+const SchoolsConstants = require('./schools.constants.js');
 
 const Private = {
   DB: null,
