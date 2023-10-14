@@ -1,6 +1,7 @@
 /**
  * Tests Utils
  */
+const _ = require('lodash');
 
 const TestConstants = require('./test-constants.js');
 
@@ -13,12 +14,17 @@ const Public = {
   initDatabase: async (_ctx) => {
     console.log(`\nInserting into database\n`);
 
+    await (await SchoolsDatabase.db(_ctx)).dropDatabase();
     await (await SchoolsDatabase.collection(_ctx)).insertMany(_.cloneDeep(TestConstants.Schools));
   },
 
-  cleanupDatabase: async () => {
+  /**
+   * cleanup database
+   */
+  cleanupDatabase: async (_ctx) => {
     console.log(`\nCleaning up database\n`);
-    await (await SchoolsDatabase.db(_ctx)).drop();
+
+    await (await SchoolsDatabase.db(_ctx)).dropDatabase();
   },
 };
 

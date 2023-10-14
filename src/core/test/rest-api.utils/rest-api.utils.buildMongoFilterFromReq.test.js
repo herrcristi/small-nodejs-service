@@ -46,6 +46,9 @@ describe('Rest Api Utils', function () {
         name: 'John',
         status: { $ne: 'active' },
       },
+      projection: {
+        _id: 0,
+      },
     });
   }).timeout(10000);
 
@@ -68,6 +71,9 @@ describe('Rest Api Utils', function () {
       filter: {
         status: { $exists: false },
         name: { $exists: true },
+      },
+      projection: {
+        _id: 0,
       },
     });
   }).timeout(10000);
@@ -94,6 +100,9 @@ describe('Rest Api Utils', function () {
           $not: /active/i,
         },
       },
+      projection: {
+        _id: 0,
+      },
     });
   }).timeout(10000);
 
@@ -116,6 +125,9 @@ describe('Rest Api Utils', function () {
       filter: {
         count: 1,
         value: { $gt: 10, $lte: 20 },
+      },
+      projection: {
+        _id: 0,
       },
     });
   }).timeout(10000);
@@ -141,6 +153,9 @@ describe('Rest Api Utils', function () {
           $in: ['a1', 2, 3, 4],
         },
       },
+      projection: {
+        _id: 0,
+      },
     });
   }).timeout(10000);
 
@@ -161,6 +176,9 @@ describe('Rest Api Utils', function () {
     // check
     chai.expect(res).to.deep.equal({
       filter: {},
+      projection: {
+        _id: 0,
+      },
     });
   }).timeout(10000);
 
@@ -190,6 +208,7 @@ describe('Rest Api Utils', function () {
       skip: 1,
       limit: 1,
       projection: {
+        _id: 0,
         id: 1,
         name: 1,
         type: 1,

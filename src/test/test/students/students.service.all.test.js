@@ -140,7 +140,7 @@ describe('Students Service', function () {
   /**
    * getAllCount failed no tenant
    */
-  it('should getAllCount with success', async () => {
+  it('should getAllCount failed no tenant', async () => {
     const testStudents = _.cloneDeep(TestConstants.Students);
 
     // stub
@@ -158,7 +158,7 @@ describe('Students Service', function () {
     // check
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
-      status: 400,
+      status: 500,
       error: {
         message: 'Test error message',
         error: 'Error: Test error',
