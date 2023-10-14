@@ -19,13 +19,21 @@ const Public = {
   },
 
   /**
+   * get db
+   */
+  db: async (_ctx) => {
+    return Private.DB;
+  },
+
+  /**
    * get collection
    */
   collection: async (_ctx) => {
     // events can be per portal or per tenant
-
     await Public.createIndexes(_ctx);
-    return Private.DB?.collection(EventsConstants.ServiceName + (_ctx.tenantID ? `_${_ctx.tenantID}` : ''));
+    return (await Public.db(_ctx))?.collection(
+      EventsConstants.ServiceName + (_ctx.tenantID ? `_${_ctx.tenantID}` : '')
+    );
   },
 
   /**

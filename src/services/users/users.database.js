@@ -19,11 +19,18 @@ const Public = {
   },
 
   /**
+   * get db
+   */
+  db: async (_ctx) => {
+    return Private.DB;
+  },
+
+  /**
    * get collection
    */
   collection: async (_ctx) => {
     await Public.createIndexes(_ctx);
-    return Private.DB?.collection(UsersConstants.ServiceName);
+    return (await Public.db(_ctx))?.collection(UsersConstants.ServiceName);
   },
 
   /**

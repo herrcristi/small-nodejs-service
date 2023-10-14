@@ -138,6 +138,35 @@ describe('Students Service', function () {
   }).timeout(10000);
 
   /**
+   * getAllCount failed no tenant
+   */
+  it('should getAllCount with success', async () => {
+    const testStudents = _.cloneDeep(TestConstants.Students);
+
+    // stub
+    let stubBase = sinon.stub(BaseServiceUtils, 'getAllCount').callsFake((config, filter) => {
+      console.log(`\nBaseServiceUtils.getAllCount called\n`);
+      chai.expect(config.collection).to.equal(null);
+
+      return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await StudentsService.getAllCount({}, { ..._ctx, tenantID: undefined });
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubBase.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 400,
+      error: {
+        message: 'Test error message',
+        error: 'Error: Test error',
+      },
+    });
+  }).timeout(10000);
+
+  /**
    * getAllByIDs with success
    */
   it('should getAllByIDs with success', async () => {

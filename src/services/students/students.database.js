@@ -19,6 +19,13 @@ const Public = {
   },
 
   /**
+   * get db
+   */
+  db: async (_ctx) => {
+    return Private.DB;
+  },
+
+  /**
    * get collection
    */
   collection: async (_ctx) => {
@@ -28,7 +35,7 @@ const Public = {
     }
     // students collections are per tenant
     await Public.createIndexes(_ctx);
-    return Private.DB?.collection(StudentsConstants.ServiceName + `_${_ctx.tenantID}`);
+    return (await Public.db(_ctx)).collection(StudentsConstants.ServiceName + `_${_ctx.tenantID}`);
   },
 
   /**

@@ -1,6 +1,8 @@
 /**
  * Called by mocha
  */
+const sinon = require('sinon');
+
 const TestUtils = require('../core/utils/test.utils.js');
 
 // setup env
@@ -22,11 +24,27 @@ exports.mochaHooks = {
     },
 
     function (done) {
+      console.log('current env TEST_DB', process.env.TEST_DB);
+
       // init service
       const service = require('../index.js');
-      service.on('inited', () => {
+      const DBMgr = require('../core/utils/database-manager.utils.js');
+
+      if (!process.env.TEST_DB) {
+        sinon.stub(DBMgr, 'connect').callsFake((dbUrl, dbName) => {
+          console.log(`Mock db connection to ${dbUrl} ${dbName}`);
+        });
+      }
+
+      const fnDone = () => {
+        service.event.off('inited', fnDone);
         done();
-      });
+      };
+      service.event.on('inited', fnDone);
+    },
+
+    async () => {
+      sinon.restore();
     },
   ],
 
