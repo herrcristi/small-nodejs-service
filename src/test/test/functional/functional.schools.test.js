@@ -7,6 +7,8 @@ const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
 const TestConstants = require('../../test-constants.js');
+const SchoolsDatabase = require('../../../services/schools/schools.database.js');
+const EventsDatabase = require('../../../services/events/events.database.js');
 const SchoolsConstants = require('../../../services/schools/schools.constants.js');
 const SchoolsService = require('../../../services/schools/schools.service.js');
 const TestsUtils = require('../../tests.utils.js');
@@ -67,64 +69,122 @@ describe('Schools Controller', function () {
     });
   }).timeout(10000);
 
-  // /**
-  //  * post with success
-  //  */
-  // it('should post with success', async () => {
-  //   const testSchools = _.cloneDeep(TestConstants.Schools);
-  //   const testSchool = testSchools[0];
+  /**
+   * post fail duplicate name
+   */
+  it('should post fail duplicate name', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+    const testSchool = _.cloneDeep(testSchools[0]);
 
-  //   // stub
-  //   let stubService = sinon.stub(SchoolsService, 'post').callsFake(() => {
-  //     console.log(`\nSchoolsService.post called\n`);
-  //     return {
-  //       status: 201,
-  //       value: { ...testSchool },
-  //     };
-  //   });
+    delete testSchool.id;
+    delete testSchool.type;
+    delete testSchool._lang_en;
 
-  //   // call
-  //   let res = await chai
-  //     .request(TestConstants.WebServer)
-  //     .post(`${SchoolsConstants.ApiPath}`)
-  //     .send({ ...testSchool });
-  //   console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .post(`${SchoolsConstants.ApiPath}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .send({ ...testSchool });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
-  //   // check
-  //   chai.expect(res.status).to.equal(201);
-  //   chai.expect(stubService.callCount).to.equal(1);
-  //   chai.expect(res.body).to.deep.equal({
-  //     ...testSchool,
-  //   });
-  // }).timeout(10000);
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai
+      .expect(res.body.error)
+      .to.include('E11000 duplicate key error collection: Small-Test.schools index: name_1 dup key');
+  }).timeout(10000);
 
-  // /**
-  //  * delete with success
-  //  */
-  // it('should delete with success', async () => {
-  //   const testSchools = _.cloneDeep(TestConstants.Schools);
-  //   const testSchool = testSchools[0];
+  /**
+   * post with success
+   */
+  it('should post with success', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+    const testSchool = _.cloneDeep(testSchools[0]);
 
-  //   // stub
-  //   let stubService = sinon.stub(SchoolsService, 'delete').callsFake(() => {
-  //     console.log(`\nSchoolsService.delete called\n`);
-  //     return {
-  //       status: 200,
-  //       value: testSchool,
-  //     };
-  //   });
+    testSchool.name = 'new name';
+    delete testSchool.id;
+    delete testSchool.type;
+    delete testSchool._lang_en;
 
-  //   // call
-  //   let res = await chai.request(TestConstants.WebServer).delete(`${SchoolsConstants.ApiPath}/${testSchool.id}`);
-  //   console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+    // check events before
+    let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
-  //   // check
-  //   chai.expect(res.status).to.equal(200);
-  //   chai.expect(stubService.callCount).to.equal(1);
-  //   chai.expect(res.body).to.deep.equal({
-  //     ...testSchool,
-  //   });
-  // }).timeout(10000);
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .post(`${SchoolsConstants.ApiPath}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .send({ ...testSchool });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(201);
+    chai.expect(res.body.id).to.exist;
+    chai.expect(res.body.type).to.equal(testSchools[0].type);
+    chai.expect(res.body.status).to.equal(SchoolsConstants.Status.Active);
+    chai.expect(res.body.createdTimestamp).to.exist;
+    chai.expect(res.body.lastModifiedTimestamp).to.exist;
+
+    // after
+    let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // do a get
+    testSchool.id = res.body.id;
+    res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}/${testSchool.id}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.include({
+      ...testSchool,
+    });
+    chai.expect(res.body._lang_en).to.exist;
+    chai.expect(res.body._lang_ro).to.exist;
+  }).timeout(10000);
+
+  /**
+   * delete with success
+   */
+  it('should delete with success', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+    const testSchool = testSchools[0];
+
+    // check events before
+    let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count before: ${eventsCountBefore}\n`);
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .delete(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname');
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body.id).to.equal(testSchool.id);
+
+    // after
+    let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // do a get
+    testSchool.id = res.body.id;
+    res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}/${testSchool.id}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(404);
+    chai.expect(res.body.message).to.include('Not found');
+  }).timeout(10000);
 
   // /**
   //  * put with success
