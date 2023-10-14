@@ -4,5 +4,6 @@
  * include them in order
  */
 
-// schools
 require('./functional.schools.test.js');
+
+require('./functional.notifications.test.js');

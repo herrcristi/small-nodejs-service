@@ -13,7 +13,7 @@ const SchoolsConstants = require('../../../services/schools/schools.constants.js
 const SchoolsService = require('../../../services/schools/schools.service.js');
 const TestsUtils = require('../../tests.utils.js');
 
-describe('Schools Controller', function () {
+describe('Schools Functional', function () {
   let _ctx = { reqID: 'Test-Schools', lang: 'en' };
 
   before(async function () {});
@@ -186,94 +186,91 @@ describe('Schools Controller', function () {
     chai.expect(res.body.message).to.include('Not found');
   }).timeout(10000);
 
-  // /**
-  //  * put with success
-  //  */
-  // it('should put with success', async () => {
-  //   const testSchools = _.cloneDeep(TestConstants.Schools);
-  //   const testSchool = testSchools[0];
+  /**
+   * put with success
+   */
+  it('should put with success', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+    const testSchool = _.cloneDeep(testSchools[0]);
+    const testSchoolID = testSchool.id;
 
-  //   // stub
-  //   let stubService = sinon.stub(SchoolsService, 'put').callsFake(() => {
-  //     console.log(`\nSchoolsService.put called\n`);
-  //     return {
-  //       status: 200,
-  //       value: testSchool,
-  //     };
-  //   });
+    testSchool.name = 'new name';
+    delete testSchool.id;
+    delete testSchool.type;
+    delete testSchool._lang_en;
 
-  //   // call
-  //   let res = await chai
-  //     .request(TestConstants.WebServer)
-  //     .put(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
-  //     .send({ ...testSchool });
-  //   console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+    // check events before
+    let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
-  //   // check
-  //   chai.expect(res.status).to.equal(200);
-  //   chai.expect(stubService.callCount).to.equal(1);
-  //   chai.expect(res.body).to.deep.equal({
-  //     ...testSchool,
-  //   });
-  // }).timeout(10000);
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${SchoolsConstants.ApiPath}/${testSchoolID}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .send({ ...testSchool });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
-  // /**
-  //  * patch with success
-  //  */
-  // it('should patch with success', async () => {
-  //   const testSchools = _.cloneDeep(TestConstants.Schools);
-  //   const testSchool = testSchools[0];
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body.id).to.equal(testSchoolID);
+    chai.expect(res.body.name).to.equal(testSchool.name);
 
-  //   // stub
-  //   let stubService = sinon.stub(SchoolsService, 'patch').callsFake(() => {
-  //     console.log(`\nSchoolsService.patch called\n`);
-  //     return {
-  //       status: 200,
-  //       value: testSchool,
-  //     };
-  //   });
+    // after
+    let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
-  //   // call
-  //   let res = await chai
-  //     .request(TestConstants.WebServer)
-  //     .patch(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
-  //     .send({ set: { ...testSchool } });
-  //   console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+    // do a get
+    res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}/${testSchoolID}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
-  //   // check
-  //   chai.expect(res.status).to.equal(200);
-  //   chai.expect(stubService.callCount).to.equal(1);
-  //   chai.expect(res.body).to.deep.equal({
-  //     ...testSchool,
-  //   });
-  // }).timeout(10000);
+    chai.expect(res.body.id).to.equal(testSchoolID);
+    chai.expect(res.body.name).to.equal(testSchool.name);
+  }).timeout(10000);
 
-  // /**
-  //  * notification with success
-  //  */
-  // it('should do notification with success', async () => {
-  //   const notifications = _.cloneDeep(TestConstants.SchoolsNotifications);
-  //   const notif = notifications[0];
+  /**
+   * patch with success
+   */
+  it('should patch with success', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+    const testSchool = testSchools[0];
+    const testSchoolID = testSchool.id;
 
-  //   // stub
-  //   let stubService = sinon.stub(SchoolsService, 'notification').callsFake(() => {
-  //     console.log(`\nSchoolsService.notification called\n`);
-  //     return {
-  //       status: 200,
-  //       value: true,
-  //     };
-  //   });
+    testSchool.name = 'new name';
+    delete testSchool.id;
+    delete testSchool.type;
+    delete testSchool._lang_en;
 
-  //   // call
-  //   let res = await chai
-  //     .request(TestConstants.WebServer)
-  //     .post(`${SchoolsConstants.ApiPathInternal}/notifications`)
-  //     .send({ ...notif });
-  //   console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+    // check events before
+    let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
-  //   // check
-  //   chai.expect(res.status).to.equal(200);
-  //   chai.expect(stubService.callCount).to.equal(1);
-  //   chai.expect(res.body).to.deep.equal(true);
-  // }).timeout(10000);
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .patch(`${SchoolsConstants.ApiPath}/${testSchoolID}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .send({ set: { ...testSchool } });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body.id).to.equal(testSchoolID);
+    chai.expect(res.body.name).to.equal(testSchool.name);
+
+    // after
+    let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // do a get
+    res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}/${testSchoolID}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    chai.expect(res.body.id).to.equal(testSchoolID);
+    chai.expect(res.body.name).to.equal(testSchool.name);
+  }).timeout(10000);
 });
