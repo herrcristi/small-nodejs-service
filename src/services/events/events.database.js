@@ -14,8 +14,8 @@ const Public = {
    * init
    */
   init: async (_ctx) => {
-    console.log('Init events database');
     Private.DB = await DBMgr.connect(process.env.DATABASE_URL, process.env.DATABASE_EVENTS, _ctx);
+    console.log('Events database inited');
   },
 
   /**

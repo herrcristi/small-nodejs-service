@@ -27,9 +27,6 @@ const init = async () => {
     require('dotenv-expand').expand(config);
   }
 
-  // init web server
-  await WebServer.init();
-
   // init language
   for (const lang of Languages) {
     await TranslationsUtils.initLanguage(lang, path.resolve(__dirname, `translations/${lang}.json`));
@@ -37,6 +34,9 @@ const init = async () => {
 
   // init services
   await ConfigServices.init();
+
+  // init web server
+  await WebServer.init();
 
   // emit that service was inited
   e.emit('inited');

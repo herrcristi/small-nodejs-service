@@ -51,7 +51,7 @@ const Public = {
       const options = {};
       let client = await MongoDB.MongoClient.connect(dbUrl, options);
       if (!client) {
-        throw new Error('Cannot connect');
+        throw new Error(`Cannot connect to ${dbUrl}`);
       }
 
       // add connection handlers
@@ -59,8 +59,8 @@ const Public = {
       Private.DBClients[dbUrl] = client;
 
       // Send a ping to confirm a successful connection
-      await client.db('admin').command({ ping: 1 });
-      console.log(`Ping successfully admin for ${dbName}`);
+      await client.db(dbName).command({ ping: 1 });
+      console.log(`Ping successfully db ${dbName}`);
 
       return client.db(dbName);
     } catch (e) {
