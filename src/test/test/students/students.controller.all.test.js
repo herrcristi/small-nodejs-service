@@ -30,7 +30,7 @@ describe('Students Controller', function () {
     const testStudents = _.cloneDeep(TestConstants.Students);
 
     // stub
-    let stubService = sinon.stub(StudentsService, 'getAllForReq').callsFake((filter) => {
+    let stubService = sinon.stub(StudentsService, 'getAllForReq').callsFake(() => {
       console.log(`\nStudentsService.getAllForReq called\n`);
       return {
         status: 200,
@@ -59,6 +59,57 @@ describe('Students Controller', function () {
         skip: 0,
       },
     });
+  }).timeout(10000);
+
+  /**
+   * getAll fail
+   */
+  it('should getAll fail', async () => {
+    const testStudents = _.cloneDeep(TestConstants.Students);
+
+    // stub
+    let stubService = sinon.stub(StudentsService, 'getAllForReq').callsFake(() => {
+      console.log(`\nStudentsService.getAllForReq called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${StudentsConstants.ApiPath}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * getAll fail exception
+   */
+  it('should getAll fail exception', async () => {
+    const testStudents = _.cloneDeep(TestConstants.Students);
+
+    // stub
+    let stubService = sinon.stub(StudentsService, 'getAllForReq').callsFake(() => {
+      console.log(`\nStudentsService.getAllForReq called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${StudentsConstants.ApiPath}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
 
   /**
@@ -93,6 +144,59 @@ describe('Students Controller', function () {
   }).timeout(10000);
 
   /**
+   * getOne fail
+   */
+  it('should getOne fail', async () => {
+    const testStudents = _.cloneDeep(TestConstants.Students);
+    const testStudent = testStudents[0];
+
+    // stub
+    let stubService = sinon.stub(StudentsService, 'getOne').callsFake(() => {
+      console.log(`\nStudentsService.getOne called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${StudentsConstants.ApiPath}/${testStudent.id}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * getOne fail exception
+   */
+  it('should getOne fail exception', async () => {
+    const testStudents = _.cloneDeep(TestConstants.Students);
+    const testStudent = testStudents[0];
+
+    // stub
+    let stubService = sinon.stub(StudentsService, 'getOne').callsFake(() => {
+      console.log(`\nStudentsService.getOne called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${StudentsConstants.ApiPath}/${testStudent.id}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
    * post with success
    */
   it('should post with success', async () => {
@@ -100,7 +204,7 @@ describe('Students Controller', function () {
     const testStudent = testStudents[0];
 
     // stub
-    let stubService = sinon.stub(StudentsService, 'post').callsFake((filter) => {
+    let stubService = sinon.stub(StudentsService, 'post').callsFake(() => {
       console.log(`\nStudentsService.post called\n`);
       return {
         status: 201,
@@ -125,6 +229,61 @@ describe('Students Controller', function () {
   }).timeout(10000);
 
   /**
+   * post fail
+   */
+  it('should post fail', async () => {
+    const testStudents = _.cloneDeep(TestConstants.Students);
+    const testStudent = testStudents[0];
+
+    // stub
+    let stubService = sinon.stub(StudentsService, 'post').callsFake(() => {
+      console.log(`\nStudentsService.post called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .post(`${StudentsConstants.ApiPath}`)
+      .set('x-tenant-id', _ctx.tenantID)
+      .send({ ...testStudent });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * post fail exception
+   */
+  it('should post fail exception', async () => {
+    const testStudents = _.cloneDeep(TestConstants.Students);
+    const testStudent = testStudents[0];
+
+    // stub
+    let stubService = sinon.stub(StudentsService, 'post').callsFake(() => {
+      console.log(`\nStudentsService.post called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .post(`${StudentsConstants.ApiPath}`)
+      .set('x-tenant-id', _ctx.tenantID)
+      .send({ ...testStudent });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
    * delete with success
    */
   it('should delete with success', async () => {
@@ -132,7 +291,7 @@ describe('Students Controller', function () {
     const testStudent = testStudents[0];
 
     // stub
-    let stubService = sinon.stub(StudentsService, 'delete').callsFake((filter) => {
+    let stubService = sinon.stub(StudentsService, 'delete').callsFake(() => {
       console.log(`\nStudentsService.delete called\n`);
       return {
         status: 200,
@@ -156,6 +315,59 @@ describe('Students Controller', function () {
   }).timeout(10000);
 
   /**
+   * delete fail
+   */
+  it('should delete fail', async () => {
+    const testStudents = _.cloneDeep(TestConstants.Students);
+    const testStudent = testStudents[0];
+
+    // stub
+    let stubService = sinon.stub(StudentsService, 'delete').callsFake(() => {
+      console.log(`\nStudentsService.delete called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .delete(`${StudentsConstants.ApiPath}/${testStudent.id}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * delete fail exception
+   */
+  it('should delete fail exception', async () => {
+    const testStudents = _.cloneDeep(TestConstants.Students);
+    const testStudent = testStudents[0];
+
+    // stub
+    let stubService = sinon.stub(StudentsService, 'delete').callsFake(() => {
+      console.log(`\nStudentsService.delete called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .delete(`${StudentsConstants.ApiPath}/${testStudent.id}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
    * put with success
    */
   it('should put with success', async () => {
@@ -163,7 +375,7 @@ describe('Students Controller', function () {
     const testStudent = testStudents[0];
 
     // stub
-    let stubService = sinon.stub(StudentsService, 'put').callsFake((filter) => {
+    let stubService = sinon.stub(StudentsService, 'put').callsFake(() => {
       console.log(`\nStudentsService.put called\n`);
       return {
         status: 200,
@@ -188,6 +400,61 @@ describe('Students Controller', function () {
   }).timeout(10000);
 
   /**
+   * put fail
+   */
+  it('should put fail', async () => {
+    const testStudents = _.cloneDeep(TestConstants.Students);
+    const testStudent = testStudents[0];
+
+    // stub
+    let stubService = sinon.stub(StudentsService, 'put').callsFake(() => {
+      console.log(`\nStudentsService.put called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${StudentsConstants.ApiPath}/${testStudent.id}`)
+      .set('x-tenant-id', _ctx.tenantID)
+      .send({ ...testStudent });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * put fail exception
+   */
+  it('should put fail exception', async () => {
+    const testStudents = _.cloneDeep(TestConstants.Students);
+    const testStudent = testStudents[0];
+
+    // stub
+    let stubService = sinon.stub(StudentsService, 'put').callsFake(() => {
+      console.log(`\nStudentsService.put called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${StudentsConstants.ApiPath}/${testStudent.id}`)
+      .set('x-tenant-id', _ctx.tenantID)
+      .send({ ...testStudent });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
    * patch with success
    */
   it('should patch with success', async () => {
@@ -195,7 +462,7 @@ describe('Students Controller', function () {
     const testStudent = testStudents[0];
 
     // stub
-    let stubService = sinon.stub(StudentsService, 'patch').callsFake((filter) => {
+    let stubService = sinon.stub(StudentsService, 'patch').callsFake(() => {
       console.log(`\nStudentsService.patch called\n`);
       return {
         status: 200,
@@ -220,6 +487,61 @@ describe('Students Controller', function () {
   }).timeout(10000);
 
   /**
+   * patch fail
+   */
+  it('should patch fail', async () => {
+    const testStudents = _.cloneDeep(TestConstants.Students);
+    const testStudent = testStudents[0];
+
+    // stub
+    let stubService = sinon.stub(StudentsService, 'patch').callsFake(() => {
+      console.log(`\nStudentsService.patch called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .patch(`${StudentsConstants.ApiPath}/${testStudent.id}`)
+      .set('x-tenant-id', _ctx.tenantID)
+      .send({ set: { ...testStudent } });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * patch fail exception
+   */
+  it('should patch fail exception', async () => {
+    const testStudents = _.cloneDeep(TestConstants.Students);
+    const testStudent = testStudents[0];
+
+    // stub
+    let stubService = sinon.stub(StudentsService, 'patch').callsFake(() => {
+      console.log(`\nStudentsService.patch called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .patch(`${StudentsConstants.ApiPath}/${testStudent.id}`)
+      .set('x-tenant-id', _ctx.tenantID)
+      .send({ set: { ...testStudent } });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
    * notification with success
    */
   it('should do notification with success', async () => {
@@ -239,7 +561,6 @@ describe('Students Controller', function () {
     let res = await chai
       .request(TestConstants.WebServer)
       .post(`${StudentsConstants.ApiPathInternal}/notifications`)
-      .set('x-tenant-id', _ctx.tenantID)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -247,5 +568,58 @@ describe('Students Controller', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal(true);
+  }).timeout(10000);
+
+  /**
+   * notification fail
+   */
+  it('should notification fail', async () => {
+    const notifications = _.cloneDeep(TestConstants.StudentsNotifications);
+    const notif = notifications[0];
+
+    // stub
+    let stubService = sinon.stub(StudentsService, 'notification').callsFake(() => {
+      console.log(`\nStudentsService.notification called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .post(`${StudentsConstants.ApiPathInternal}/notifications`)
+      .send({ ...notif });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * notification fail exception
+   */
+  it('should notification fail exception', async () => {
+    const notifications = _.cloneDeep(TestConstants.StudentsNotifications);
+    const notif = notifications[0];
+
+    // stub
+    let stubService = sinon.stub(StudentsService, 'notification').callsFake(() => {
+      console.log(`\nStudentsService.notification called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .post(`${StudentsConstants.ApiPathInternal}/notifications`)
+      .send({ ...notif });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
 });
