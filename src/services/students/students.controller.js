@@ -2,7 +2,8 @@
  * Students controller
  */
 
-const BaseControllerUtils = require('../../core/utils/base-controller.utils.js');
+const CommonUtils = require('../../core/utils/common.utils.js');
+const RestMessagesUtils = require('../../core/utils/rest-messages.utils.js');
 
 const StudentsConstants = require('./students.constants.js');
 const StudentsService = require('./students.service.js');
@@ -11,32 +12,202 @@ const StudentsService = require('./students.service.js');
  * controller functions called from router
  */
 const Public = {
+  /**
+   * get all
+   */
   getAll: async (req, res, next) => {
-    await BaseControllerUtils.getAll(StudentsService, StudentsConstants.ServiceName, req, res, next);
+    let _ctx = req._ctx;
+    _ctx.serviceName = StudentsConstants.ServiceName;
+
+    try {
+      console.log(
+        `${_ctx.serviceName}: Get all called, query ${JSON.stringify(
+          CommonUtils.protectData(req.query),
+          CommonUtils.stringifyFilter,
+          2
+        )}`
+      );
+
+      // get all
+      const r = await StudentsService.getAllForReq(req, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
   },
 
+  /**
+   * get one
+   */
   getOne: async (req, res, next) => {
-    await BaseControllerUtils.getOne(StudentsService, StudentsConstants.ServiceName, req, res, next);
+    let _ctx = req._ctx;
+    _ctx.serviceName = StudentsConstants.ServiceName;
+
+    try {
+      console.log(
+        `${_ctx.serviceName}: Get one called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
+      );
+      const objID = req.params.id;
+
+      // get
+      const r = await StudentsService.getOne(objID, { _id: 0 }, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
   },
 
+  /**
+   * post
+   */
   post: async (req, res, next) => {
-    await BaseControllerUtils.post(StudentsService, StudentsConstants.ServiceName, req, res, next);
+    let _ctx = req._ctx;
+    _ctx.serviceName = StudentsConstants.ServiceName;
+
+    try {
+      console.log(
+        `${_ctx.serviceName}: Post called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+      );
+
+      // post
+      const r = await StudentsService.post(req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
   },
 
+  /**
+   * delete
+   */
   delete: async (req, res, next) => {
-    await BaseControllerUtils.delete(StudentsService, StudentsConstants.ServiceName, req, res, next);
+    let _ctx = req._ctx;
+    _ctx.serviceName = StudentsConstants.ServiceName;
+
+    try {
+      console.log(
+        `${_ctx.serviceName}: Delete called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
+      );
+      const objID = req.params.id;
+
+      // delete
+      const r = await StudentsService.delete(objID, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
   },
 
+  /**
+   * put
+   */
   put: async (req, res, next) => {
-    await BaseControllerUtils.put(StudentsService, StudentsConstants.ServiceName, req, res, next);
+    let _ctx = req._ctx;
+    _ctx.serviceName = StudentsConstants.ServiceName;
+
+    try {
+      console.log(
+        `${_ctx.serviceName}: Put called, param ${JSON.stringify(
+          CommonUtils.protectData(req.params),
+          null,
+          2
+        )}, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+      );
+      const objID = req.params.id;
+
+      // put
+      const r = await StudentsService.put(objID, req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
   },
 
+  /**
+   * patch
+   */
   patch: async (req, res, next) => {
-    await BaseControllerUtils.patch(StudentsService, StudentsConstants.ServiceName, req, res, next);
+    let _ctx = req._ctx;
+    _ctx.serviceName = StudentsConstants.ServiceName;
+
+    try {
+      console.log(
+        `${_ctx.serviceName}: Patch called, param ${JSON.stringify(
+          CommonUtils.protectData(req.params),
+          null,
+          2
+        )} body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+      );
+      const objID = req.params.id;
+
+      // patch
+      const r = await StudentsService.patch(objID, req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
   },
 
+  /**
+   * notification
+   */
   notification: async (req, res, next) => {
-    await BaseControllerUtils.notification(StudentsService, StudentsConstants.ServiceName, req, res, next);
+    let _ctx = req._ctx;
+    _ctx.serviceName = StudentsConstants.ServiceName;
+
+    try {
+      console.log(
+        `${_ctx.serviceName}: Notification called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+      );
+
+      // post
+      const r = await StudentsService.notification(req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
   },
 };
 
