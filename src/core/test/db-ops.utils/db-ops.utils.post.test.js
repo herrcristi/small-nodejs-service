@@ -77,7 +77,7 @@ describe('DB-Ops Utils', function () {
     // check
     chai.expect(collection.insertOne.callCount).to.equal(1);
     chai.expect(res.status).to.equal(500);
-    chai.expect(res.error.message.toString()).to.include('Failed to post');
+    chai.expect(res.error.message.toString()).to.include('Database insert failed');
   }).timeout(10000);
 
   /**

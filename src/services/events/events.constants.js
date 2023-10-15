@@ -14,6 +14,15 @@ const Public = {
 
   // type
   Type: 'event',
+
+  /**
+   * severity
+   */
+  Severity: {
+    Informational: 'info',
+    Warning: 'warning',
+    Critical: 'critical',
+  },
 };
 
 module.exports = { ...Public };

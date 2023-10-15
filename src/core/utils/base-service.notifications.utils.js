@@ -69,6 +69,7 @@ const Public = {
       }
     }
 
+    // do async notifications
     return await Public.broadcast(config, notificationType, objs, _ctx);
   },
 
@@ -90,6 +91,13 @@ const Public = {
   },
 
   /**
+   * notification schema
+   */
+  getNotificationSchema: () => {
+    return Schema.Notification;
+  },
+
+  /**
    * process notification
    * config: { serviceName, collection, ..., references, fillReferences }
    * notification: { serviceName, added: [ { id, ... } ], removed, modified  }
@@ -98,20 +106,6 @@ const Public = {
   notification: async (config, notification, _ctx) => {
     if (!config.fillReferences) {
       return { status: 200, value: null }; // skipped
-    }
-
-    // validate
-    const v = Schema.Notification.validate(notification);
-    if (v.error) {
-      const err = v.error.details[0].message;
-      console.log(
-        `${config.serviceName}: Failed to validate notification: ${JSON.stringify(
-          notification,
-          null,
-          2
-        )}. Error: ${JSON.stringify(err)}`
-      );
-      return { status: 400, error: { message: err, error: new Error(err) } };
     }
 
     // apply changes to references

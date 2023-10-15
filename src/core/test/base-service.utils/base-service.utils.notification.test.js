@@ -35,6 +35,7 @@ describe('Base Service', function () {
    */
   it('should call notification with success', async () => {
     const notificationInfo = {
+      serviceName: 'service',
       added: [
         {
           id: 'id1',
@@ -69,5 +70,44 @@ describe('Base Service', function () {
       status: 200,
       value: true,
     });
+  }).timeout(10000);
+
+  /**
+   * notification fail validation
+   */
+  it('should notification fail validation', async () => {
+    const notificationInfo = {
+      added: [
+        {
+          id: 'id1',
+          name: 'name',
+          field: 'idf1',
+        },
+      ],
+    };
+
+    // stub
+    sinon.stub(NotificationsUtils, 'notification').callsFake((conf, notification) => {
+      console.log(
+        `\nNotificationsUtils.notification called with conf ${JSON.stringify(
+          conf,
+          null,
+          2
+        )} and notification ${JSON.stringify(notification, null, 2)}\n`
+      );
+
+      return {
+        status: 200,
+        value: true,
+      };
+    });
+
+    // call
+    let res = await BaseServiceUtils.notification(config, notificationInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.error.message).to.deep.equal('Failed to validate schema. Error: "serviceName" is required');
   }).timeout(10000);
 });

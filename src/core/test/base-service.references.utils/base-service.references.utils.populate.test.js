@@ -86,44 +86,47 @@ describe('Base Service', function () {
 
     // check
     chai.expect(config.references[0].service.getAllByIDs.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal([
-      {
-        id: 'id1',
-        name: 'name1',
-        target: {
-          id: 'targetID1',
-          name: 't1',
-        },
-      },
-      {
-        id: 'id2',
-        name: 'name2',
-        target: {
-          id: 'targetID2',
-          name: 't2',
-        },
-      },
-      {
-        id: 'id3',
-        name: 'name3',
-        target: [
-          {
-            id: 'targetID3',
-            name: 't3',
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: [
+        {
+          id: 'id1',
+          name: 'name1',
+          target: {
+            id: 'targetID1',
+            name: 't1',
           },
-        ],
-      },
-      {
-        id: 'id4',
-        name: 'name4',
-        target: [
-          {
-            id: 'targetID4',
-            name: 't4',
+        },
+        {
+          id: 'id2',
+          name: 'name2',
+          target: {
+            id: 'targetID2',
+            name: 't2',
           },
-        ],
-      },
-    ]);
+        },
+        {
+          id: 'id3',
+          name: 'name3',
+          target: [
+            {
+              id: 'targetID3',
+              name: 't3',
+            },
+          ],
+        },
+        {
+          id: 'id4',
+          name: 'name4',
+          target: [
+            {
+              id: 'targetID4',
+              name: 't4',
+            },
+          ],
+        },
+      ],
+    });
   }).timeout(10000);
 
   /**
@@ -155,7 +158,10 @@ describe('Base Service', function () {
 
     // check
     chai.expect(config.references[0].service.getAllByIDs.callCount).to.equal(0);
-    chai.expect(res).to.deep.equal(objs);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: objs,
+    });
   }).timeout(10000);
 
   /**
@@ -260,36 +266,39 @@ describe('Base Service', function () {
 
     // check
     chai.expect(config.references[0].service.getAllByIDs.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal([
-      {
-        id: 'id1',
-        name: 'name1',
-        target: null,
-      },
-      {
-        id: 'id2',
-        name: 'name2',
-        target: {},
-      },
-      {
-        id: 'id3',
-        name: 'name3',
-        target: ['targetID3'],
-      },
-      {
-        id: 'id4',
-        name: 'name4',
-        target: [
-          {
-            id: 'targetID4',
-          },
-        ],
-      },
-      {
-        id: 'id1',
-        name: 'name1',
-        target: 5,
-      },
-    ]);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: [
+        {
+          id: 'id1',
+          name: 'name1',
+          target: null,
+        },
+        {
+          id: 'id2',
+          name: 'name2',
+          target: {},
+        },
+        {
+          id: 'id3',
+          name: 'name3',
+          target: ['targetID3'],
+        },
+        {
+          id: 'id4',
+          name: 'name4',
+          target: [
+            {
+              id: 'targetID4',
+            },
+          ],
+        },
+        {
+          id: 'id1',
+          name: 'name1',
+          target: 5,
+        },
+      ],
+    });
   }).timeout(10000);
 });
