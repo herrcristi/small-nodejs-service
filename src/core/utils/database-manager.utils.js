@@ -3,6 +3,8 @@
  */
 const MongoDB = require('mongodb');
 
+const CommonUtils = require('./common.utils');
+
 const Private = {
   /**
    * clients
@@ -65,7 +67,7 @@ const Public = {
 
       return client.db(dbName);
     } catch (e) {
-      console.log(`Failed to connect to mongo for ${dbName}. Error: ${e.stack ? e.stack : e}`);
+      console.log(`Failed to connect to mongo for ${dbName}. Error: ${CommonUtils.getLogError(e)}`);
       console.log(`Exit process`);
       process.exit(1);
     }

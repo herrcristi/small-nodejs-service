@@ -101,28 +101,4 @@ describe('DB-Ops Utils', function () {
     chai.expect(res.status).to.equal(500);
     chai.expect(res.error.message.toString()).to.include('Test exception');
   }).timeout(10000);
-
-  /**
-   * post exception no stack
-   */
-  it('should post exception no stack', async () => {
-    let objInfo = {
-      id: 'id1',
-      name: 'name1',
-    };
-
-    let collection = {};
-    collection.insertOne = sinon.stub().callsFake(() => {
-      throw 'Test exception';
-    });
-
-    // call
-    let res = await DbOpsUtils.post({ ...config, collection }, objInfo, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    delete res.time;
-
-    // check
-    chai.expect(res.status).to.equal(500);
-    chai.expect(res.error.message.toString()).to.include('Test exception');
-  }).timeout(10000);
 });

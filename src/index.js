@@ -4,6 +4,7 @@
 const fs = require('fs');
 const path = require('path');
 
+const CommonUtils = require('./core/utils/common.utils.js');
 const TranslationsUtils = require('./core/utils/translations.utils.js');
 const WebServer = require('./web-server/web-server.js');
 const ConfigServices = require('./services/config.services.js');
@@ -62,7 +63,7 @@ const Public = {
 
       return true;
     } catch (e) {
-      console.log(`Failed to init service. Error: ${e.stack ? e.stack : e}`);
+      console.log(`Failed to init service. Error: ${CommonUtils.getLogError(e)}`);
       process.exit(1);
     }
   },

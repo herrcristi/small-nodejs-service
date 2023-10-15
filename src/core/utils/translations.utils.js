@@ -3,6 +3,8 @@
  */
 const fs = require('fs');
 
+const CommonUtils = require('./common.utils');
+
 const Private = {
   Languages: {
     en: {},
@@ -34,7 +36,7 @@ const Public = {
       console.log(`Language added ${language} from file ${file}`);
       return Private.Languages;
     } catch (e) {
-      console.log(`Failed to add language ${language} from file ${file}. Error: ${e.stack ? e.stack : e}`);
+      console.log(`Failed to add language ${language} from file ${file}. Error: ${CommonUtils.getLogError(e)}`);
       return null;
     }
   },

@@ -96,9 +96,9 @@ describe('DB-Ops Utils', function () {
   }).timeout(10000);
 
   /**
-   * getAll exception no stack
+   * getAll exception string
    */
-  it('should getAll exception no stack', async () => {
+  it('should getAll exception string', async () => {
     let filter = {
       filter: {},
       projection: { _id: 0 },

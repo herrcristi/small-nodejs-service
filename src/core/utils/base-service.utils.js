@@ -79,7 +79,7 @@ const Public = {
    */
   getAllForReq: async (config, req, _ctx) => {
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-    const filter = await RestApiUtils.buildMongoFilterFromReq(req, config.schema, _ctx);
+    const filter = await RestApiUtils.buildFilterFromReq(req, config.schema, _ctx);
     if (filter.error) {
       console.log(
         `${config.serviceName}: Failed to build mongo filter from ${JSON.stringify(
@@ -103,21 +103,14 @@ const Public = {
       return rCount;
     }
 
-    const limit = filter.limit || 0;
-    const skip = filter.skip || 0;
-    const currentLimit = skip + limit;
+    const metaInfo = RestApiUtils.getMetaInfo(filter, rCount.value, _ctx);
 
     // success
     return {
-      status: limit && currentLimit < rCount.value ? 206 /*partial data*/ : 200,
+      status: metaInfo.status,
       value: {
         data: r.value,
-        meta: {
-          count: rCount.value,
-          limit,
-          skip,
-          sort: filter.sort,
-        },
+        meta: metaInfo.meta,
       },
     };
   },

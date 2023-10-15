@@ -144,7 +144,7 @@ const Public = {
     }
     const translations = {
       severity: TranslationsUtils.string(obj?.severity, _ctx),
-      message: TranslationsUtils.string(obj?.messageID, _ctx, args),
+      message: TranslationsUtils.string(obj?.messageID, _ctx, args), // translate with arguments
     };
     return await TranslationsUtils.addTranslations(obj, translations, _ctx);
   },

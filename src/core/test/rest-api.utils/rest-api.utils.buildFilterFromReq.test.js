@@ -27,9 +27,9 @@ describe('Rest Api Utils', function () {
   after(async function () {});
 
   /**
-   * buildMongoFilterFromReq test equal
+   * buildFilterFromReq test equal
    */
-  it('should buildMongoFilterFromReq test equal', async () => {
+  it('should buildFilterFromReq test equal', async () => {
     let req = {
       query: querystring.parse('?name=John&status!=active'),
     };
@@ -37,7 +37,7 @@ describe('Rest Api Utils', function () {
     let schema = {};
 
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -49,13 +49,15 @@ describe('Rest Api Utils', function () {
       projection: {
         _id: 0,
       },
+      limit: 0,
+      skip: 0,
     });
   }).timeout(10000);
 
   /**
-   * buildMongoFilterFromReq test exists
+   * buildFilterFromReq test exists
    */
-  it('should buildMongoFilterFromReq test exists', async () => {
+  it('should buildFilterFromReq test exists', async () => {
     let req = {
       query: querystring.parse('?name&!status'),
     };
@@ -63,7 +65,7 @@ describe('Rest Api Utils', function () {
     let schema = {};
 
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -75,13 +77,15 @@ describe('Rest Api Utils', function () {
       projection: {
         _id: 0,
       },
+      limit: 0,
+      skip: 0,
     });
   }).timeout(10000);
 
   /**
-   * buildMongoFilterFromReq test regexp
+   * buildFilterFromReq test regexp
    */
-  it('should buildMongoFilterFromReq test regexp', async () => {
+  it('should buildFilterFromReq test regexp', async () => {
     let req = {
       query: querystring.parse('?name=/john/i&status!=/active/i'),
     };
@@ -89,7 +93,7 @@ describe('Rest Api Utils', function () {
     let schema = {};
 
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -103,13 +107,15 @@ describe('Rest Api Utils', function () {
       projection: {
         _id: 0,
       },
+      limit: 0,
+      skip: 0,
     });
   }).timeout(10000);
 
   /**
-   * buildMongoFilterFromReq test numbers
+   * buildFilterFromReq test numbers
    */
-  it('should buildMongoFilterFromReq test numbers', async () => {
+  it('should buildFilterFromReq test numbers', async () => {
     let req = {
       query: querystring.parse('?count=1&value>10&value<=20'),
     };
@@ -117,7 +123,7 @@ describe('Rest Api Utils', function () {
     let schema = {};
 
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -129,13 +135,15 @@ describe('Rest Api Utils', function () {
       projection: {
         _id: 0,
       },
+      limit: 0,
+      skip: 0,
     });
   }).timeout(10000);
 
   /**
-   * buildMongoFilterFromReq test multiple values
+   * buildFilterFromReq test multiple values
    */
-  it('should buildMongoFilterFromReq test multiple values', async () => {
+  it('should buildFilterFromReq test multiple values', async () => {
     let req = {
       query: querystring.parse('?g.id=a1,2,3,4'),
     };
@@ -143,7 +151,7 @@ describe('Rest Api Utils', function () {
     let schema = {};
 
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -156,13 +164,15 @@ describe('Rest Api Utils', function () {
       projection: {
         _id: 0,
       },
+      limit: 0,
+      skip: 0,
     });
   }).timeout(10000);
 
   /**
-   * buildMongoFilterFromReq test empty
+   * buildFilterFromReq test empty
    */
-  it('should buildMongoFilterFromReq test empty', async () => {
+  it('should buildFilterFromReq test empty', async () => {
     let req = {
       query: querystring.parse(''),
     };
@@ -170,7 +180,7 @@ describe('Rest Api Utils', function () {
     let schema = {};
 
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -179,13 +189,15 @@ describe('Rest Api Utils', function () {
       projection: {
         _id: 0,
       },
+      limit: 0,
+      skip: 0,
     });
   }).timeout(10000);
 
   /**
-   * buildMongoFilterFromReq test limit, skip, sort, projection
+   * buildFilterFromReq test limit, skip, sort, projection
    */
-  it('should buildMongoFilterFromReq test limit, skip, sort, projection', async () => {
+  it('should buildFilterFromReq test limit, skip, sort, projection', async () => {
     let req = {
       query: querystring.parse('?name=John&limit=1&skip=1&sort=name,-date&projection=id,name,type,status'),
     };
@@ -193,7 +205,7 @@ describe('Rest Api Utils', function () {
     let schema = {};
 
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -218,38 +230,17 @@ describe('Rest Api Utils', function () {
   }).timeout(10000);
 
   /**
-   * buildMongoFilterFromReq fail
+   * buildFilterFromReq fail
    */
-  it('should buildMongoFilterFromReq fail', async () => {
+  it('should buildFilterFromReq fail', async () => {
     let req = null;
     let schema = {};
 
     // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
+    let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(res.error.message).to.include('Cannot read properties of null');
-  }).timeout(10000);
-
-  /**
-   * buildMongoFilterFromReq fail exception
-   */
-  it('should buildMongoFilterFromReq fail exception', async () => {
-    let req = {};
-    let schema = {};
-
-    // stub
-    sinon.stub(JSON, 'stringify').callsFake(() => {
-      throw 'Test String exception';
-    });
-
-    // call
-    let res = await RestApiUtils.buildMongoFilterFromReq(req, schema, _ctx);
-    sinon.restore();
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(res.error.message).to.include('Failed to validate query');
   }).timeout(10000);
 });

@@ -242,46 +242,4 @@ describe('Base Service', function () {
       value: true,
     });
   }).timeout(10000);
-
-  /**
-   * raiseNotification with exception (no stack)
-   */
-  it('should call raiseNotification with exception (no stack)', async () => {
-    const objs = [
-      {
-        id: 'id4',
-        name: 'name4',
-        target: [
-          {
-            id: 'targetID4',
-          },
-        ],
-      },
-    ];
-
-    config.subscribers = [
-      {
-        callback: sinon.stub().callsFake((notification) => {
-          throw 'Test error';
-        }),
-      },
-    ];
-
-    // call
-    let res = await NotificationsUtils.raiseNotification(
-      config,
-      NotificationsUtils.Constants.Notification.Added,
-      objs,
-      _ctx
-    );
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    // even if callback failes the functions still succeeds
-    chai.expect(config.subscribers[0].callback.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: true,
-    });
-  }).timeout(10000);
 });

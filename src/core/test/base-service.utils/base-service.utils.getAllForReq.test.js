@@ -38,8 +38,11 @@ describe('Base Service', function () {
    */
   it('should call getAllForReq with success', async () => {
     // stub
-    sinon.stub(RestApiUtils, 'buildMongoFilterFromReq').returns({
+    sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
       filter: {},
+      projection: { _id: 0 },
+      limit: 0,
+      skip: 0,
     });
 
     sinon.stub(DbOpsUtils, 'getAll').returns({
@@ -96,9 +99,11 @@ describe('Base Service', function () {
    */
   it('should call getAllForReq partial with success', async () => {
     // stub
-    sinon.stub(RestApiUtils, 'buildMongoFilterFromReq').returns({
+    sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
       filter: {},
+      projection: { _id: 0 },
       limit: 1,
+      skip: 0,
       sort: { id: 1 },
     });
 
@@ -140,7 +145,7 @@ describe('Base Service', function () {
    */
   it('should call getAllForReq fail due to invalid req query', async () => {
     // stub
-    sinon.stub(RestApiUtils, 'buildMongoFilterFromReq').returns({
+    sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
       status: 500,
       error: { message: 'Test error message', error: new Error('Test error').toString() },
     });
@@ -174,8 +179,11 @@ describe('Base Service', function () {
    */
   it('should call getAllForReq and fail getAll', async () => {
     // stub
-    sinon.stub(RestApiUtils, 'buildMongoFilterFromReq').returns({
+    sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
       filter: {},
+      projection: { _id: 0 },
+      limit: 0,
+      skip: 0,
     });
 
     sinon.stub(DbOpsUtils, 'getAll').returns({
@@ -207,8 +215,11 @@ describe('Base Service', function () {
    */
   it('should call getAllForReq and fail getAllCount', async () => {
     // stub
-    sinon.stub(RestApiUtils, 'buildMongoFilterFromReq').returns({
+    sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
       filter: {},
+      projection: { _id: 0 },
+      limit: 0,
+      skip: 0,
     });
 
     sinon.stub(DbOpsUtils, 'getAll').returns({

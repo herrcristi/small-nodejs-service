@@ -194,6 +194,16 @@ const Public = {
 
     return false;
   },
+
+  /**
+   * get log for error
+   */
+  getLogError: (e) => {
+    if (e?.stack) {
+      return e.stack;
+    }
+    return typeof e === 'string' ? e : JSON.stringify(e);
+  },
 };
 
 module.exports = { ...Public };

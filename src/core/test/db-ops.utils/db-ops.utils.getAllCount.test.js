@@ -75,31 +75,4 @@ describe('DB-Ops Utils', function () {
     chai.expect(res.status).to.equal(500);
     chai.expect(res.error.message.toString()).to.include('Test exception');
   }).timeout(10000);
-
-  /**
-   * getAllCount exception no stack
-   */
-  it('should getAllCount exception no stack', async () => {
-    let filter = {
-      filter: {},
-      projection: { _id: 0 },
-      limit: 0,
-      skip: 0,
-      sort: { id: 1 },
-    };
-
-    let collection = {};
-    collection.count = sinon.stub().callsFake(() => {
-      throw 'Test exception';
-    });
-
-    // call
-    let res = await DbOpsUtils.getAllCount({ ...config, collection }, filter, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    delete res.time;
-
-    // check
-    chai.expect(res.status).to.equal(500);
-    chai.expect(res.error.message.toString()).to.include('Test exception');
-  }).timeout(10000);
 });

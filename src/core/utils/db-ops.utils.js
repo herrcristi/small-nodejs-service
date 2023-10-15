@@ -34,6 +34,7 @@ const Public = {
    */
   getAll: async (config, filter, _ctx) => {
     const time = new Date();
+    const logFilter = JSON.stringify(filter, CommonUtils.stringifyFilter, 2);
 
     try {
       const { filter: findFilter, projection, limit, skip, sort } = filter;
@@ -50,21 +51,17 @@ const Public = {
       });
 
       console.log(
-        `DB Calling: ${config.serviceName} getAll with filter ${JSON.stringify(
-          filter,
-          CommonUtils.stringifyFilter,
-          2
-        )} returned ${values.length} objs: ${JSON.stringify(logValues, null, 2)}. Finished in ${new Date() - time} ms`
+        `DB Calling: ${config.serviceName} getAll with filter ${logFilter} returned ${
+          values.length
+        } objs: ${JSON.stringify(logValues, null, 2)}. Finished in ${new Date() - time} ms`
       );
 
       return { status: 200, value: values, time: new Date() - time };
     } catch (e) {
       console.log(
-        `DB Calling Failed: ${config.serviceName} getAll with filter ${JSON.stringify(
-          filter,
-          CommonUtils.stringifyFilter,
-          2
-        )}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
+        `DB Calling Failed: ${config.serviceName} getAll with filter ${logFilter}. Error ${CommonUtils.getLogError(
+          e
+        )}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
     }
@@ -72,26 +69,23 @@ const Public = {
 
   getAllCount: async (config, filter, _ctx) => {
     const time = new Date();
+    const logFilter = JSON.stringify(filter, CommonUtils.stringifyFilter, 2);
 
     try {
       const count = await config.collection.count(filter.filter);
 
       console.log(
-        `DB Calling: ${config.serviceName} getAllCount with filter ${JSON.stringify(
-          filter,
-          CommonUtils.stringifyFilter,
-          2
-        )} returned ${count} objs count. Finished in ${new Date() - time} ms`
+        `DB Calling: ${
+          config.serviceName
+        } getAllCount with filter ${logFilter} returned ${count} objs count. Finished in ${new Date() - time} ms`
       );
 
       return { status: 200, value: count, time: new Date() - time };
     } catch (e) {
       console.log(
-        `DB Calling Failed: ${config.serviceName} getAllCount with filter ${JSON.stringify(
-          filter,
-          CommonUtils.stringifyFilter,
-          2
-        )}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
+        `DB Calling Failed: ${config.serviceName} getAllCount with filter ${logFilter}. Error ${CommonUtils.getLogError(
+          e
+        )}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
     }
@@ -114,9 +108,11 @@ const Public = {
       const value = await config.collection.findOne(filter, { projection });
 
       console.log(
-        `DB Calling: ${config.serviceName} getOne for ${objID} returned ${value ? 'found' : 'not found'}. Finished in ${
-          new Date() - time
-        } ms`
+        `DB Calling: ${config.serviceName} getOne for ${objID} returned: ${JSON.stringify(
+          CommonUtils.protectData(value),
+          null,
+          2
+        )}. Finished in ${new Date() - time} ms`
       );
 
       // not found
@@ -127,9 +123,9 @@ const Public = {
       return { status: 200, value: value, time: new Date() - time };
     } catch (e) {
       console.log(
-        `DB Calling Failed: ${config.serviceName} getOne for ${objID}. Error ${e.stack ? e.stack : e}. Finished in ${
-          new Date() - time
-        } ms`
+        `DB Calling Failed: ${config.serviceName} getOne for ${objID}. Error ${CommonUtils.getLogError(
+          e
+        )}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
     }
@@ -166,9 +162,9 @@ const Public = {
       return { status: 201, value: objInfo, time: new Date() - time };
     } catch (e) {
       console.log(
-        `DB Calling Failed: ${config.serviceName} post for ${objInfo.id}. Error ${e.stack ? e.stack : e}. Finished in ${
-          new Date() - time
-        } ms`
+        `DB Calling Failed: ${config.serviceName} post for ${objInfo.id}. Error ${CommonUtils.getLogError(
+          e
+        )}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
     }
@@ -202,9 +198,9 @@ const Public = {
       return { status: 200, value: r.value, time: new Date() - time };
     } catch (e) {
       console.log(
-        `DB Calling Failed: ${config.serviceName} delete for ${objID}. Error ${e.stack ? e.stack : e}. Finished in ${
-          new Date() - time
-        } ms`
+        `DB Calling Failed: ${config.serviceName} delete for ${objID}. Error ${CommonUtils.getLogError(
+          e
+        )}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
     }
@@ -241,7 +237,7 @@ const Public = {
       return { status: 200, value: r.value, time: new Date() - time };
     } catch (e) {
       console.log(
-        `DB Calling Failed: ${config.serviceName} put for ${objID}. Error ${e.stack ? e.stack : e}. Finished in ${
+        `DB Calling Failed: ${config.serviceName} put for ${objID}. Error ${CommonUtils.getLogError(e)}. Finished in ${
           new Date() - time
         } ms`
       );
@@ -318,7 +314,7 @@ const Public = {
       console.log(
         `DB Calling Failed: ${config.serviceName} patch for ${objID} with operation ${JSON.stringify(
           bulkOperations
-        )}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
+        )}. Error ${CommonUtils.getLogError(e)}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
     }
@@ -366,7 +362,9 @@ const Public = {
       console.log(
         `DB Calling Failed: ${config.serviceName} updateManyReferences for '${
           ref.fieldName
-        }' with info ${JSON.stringify(objInfo)}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
+        }' with info ${JSON.stringify(objInfo)}. Error ${CommonUtils.getLogError(e)}. Finished in ${
+          new Date() - time
+        } ms`
       );
       return Utils.exception(e, time, _ctx);
     }
@@ -433,7 +431,9 @@ const Public = {
       console.log(
         `DB Calling Failed: ${config.serviceName} deleteManyReferences for '${
           ref.fieldName
-        }' with info ${JSON.stringify(objInfo)}. Error ${e.stack ? e.stack : e}. Finished in ${new Date() - time} ms`
+        }' with info ${JSON.stringify(objInfo)}. Error ${CommonUtils.getLogError(e)}. Finished in ${
+          new Date() - time
+        } ms`
       );
       return Utils.exception(e, time, _ctx);
     }
