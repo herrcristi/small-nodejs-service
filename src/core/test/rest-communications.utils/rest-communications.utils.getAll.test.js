@@ -93,7 +93,7 @@ describe('Rest Communications Utils', function () {
       },
     };
 
-    sinon.stub(RestApiUtils, 'buildMongoFilterFromReq').returns({
+    sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
       error: { message: 'Test error message', error: new Error('Test error').toString() },
     });
 

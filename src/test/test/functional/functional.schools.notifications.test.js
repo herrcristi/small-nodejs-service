@@ -7,12 +7,9 @@ const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
 const TestConstants = require('../../test-constants.js');
-const SchoolsDatabase = require('../../../services/schools/schools.database.js');
-const EventsDatabase = require('../../../services/events/events.database.js');
 const UsersDatabase = require('../../../services/users/users.database.js');
 
 const SchoolsConstants = require('../../../services/schools/schools.constants.js');
-const SchoolsService = require('../../../services/schools/schools.service.js');
 const TestsUtils = require('../../tests.utils.js');
 
 describe('Notifications functional', function () {

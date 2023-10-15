@@ -105,27 +105,4 @@ describe('Database Manager Utils', function () {
     chai.expect(mongoStub.callCount).to.equal(1);
     chai.expect(processStub.callCount).to.equal(1);
   }).timeout(10000);
-
-  /**
-   * connect failed no stack
-   */
-  it('should connect failed no stack', async () => {
-    let mongoUrl = 'mongodb://localhost:27017/f2';
-    let dbName = 'DBF2';
-
-    // stub
-    let mongoStub = sinon.stub(MongoDB.MongoClient, 'connect').callsFake(() => {
-      throw 'Test message';
-    });
-    let processStub = sinon.stub(process, 'exit');
-
-    // call
-    let res = await DatabaseManagerUtils.connect(mongoUrl, dbName, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(res).to.equal(undefined);
-    chai.expect(mongoStub.callCount).to.equal(1);
-    chai.expect(processStub.callCount).to.equal(1);
-  }).timeout(10000);
 });

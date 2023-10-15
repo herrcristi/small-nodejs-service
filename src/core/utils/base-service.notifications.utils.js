@@ -64,7 +64,7 @@ const Public = {
         }
       } catch (e) {
         console.log(
-          `Error processing notification ${JSON.stringify(notification, null, 2)}. Error ${e.stack ? e.stack : e}`
+          `Error processing notification ${JSON.stringify(notification, null, 2)}. Error: ${CommonUtils.getLogError(e)}`
         );
       }
     }

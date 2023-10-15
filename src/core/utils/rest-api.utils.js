@@ -7,10 +7,10 @@ const CommonUtils = require('./common.utils.js');
 
 const Public = {
   /**
-   * validate and build Mongo filter from request
+   * validate and build filter from request
    * return filter: { filter, projection, limit, skip, sort }
    */
-  buildMongoFilterFromReq: async (req, schema, _ctx) => {
+  buildFilterFromReq: async (req, schema, _ctx) => {
     try {
       // convert query to mongo build
       let filter = Aqs(req.query, {
@@ -21,24 +21,53 @@ const Public = {
       filter.projection ??= {};
       filter.projection['_id'] = 0;
 
-      let testF = JSON.stringify(filter, CommonUtils.stringifyFilter, 2);
+      // TODO set limit to some value like 1000 (if not set)
+      filter.limit = filter.limit || 0;
+      filter.skip = filter.skip || 0;
+
+      // TODO add search, searchFields
 
       // TODO use schema to validate filter
       // if (schema) {
       // }
-      // TODO add search, searchFields
-      // TODO set limit to some value like 1000 (if not set)
 
       return filter;
     } catch (e) {
+      console.log(
+        `Failed to build mongo filter from ${JSON.stringify(
+          req?.quey,
+          CommonUtils.stringifyFilter,
+          2
+        )}. Error: ${CommonUtils.getLogError(e)}`
+      );
+
       return {
         status: 400,
         error: {
-          message: e.message || 'Failed to validate query',
+          message: `Failed to convert query to filter. ${e.message}`,
           error: e,
         },
       };
     }
+  },
+
+  /**
+   * validate and build filter from request
+   * return filter: { filter, projection, limit, skip, sort }
+   */
+  getMetaInfo: (filter, count, _ctx) => {
+    const currentLimit = filter.skip + filter.limit;
+
+    // success
+    return {
+      status: filter.limit && currentLimit < count ? 206 /*partial data*/ : 200,
+      meta: {
+        count,
+        limit: filter.limit,
+        skip: filter.skip,
+        sort: filter.sort,
+      },
+    };
   },
 };
 

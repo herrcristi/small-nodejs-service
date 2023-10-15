@@ -77,28 +77,4 @@ describe('Index', function () {
     chai.expect(stubTranslations.callCount).to.equal(1);
     chai.expect(stubProcess.callCount).to.equal(1);
   }).timeout(10000);
-
-  /**
-   * init fail no stack
-   */
-  it('should init fail no stack', async () => {
-    // stub
-    let stubProcess = sinon.stub(process, 'exit').callsFake(() => {
-      console.log(`Process exit called`);
-    });
-
-    let stubTranslations = sinon.stub(TranslationsUtils, 'initLanguage').callsFake(() => {
-      console.log(`TranslationsUtils.initLanguage throws exception`);
-      throw 'Test';
-    });
-
-    // call
-    let res = await Index.init();
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(res).to.equal(undefined);
-    chai.expect(stubTranslations.callCount).to.equal(1);
-    chai.expect(stubProcess.callCount).to.equal(1);
-  }).timeout(10000);
 });

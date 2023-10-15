@@ -14,3 +14,4 @@ require('./common.utils.getProjectedObj.test.js');
 require('./common.utils.obj2patch.test.js');
 require('./common.utils.patch2obj.test.js');
 require('./common.utils.hasCommonFields.test.js');
+require('./common.utils.getLogError.test.js');

@@ -64,25 +64,4 @@ describe('Translations Utils', function () {
     chai.expect(stub.callCount).to.equal(1);
     chai.expect(res).to.equal(null);
   }).timeout(10000);
-
-  /**
-   * fail to initLanguage with error no stack
-   */
-  it('should fail to init Language with error no stack', async () => {
-    let translations = {
-      active: 'Active',
-    };
-
-    let stub = sinon.stub(fs, 'readFileSync').callsFake(() => {
-      throw 'Test error';
-    });
-
-    // call
-    let res = await TranslationsUtils.initLanguage('en', 'filename', _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stub.callCount).to.equal(1);
-    chai.expect(res).to.equal(null);
-  }).timeout(10000);
 });
