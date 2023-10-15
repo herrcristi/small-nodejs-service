@@ -89,7 +89,7 @@ describe('Base Service', function () {
 
     config.events = {
       service: {
-        post: sinon.stub().callsFake((event) => {
+        raiseEventForObject: sinon.stub().callsFake((event) => {
           console.log(`\nEvents called with ${JSON.stringify(event, null, 2)}\n`);
         }),
       },
@@ -122,7 +122,7 @@ describe('Base Service', function () {
         name: 'name',
       },
     });
-    chai.expect(config.events.service.post.callCount).to.equal(1);
+    chai.expect(config.events.service.raiseEventForObject.callCount).to.equal(1);
     chai.expect(config.notifications.service.raiseNotification.callCount).to.equal(1);
   }).timeout(10000);
 

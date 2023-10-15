@@ -1,7 +1,7 @@
 /**
  * Base service
  */
-const Joi = require('joi');
+const _ = require('lodash');
 
 const DbOpsUtils = require('./db-ops.utils.js');
 const RestApiUtils = require('./rest-api.utils');
@@ -24,6 +24,7 @@ const Constants = {
 
   /**
    * severity
+   * TODO remove
    */
   Severity: {
     Informational: 'info',
@@ -35,15 +36,20 @@ const Constants = {
    * notification
    */
   Notification: NotificationsUtils.Constants.Notification,
+
+  /**
+   * default projection
+   */
+  DefaultProjection: { _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, lastModifiedTimestamp: 1 },
 };
 
-const Utils = {
+const Public = {
   /**
    * get combined projection from notifications
    * config: { notifications: { projection } }
    */
   getProjection: (config, _ctx) => {
-    let projection = { _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, lastModifiedTimestamp: 1 };
+    let projection = { ...Constants.DefaultProjection };
 
     if (config.notifications?.projection) {
       for (const field in config.notifications.projection) {
@@ -61,16 +67,25 @@ const Utils = {
    * config: { notifications: { projection } }
    */
   getProjectedResponse: (r, projection, _ctx) => {
-    projection = projection || { id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, lastModifiedTimestamp: 1 };
+    projection = projection || { ...Constants.DefaultProjection };
     const projectedValue = CommonUtils.getProjectedObj(r.value, projection);
     return {
       ...r,
       value: projectedValue,
     };
   },
-};
 
-const Public = {
+  /**
+   * get validation error
+   */
+  getSchemaValidationError: (v, objInfo, _ctx) => {
+    const error = `Failed to validate schema. Error: ${_.get(v, 'error.details[0].message')}`;
+    console.log(
+      `Failed to validate schema: ${JSON.stringify(CommonUtils.protectData(objInfo), null, 2)}. Error: ${error}`
+    );
+    return { status: 400, error: { message: error, error: new Error(error) } };
+  },
+
   /**
    * get all for a requst
    * config: { serviceName, collection, schema, references, fillReferences, events, notifications }
@@ -213,27 +228,12 @@ const Public = {
     // validate
     const v = config.schema.validate(objInfo);
     if (v.error) {
-      const err = v.error.details[0].message;
-      console.log(
-        `${config.serviceName}: Failed to post object: ${JSON.stringify(
-          CommonUtils.protectData(objInfo),
-          null,
-          2
-        )}. Error: ${JSON.stringify(err, null, 2)}`
-      );
-      return { status: 400, error: { message: err, error: new Error(err) } };
+      return Public.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // populate references
     let rf = await ReferencesUtils.populateReferences(config, objInfo, _ctx);
     if (rf.error) {
-      console.log(
-        `${config.serviceName}: Failed to post object: ${JSON.stringify(
-          CommonUtils.protectData(objInfo),
-          null,
-          2
-        )} due to populateReferences. Error: ${JSON.stringify(rf.error, null, 2)}`
-      );
       return rf;
     }
 
@@ -246,42 +246,23 @@ const Public = {
     // post
     const r = await DbOpsUtils.post(config, objInfo, _ctx);
     if (r.error) {
-      console.log(
-        `${config.serviceName}: Failed to post object: ${JSON.stringify(
-          CommonUtils.protectData(objInfo),
-          null,
-          2
-        )}. Error: ${JSON.stringify(r.error, null, 2)}`
-      );
       return r;
     }
 
-    console.log(
-      `${config.serviceName}: Succesfully post new object: ${JSON.stringify(CommonUtils.protectData(r.value), null, 2)}`
-    );
-
     // raise event
     if (config.events?.service) {
-      await config.events.service.post(
-        {
-          severity: Constants.Severity.Informational,
-          messageID: `${config.serviceName}.${Constants.Action.Post}`,
-          target: { id: r.value.id, name: r.value.name, type: r.value.type },
-          args: [JSON.stringify(CommonUtils.protectData(r.value))],
-          user: { id: _ctx.userid, name: _ctx.username },
-        },
-        _ctx
-      );
+      const eventSrv = config.events.service;
+      await eventSrv.raiseEventForObject(config.serviceName, Constants.Action.Post, r.value, r.value, _ctx);
     }
 
     // raise a notification
     if (config.notifications?.service) {
-      let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
-      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Added, [rp.value], _ctx);
+      let rnp = Public.getProjectedResponse(r, config.notifications.projection, _ctx);
+      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Added, [rnp.value], _ctx);
     }
 
     // success
-    return Utils.getProjectedResponse(r, null, _ctx);
+    return Public.getProjectedResponse(r, null, _ctx);
   },
 
   /**
@@ -290,7 +271,7 @@ const Public = {
    * returns: { status, value } or { status, error }
    */
   delete: async (config, objID, _ctx) => {
-    const projection = Utils.getProjection(config, _ctx);
+    const projection = Public.getProjection(config, _ctx);
     const r = await DbOpsUtils.delete(config, objID, projection, _ctx);
     if (r.error) {
       console.log(
@@ -299,32 +280,20 @@ const Public = {
       return r;
     }
 
-    console.log(
-      `${config.serviceName}: Succesfully delete object: ${JSON.stringify(CommonUtils.protectData(r.value), null, 2)}`
-    );
-
     // raise event
     if (config.events?.service) {
-      await config.events.service.post(
-        {
-          severity: Constants.Severity.Informational,
-          messageID: `${config.serviceName}.${Constants.Action.Delete}`,
-          target: { id: r.value.id, name: r.value.name, type: r.value.type },
-          args: [],
-          user: { id: _ctx.userid, name: _ctx.username },
-        },
-        _ctx
-      );
+      const eventSrv = config.events.service;
+      await eventSrv.raiseEventForObject(config.serviceName, Constants.Action.Delete, r.value, r.value, _ctx);
     }
 
     // raise a notification
     if (config.notifications?.service) {
-      let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
+      let rp = Public.getProjectedResponse(r, config.notifications.projection, _ctx);
       let rn = await config.notifications.service.raiseNotification(Constants.Notification.Removed, [rp.value], _ctx);
     }
 
     // use the default projection
-    return Utils.getProjectedResponse(r, null, _ctx);
+    return Public.getProjectedResponse(r, null, _ctx);
   },
 
   /**
@@ -336,27 +305,12 @@ const Public = {
     // validate
     const v = config.schema.validate(objInfo);
     if (v.error) {
-      const err = v.error.details[0].message;
-      console.log(
-        `${config.serviceName}: Failed to put object ${objID}: ${JSON.stringify(
-          CommonUtils.protectData(objInfo),
-          null,
-          2
-        )}. Error: ${JSON.stringify(err, null, 2)}`
-      );
-      return { status: 400, error: { message: err, error: new Error(err) } };
+      return Public.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // populate references
     let rf = await ReferencesUtils.populateReferences(config, objInfo, _ctx);
     if (rf.error) {
-      console.log(
-        `${config.serviceName}: Failed to put object ${objID}: ${JSON.stringify(
-          CommonUtils.protectData(objInfo),
-          null,
-          2
-        )} due to populateReferences. Error: ${JSON.stringify(rf.error, null, 2)}`
-      );
       return rf;
     }
 
@@ -366,47 +320,26 @@ const Public = {
     }
 
     // put
-    const projection = Utils.getProjection(config, _ctx);
+    const projection = Public.getProjection(config, _ctx);
     const r = await DbOpsUtils.put(config, objID, objInfo, projection, _ctx);
     if (r.error) {
-      console.log(
-        `${config.serviceName}: Failed to put object ${objID}: ${JSON.stringify(
-          CommonUtils.protectData(objInfo),
-          null,
-          2
-        )}. Error: ${JSON.stringify(r.error, null, 2)}`
-      );
       return r;
     }
 
-    console.log(
-      `${config.serviceName}: Succesfully put object ${objID}: ${JSON.stringify(
-        CommonUtils.protectData(objInfo)
-      )}. Result object: ${JSON.stringify(CommonUtils.protectData(r.value), null, 2)}`
-    );
-
     // raise event
     if (config.events?.service) {
-      await config.events.service.post(
-        {
-          severity: Constants.Severity.Informational,
-          messageID: `${config.serviceName}.${Constants.Action.Put}`,
-          target: { id: r.value.id, name: r.value.name, type: r.value.type },
-          args: [JSON.stringify(CommonUtils.protectData(objInfo))],
-          user: { id: _ctx.userid, name: _ctx.username },
-        },
-        _ctx
-      );
+      const eventSrv = config.events.service;
+      await eventSrv.raiseEventForObject(config.serviceName, Constants.Action.Put, r.value, objInfo, _ctx);
     }
 
     // raise a notification
     if (config.notifications?.service) {
-      let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
-      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Modified, [rp.value], _ctx);
+      let rnp = Public.getProjectedResponse(r, config.notifications.projection, _ctx);
+      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Modified, [rnp.value], _ctx);
     }
 
     // use the default projection
-    return Utils.getProjectedResponse(r, null, _ctx);
+    return Public.getProjectedResponse(r, null, _ctx);
   },
 
   /**
@@ -419,40 +352,13 @@ const Public = {
     // validate
     const v = config.schema.validate(patchInfo);
     if (v.error) {
-      const err = v.error.details[0].message;
-      console.log(
-        `${config.serviceName}: Failed to patch object ${objID}: ${JSON.stringify(
-          CommonUtils.protectData(patchInfo),
-          null,
-          2
-        )}. Error: ${JSON.stringify(err, null, 2)}`
-      );
-      return { status: 400, error: { message: err, error: new Error(err) } };
+      return Public.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
     // populate references
-    let rf = await ReferencesUtils.populateReferences(config, patchInfo.set, _ctx);
+    let rf = await ReferencesUtils.populateReferences(config, [patchInfo.set, patchInfo.add], _ctx);
     if (rf.error) {
-      console.log(
-        `${config.serviceName}: Failed to patch object ${objID}: ${JSON.stringify(
-          CommonUtils.protectData(patchInfo),
-          null,
-          2
-        )} due to populateReferences for set. Error: ${JSON.stringify(rf.error, null, 2)}`
-      );
       return rf;
-    }
-
-    let rfa = await ReferencesUtils.populateReferences(config, patchInfo.add, _ctx);
-    if (rfa.error) {
-      console.log(
-        `${config.serviceName}: Failed to patch object ${objID}: ${JSON.stringify(
-          CommonUtils.protectData(patchInfo),
-          null,
-          2
-        )} due to populateReferences for add. Error: ${JSON.stringify(rfa.error, null, 2)}`
-      );
-      return rfa;
     }
 
     // translate
@@ -460,47 +366,26 @@ const Public = {
       await config.translate(patchInfo.set, _ctx);
     }
 
-    const projection = Utils.getProjection(config, _ctx);
+    const projection = Public.getProjection(config, _ctx);
     const r = await DbOpsUtils.patch(config, objID, patchInfo, projection, _ctx);
     if (r.error) {
-      console.log(
-        `${config.serviceName}: Failed to patch object ${objID}: ${JSON.stringify(
-          CommonUtils.protectData(patchInfo),
-          null,
-          2
-        )}. Error: ${JSON.stringify(r.error, null, 2)}`
-      );
       return r;
     }
 
-    console.log(
-      `${config.serviceName}: Succesfully patch object ${objID}: ${JSON.stringify(
-        CommonUtils.protectData(patchInfo)
-      )}. Result object: ${JSON.stringify(CommonUtils.protectData(r.value), null, 2)}`
-    );
-
     // raise event
     if (config.events?.service) {
-      await config.events.service.post(
-        {
-          severity: Constants.Severity.Informational,
-          messageID: `${config.serviceName}.${Constants.Action.Patch}`,
-          target: { id: r.value.id, name: r.value.name, type: r.value.type },
-          args: [JSON.stringify(CommonUtils.protectData(patchInfo))],
-          user: { id: _ctx.userid, name: _ctx.username },
-        },
-        _ctx
-      );
+      const eventSrv = config.events.service;
+      await eventSrv.raiseEventForObject(config.serviceName, Constants.Action.Patch, r.value, patchInfo, _ctx);
     }
 
     // raise a notification
     if (config.notifications?.service) {
-      let rp = Utils.getProjectedResponse(r, config.notifications.projection, _ctx);
-      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Modified, [rp.value], _ctx);
+      let rnp = Public.getProjectedResponse(r, config.notifications.projection, _ctx);
+      let rn = await config.notifications.service.raiseNotification(Constants.Notification.Modified, [rnp.value], _ctx);
     }
 
     // use the default projection
-    return Utils.getProjectedResponse(r, null, _ctx);
+    return Public.getProjectedResponse(r, null, _ctx);
   },
 
   /**
@@ -510,7 +395,13 @@ const Public = {
    * returns: { status, value } or { status, error }
    */
   notification: async (config, notification, _ctx) => {
-    console.log(`${config.serviceName}: process notification`);
+    // validate
+    const v = NotificationsUtils.getNotificationSchema().validate(notification);
+    if (v.error) {
+      return Public.getSchemaValidationError(v, notification, _ctx);
+    }
+
+    // notification (process references)
     return await NotificationsUtils.notification(config, notification, _ctx);
   },
 };

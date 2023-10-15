@@ -3,6 +3,7 @@
  */
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 const RestCommsUtils = require('../../core/utils/rest-communications.utils.js');
+const CommonUtils = require('../../core/utils/common.utils.js');
 
 const EventsConstants = require('../events/events.constants.js');
 
@@ -38,6 +39,22 @@ const Public = {
    */
   post: async (objInfo, _ctx) => {
     return await RestCommsUtils.post(EventsConstants.ServiceNameInternal, objInfo, _ctx);
+  },
+
+  /**
+   * raise event for action applied to an object
+   */
+  raiseEventForObject: async (serviceName, action, objTarget, objArg, _ctx) => {
+    return await Public.post(
+      {
+        severity: EventsConstants.Severity.Informational,
+        messageID: `${serviceName}.${action}`,
+        target: { id: objTarget.id, name: objTarget.name, type: objTarget.type },
+        args: [JSON.stringify(CommonUtils.protectData(objArg))],
+        user: { id: _ctx.userid, name: _ctx.username },
+      },
+      _ctx
+    );
   },
 
   /**

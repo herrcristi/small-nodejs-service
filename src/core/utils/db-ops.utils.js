@@ -147,24 +147,26 @@ const Public = {
       const value = await config.collection.insertOne(objInfo);
 
       console.log(
-        `DB Calling: ${config.serviceName} post for ${objInfo.id} returned ${JSON.stringify(
-          value,
+        `DB Calling: ${config.serviceName} post for ${JSON.stringify(
+          CommonUtils.protectData(objInfo),
           null,
           2
-        )}. Finished in ${new Date() - time} ms`
+        )} returned ${JSON.stringify(value, null, 2)}. Finished in ${new Date() - time} ms`
       );
 
       // not succeeded
       if (!value?.insertedId) {
-        return Utils.error(500, `Failed to post ${objInfo.id}`, time, _ctx);
+        throw new Error(`Database insert failed`);
       }
 
       return { status: 201, value: objInfo, time: new Date() - time };
     } catch (e) {
       console.log(
-        `DB Calling Failed: ${config.serviceName} post for ${objInfo.id}. Error ${CommonUtils.getLogError(
-          e
-        )}. Finished in ${new Date() - time} ms`
+        `DB Calling Failed: ${config.serviceName} post for ${JSON.stringify(
+          CommonUtils.protectData(objInfo),
+          null,
+          2
+        )}. Error ${CommonUtils.getLogError(e)}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
     }
@@ -184,7 +186,7 @@ const Public = {
 
       console.log(
         `DB Calling: ${config.serviceName} delete for ${objID} returned ${JSON.stringify(
-          { ...r, value: r.value?.id },
+          { ...r, value: CommonUtils.protectData(r.value) },
           null,
           2
         )}. Finished in ${new Date() - time} ms`
@@ -222,11 +224,11 @@ const Public = {
       );
 
       console.log(
-        `DB Calling: ${config.serviceName} put for ${objID} returned ${JSON.stringify(
-          { ...r, value: r.value?.id },
-          null,
-          2
-        )}. Finished in ${new Date() - time} ms`
+        `DB Calling: ${config.serviceName} put for ${objID} with ${JSON.stringify(
+          CommonUtils.protectData(objInfo)
+        )} returned ${JSON.stringify({ ...r, value: CommonUtils.protectData(r.value) }, null, 2)}. Finished in ${
+          new Date() - time
+        } ms`
       );
 
       // not found

@@ -13,7 +13,7 @@ const TestConstants = require('../../test-constants.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
 describe('Events Rest', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Events' };
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Events', userid: 'userid', username: 'username' };
 
   before(async function () {});
 
@@ -91,6 +91,47 @@ describe('Events Rest', function () {
 
     // call
     let res = await EventsRest.post({}, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res?.value).to.equal('dummy');
+  }).timeout(10000);
+
+  /**
+   * rest raiseEventForObject
+   */
+  it('should raiseEventForObject ', async () => {
+    const obj = {
+      id: 'id',
+      name: 'name',
+      type: 'type',
+    };
+
+    // stub
+    let stub = sinon.stub(RestCommsUtils, 'post').callsFake((serviceinternal, event) => {
+      console.log(`\nRestCommUtils.post called with obj ${JSON.stringify(event, null, 2)}\n`);
+
+      chai.expect(event).to.deep.equal({
+        severity: 'info',
+        messageID: 'service.post',
+        target: {
+          id: 'id',
+          name: 'name',
+          type: 'type',
+        },
+        args: ['{"id":"id","name":"name","type":"type"}'],
+
+        user: {
+          id: _ctx.userid,
+          name: _ctx.username,
+        },
+      });
+
+      return { status: 200, value: 'dummy' };
+    });
+
+    // call
+    let res = await EventsRest.raiseEventForObject('service', 'post', obj, obj, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

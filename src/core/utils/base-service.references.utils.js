@@ -79,28 +79,28 @@ const Public = {
    * config: {fieldName, service, isArray, projection}
    *          fieldName: if empty take data from current object
    */
-  populate: async (config, objs, _ctx) => {
+  populate: async (configRef, objs, _ctx) => {
     // get all ids first
     let targetsMap = {};
     for (const i in objs) {
-      Utils.collectIDs(targetsMap, objs, i, config.fieldName);
+      Utils.collectIDs(targetsMap, objs, i, configRef.fieldName);
     }
 
     let targetsIDs = Object.keys(targetsMap);
     if (!targetsIDs.length) {
-      console.log(`Skipping calling targets to populate info for field '${config.fieldName}'`);
-      return objs;
+      console.log(`Skipping calling targets to populate info for field '${configRef.fieldName}'`);
+      return { status: 200, value: objs };
     }
 
     // get all targets
-    const projection = config.projection || { id: 1, name: 1, type: 1, status: 1 };
-    let rs = await config.service.getAllByIDs(targetsIDs, { ...projection, _id: 0 }, _ctx);
+    const projection = configRef.projection || { id: 1, name: 1, type: 1, status: 1 };
+    let rs = await configRef.service.getAllByIDs(targetsIDs, { ...projection, _id: 0 }, _ctx);
     if (rs.error) {
       return rs;
     }
 
     if (targetsIDs.length != rs.value.length) {
-      console.log(`Not all targets were found for field '${config.fieldName}'`);
+      console.log(`Not all targets were found for field '${configRef.fieldName}'`);
     }
 
     targetsMap = {};
@@ -110,34 +110,39 @@ const Public = {
 
     // update info
     for (let i in objs) {
-      Utils.populate(targetsMap, objs, i, config.fieldName);
+      Utils.populate(targetsMap, objs, i, configRef.fieldName);
     }
 
-    console.log(`Targets expanded for field '${config.fieldName}'`);
+    console.log(`Targets expanded for field '${configRef.fieldName}'`);
 
-    return objs;
+    return { status: 200, value: objs };
   },
 
   /**
    * populate references
    * config: { ..., fillReferences, references: [ {fieldName, service, isArray, projection} ] }
    */
-  populateReferences: async (config, objs, _ctx) => {
-    if (!config.fillReferences) {
+  populateReferences: async (config, obj_objs, _ctx) => {
+    if (!config.fillReferences || !Array.isArray(config.references)) {
       return { status: 200, value: null }; // skipped
     }
 
-    if (!objs) {
+    let objs = Array.isArray(obj_objs) ? obj_objs : [obj_objs];
+    objs = objs.filter((item) => item != null);
+    if (!objs.length) {
       return { status: 200, value: null }; // skipped
-    }
-
-    if (!Array.isArray(objs)) {
-      objs = [objs];
     }
 
     for (const configRef of config.references) {
       let r = await Public.populate(configRef, objs, _ctx);
       if (r.error) {
+        console.log(
+          `${config.serviceName}: Failed to populate references for: ${JSON.stringify(
+            objs.map((item) => CommonUtils.protectData(item)),
+            null,
+            2
+          )}. Error: ${JSON.stringify(r.error, null, 2)}`
+        );
         return r;
       }
     }
