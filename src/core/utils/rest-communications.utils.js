@@ -136,10 +136,11 @@ const Public = {
     const localService = Private.Config.local[serviceName];
     if (localService) {
       // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-      const filter = await RestApiUtils.buildFilterFromReq({ query: queryParams }, null /* schema */, _ctx);
-      if (filter.error) {
-        return { status: 400, error: filter.error };
+      const rf = await RestApiUtils.buildFilterFromReq({ query: queryParams }, null /* schema */, _ctx);
+      if (rf.error) {
+        return rf;
       }
+      const filter = rf.value;
 
       return await localService.getAll(filter, _ctx);
     }

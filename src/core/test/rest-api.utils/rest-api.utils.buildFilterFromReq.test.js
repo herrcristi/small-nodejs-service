@@ -42,15 +42,18 @@ describe('Rest Api Utils', function () {
 
     // check
     chai.expect(res).to.deep.equal({
-      filter: {
-        name: 'John',
-        status: { $ne: 'active' },
+      status: 200,
+      value: {
+        filter: {
+          name: 'John',
+          status: { $ne: 'active' },
+        },
+        projection: {
+          _id: 0,
+        },
+        limit: 0,
+        skip: 0,
       },
-      projection: {
-        _id: 0,
-      },
-      limit: 0,
-      skip: 0,
     });
   }).timeout(10000);
 
@@ -70,15 +73,18 @@ describe('Rest Api Utils', function () {
 
     // check
     chai.expect(res).to.deep.equal({
-      filter: {
-        status: { $exists: false },
-        name: { $exists: true },
+      status: 200,
+      value: {
+        filter: {
+          status: { $exists: false },
+          name: { $exists: true },
+        },
+        projection: {
+          _id: 0,
+        },
+        limit: 0,
+        skip: 0,
       },
-      projection: {
-        _id: 0,
-      },
-      limit: 0,
-      skip: 0,
     });
   }).timeout(10000);
 
@@ -98,17 +104,20 @@ describe('Rest Api Utils', function () {
 
     // check
     chai.expect(res).to.deep.equal({
-      filter: {
-        name: /john/i,
-        status: {
-          $not: /active/i,
+      status: 200,
+      value: {
+        filter: {
+          name: /john/i,
+          status: {
+            $not: /active/i,
+          },
         },
+        projection: {
+          _id: 0,
+        },
+        limit: 0,
+        skip: 0,
       },
-      projection: {
-        _id: 0,
-      },
-      limit: 0,
-      skip: 0,
     });
   }).timeout(10000);
 
@@ -128,15 +137,18 @@ describe('Rest Api Utils', function () {
 
     // check
     chai.expect(res).to.deep.equal({
-      filter: {
-        count: 1,
-        value: { $gt: 10, $lte: 20 },
+      status: 200,
+      value: {
+        filter: {
+          count: 1,
+          value: { $gt: 10, $lte: 20 },
+        },
+        projection: {
+          _id: 0,
+        },
+        limit: 0,
+        skip: 0,
       },
-      projection: {
-        _id: 0,
-      },
-      limit: 0,
-      skip: 0,
     });
   }).timeout(10000);
 
@@ -156,16 +168,19 @@ describe('Rest Api Utils', function () {
 
     // check
     chai.expect(res).to.deep.equal({
-      filter: {
-        'g.id': {
-          $in: ['a1', 2, 3, 4],
+      status: 200,
+      value: {
+        filter: {
+          'g.id': {
+            $in: ['a1', 2, 3, 4],
+          },
         },
+        projection: {
+          _id: 0,
+        },
+        limit: 0,
+        skip: 0,
       },
-      projection: {
-        _id: 0,
-      },
-      limit: 0,
-      skip: 0,
     });
   }).timeout(10000);
 
@@ -185,12 +200,15 @@ describe('Rest Api Utils', function () {
 
     // check
     chai.expect(res).to.deep.equal({
-      filter: {},
-      projection: {
-        _id: 0,
+      status: 200,
+      value: {
+        filter: {},
+        projection: {
+          _id: 0,
+        },
+        limit: 0,
+        skip: 0,
       },
-      limit: 0,
-      skip: 0,
     });
   }).timeout(10000);
 
@@ -210,21 +228,24 @@ describe('Rest Api Utils', function () {
 
     // check
     chai.expect(res).to.deep.equal({
-      filter: {
-        name: 'John',
-      },
-      sort: {
-        name: 1,
-        date: -1,
-      },
-      skip: 1,
-      limit: 1,
-      projection: {
-        _id: 0,
-        id: 1,
-        name: 1,
-        type: 1,
-        status: 1,
+      status: 200,
+      value: {
+        filter: {
+          name: 'John',
+        },
+        sort: {
+          name: 1,
+          date: -1,
+        },
+        skip: 1,
+        limit: 1,
+        projection: {
+          _id: 0,
+          id: 1,
+          name: 1,
+          type: 1,
+          status: 1,
+        },
       },
     });
   }).timeout(10000);
