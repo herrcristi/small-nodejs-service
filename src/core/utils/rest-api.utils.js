@@ -8,7 +8,7 @@ const CommonUtils = require('./common.utils.js');
 const Public = {
   /**
    * validate and build filter from request
-   * return filter: { filter, projection, limit, skip, sort }
+   * return { status, value: { filter, projection, limit, skip, sort } }
    */
   buildFilterFromReq: async (req, schema, _ctx) => {
     try {
@@ -31,7 +31,7 @@ const Public = {
       // if (schema) {
       // }
 
-      return filter;
+      return { status: 200, value: filter };
     } catch (e) {
       console.log(
         `Failed to build mongo filter from ${JSON.stringify(

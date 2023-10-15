@@ -42,11 +42,7 @@ describe('Rest Communications Utils', function () {
           getAll: sinon.stub().callsFake((filter) => {
             return {
               status: 200,
-              value: [
-                {
-                  id: 'id1',
-                },
-              ],
+              value: [{ id: 'id1' }],
             };
           }),
         },
@@ -82,11 +78,7 @@ describe('Rest Communications Utils', function () {
         [serviceName]: {
           getAll: sinon.stub().callsFake((filter) => {
             return {
-              value: [
-                {
-                  id: 'id1',
-                },
-              ],
+              value: [{ id: 'id1' }],
             };
           }),
         },
@@ -94,6 +86,7 @@ describe('Rest Communications Utils', function () {
     };
 
     sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
+      status: 400,
       error: { message: 'Test error message', error: new Error('Test error').toString() },
     });
 

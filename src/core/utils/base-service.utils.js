@@ -94,17 +94,11 @@ const Public = {
    */
   getAllForReq: async (config, req, _ctx) => {
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-    const filter = await RestApiUtils.buildFilterFromReq(req, config.schema, _ctx);
-    if (filter.error) {
-      console.log(
-        `${config.serviceName}: Failed to build mongo filter from ${JSON.stringify(
-          req.quey,
-          CommonUtils.stringifyFilter,
-          2
-        )}. Error: ${JSON.stringify(filter.error, null, 2)}`
-      );
-      return { status: 400, error: filter.error };
+    const rf = await RestApiUtils.buildFilterFromReq(req, config.schema, _ctx);
+    if (rf.error) {
+      return rf;
     }
+    const filter = rf.value;
 
     // get all (and expanded too)
     let r = await Public.getAll(config, filter, _ctx);
