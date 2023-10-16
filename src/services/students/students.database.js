@@ -30,7 +30,7 @@ const Public = {
    */
   collection: async (_ctx) => {
     if (!_ctx.tenantID) {
-      console.log(`No tenant for getting students collection`);
+      console.log(`No tenant for getting students collection. Stack: ${new Error().stack}`);
       return null;
     }
     // students collections are per tenant

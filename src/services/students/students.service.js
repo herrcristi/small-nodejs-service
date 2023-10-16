@@ -5,7 +5,12 @@
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
+const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
+const RestApiUtils = require('../../core/utils/rest-api.utils');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
+const CommonUtils = require('../../core/utils/common.utils');
+const ReferencesUtils = require('../../core/utils/base-service.references.utils.js');
+const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 
 const EventsRest = require('../rest/events.rest.js');
 const UsersRest = require('../rest/users.rest.js');
@@ -49,6 +54,9 @@ const Validators = {
 };
 
 const Private = {
+  Action: BaseServiceUtils.Constants.Action,
+  Notification: NotificationsUtils.Constants.Notification,
+
   /**
    * config
    * returns { serviceName, collection, schema, references, fillReferences, events }
@@ -57,12 +65,15 @@ const Private = {
     const config = {
       serviceName: StudentsConstants.ServiceName,
       collection: await StudentsDatabase.collection(_ctx),
-      translate: Public.translate,
-      schema: Schema.Student,
-      references: [{ fieldName: '', service: UsersRest, isArray: false, projection: { id: 1, name: 1 } }],
-      fillReferences: false,
-      events: { service: EventsRest },
-      notifications: { service: StudentsRest, projection: null /*default*/ },
+      references: [
+        {
+          fieldName: '',
+          service: UsersRest,
+          isArray: false,
+          projection: { id: 1, name: 1 },
+        },
+      ],
+      notifications: { projection: null /*default*/ } /* for sync+async */,
     };
     return config;
   },
@@ -132,31 +143,57 @@ const Public = {
   /**
    * get all for a request
    * req: { query }
-   * returns { status, value: {data, meta} } or { status, error }
+   * returns: { status, value: {data, meta} } or { status, error }
    */
   getAllForReq: async (req, _ctx) => {
-    const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.getAllForReq(config, req, _ctx);
+    // convert query to mongo build filter: { filter, projection, limit, skip, sort }
+    const rf = await RestApiUtils.buildFilterFromReq(req, Schema.Student, _ctx);
+    if (rf.error) {
+      return rf;
+    }
+    const filter = rf.value;
+
+    // get all (and expanded too)
+    let r = await Public.getAll(filter, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // get corresponding count
+    let rCount = await Public.getAllCount(filter, _ctx);
+    if (rCount.error) {
+      return rCount;
+    }
+
+    // success
+    const metaInfo = RestApiUtils.getMetaInfo(filter, rCount.value, _ctx);
+    return {
+      status: metaInfo.status,
+      value: {
+        data: r.value,
+        meta: metaInfo.meta,
+      },
+    };
   },
 
   /**
    * get all
-   * filter: { filter, projection, limit, skip, sort }
+   * filter: { filter?, projection?, limit?, skip?, sort? }
    * returns { status, value } or { status, error }
    */
   getAll: async (filter, _ctx) => {
-    const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.getAll(config, filter, _ctx);
+    const config = await Private.getConfig(_ctx); // { serviceName, collection }
+    return await DbOpsUtils.getAll(config, filter, _ctx);
   },
 
   /**
    * get all count
-   * filter: { filter }
+   * filter: { filter? }
    * returns { status, value } or { status, error }
    */
   getAllCount: async (filter, _ctx) => {
-    const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.getAllCount(config, filter, _ctx);
+    const config = await Private.getConfig(_ctx); // { serviceName, collection }
+    return await DbOpsUtils.getAllCount(config, filter, _ctx);
   },
 
   /**
@@ -164,8 +201,8 @@ const Public = {
    * returns { status, value } or { status, error }
    */
   getAllByIDs: async (ids, projection, _ctx) => {
-    const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.getAllByIDs(config, ids, projection, _ctx);
+    const config = await Private.getConfig(_ctx); // { serviceName, collection }
+    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx);
   },
 
   /**
@@ -173,8 +210,8 @@ const Public = {
    * returns { status, value } or { status, error }
    */
   getOne: async (objID, projection, _ctx) => {
-    const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.getOne(config, objID, projection, _ctx);
+    const config = await Private.getConfig(_ctx); // { serviceName, collection }
+    return await DbOpsUtils.getOne(config, objID, projection, _ctx);
   },
 
   /**
@@ -183,8 +220,40 @@ const Public = {
   post: async (objInfo, _ctx) => {
     objInfo.type = StudentsConstants.Type;
 
+    // validate
+    const v = Validators.Post.validate(objInfo);
+    if (v.error) {
+      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+
+    // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.post({ ...config, schema: Validators.Post, fillReferences: true }, objInfo, _ctx);
+
+    // populate references
+    let rf = await ReferencesUtils.populateReferences({ ...config, fillReferences: true }, objInfo, _ctx);
+    if (rf.error) {
+      return rf;
+    }
+
+    // translate
+    await Public.translate(objInfo, _ctx);
+    objInfo = CommonUtils.patch2obj(objInfo);
+
+    // post
+    const r = await DbOpsUtils.post(config, objInfo, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // raise event for post
+    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Post, r.value, r.value, _ctx);
+
+    // raise a notification for new obj
+    let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
+    let rn = await StudentsRest.raiseNotification(Private.Notification.Added, [rnp.value], _ctx);
+
+    // success
+    return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
   },
 
   postForUsers: async (users, _ctx) => {
@@ -227,34 +296,105 @@ const Public = {
    * delete
    */
   delete: async (objID, _ctx) => {
+    // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.delete(config, objID, _ctx);
+
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+    const r = await DbOpsUtils.delete(config, objID, projection, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // raise event for delete
+    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Delete, r.value, r.value, _ctx);
+
+    // raise a notification for removed obj
+    let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
+    let rn = await StudentsRest.raiseNotification(Private.Notification.Removed, [rnp.value], _ctx);
+
+    // success
+    return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
   },
 
   /**
    * put
    */
   put: async (objID, objInfo, _ctx) => {
+    // validate
+    const v = Validators.Put.validate(objInfo);
+    if (v.error) {
+      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+
+    // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.put(
-      { ...config, schema: Validators.Put, fillReferences: true },
-      objID,
-      objInfo,
-      _ctx
-    );
+
+    // populate references
+    let rf = await ReferencesUtils.populateReferences({ ...config, fillReferences: true }, objInfo, _ctx);
+    if (rf.error) {
+      return rf;
+    }
+
+    // translate
+    await Public.translate(objInfo, _ctx);
+
+    // put
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+    const r = await DbOpsUtils.put(config, objID, objInfo, projection, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // raise event for put
+    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Put, r.value, objInfo, _ctx);
+
+    // raise a notification for modified obj
+    let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
+    let rn = await StudentsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+
+    // success
+    return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
   },
 
   /**
    * patch
    */
   patch: async (objID, patchInfo, _ctx) => {
+    // validate
+    const v = Validators.Patch.validate(patchInfo);
+    if (v.error) {
+      return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
+    }
+
+    // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
-    return await BaseServiceUtils.patch(
-      { ...config, schema: Validators.Patch, fillReferences: true },
-      objID,
-      patchInfo,
-      _ctx
-    );
+
+    // populate references
+    const configRef = { ...config, fillReferences: true };
+    let rf = await ReferencesUtils.populateReferences(configRef, [patchInfo.set, patchInfo.add], _ctx);
+    if (rf.error) {
+      return rf;
+    }
+
+    // translate
+    await Public.translate(patchInfo.set, _ctx);
+
+    // patch
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+    const r = await DbOpsUtils.patch(config, objID, patchInfo, projection, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // raise event for patch
+    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Patch, r.value, patchInfo, _ctx);
+
+    // raise a notification for modified obj
+    let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
+    let rn = await StudentsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+
+    // success
+    return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
   },
 
   /**
@@ -262,12 +402,17 @@ const Public = {
    * notification: { serviceName, added: [ { id, ... } ], removed, modified  }
    */
   notification: async (notification, _ctx) => {
+    // validate
+    const v = NotificationsUtils.getNotificationSchema().validate(notification);
+    if (v.error) {
+      return BaseServiceUtils.getSchemaValidationError(v, notification, _ctx);
+    }
+
     // user notification must be split in mutiple notifications due to school acting as tenant
     const newNotifications = Private.splitNotification(notification, _ctx);
     for (const notif of newNotifications) {
       const nCtx = { ..._ctx, tenantID: notif.schoolID || _ctx.tenantID };
-      let config = await Private.getConfig(nCtx);
-      config = { ...config, fillReferences: true };
+      let config = await Private.getConfig(nCtx); // { serviceName, collection, references, fillReferences }
 
       // if there is user added create the corresponding entry for student
       if (notif.serviceName === UsersRest.Constants?.ServiceName) {
@@ -281,7 +426,9 @@ const Public = {
       // process notification for specific tenant
       let n = { ...notif };
       delete n.schoolID;
-      let r = await BaseServiceUtils.notification(config, n, nCtx);
+
+      // notification (process references)
+      let r = await NotificationsUtils.notification({ ...config, fillReferences: true }, n, _ctx);
       if (r.error) {
         return r;
       }
