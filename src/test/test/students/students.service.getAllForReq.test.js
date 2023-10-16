@@ -118,7 +118,7 @@ describe('Students Service', function () {
     });
 
     // call
-    let res = await StudentsService.getAllForReq({ query: {} }, _ctx);
+    let res = await StudentsService.getAllForReq({ query: {} }, { ..._ctx, tenantID: undefined });
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
