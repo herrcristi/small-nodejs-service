@@ -30,17 +30,16 @@ const Public = {
    */
   collection: async (_ctx) => {
     // events can be per portal or per tenant
-    await Public.createIndexes(_ctx);
-    return (await Public.db(_ctx))?.collection(
-      EventsConstants.ServiceName + (_ctx.tenantID ? `_${_ctx.tenantID}` : '')
-    );
+    let collName = EventsConstants.ServiceName + (_ctx.tenantID ? `_${_ctx.tenantID}` : '');
+
+    await Public.createIndexes(collName, _ctx);
+    return (await Public.db(_ctx))?.collection(collName);
   },
 
   /**
    * index
    */
-  createIndexes: async (_ctx) => {
-    let collName = EventsConstants.ServiceName + (_ctx.tenantID ? `_${_ctx.tenantID}` : '');
+  createIndexes: async (collName, _ctx) => {
     let addIndex = await DBMgr.addIndexes(Private.DB, collName, _ctx);
     if (!addIndex) {
       return;
