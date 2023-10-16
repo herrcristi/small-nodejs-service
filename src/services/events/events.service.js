@@ -57,6 +57,7 @@ const Private = {
       collection: await EventsDatabase.collection(_ctx),
       references: [],
       notifications: {
+        /* for sync+async */
         projection: { id: 1, severity: 1, messageID: 1, name: 1, target: 1, args: 1, user: 1, type: 1 },
       },
     };
