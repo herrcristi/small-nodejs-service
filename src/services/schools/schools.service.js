@@ -57,7 +57,7 @@ const Private = {
       serviceName: SchoolsConstants.ServiceName,
       collection: await SchoolsDatabase.collection(_ctx),
       references: [], // to be populated (like foreign keys)
-      notifications: { projection: null /*default*/ },
+      notifications: { projection: null /*use default, is for sync+async */ },
     };
     return config;
   },
