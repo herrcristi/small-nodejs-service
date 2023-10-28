@@ -220,4 +220,260 @@ describe('Users Rest', function () {
     chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal(true);
   }).timeout(10000);
+
+  /**
+   * filterNotificationByRole for student
+   */
+  it('should do filterNotificationByRole for student', async () => {
+    const notification = _.cloneDeep(TestConstants.UsersNotifications[0]);
+
+    // call
+    let res = UsersRest.filterNotificationByRole(notification, 'student', _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      serviceName: 'users',
+      modified: [
+        {
+          id: 'user1',
+          name: 'Big Ben',
+          type: 'user',
+          status: 'active',
+          schools: [
+            {
+              id: 'school-univ1',
+              roles: ['student'],
+            },
+          ],
+        },
+      ],
+    });
+  }).timeout(10000);
+
+  /**
+   * filterNotificationByRole for teacher
+   */
+  it('should do filterNotificationByRole for teacher', async () => {
+    const notification = _.cloneDeep(TestConstants.UsersNotifications[0]);
+
+    // call
+    let res = UsersRest.filterNotificationByRole(notification, 'teacher', _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      serviceName: 'users',
+      modified: [
+        {
+          id: 'user1',
+          name: 'Big Ben',
+          type: 'user',
+          status: 'active',
+          schools: [
+            {
+              id: 'school-high2',
+              roles: ['teacher'],
+            },
+          ],
+        },
+      ],
+    });
+  }).timeout(10000);
+
+  /**
+   * filterNotificationByRole for admin
+   */
+  it('should do filterNotificationByRole for admin', async () => {
+    const notification = _.cloneDeep(TestConstants.UsersNotifications[0]);
+
+    // call
+    let res = UsersRest.filterNotificationByRole(notification, 'admin', _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      serviceName: 'users',
+      modified: [
+        {
+          id: 'user1',
+          name: 'Big Ben',
+          type: 'user',
+          status: 'active',
+          schools: [
+            {
+              id: 'school-high2',
+              roles: ['admin'],
+            },
+          ],
+        },
+      ],
+    });
+  }).timeout(10000);
+
+  /**
+   * filterNotificationByRole for other
+   */
+  it('should do filterNotificationByRole for other', async () => {
+    const notification = _.cloneDeep(TestConstants.UsersNotifications[0]);
+
+    // call
+    let res = UsersRest.filterNotificationByRole(notification, 'other', _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      serviceName: 'users',
+    });
+  }).timeout(10000);
+
+  /**
+   * filterNotificationByRole no schools
+   */
+  it('should do filterNotificationByRole no schools', async () => {
+    const notification = _.cloneDeep(TestConstants.UsersNotifications[0]);
+    delete notification.modified[0].schools;
+
+    // call
+    let res = UsersRest.filterNotificationByRole(notification, 'student', _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      serviceName: 'users',
+    });
+  }).timeout(10000);
+
+  /**
+   * filterNotificationByRole no roles
+   */
+  it('should do filterNotificationByRole no roles', async () => {
+    const notification = _.cloneDeep(TestConstants.UsersNotifications[0]);
+    delete notification.modified[0].schools[0].roles;
+
+    // call
+    let res = UsersRest.filterNotificationByRole(notification, 'student', _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      serviceName: 'users',
+    });
+  }).timeout(10000);
+
+  /**
+   * convertToTenantNotifications
+   */
+  it('should do convertToTenantNotifications', async () => {
+    const notification = _.cloneDeep(TestConstants.UsersNotifications[0]);
+
+    // call
+    let res = UsersRest.convertToTenantNotifications(notification, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal([
+      {
+        tenantID: 'school-univ1',
+        notification: {
+          serviceName: 'users',
+          modified: [
+            {
+              id: 'user1',
+              name: 'Big Ben',
+              type: 'user',
+              status: 'active',
+              schools: [
+                {
+                  id: 'school-univ1',
+                  roles: ['student'],
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        tenantID: 'school-high2',
+        notification: {
+          serviceName: 'users',
+          modified: [
+            {
+              id: 'user1',
+              name: 'Big Ben',
+              type: 'user',
+              status: 'active',
+              schools: [
+                {
+                  id: 'school-high2',
+                  roles: ['teacher', 'admin'],
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ]);
+  }).timeout(10000);
+
+  /**
+   * convertToTenantNotifications + filterNotificationByRole
+   */
+  it('should do convertToTenantNotifications + filterNotificationByRole', async () => {
+    const notification = _.cloneDeep(TestConstants.UsersNotifications[0]);
+
+    // call
+    let res = UsersRest.convertToTenantNotifications(notification, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    for (const notif of res) {
+      notif.notification = UsersRest.filterNotificationByRole(notif.notification, 'student', _ctx);
+    }
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal([
+      {
+        tenantID: 'school-univ1',
+        notification: {
+          serviceName: 'users',
+          modified: [
+            {
+              id: 'user1',
+              name: 'Big Ben',
+              type: 'user',
+              status: 'active',
+              schools: [
+                {
+                  id: 'school-univ1',
+                  roles: ['student'],
+                },
+              ],
+            },
+          ],
+        },
+      },
+      {
+        tenantID: 'school-high2',
+        notification: {
+          serviceName: 'users',
+        },
+      },
+    ]);
+  }).timeout(10000);
+
+  /**
+   * convertToTenantNotifications no schools
+   */
+  it('should do convertToTenantNotifications no schools', async () => {
+    const notification = _.cloneDeep(TestConstants.UsersNotifications[0]);
+    delete notification.modified[0].schools;
+
+    // call
+    let res = UsersRest.convertToTenantNotifications(notification, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal([]);
+  }).timeout(10000);
 });

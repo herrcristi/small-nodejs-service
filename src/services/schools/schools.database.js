@@ -20,25 +20,19 @@ const Public = {
   },
 
   /**
-   * get db
-   */
-  db: async (_ctx) => {
-    return Private.DB;
-  },
-
-  /**
    * get collection
    */
   collection: async (_ctx) => {
-    await Public.createIndexes(_ctx);
-    return (await Public.db(_ctx))?.collection(SchoolsConstants.ServiceName);
+    let collName = SchoolsConstants.ServiceName;
+
+    await Public.createIndexes(collName, _ctx);
+    return Private.DB?.collection(collName);
   },
 
   /**
    * index
    */
-  createIndexes: async (_ctx) => {
-    let collName = SchoolsConstants.ServiceName;
+  createIndexes: async (collName, _ctx) => {
     let addIndex = await DBMgr.addIndexes(Private.DB, collName, _ctx);
     if (!addIndex) {
       return;
