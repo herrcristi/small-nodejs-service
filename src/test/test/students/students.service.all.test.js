@@ -9,6 +9,7 @@ require('./students.service.getAllCount.test.js');
 require('./students.service.getAllByIDs.test.js');
 require('./students.service.getOne.test.js');
 require('./students.service.post.test.js');
+require('./students.service.postForUsers.test.js');
 require('./students.service.delete.test.js');
 require('./students.service.put.test.js');
 require('./students.service.patch.test.js');

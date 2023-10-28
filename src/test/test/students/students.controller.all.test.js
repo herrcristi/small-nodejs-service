@@ -545,7 +545,7 @@ describe('Students Controller', function () {
    * notification with success
    */
   it('should do notification with success', async () => {
-    const notifications = _.cloneDeep(TestConstants.StudentsNotifications);
+    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
     const notif = notifications[0];
 
     // stub
@@ -574,7 +574,7 @@ describe('Students Controller', function () {
    * notification fail
    */
   it('should notification fail', async () => {
-    const notifications = _.cloneDeep(TestConstants.StudentsNotifications);
+    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
     const notif = notifications[0];
 
     // stub
@@ -600,7 +600,7 @@ describe('Students Controller', function () {
    * notification fail exception
    */
   it('should notification fail exception', async () => {
-    const notifications = _.cloneDeep(TestConstants.StudentsNotifications);
+    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
     const notif = notifications[0];
 
     // stub

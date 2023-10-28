@@ -108,7 +108,6 @@ const Public = {
     const actions = Object.values(NotificationsUtils.Constants.Notification); // ['added', 'modified', 'removed'];
     for (const action of actions) {
       const users = notification[action];
-      newNotification[action] = [];
 
       // user: { id, name, type, status, schools: [{id, roles}] }
       for (const user of users || []) {
@@ -125,6 +124,7 @@ const Public = {
         }
 
         if (schools.length) {
+          newNotification[action] ??= [];
           newNotification[action].push({
             ...user,
             schools,

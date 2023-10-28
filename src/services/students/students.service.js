@@ -213,7 +213,7 @@ const Public = {
       r.value?.forEach((item) => (existingStudentsMap[item.id] = true));
     }
 
-    let newUsersCount = 0;
+    let newUsers = [];
     for (const user of users) {
       if (existingStudentsMap[user.id]) {
         console.log(`Skipping create student ${user.id}`);
@@ -231,10 +231,10 @@ const Public = {
       if (r.error) {
         return r;
       }
-      newUsersCount++;
+      newUsers.push(r.value);
     }
 
-    return { status: 200, value: newUsersCount };
+    return { status: 201, value: newUsers };
   },
 
   /**

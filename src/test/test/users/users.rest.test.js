@@ -234,7 +234,6 @@ describe('Users Rest', function () {
     // check
     chai.expect(res).to.deep.equal({
       serviceName: 'users',
-      added: [],
       modified: [
         {
           id: 'user1',
@@ -249,7 +248,6 @@ describe('Users Rest', function () {
           ],
         },
       ],
-      removed: [],
     });
   }).timeout(10000);
 
@@ -266,7 +264,6 @@ describe('Users Rest', function () {
     // check
     chai.expect(res).to.deep.equal({
       serviceName: 'users',
-      added: [],
       modified: [
         {
           id: 'user1',
@@ -281,7 +278,6 @@ describe('Users Rest', function () {
           ],
         },
       ],
-      removed: [],
     });
   }).timeout(10000);
 
@@ -298,7 +294,6 @@ describe('Users Rest', function () {
     // check
     chai.expect(res).to.deep.equal({
       serviceName: 'users',
-      added: [],
       modified: [
         {
           id: 'user1',
@@ -313,7 +308,6 @@ describe('Users Rest', function () {
           ],
         },
       ],
-      removed: [],
     });
   }).timeout(10000);
 
@@ -330,9 +324,6 @@ describe('Users Rest', function () {
     // check
     chai.expect(res).to.deep.equal({
       serviceName: 'users',
-      added: [],
-      modified: [],
-      removed: [],
     });
   }).timeout(10000);
 
@@ -350,9 +341,6 @@ describe('Users Rest', function () {
     // check
     chai.expect(res).to.deep.equal({
       serviceName: 'users',
-      added: [],
-      modified: [],
-      removed: [],
     });
   }).timeout(10000);
 
@@ -370,9 +358,6 @@ describe('Users Rest', function () {
     // check
     chai.expect(res).to.deep.equal({
       serviceName: 'users',
-      added: [],
-      modified: [],
-      removed: [],
     });
   }).timeout(10000);
 
@@ -452,7 +437,6 @@ describe('Users Rest', function () {
         tenantID: 'school-univ1',
         notification: {
           serviceName: 'users',
-          added: [],
           modified: [
             {
               id: 'user1',
@@ -467,16 +451,12 @@ describe('Users Rest', function () {
               ],
             },
           ],
-          removed: [],
         },
       },
       {
         tenantID: 'school-high2',
         notification: {
           serviceName: 'users',
-          added: [],
-          modified: [],
-          removed: [],
         },
       },
     ]);
