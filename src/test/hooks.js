@@ -33,6 +33,7 @@ exports.mochaHooks = {
       if (!process.env.TEST_DB) {
         sinon.stub(DBMgr, 'connect').callsFake((dbUrl, dbName) => {
           console.log(`Mock db connection to ${dbUrl} ${dbName}`);
+          return { collection: () => null };
         });
       }
 

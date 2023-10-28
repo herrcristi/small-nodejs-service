@@ -19,13 +19,6 @@ const Public = {
   },
 
   /**
-   * get db
-   */
-  db: async (_ctx) => {
-    return Private.DB;
-  },
-
-  /**
    * get collection
    */
   collection: async (_ctx) => {
@@ -34,15 +27,16 @@ const Public = {
       return null;
     }
     // students collections are per tenant
-    await Public.createIndexes(_ctx);
-    return (await Public.db(_ctx)).collection(StudentsConstants.ServiceName + `_${_ctx.tenantID}`);
+    let collName = StudentsConstants.ServiceName + `_${_ctx.tenantID}`;
+
+    await Public.createIndexes(collName, _ctx);
+    return Private.DB?.collection(collName);
   },
 
   /**
    * index
    */
-  createIndexes: async (_ctx) => {
-    let collName = StudentsConstants.ServiceName + `_${_ctx.tenantID}`;
+  createIndexes: async (collName, _ctx) => {
     let addIndex = await DBMgr.addIndexes(Private.DB, collName, _ctx);
     if (!addIndex) {
       return;

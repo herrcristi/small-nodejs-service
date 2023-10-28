@@ -94,6 +94,82 @@ const Public = {
     const config = { serviceName: UsersConstants.ServiceName, subscribers: Private.Subscribers };
     return await NotificationsUtils.raiseNotification(config, notificationType, objs, _ctx);
   },
+
+  /**
+   * user notification is filter only for coresponding school role
+   * notification: { serviceName, added: [ { id, name, type, status, schools: [{id, roles}] } ], removed, modified  }
+   */
+  filterNotificationByRole: (notification, role, _ctx) => {
+    // return a new notification
+    let newNotification = {
+      serviceName: notification.serviceName,
+    };
+
+    const actions = Object.values(NotificationsUtils.Constants.Notification); // ['added', 'modified', 'removed'];
+    for (const action of actions) {
+      const users = notification[action];
+      newNotification[action] = [];
+
+      // user: { id, name, type, status, schools: [{id, roles}] }
+      for (const user of users || []) {
+        let schools = [];
+
+        for (const school of user.schools || []) {
+          const filteredRoles = (school.roles || []).filter((item) => item === role);
+          if (filteredRoles.length) {
+            schools.push({
+              ...school,
+              roles: filteredRoles,
+            });
+          }
+        }
+
+        if (schools.length) {
+          newNotification[action].push({
+            ...user,
+            schools,
+          });
+        }
+      }
+    }
+
+    console.log(`Notification filtered only to ${role} notifications: ${JSON.stringify(newNotification, null, 2)}`);
+    return newNotification;
+  },
+
+  /**
+   * user notification is split by tenant
+   * notification: { serviceName, added: [ { id, name, type, status, schools: [{id, roles}] } ], removed, modified  }
+   */
+  convertToTenantNotifications: (notification, _ctx) => {
+    let tenantNotifications = [];
+
+    const actions = Object.values(NotificationsUtils.Constants.Notification); // ['added', 'modified', 'removed'];
+    for (const action of actions) {
+      const users = notification[action];
+      // user: { id, name, type, status, schools: [{id, roles}] }
+      for (const user of users || []) {
+        for (const school of user.schools || []) {
+          const n = {
+            tenantID: school.id,
+            notification: {
+              serviceName: notification.serviceName,
+              [action]: [
+                {
+                  ...user,
+                  schools: [school],
+                },
+              ],
+            },
+          };
+          tenantNotifications.push(n);
+        }
+      }
+    }
+
+    console.log(`Notifications splitted by tenant: ${JSON.stringify(tenantNotifications, null, 2)}`);
+    return tenantNotifications;
+  },
 };
 
 module.exports = { ...Public, Constants: UsersConstants };

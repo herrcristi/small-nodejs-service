@@ -77,61 +77,6 @@ const Private = {
     };
     return config;
   },
-
-  /**
-   * user notification must be split in mutiple notifications due to school acting as tenant
-   * notification: { serviceName, added: [ { id, ... } ], removed, modified  }
-   */
-  splitNotification: (notification, _ctx) => {
-    let newNotifications = [];
-
-    const actions = ['added', 'modified', 'removed'];
-    let n = {
-      ...notification,
-    };
-    for (const action of actions) {
-      delete n[action];
-    }
-
-    // currently if a role is removed from an org the students entry will still be kept
-
-    if (notification.serviceName === UsersRest.Constants?.ServiceName) {
-      // user: { id, name, type, status, schools: [{id, roles}] }
-
-      for (const action of actions) {
-        const users = notification[action];
-        for (const user of users || []) {
-          let u = { ...user };
-          delete u.schools;
-
-          // on user removed keep current info in the student
-          if (action === 'removed') {
-            continue;
-          }
-
-          for (const school of user.schools || []) {
-            for (const role of school.roles || []) {
-              // only student accepted in this service
-              if (role !== StudentsConstants.Type) {
-                continue;
-              }
-
-              newNotifications.push({
-                ...n,
-                schoolID: school.id,
-                [action]: [{ ...u }],
-              });
-            }
-          }
-        }
-      }
-    } else {
-      newNotifications.push(notification);
-    }
-
-    console.log(`Notification converted only to student notifications: ${JSON.stringify(newNotifications, null, 2)}`);
-    return newNotifications;
-  },
 };
 
 const Public = {
@@ -408,31 +353,43 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, notification, _ctx);
     }
 
-    // user notification must be split in mutiple notifications due to school acting as tenant
-    const newNotifications = Private.splitNotification(notification, _ctx);
-    for (const notif of newNotifications) {
-      const nCtx = { ..._ctx, tenantID: notif.schoolID || _ctx.tenantID };
-      let config = await Private.getConfig(nCtx); // { serviceName, collection, references, fillReferences }
+    let tenantNotifications = [];
+    if (notification.serviceName === UsersRest.Constants?.ServiceName) {
+      // users notification must be filtered by role
+      const studentNotification = UsersRest.filterNotificationByRole(notification, StudentsConstants.Type, _ctx);
+      tenantNotifications = UsersRest.convertToTenantNotifications(studentNotification, _ctx);
 
-      // if there is user added create the corresponding entry for student
-      if (notif.serviceName === UsersRest.Constants?.ServiceName) {
-        const newUsers = (notif.added || []).concat(notif.modified || []);
+      // currently if a role is removed from an org the students entry will still be kept
+      // otherwise create new users
+      for (const tenantNotif of tenantNotifications) {
+        const nCtx = { ..._ctx, tenantID: tenantNotif.tenantID };
+
+        const newUsers = (tenantNotif.notification[Private.Notification.Added] || []).concat(
+          tenantNotif.notification[Private.Notification.Modified] || []
+        );
+
         const rN = await Public.postForUsers(newUsers, nCtx);
         if (rN.error) {
           return rN;
         }
       }
+    } else {
+      // other notification
+      tenantNotifications = [{ tenantID: _ctx.tenantID, notification }];
+    }
 
-      // process notification for specific tenant
-      let n = { ...notif };
-      delete n.schoolID;
+    // process notifications (references) for each tenant
+    for (const tenantNotif of tenantNotifications) {
+      const nCtx = { ..._ctx, tenantID: tenantNotif.tenantID };
+      let config = await Private.getConfig(nCtx); // { serviceName, collection, references, fillReferences }
+      config = { ...config, fillReferences: true };
 
-      // notification (process references)
-      let r = await NotificationsUtils.notification({ ...config, fillReferences: true }, n, _ctx);
+      let r = await NotificationsUtils.notification(config, tenantNotif.notification, nCtx);
       if (r.error) {
         return r;
       }
     }
+
     return { status: 200, value: true };
   },
 
