@@ -1,6 +1,7 @@
 /**
  * Web server
  */
+const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
@@ -13,7 +14,6 @@ const Public = {
   init: async (port, routers /*: [] */, middlewares /* :[] */ = null) => {
     console.log(`Init web server on port ${port}`);
 
-    let express = require('express');
     let app = express();
     let bodyParser = require('body-parser');
 
@@ -39,11 +39,11 @@ const Public = {
     routers.forEach((route) => app.use(route));
 
     // listen
-    app.listen(port);
+    const server = app.listen(port);
 
     console.log('Web server Listening on port ' + port);
 
-    return app;
+    return { app, server };
   },
 };
 

@@ -1,7 +1,7 @@
 /**
  * Web server init
  */
-const CoreWebServer = require('../core/web-server/web-server.js');
+const WebServerUtils = require('../core/web-server/web-server.utils.js');
 
 const WebConstants = require('./web-server.constants.js');
 const ConfigServices = require('../services/config.services.js');
@@ -10,10 +10,10 @@ const Public = {
   /**
    * init
    */
-  init: async () => {
+  init: async (port) => {
     console.log('Init webserver');
 
-    await CoreWebServer.init(WebConstants.Port, ConfigServices.getRoutes());
+    return await WebServerUtils.init(port || WebConstants.Port, ConfigServices.getRoutes());
   },
 };
 
