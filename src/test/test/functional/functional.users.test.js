@@ -166,8 +166,8 @@ describe('Users Functional', function () {
         chai.expect(studentsAfter.map((item) => item.id).includes(testUserID)).to.equal(true);
         for (const student of studentsAfter) {
           if (student.id === testUserID) {
-            chai.expect(student.name).to.equal(testUser.name);
-            chai.expect(student.email).to.equal(testUser.email);
+            chai.expect(student.user.name).to.equal(testUser.name);
+            chai.expect(student.user.email).to.equal(testUser.email);
           }
         }
       } else {
@@ -243,8 +243,8 @@ describe('Users Functional', function () {
         chai.expect(studentsBefore.map((item) => item.id).includes(testUserID)).to.equal(true);
         for (const student of studentsBefore) {
           if (student.id === testUserID) {
-            chai.expect(student.name).to.equal(testUser.name);
-            chai.expect(student.email).to.equal(testUser.email);
+            chai.expect(student.user.name).to.equal(testUser.name);
+            chai.expect(student.user.email).to.equal(testUser.email);
           }
         }
       } else {
@@ -286,8 +286,8 @@ describe('Users Functional', function () {
         chai.expect(studentsBefore.map((item) => item.id).includes(testUserID)).to.equal(true);
         for (const student of studentsBefore) {
           if (student.id === testUserID) {
-            chai.expect(student.name).to.equal(testUser.name);
-            chai.expect(student.email).to.equal(testUser.email);
+            chai.expect(student.user.name).to.equal(testUser.name);
+            chai.expect(student.user.email).to.equal(testUser.email);
           }
         }
       } else {
@@ -364,8 +364,8 @@ describe('Users Functional', function () {
         chai.expect(studentsBefore.map((item) => item.id).includes(testUserID)).to.equal(true);
         for (const student of studentsBefore) {
           if (student.id === testUserID) {
-            chai.expect(student.name).to.equal(testUser.name);
-            chai.expect(student.email).to.equal(testUser.email);
+            chai.expect(student.user.name).to.equal(testUser.name);
+            chai.expect(student.user.email).to.equal(testUser.email);
           }
         }
       } else {
@@ -443,8 +443,8 @@ describe('Users Functional', function () {
         chai.expect(studentsBefore.map((item) => item.id).includes(testUserID)).to.equal(true);
         for (const student of studentsBefore) {
           if (student.id === testUserID) {
-            chai.expect(student.name).to.equal(testUser.name);
-            chai.expect(student.email).to.equal(testUser.email);
+            chai.expect(student.user.name).to.equal(testUser.name);
+            chai.expect(student.user.email).to.equal(testUser.email);
           }
         }
       } else {

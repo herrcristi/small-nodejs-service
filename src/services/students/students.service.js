@@ -56,6 +56,7 @@ const Validators = {
 const Private = {
   Action: BaseServiceUtils.Constants.Action,
   Notification: NotificationsUtils.Constants.Notification,
+  ResProjection: { ...BaseServiceUtils.Constants.DefaultProjection, user: 1 },
 
   /**
    * config
@@ -67,13 +68,13 @@ const Private = {
       collection: await StudentsDatabase.collection(_ctx),
       references: [
         {
-          fieldName: '',
+          fieldName: 'user',
           service: UsersRest,
           isArray: false,
-          projection: { id: 1, name: 1, email: 1 },
+          projection: { id: 1, name: 1, type: 1, status: 1, email: 1 },
         },
       ],
-      notifications: { projection: null /*default*/ } /* for sync+async */,
+      notifications: { projection: Private.ResProjection } /* for sync+async */,
     };
     return config;
   },
@@ -170,6 +171,7 @@ const Public = {
     if (v.error) {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo.user = objInfo.id;
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
@@ -191,14 +193,15 @@ const Public = {
     }
 
     // raise event for post
-    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Post, r.value, r.value, _ctx);
+    const eventObj = { ...r.value, name: r.value.user.name };
+    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Post, eventObj, r.value, _ctx);
 
     // raise a notification for new obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await StudentsRest.raiseNotification(Private.Notification.Added, [rnp.value], _ctx);
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
+    return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
   },
 
   postForUsers: async (users, _ctx) => {
@@ -251,14 +254,15 @@ const Public = {
     }
 
     // raise event for delete
-    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Delete, r.value, r.value, _ctx);
+    const eventObj = { ...r.value, name: r.value.user.name };
+    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Delete, eventObj, r.value, _ctx);
 
     // raise a notification for removed obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await StudentsRest.raiseNotification(Private.Notification.Removed, [rnp.value], _ctx);
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
+    return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
   },
 
   /**
@@ -291,14 +295,15 @@ const Public = {
     }
 
     // raise event for put
-    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Put, r.value, objInfo, _ctx);
+    const eventObj = { ...r.value, name: r.value.user.name };
+    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Put, eventObj, objInfo, _ctx);
 
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await StudentsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
+    return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
   },
 
   /**
@@ -332,14 +337,15 @@ const Public = {
     }
 
     // raise event for patch
-    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Patch, r.value, patchInfo, _ctx);
+    const eventO = { ...r.value, name: r.value.user.name };
+    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Patch, eventO, patchInfo, _ctx);
 
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await StudentsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
+    return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
   },
 
   /**

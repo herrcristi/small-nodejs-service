@@ -105,6 +105,7 @@ const Public = {
           name: 'Big Ben',
           type: 'user',
           status: 'active',
+          email: 'big.ben@testdomain.test',
           schools: [
             {
               id: 'school-univ1',
@@ -201,6 +202,13 @@ const Public = {
   Students: [
     {
       id: 'user1',
+      user: {
+        id: 'user1',
+        name: 'Big Ben',
+        type: 'user',
+        status: 'active',
+        email: 'big.ben@testdomain.test',
+      },
       name: 'Big Ben',
       type: 'student',
       classes: [],
@@ -219,6 +227,13 @@ const Public = {
       modified: [
         {
           id: 'user1',
+          user: {
+            id: 'user1',
+            name: 'Big Ben',
+            type: 'user',
+            status: 'active',
+            email: 'big.ben@testdomain.test',
+          },
           name: 'Big Ben',
           type: 'student',
         },

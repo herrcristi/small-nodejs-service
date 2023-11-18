@@ -67,7 +67,7 @@ describe('Students Service', function () {
       status: 200,
       value: {
         id: testStudent.id,
-        name: testStudent.name,
+        user: testStudent.user,
         type: testStudent.type,
       },
     });

@@ -240,6 +240,7 @@ describe('Users Rest', function () {
           name: 'Big Ben',
           type: 'user',
           status: 'active',
+          email: 'big.ben@testdomain.test',
           schools: [
             {
               id: 'school-univ1',
@@ -270,6 +271,7 @@ describe('Users Rest', function () {
           name: 'Big Ben',
           type: 'user',
           status: 'active',
+          email: 'big.ben@testdomain.test',
           schools: [
             {
               id: 'school-high2',
@@ -300,6 +302,7 @@ describe('Users Rest', function () {
           name: 'Big Ben',
           type: 'user',
           status: 'active',
+          email: 'big.ben@testdomain.test',
           schools: [
             {
               id: 'school-high2',
@@ -383,6 +386,7 @@ describe('Users Rest', function () {
               name: 'Big Ben',
               type: 'user',
               status: 'active',
+              email: 'big.ben@testdomain.test',
               schools: [
                 {
                   id: 'school-univ1',
@@ -403,6 +407,7 @@ describe('Users Rest', function () {
               name: 'Big Ben',
               type: 'user',
               status: 'active',
+              email: 'big.ben@testdomain.test',
               schools: [
                 {
                   id: 'school-high2',
@@ -443,6 +448,7 @@ describe('Users Rest', function () {
               name: 'Big Ben',
               type: 'user',
               status: 'active',
+              email: 'big.ben@testdomain.test',
               schools: [
                 {
                   id: 'school-univ1',

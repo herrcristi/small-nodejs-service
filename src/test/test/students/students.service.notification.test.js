@@ -36,7 +36,10 @@ describe('Students Service', function () {
     const notifications = _.cloneDeep(TestConstants.UsersNotifications);
     const notif = notifications[0];
     const userID = notif.modified[0].id;
+    const userType = notif.modified[0].type;
+    const userStatus = notif.modified[0].status;
     const username = notif.modified[0].name;
+    const userEmail = notif.modified[0].email;
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getAllByIDs').callsFake((config, ids) => {
@@ -51,7 +54,13 @@ describe('Students Service', function () {
 
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake((config, objInfo) => {
       console.log(`\nReferencesUtils.populateReferences called\n`);
-      objInfo.name = username;
+      objInfo.user = {
+        id: userID,
+        name: username,
+        type: userType,
+        status: userStatus,
+        email: userEmail,
+      };
       return { status: 200, value: true };
     });
 
@@ -104,7 +113,10 @@ describe('Students Service', function () {
     const notifications = _.cloneDeep(TestConstants.UsersNotifications);
     const notif = notifications[0];
     const userID = notif.modified[0].id;
+    const userType = notif.modified[0].type;
+    const userStatus = notif.modified[0].status;
     const username = notif.modified[0].name;
+    const userEmail = notif.modified[0].email;
     notif.added = notif.modified;
     delete notif.modified;
 
@@ -121,7 +133,13 @@ describe('Students Service', function () {
 
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake((config, objInfo) => {
       console.log(`\nReferencesUtils.populateReferences called\n`);
-      objInfo.name = username;
+      objInfo.user = {
+        id: userID,
+        name: username,
+        type: userType,
+        status: userStatus,
+        email: userEmail,
+      };
       return { status: 200, value: true };
     });
 

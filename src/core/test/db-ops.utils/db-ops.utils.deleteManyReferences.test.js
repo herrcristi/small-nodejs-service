@@ -77,7 +77,7 @@ describe('DB-Ops Utils', function () {
    */
   it('should deleteManyReferences with success at root level', async () => {
     const ref = {
-      fieldName: '',
+      fieldName: 'user',
       isArray: false,
     };
 
@@ -92,12 +92,12 @@ describe('DB-Ops Utils', function () {
       console.log(`Current op ${JSON.stringify(op, null, 2)}`);
 
       chai.expect(filter).to.deep.equal({
-        id: 'id1',
+        'user.id': 'id1',
       });
       delete op.$set.lastModifiedTimestamp;
       chai.expect(op).to.deep.equal({
         $unset: {
-          name: 1,
+          'user.name': 1,
         },
         $set: {},
       });

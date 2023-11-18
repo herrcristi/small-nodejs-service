@@ -7,29 +7,44 @@ const CommonUtils = require('./common.utils.js');
 
 const Utils = {
   /**
-   * get ids from fieldName
+   * convert fieldName to object
+   * there are 4 situations:
+   *    string, object.id,                    -> object.id
+   *    array of strings, array of object.id  -> [ object.id, ... ]
+   *
    */
-  collectIDs: (targetsMap, objs, i, fieldName) => {
-    let obj = objs[i];
-    if (obj && fieldName) {
-      obj = obj[fieldName];
-    }
-    if (!obj) {
+  convertToObject: (obj, fieldName) => {
+    const field = obj[fieldName];
+    if (!field) {
       return;
     }
 
-    // there are 4 situations: string, object.id, array of strings, array of object.id
-    if (Array.isArray(obj)) {
-      for (const i in obj) {
-        // recursive call
-        Utils.collectIDs(targetsMap, obj, i, '');
+    if (Array.isArray(field)) {
+      for (const i in field) {
+        if (typeof field[i] === 'string') {
+          // assume string is the id
+          field[i] = { id: field[i] };
+        }
       }
-    } else if (typeof obj === 'string') {
+    } else if (typeof field === 'string') {
       // assume string is the id
-      targetsMap[obj] = 1;
-    } else if (typeof obj === 'object') {
-      if (obj.id) {
-        targetsMap[obj.id] = 1;
+      obj[fieldName] = { id: field };
+    }
+  },
+
+  /**
+   * get ids from fieldName
+   */
+  collectIDs: (targetsMap, obj, fieldName) => {
+    const field = obj[fieldName];
+    if (!field) {
+      return;
+    }
+
+    const vals = Array.isArray(field) ? field : [field];
+    for (const o of vals) {
+      if (o?.id) {
+        targetsMap[o.id] = 1;
       }
     }
   },
@@ -37,36 +52,18 @@ const Utils = {
   /**
    * populate
    */
-  populate: (targetsMap, objs, i, fieldName) => {
-    let obj = objs[i];
-    if (obj && fieldName) {
-      obj = obj[fieldName];
-    }
-    if (!obj) {
+  populate: (targetsMap, obj, fieldName) => {
+    const field = obj[fieldName];
+    if (!field) {
       return;
     }
 
-    // there are 4 situations: string, object.id, array of strings, array of object.id
-    if (Array.isArray(obj)) {
-      for (const i in obj) {
-        // recursive call
-        Utils.populate(targetsMap, obj, i, '');
-      }
-    } else if (typeof obj === 'string') {
-      const details = targetsMap[obj];
-      if (details) {
-        if (fieldName) {
-          objs[i][fieldName] = details;
-        } else {
-          // must set in parent
-          objs[i] = details;
-        }
-      }
-    } else if (typeof obj === 'object') {
-      if (obj.id) {
-        const details = targetsMap[obj.id];
+    const vals = Array.isArray(field) ? field : [field];
+    for (const o of vals) {
+      if (o?.id) {
+        const details = targetsMap[o.id];
         if (details) {
-          Object.assign(obj, details);
+          Object.assign(o, details);
         }
       }
     }
@@ -77,13 +74,17 @@ const Public = {
   /**
    * populate the field by getting the detail info via rest
    * config: {fieldName, service, isArray, projection}
-   *          fieldName: if empty take data from current object
    */
   populate: async (configRef, objs, _ctx) => {
+    // convert to object first
+    for (const i in objs) {
+      Utils.convertToObject(objs[i], configRef.fieldName);
+    }
+
     // get all ids first
     let targetsMap = {};
     for (const i in objs) {
-      Utils.collectIDs(targetsMap, objs, i, configRef.fieldName);
+      Utils.collectIDs(targetsMap, objs[i], configRef.fieldName);
     }
 
     let targetsIDs = Object.keys(targetsMap);
@@ -110,7 +111,7 @@ const Public = {
 
     // update info
     for (let i in objs) {
-      Utils.populate(targetsMap, objs, i, configRef.fieldName);
+      Utils.populate(targetsMap, objs[i], configRef.fieldName);
     }
 
     console.log(`Targets expanded for field '${configRef.fieldName}'`);
