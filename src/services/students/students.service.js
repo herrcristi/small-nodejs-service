@@ -70,7 +70,7 @@ const Private = {
           fieldName: '',
           service: UsersRest,
           isArray: false,
-          projection: { id: 1, name: 1 },
+          projection: { id: 1, name: 1, email: 1 },
         },
       ],
       notifications: { projection: null /*default*/ } /* for sync+async */,
@@ -360,6 +360,10 @@ const Public = {
       tenantNotifications = UsersRest.convertToTenantNotifications(studentNotification, _ctx);
 
       // currently if a role is removed from an org the students entry will still be kept
+      tenantNotifications = tenantNotifications.filter(
+        (item) => item.notification[Private.Notification.Removed] === undefined
+      );
+
       // otherwise create new users
       for (const tenantNotif of tenantNotifications) {
         const nCtx = { ..._ctx, tenantID: tenantNotif.tenantID };
