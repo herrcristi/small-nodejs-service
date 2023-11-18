@@ -25,7 +25,7 @@ describe('Students Service', function () {
       ...testStudent,
     };
     delete postReq.type;
-    delete postReq.name;
+    delete postReq.user;
     delete postReq._lang_en;
   });
 

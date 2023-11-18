@@ -40,7 +40,7 @@ describe('Students Service', function () {
     const postReq = {
       ...testStudent,
     };
-    delete postReq.name;
+    delete postReq.user;
     delete postReq.type;
     delete postReq._lang_en;
 
@@ -56,7 +56,7 @@ describe('Students Service', function () {
     });
 
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake((config, objInfo) => {
-      objInfo.name = testStudent.name;
+      objInfo.user = testStudent.user;
       return { status: 200, value: true };
     });
 
@@ -91,7 +91,7 @@ describe('Students Service', function () {
       value: [
         {
           id: testStudent.id,
-          name: testStudent.name,
+          user: testStudent.user,
           type: testStudent.type,
         },
       ],
@@ -109,7 +109,7 @@ describe('Students Service', function () {
     const postReq = {
       ...testStudent,
     };
-    delete postReq.name;
+    delete postReq.user;
     delete postReq.type;
     delete postReq._lang_en;
 
@@ -156,7 +156,7 @@ describe('Students Service', function () {
     const postReq = {
       ...testStudent,
     };
-    delete postReq.name;
+    delete postReq.user;
     delete postReq.type;
     delete postReq._lang_en;
 
@@ -194,7 +194,7 @@ describe('Students Service', function () {
     const postReq = {
       ...testStudent,
     };
-    delete postReq.name;
+    delete postReq.user;
     delete postReq.type;
     delete postReq._lang_en;
 
@@ -232,7 +232,7 @@ describe('Students Service', function () {
     const postReq = {
       ...testStudent,
     };
-    delete postReq.name;
+    delete postReq.user;
     delete postReq.type;
     delete postReq._lang_en;
 
@@ -248,7 +248,7 @@ describe('Students Service', function () {
     });
 
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake((config, objInfo) => {
-      objInfo.name = testStudent.name;
+      objInfo.user = testStudent.user;
       return { status: 200, value: true };
     });
 

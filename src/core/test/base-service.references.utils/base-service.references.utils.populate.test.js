@@ -282,7 +282,11 @@ describe('Base Service', function () {
         {
           id: 'id3',
           name: 'name3',
-          target: ['targetID3'],
+          target: [
+            {
+              id: 'targetID3',
+            },
+          ],
         },
         {
           id: 'id4',

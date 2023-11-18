@@ -13,6 +13,7 @@ const UsersDatabase = require('../../../services/users/users.database.js');
 const StudentsDatabase = require('../../../services/students/students.database.js');
 const EventsDatabase = require('../../../services/events/events.database.js');
 
+const UsersRest = require('../../../services/rest/users.rest.js');
 const UsersConstants = require('../../../services/users/users.constants.js');
 const TestsUtils = require('../../tests.utils.js');
 
@@ -166,8 +167,8 @@ describe('Users Functional', function () {
         chai.expect(studentsAfter.map((item) => item.id).includes(testUserID)).to.equal(true);
         for (const student of studentsAfter) {
           if (student.id === testUserID) {
-            chai.expect(student.name).to.equal(testUser.name);
-            chai.expect(student.email).to.equal(testUser.email);
+            chai.expect(student.user.name).to.equal(testUser.name);
+            chai.expect(student.user.email).to.equal(testUser.email);
           }
         }
       } else {
@@ -243,8 +244,8 @@ describe('Users Functional', function () {
         chai.expect(studentsBefore.map((item) => item.id).includes(testUserID)).to.equal(true);
         for (const student of studentsBefore) {
           if (student.id === testUserID) {
-            chai.expect(student.name).to.equal(testUser.name);
-            chai.expect(student.email).to.equal(testUser.email);
+            chai.expect(student.user.name).to.equal(testUser.name);
+            chai.expect(student.user.email).to.equal(testUser.email);
           }
         }
       } else {
@@ -286,8 +287,9 @@ describe('Users Functional', function () {
         chai.expect(studentsBefore.map((item) => item.id).includes(testUserID)).to.equal(true);
         for (const student of studentsBefore) {
           if (student.id === testUserID) {
-            chai.expect(student.name).to.equal(testUser.name);
-            chai.expect(student.email).to.equal(testUser.email);
+            chai.expect(student.user.name).to.equal(testUser.name);
+            chai.expect(student.user.email).to.equal(testUser.email);
+            chai.expect(student.user.status).to.equal(UsersRest.Constants.Status.Disabled);
           }
         }
       } else {
@@ -364,8 +366,8 @@ describe('Users Functional', function () {
         chai.expect(studentsBefore.map((item) => item.id).includes(testUserID)).to.equal(true);
         for (const student of studentsBefore) {
           if (student.id === testUserID) {
-            chai.expect(student.name).to.equal(testUser.name);
-            chai.expect(student.email).to.equal(testUser.email);
+            chai.expect(student.user.name).to.equal(testUser.name);
+            chai.expect(student.user.email).to.equal(testUser.email);
           }
         }
       } else {
@@ -443,8 +445,8 @@ describe('Users Functional', function () {
         chai.expect(studentsBefore.map((item) => item.id).includes(testUserID)).to.equal(true);
         for (const student of studentsBefore) {
           if (student.id === testUserID) {
-            chai.expect(student.name).to.equal(testUser.name);
-            chai.expect(student.email).to.equal(testUser.email);
+            chai.expect(student.user.name).to.equal(testUser.name);
+            chai.expect(student.user.email).to.equal(testUser.email);
           }
         }
       } else {

@@ -42,7 +42,7 @@ describe('Students Service', function () {
       },
     };
     delete patchReq.set.id;
-    delete patchReq.set.name;
+    delete patchReq.set.user;
     delete patchReq.set.type;
     delete patchReq.set._lang_en;
 
@@ -80,7 +80,7 @@ describe('Students Service', function () {
       status: 200,
       value: {
         id: testStudent.id,
-        name: testStudent.name,
+        user: testStudent.user,
         type: testStudent.type,
       },
     });
@@ -121,7 +121,7 @@ describe('Students Service', function () {
       },
     };
     delete patchReq.set.id;
-    delete patchReq.set.name;
+    delete patchReq.set.user;
     delete patchReq.set.type;
     delete patchReq.set._lang_en;
 
@@ -158,7 +158,7 @@ describe('Students Service', function () {
       },
     };
     delete patchReq.set.id;
-    delete patchReq.set.name;
+    delete patchReq.set.user;
     delete patchReq.set.type;
     delete patchReq.set._lang_en;
 

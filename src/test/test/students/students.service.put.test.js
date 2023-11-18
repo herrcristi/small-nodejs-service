@@ -40,13 +40,13 @@ describe('Students Service', function () {
       ...testStudent,
     };
     delete putReq.id;
-    delete putReq.name;
+    delete putReq.user;
     delete putReq.type;
     delete putReq._lang_en;
 
     // stub
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake((config, objInfo) => {
-      objInfo.name = testStudent.name;
+      objInfo.user = testStudent.user;
       return { status: 200, value: true };
     });
 
@@ -79,7 +79,7 @@ describe('Students Service', function () {
       status: 200,
       value: {
         id: testStudent.id,
-        name: testStudent.name,
+        user: testStudent.user,
         type: testStudent.type,
       },
     });
@@ -116,7 +116,7 @@ describe('Students Service', function () {
       ...testStudent,
     };
     delete putReq.id;
-    delete putReq.name;
+    delete putReq.user;
     delete putReq.type;
     delete putReq._lang_en;
 
@@ -151,7 +151,7 @@ describe('Students Service', function () {
       ...testStudent,
     };
     delete putReq.id;
-    delete putReq.name;
+    delete putReq.user;
     delete putReq.type;
     delete putReq._lang_en;
 

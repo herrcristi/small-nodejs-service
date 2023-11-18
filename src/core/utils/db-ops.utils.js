@@ -332,12 +332,12 @@ const Public = {
     const time = new Date();
 
     try {
-      const filterField = ref.fieldName ? `${ref.fieldName}.id` : `id`;
+      const filterField = `${ref.fieldName}.id`;
       // if array set fieldName.$.field = objInfo.field
       const fieldName = ref.isArray ? `${ref.fieldName}.$` : ref.fieldName;
       let setObj = {};
       for (const key in objInfo) {
-        const setKey = fieldName ? `${fieldName}.${key}` : key;
+        const setKey = `${fieldName}.${key}`;
         setObj[setKey] = objInfo[key];
       }
 
@@ -382,13 +382,13 @@ const Public = {
     const time = new Date();
 
     try {
-      const filterField = ref.fieldName ? `${ref.fieldName}.id` : `id`;
+      const filterField = `${ref.fieldName}.id`;
       const fieldName = ref.fieldName;
 
       let setObj = {};
       let setProps = {};
       for (const key in objInfo) {
-        const setKey = fieldName ? `${fieldName}.${key}` : key;
+        const setKey = `${fieldName}.${key}`;
         if (key !== 'id') {
           setObj[setKey] = objInfo[key];
           setProps[setKey] = 1;

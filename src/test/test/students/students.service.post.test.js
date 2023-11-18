@@ -39,18 +39,18 @@ describe('Students Service', function () {
     const postReq = {
       ...testStudent,
     };
-    delete postReq.name;
+    delete postReq.user;
     delete postReq.type;
     delete postReq._lang_en;
 
     // stub
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake((config, objInfo) => {
-      objInfo.name = testStudent.name;
+      objInfo.user = testStudent.user;
       return { status: 200, value: true };
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`DbOpsUtils.post called with ${JSON.stringify(postObj, null, 2)}`);
       return {
         status: 201,
         value: { ...postObj, id: testStudent.id },
@@ -78,7 +78,7 @@ describe('Students Service', function () {
       status: 201,
       value: {
         id: testStudent.id,
-        name: testStudent.name,
+        user: testStudent.user,
         type: testStudent.type,
       },
     });
@@ -101,7 +101,7 @@ describe('Students Service', function () {
 
     // check
     chai.expect(res.status).to.equal(400);
-    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "name" is not allowed');
+    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "user" is not allowed');
   }).timeout(10000);
 
   /**
@@ -114,7 +114,7 @@ describe('Students Service', function () {
     const postReq = {
       ...testStudent,
     };
-    delete postReq.name;
+    delete postReq.user;
     delete postReq.type;
     delete postReq._lang_en;
 
@@ -148,7 +148,7 @@ describe('Students Service', function () {
     const postReq = {
       ...testStudent,
     };
-    delete postReq.name;
+    delete postReq.user;
     delete postReq.type;
     delete postReq._lang_en;
 
