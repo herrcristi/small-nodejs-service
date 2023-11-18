@@ -365,12 +365,7 @@ const Public = {
       const studentNotification = UsersRest.filterNotificationByRole(notification, StudentsConstants.Type, _ctx);
       tenantNotifications = UsersRest.convertToTenantNotifications(studentNotification, _ctx);
 
-      // currently if a role is removed from an org the students entry will still be kept
-      tenantNotifications = tenantNotifications.filter(
-        (item) => item.notification[Private.Notification.Removed] === undefined
-      );
-
-      // otherwise create new users
+      // create new users
       for (const tenantNotif of tenantNotifications) {
         const nCtx = { ..._ctx, tenantID: tenantNotif.tenantID };
 
@@ -381,6 +376,19 @@ const Public = {
         const rN = await Public.postForUsers(newUsers, nCtx);
         if (rN.error) {
           return rN;
+        }
+      }
+
+      // currently if a role is removed from an org the students entry will still be kept
+      // convert to modified changes with status disabled
+      for (const tenantNotif of tenantNotifications) {
+        const n = tenantNotif.notification;
+        if (n[Private.Notification.Removed]) {
+          n[Private.Notification.Modified] = n[Private.Notification.Removed];
+          delete n[Private.Notification.Removed];
+          for (const user of n[Private.Notification.Modified]) {
+            user.status = UsersRest.Constants.Status.Disabled;
+          }
         }
       }
     } else {

@@ -13,6 +13,7 @@ const UsersDatabase = require('../../../services/users/users.database.js');
 const StudentsDatabase = require('../../../services/students/students.database.js');
 const EventsDatabase = require('../../../services/events/events.database.js');
 
+const UsersRest = require('../../../services/rest/users.rest.js');
 const UsersConstants = require('../../../services/users/users.constants.js');
 const TestsUtils = require('../../tests.utils.js');
 
@@ -288,6 +289,7 @@ describe('Users Functional', function () {
           if (student.id === testUserID) {
             chai.expect(student.user.name).to.equal(testUser.name);
             chai.expect(student.user.email).to.equal(testUser.email);
+            chai.expect(student.user.status).to.equal(UsersRest.Constants.Status.Disabled);
           }
         }
       } else {
