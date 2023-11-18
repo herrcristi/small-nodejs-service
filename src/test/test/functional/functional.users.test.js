@@ -305,147 +305,158 @@ describe('Users Functional', function () {
     chai.expect(res.body.message).to.include('Not found');
   }).timeout(10000);
 
-  // /**
-  //  * put with success
-  //  */
-  // it('should put with success', async () => {
-  //   const testSchools = _.cloneDeep(TestConstants.Schools);
-  //   const testSchool = _.cloneDeep(testSchools[0]);
-  //   const testSchoolID = testSchool.id;
+  /**
+   * put with success
+   */
+  it('should put with success', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = _.cloneDeep(testUsers[0]);
+    const testUserID = testUser.id;
 
-  //   testSchool.name = 'new name';
-  //   delete testSchool.id;
-  //   delete testSchool.type;
-  //   delete testSchool._lang_en;
+    testUser.name = 'new name';
+    delete testUser.id;
+    delete testUser.type;
+    delete testUser._lang_en;
 
-  //   // events before
-  //   let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
-  //   console.log(`\nEvents count before: ${eventsCountBefore}\n`);
+    const testStudentSchoolsIDs = testUser.schools
+      .filter((item) => item.roles.includes('student'))
+      .map((item) => item.id);
 
-  //   // users before
-  //   let usersBefore = await (await UsersDatabase.collection(_ctx)).find({ 'schools.id': testSchoolID }).toArray();
-  //   console.log(`\nUsers before: ${JSON.stringify(usersBefore, null, 2)}\n`);
-  //   chai.expect(usersBefore.length).to.equal(TestConstants.Users.length);
-  //   for (const user of usersBefore) {
-  //     for (const school of user.schools) {
-  //       if (school.id === testSchool.id) {
-  //         chai.expect(school.name).to.not.exist;
-  //         chai.expect(school.type).to.not.exist;
-  //         chai.expect(school.status).to.not.exist;
-  //       }
-  //     }
-  //   }
+    // events before
+    let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
-  //   // call
-  //   let res = await chai
-  //     .request(TestConstants.WebServer)
-  //     .put(`${SchoolsConstants.ApiPath}/${testSchoolID}`)
-  //     .set('x-user-id', 'testid')
-  //     .set('x-user-name', 'testname')
-  //     .send({ ...testSchool });
-  //   console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+    // students before (in each school)
+    for (const school of testUser.schools) {
+      let studentsBefore = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
+        .find({})
+        .toArray();
+      console.log(`\nStudents for school ${school.id} before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
+      chai.expect(studentsBefore.length).to.equal(0);
+    }
 
-  //   // check
-  //   chai.expect(res.status).to.equal(200);
-  //   chai.expect(res.body.id).to.equal(testSchoolID);
-  //   chai.expect(res.body.name).to.equal(testSchool.name);
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${UsersConstants.ApiPath}/${testUserID}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .send({ ...testUser });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
-  //   // events after
-  //   let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
-  //   console.log(`\nEvents count after: ${eventsCountAfter}\n`);
-  //   chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+    chai.expect(res.status).to.equal(200);
 
-  //   // users after
-  //   let usersAfter = await (await UsersDatabase.collection(_ctx)).find({ 'schools.id': testSchoolID }).toArray();
-  //   console.log(`\nUsers after: ${JSON.stringify(usersAfter, null, 2)}\n`);
-  //   chai.expect(usersAfter.length).to.equal(TestConstants.Users.length);
-  //   for (const user of usersAfter) {
-  //     for (const school of user.schools) {
-  //       if (school.id === testSchool.id) {
-  //         chai.expect(school.name).to.equal(testSchool.name);
-  //         chai.expect(school.type).to.equal(testSchool.type);
-  //         chai.expect(school.status).to.equal(testSchool.status);
-  //       }
-  //     }
-  //   }
+    // events after
+    let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
-  //   // do a get
-  //   res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}/${testSchoolID}`);
-  //   console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+    // check students after
+    for (const school of testUser.schools) {
+      let studentsBefore = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
+        .find({})
+        .toArray();
+      console.log(`\nStudents for school ${school.id} after: ${JSON.stringify(studentsBefore, null, 2)}\n`);
 
-  //   chai.expect(res.body.id).to.equal(testSchoolID);
-  //   chai.expect(res.body.name).to.equal(testSchool.name);
-  // }).timeout(10000);
+      if (testStudentSchoolsIDs.includes(school.id)) {
+        chai.expect(studentsBefore.length).to.equal(1);
 
-  // /**
-  //  * patch with success
-  //  */
-  // it('should patch with success', async () => {
-  //   const testSchools = _.cloneDeep(TestConstants.Schools);
-  //   const testSchool = testSchools[0];
-  //   const testSchoolID = testSchool.id;
+        chai.expect(studentsBefore.map((item) => item.id).includes(testUserID)).to.equal(true);
+        for (const student of studentsBefore) {
+          if (student.id === testUserID) {
+            chai.expect(student.name).to.equal(testUser.name);
+            chai.expect(student.email).to.equal(testUser.email);
+          }
+        }
+      } else {
+        chai.expect(studentsBefore.length).to.equal(0);
+      }
+    }
 
-  //   testSchool.name = 'new name';
-  //   delete testSchool.id;
-  //   delete testSchool.type;
-  //   delete testSchool._lang_en;
+    // do a get
+    res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUserID}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
-  //   // events before
-  //   let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
-  //   console.log(`\nEvents count before: ${eventsCountBefore}\n`);
+    chai.expect(res.body.id).to.equal(testUserID);
+    chai.expect(res.body.name).to.equal(testUser.name);
+  }).timeout(10000);
 
-  //   // users before
-  //   let usersBefore = await (await UsersDatabase.collection(_ctx)).find({ 'schools.id': testSchoolID }).toArray();
-  //   console.log(`\nUsers before: ${JSON.stringify(usersBefore, null, 2)}\n`);
-  //   chai.expect(usersBefore.length).to.equal(TestConstants.Users.length);
-  //   for (const user of usersBefore) {
-  //     for (const school of user.schools) {
-  //       if (school.id === testSchool.id) {
-  //         chai.expect(school.name).to.not.exist;
-  //         chai.expect(school.type).to.not.exist;
-  //         chai.expect(school.status).to.not.exist;
-  //       }
-  //     }
-  //   }
+  /**
+   * patch with success
+   */
+  it('should patch with success', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = _.cloneDeep(testUsers[0]);
+    const testUserID = testUser.id;
 
-  //   // call
-  //   let res = await chai
-  //     .request(TestConstants.WebServer)
-  //     .patch(`${SchoolsConstants.ApiPath}/${testSchoolID}`)
-  //     .set('x-user-id', 'testid')
-  //     .set('x-user-name', 'testname')
-  //     .send({ set: { ...testSchool } });
-  //   console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+    testUser.name = 'new name';
+    delete testUser.id;
+    delete testUser.type;
+    delete testUser._lang_en;
 
-  //   // check
-  //   chai.expect(res.status).to.equal(200);
-  //   chai.expect(res.body.id).to.equal(testSchoolID);
-  //   chai.expect(res.body.name).to.equal(testSchool.name);
+    const testStudentSchoolsIDs = testUser.schools
+      .filter((item) => item.roles.includes('student'))
+      .map((item) => item.id);
 
-  //   // events after
-  //   let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
-  //   console.log(`\nEvents count after: ${eventsCountAfter}\n`);
-  //   chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+    // events before
+    let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
-  //   // users after
-  //   let usersAfter = await (await UsersDatabase.collection(_ctx)).find({ 'schools.id': testSchoolID }).toArray();
-  //   console.log(`\nUsers after: ${JSON.stringify(usersAfter, null, 2)}\n`);
-  //   chai.expect(usersAfter.length).to.equal(TestConstants.Users.length);
-  //   for (const user of usersAfter) {
-  //     for (const school of user.schools) {
-  //       if (school.id === testSchool.id) {
-  //         chai.expect(school.name).to.equal(testSchool.name);
-  //         chai.expect(school.type).to.equal(testSchool.type);
-  //         chai.expect(school.status).to.equal(testSchool.status);
-  //       }
-  //     }
-  //   }
+    // students before (in each school)
+    for (const school of testUser.schools) {
+      let studentsBefore = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
+        .find({})
+        .toArray();
+      console.log(`\nStudents for school ${school.id} before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
+      chai.expect(studentsBefore.length).to.equal(0);
+    }
 
-  //   // do a get
-  //   res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}/${testSchoolID}`);
-  //   console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .patch(`${UsersConstants.ApiPath}/${testUserID}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .send({ set: { ...testUser } });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
-  //   chai.expect(res.body.id).to.equal(testSchoolID);
-  //   chai.expect(res.body.name).to.equal(testSchool.name);
-  // }).timeout(10000);
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body.id).to.equal(testUserID);
+    chai.expect(res.body.name).to.equal(testUser.name);
+
+    // events after
+    let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // check students after
+    for (const school of testUser.schools) {
+      let studentsBefore = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
+        .find({})
+        .toArray();
+      console.log(`\nStudents for school ${school.id} after: ${JSON.stringify(studentsBefore, null, 2)}\n`);
+
+      if (testStudentSchoolsIDs.includes(school.id)) {
+        chai.expect(studentsBefore.length).to.equal(1);
+
+        chai.expect(studentsBefore.map((item) => item.id).includes(testUserID)).to.equal(true);
+        for (const student of studentsBefore) {
+          if (student.id === testUserID) {
+            chai.expect(student.name).to.equal(testUser.name);
+            chai.expect(student.email).to.equal(testUser.email);
+          }
+        }
+      } else {
+        chai.expect(studentsBefore.length).to.equal(0);
+      }
+    }
+
+    // do a get
+    res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUserID}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    chai.expect(res.body.id).to.equal(testUserID);
+    chai.expect(res.body.name).to.equal(testUser.name);
+  }).timeout(10000);
 });
