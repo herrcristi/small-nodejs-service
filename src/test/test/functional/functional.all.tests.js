@@ -6,4 +6,4 @@
 
 require('./functional.schools.test.js');
 
-require('./functional.schools.notifications.test.js');
+require('./functional.users.test.js');

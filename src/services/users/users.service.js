@@ -102,10 +102,53 @@ const Private = {
         },
       ],
       notifications: {
-        projection: { id: 1, name: 1, type: 1, status: 1, schools: 1 } /* for sync+async */,
+        projection: { id: 1, name: 1, type: 1, status: 1, email: 1, schools: 1 } /* for sync+async */,
       },
     };
     return config;
+  },
+
+  /**
+   * get the difference that was removed
+   */
+  getSchoolsDiff: (user, newUser) => {
+    let userDiff = {
+      ...newUser,
+      schools: [],
+    };
+
+    // create a map for schools
+    let schoolsMap = {};
+    for (const school of newUser.schools) {
+      schoolsMap[school.id] = school;
+    }
+
+    for (const school of user.schools) {
+      const newSchool = schoolsMap[school.id];
+      if (!newSchool) {
+        // the school was removed completely
+        userDiff.schools.push(school);
+        continue;
+      }
+
+      // must check roles
+      let schoolDiff = {
+        ...school,
+        roles: [],
+      };
+      for (const role of school.roles) {
+        // check if role was removed
+        if (!newSchool.roles.includes(role)) {
+          schoolDiff.roles.push(role);
+        }
+      }
+
+      if (Object.keys(schoolDiff.roles).length) {
+        userDiff.schools.push(schoolDiff);
+      }
+    }
+
+    return userDiff;
   },
 };
 
@@ -268,8 +311,13 @@ const Public = {
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
-    // TODO must take diff before and after for users and trigger notification for deleted changes
+    // need to take diff before and after for users and trigger notification for deleted schools roles changes
+    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
+    if (rget.error) {
+      return rget;
+    }
 
     // populate references
     let rf = await ReferencesUtils.populateReferences({ ...config, fillReferences: true }, objInfo, _ctx);
@@ -281,7 +329,6 @@ const Public = {
     await Public.translate(objInfo, _ctx);
 
     // put
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
     const r = await DbOpsUtils.put(config, objID, objInfo, projection, _ctx);
     if (r.error) {
       return r;
@@ -293,6 +340,13 @@ const Public = {
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await UsersRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+
+    // take the difference and notify removed schools roles
+    let rdiff = { status: 200, value: Private.getSchoolsDiff(rget.value, r.value) };
+    if (Object.keys(rdiff.value.schools).length) {
+      let rp = BaseServiceUtils.getProjectedResponse(rdiff, config.notifications.projection /* for sync+async */, _ctx);
+      let rndiff = await UsersRest.raiseNotification(Private.Notification.Removed, [rp.value], _ctx);
+    }
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
@@ -310,8 +364,13 @@ const Public = {
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
-    // TODO must take diff before and after for users and trigger notification for deleted changes
+    // need to take diff before and after for users and trigger notification for deleted schools roles changes
+    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
+    if (rget.error) {
+      return rget;
+    }
 
     // populate references
     const configRef = { ...config, fillReferences: true };
@@ -324,7 +383,6 @@ const Public = {
     await Public.translate(patchInfo.set, _ctx);
 
     // patch
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
     const r = await DbOpsUtils.patch(config, objID, patchInfo, projection, _ctx);
     if (r.error) {
       return r;
@@ -336,6 +394,13 @@ const Public = {
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await UsersRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+
+    // take the difference and notify removed schools roles
+    let rdiff = { status: 200, value: Private.getSchoolsDiff(rget.value, r.value) };
+    if (Object.keys(rdiff.value.schools).length) {
+      let rp = BaseServiceUtils.getProjectedResponse(rdiff, config.notifications.projection /* for sync+async */, _ctx);
+      let rndiff = await UsersRest.raiseNotification(Private.Notification.Removed, [rp.value], _ctx);
+    }
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);

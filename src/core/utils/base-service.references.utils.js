@@ -205,7 +205,7 @@ const Public = {
           }
         }
       } else {
-        console.log(`${config.serviceName}: For '${configRef.fieldName}' skip notification for added`);
+        console.log(`${config.serviceName}: For '${configRef.fieldName}' skip apply added changes from notification`);
       }
     }
 

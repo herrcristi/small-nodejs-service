@@ -22,7 +22,7 @@ const Public = {
     await (await EventsDatabase.collection(_ctx)).insertMany(_.cloneDeep(TestConstants.Events));
     await (await SchoolsDatabase.collection(_ctx)).insertMany(_.cloneDeep(TestConstants.Schools));
     await (await UsersDatabase.collection(_ctx)).insertMany(_.cloneDeep(TestConstants.Users));
-    if (_ctx.tentantID) {
+    if (_ctx.tenantID) {
       await (await StudentsDatabase.collection(_ctx)).insertMany(_.cloneDeep(TestConstants.Students));
     }
   },
@@ -36,8 +36,11 @@ const Public = {
     await (await EventsDatabase.collection(_ctx)).deleteMany();
     await (await SchoolsDatabase.collection(_ctx)).deleteMany();
     await (await UsersDatabase.collection(_ctx)).deleteMany();
-    if (_ctx.tentantID) {
+    if (_ctx.tenantID) {
       await (await StudentsDatabase.collection(_ctx)).deleteMany();
+    }
+    for (const school of TestConstants.Schools) {
+      await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id })).deleteMany();
     }
   },
 };

@@ -13,7 +13,7 @@ const Public = {
   init: async (port) => {
     console.log('Init webserver');
 
-    return await WebServerUtils.init(port || WebConstants.Port, ConfigServices.getRoutes());
+    return await WebServerUtils.init(port || process.env.PORT, ConfigServices.getRoutes());
   },
 };
 
