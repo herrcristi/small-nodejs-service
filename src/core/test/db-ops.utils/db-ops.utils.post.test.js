@@ -45,16 +45,17 @@ describe('DB-Ops Utils', function () {
     chai.expect(res.value.createdTimestamp).to.exist;
     chai.expect(res.value.lastModifiedTimestamp).to.exist;
 
-    delete res.time;
-    delete res.value.createdTimestamp;
-    delete res.value.lastModifiedTimestamp;
     chai.expect(collection.insertOne.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 201,
       value: {
         id: 'id1',
         name: 'name1',
+        createdTimestamp: res.value.createdTimestamp,
+        lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 1,
       },
+      time: res.time,
     });
   }).timeout(10000);
 

@@ -24,9 +24,9 @@ describe('DB-Ops Utils', function () {
   after(async function () {});
 
   /**
-   * updateManyReferences success
+   * updateManyReferences success array
    */
-  it('should updateManyReferences with success', async () => {
+  it('should updateManyReferences with success array', async () => {
     const ref = {
       fieldName: 'schools',
       isArray: true,
@@ -51,6 +51,9 @@ describe('DB-Ops Utils', function () {
           'schools.$.id': 'id1',
           'schools.$.name': 'name',
         },
+        $inc: {
+          modifiedCount: 1,
+        },
       });
 
       return {
@@ -72,9 +75,9 @@ describe('DB-Ops Utils', function () {
   }).timeout(10000);
 
   /**
-   * updateManyReferences success at root level
+   * updateManyReferences success non array
    */
-  it('should updateManyReferences with success at root level', async () => {
+  it('should updateManyReferences with success non array', async () => {
     const ref = {
       fieldName: 'user',
       isArray: false,
@@ -98,6 +101,9 @@ describe('DB-Ops Utils', function () {
         $set: {
           'user.id': 'id1',
           'user.name': 'name',
+        },
+        $inc: {
+          modifiedCount: 1,
         },
       });
 

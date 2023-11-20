@@ -60,6 +60,7 @@ describe('Database Functional', function () {
         id: res.value.id,
         createdTimestamp: res.value.createdTimestamp,
         lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 1,
         _id: res.value._id,
       },
       time: res.time,
@@ -77,6 +78,7 @@ describe('Database Functional', function () {
         id: res.value.id,
         createdTimestamp: res.value.createdTimestamp,
         lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 1,
       },
       time: resGetOne.time,
     });
@@ -93,6 +95,7 @@ describe('Database Functional', function () {
           id: res.value.id,
           createdTimestamp: res.value.createdTimestamp,
           lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+          modifiedCount: 1,
         },
       ],
       time: resGetAll.time,
@@ -110,6 +113,7 @@ describe('Database Functional', function () {
           id: res.value.id,
           createdTimestamp: res.value.createdTimestamp,
           lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+          modifiedCount: 1,
         },
       ],
       time: resGetAllByIDs.time,
@@ -161,6 +165,7 @@ describe('Database Functional', function () {
         id: res.value.id,
         createdTimestamp: res.value.createdTimestamp,
         lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 1,
         _id: res.value._id,
       },
       time: res.time,
@@ -189,6 +194,7 @@ describe('Database Functional', function () {
         id: res.value.id,
         createdTimestamp: res.value.createdTimestamp,
         lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 1,
       },
       time: res.time,
     });
@@ -230,6 +236,7 @@ describe('Database Functional', function () {
         id: res.value.id,
         createdTimestamp: res.value.createdTimestamp,
         lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 1,
         _id: res.value._id,
       },
       time: res.time,
@@ -253,6 +260,7 @@ describe('Database Functional', function () {
         key: 'value',
         createdTimestamp: res.value.createdTimestamp,
         lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 2,
       },
       time: res.time,
     });
@@ -296,6 +304,7 @@ describe('Database Functional', function () {
         key: 'value',
         createdTimestamp: res.value.createdTimestamp,
         lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 2,
       },
       time: res.time,
     });
@@ -338,6 +347,7 @@ describe('Database Functional', function () {
         schools: ['s2', 's4'],
         createdTimestamp: res.value.createdTimestamp,
         lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 2,
       },
       time: res.time,
     });
@@ -418,6 +428,7 @@ describe('Database Functional', function () {
         ],
         createdTimestamp: res.value.createdTimestamp,
         lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 2,
       },
       time: res.time,
     });
@@ -572,6 +583,7 @@ describe('Database Functional', function () {
         ],
         createdTimestamp: res.value.createdTimestamp,
         lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 2,
       },
       time: res.time,
     });
@@ -614,6 +626,7 @@ describe('Database Functional', function () {
         schools: ['s1', 's2', 's3', 's4'],
         createdTimestamp: res.value.createdTimestamp,
         lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 2,
       },
       time: res.time,
     });
@@ -679,6 +692,7 @@ describe('Database Functional', function () {
         ],
         createdTimestamp: res.value.createdTimestamp,
         lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 2,
       },
       time: res.time,
     });
@@ -769,6 +783,235 @@ describe('Database Functional', function () {
         ],
         createdTimestamp: res.value.createdTimestamp,
         lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 2,
+      },
+      time: res.time,
+    });
+  }).timeout(10000);
+
+  /**
+   * operations updateManyReferences array
+   */
+  it('should updateManyReferences array', async () => {
+    let config = {
+      serviceName: 'ServiceTest',
+      collection: database.collection('dbtests'),
+    };
+
+    let objInfo = {
+      name: 'name',
+      schools: [
+        {
+          id: 's1',
+          name: 's1',
+        },
+        {
+          id: 's2',
+          name: 's2',
+        },
+      ],
+    };
+
+    // post
+    let res = await DBOpsUtils.post(config, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // patch
+    let objID = res.value.id;
+    let refInfo = {
+      id: 's1',
+      name: 'name1',
+    };
+    res = await DBOpsUtils.updateManyReferences(config, { fieldName: 'schools', isArray: true }, refInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    res = await DBOpsUtils.getOne(config, objID, { _id: 0 }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        id: res.value.id,
+        name: 'name',
+        schools: [
+          {
+            id: 's1',
+            name: 'name1',
+          },
+          {
+            id: 's2',
+            name: 's2',
+          },
+        ],
+        createdTimestamp: res.value.createdTimestamp,
+        lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 2,
+      },
+      time: res.time,
+    });
+  }).timeout(10000);
+
+  /**
+   * operations updateManyReferences non-array
+   */
+  it('should updateManyReferences non-array', async () => {
+    let config = {
+      serviceName: 'ServiceTest',
+      collection: database.collection('dbtests'),
+    };
+
+    let objInfo = {
+      name: 'name',
+      school: {
+        id: 's1',
+        name: 's1',
+      },
+    };
+
+    // post
+    let res = await DBOpsUtils.post(config, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // patch
+    let objID = res.value.id;
+    let refInfo = {
+      id: 's1',
+      name: 'name1',
+    };
+    res = await DBOpsUtils.updateManyReferences(config, { fieldName: 'school', isArray: false }, refInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    res = await DBOpsUtils.getOne(config, objID, { _id: 0 }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        id: res.value.id,
+        name: 'name',
+        school: {
+          id: 's1',
+          name: 'name1',
+        },
+        createdTimestamp: res.value.createdTimestamp,
+        lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 2,
+      },
+      time: res.time,
+    });
+  }).timeout(10000);
+
+  /**
+   * operations deleteManyReferences array
+   */
+  it('should deleteManyReferences array', async () => {
+    let config = {
+      serviceName: 'ServiceTest',
+      collection: database.collection('dbtests'),
+    };
+
+    let objInfo = {
+      name: 'name',
+      schools: [
+        {
+          id: 's1',
+          name: 's1',
+        },
+        {
+          id: 's2',
+          name: 's2',
+        },
+      ],
+    };
+
+    // post
+    let res = await DBOpsUtils.post(config, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // patch
+    let objID = res.value.id;
+    let refInfo = {
+      id: 's1',
+      name: 'name1',
+    };
+    res = await DBOpsUtils.deleteManyReferences(config, { fieldName: 'schools', isArray: true }, refInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    res = await DBOpsUtils.getOne(config, objID, { _id: 0 }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        id: res.value.id,
+        name: 'name',
+        schools: [
+          {
+            id: 's2',
+            name: 's2',
+          },
+        ],
+        createdTimestamp: res.value.createdTimestamp,
+        lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 2,
+      },
+      time: res.time,
+    });
+  }).timeout(10000);
+
+  /**
+   * operations deleteManyReferences non-array
+   */
+  it('should deleteManyReferences non-array', async () => {
+    let config = {
+      serviceName: 'ServiceTest',
+      collection: database.collection('dbtests'),
+    };
+
+    let objInfo = {
+      name: 'name',
+      school: {
+        id: 's1',
+        name: 's1',
+      },
+    };
+
+    // post
+    let res = await DBOpsUtils.post(config, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // patch
+    let objID = res.value.id;
+    let refInfo = {
+      id: 's1',
+      name: 'name1',
+    };
+    res = await DBOpsUtils.deleteManyReferences(config, { fieldName: 'school', isArray: false }, refInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    res = await DBOpsUtils.getOne(config, objID, { _id: 0 }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        id: res.value.id,
+        name: 'name',
+        school: {
+          id: 's1',
+        },
+
+        createdTimestamp: res.value.createdTimestamp,
+        lastModifiedTimestamp: res.value.lastModifiedTimestamp,
+        modifiedCount: 2,
       },
       time: res.time,
     });

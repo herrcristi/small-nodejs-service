@@ -23,16 +23,6 @@ const Constants = {
   },
 
   /**
-   * severity
-   * TODO remove
-   */
-  Severity: {
-    Informational: 'info',
-    Warning: 'warning',
-    Critical: 'critical',
-  },
-
-  /**
    * notification
    */
   Notification: NotificationsUtils.Constants.Notification,
@@ -40,7 +30,16 @@ const Constants = {
   /**
    * default projection
    */
-  DefaultProjection: { _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, lastModifiedTimestamp: 1 },
+  DefaultProjection: {
+    _id: 0,
+    id: 1,
+    name: 1,
+    type: 1,
+    status: 1,
+    createdTimestamp: 1,
+    lastModifiedTimestamp: 1,
+    modifiedCount: 1,
+  },
 };
 
 const Public = {

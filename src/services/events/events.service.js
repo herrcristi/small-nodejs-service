@@ -21,7 +21,7 @@ const EventsDatabase = require('./events.database.js');
  */
 const Schema = {
   Event: Joi.object().keys({
-    severity: Joi.string().valid(...Object.values(BaseServiceUtils.Constants.Severity)),
+    severity: Joi.string().valid(...Object.values(EventsConstants.Severity)),
     messageID: Joi.string().min(1).max(128),
     target: Joi.object().keys({
       id: Joi.string().min(1).max(64).required(),
