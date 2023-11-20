@@ -49,4 +49,17 @@ describe('Students Service', function () {
       value: testStudents,
     });
   }).timeout(10000);
+
+  /**
+   * getAll failed no tenant
+   */
+  it('should getAll failed tenant', async () => {
+    // call
+    let res = await StudentsService.getAll({ query: {} }, { ..._ctx, tenantID: undefined });
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.error.message).to.include('Missing tenant');
+  }).timeout(10000);
 });

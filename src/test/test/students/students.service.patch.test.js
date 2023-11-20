@@ -87,6 +87,19 @@ describe('Students Service', function () {
   }).timeout(10000);
 
   /**
+   * patch failed no tenant
+   */
+  it('should patch failed tenant', async () => {
+    // call
+    let res = await StudentsService.patch('id', {}, { ..._ctx, tenantID: undefined });
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.error.message).to.include('Missing tenant');
+  }).timeout(10000);
+
+  /**
    * patch fail validation
    */
   it('should patch fail validation', async () => {

@@ -85,6 +85,19 @@ describe('Students Service', function () {
   }).timeout(10000);
 
   /**
+   * post failed no tenant
+   */
+  it('should post failed tenant', async () => {
+    // call
+    let res = await StudentsService.post({}, { ..._ctx, tenantID: undefined });
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.error.message).to.include('Missing tenant');
+  }).timeout(10000);
+
+  /**
    * post fail validation
    */
   it('should post fail validation', async () => {

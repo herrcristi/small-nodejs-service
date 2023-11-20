@@ -78,6 +78,19 @@ describe('Students Service', function () {
   }).timeout(10000);
 
   /**
+   * getAllForReq failed no tenant
+   */
+  it('should getAllForReq failed tenant', async () => {
+    // call
+    let res = await StudentsService.getAllForReq({ query: {} }, { ..._ctx, tenantID: undefined });
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.error.message).to.include('Missing tenant');
+  }).timeout(10000);
+
+  /**
    * getAllForReq failed buildFilterFromReq
    */
   it('should getAllForReq failed buildFilterFromReq', async () => {
@@ -118,7 +131,7 @@ describe('Students Service', function () {
     });
 
     // call
-    let res = await StudentsService.getAllForReq({ query: {} }, { ..._ctx, tenantID: undefined });
+    let res = await StudentsService.getAllForReq({ query: {} }, { ..._ctx });
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
