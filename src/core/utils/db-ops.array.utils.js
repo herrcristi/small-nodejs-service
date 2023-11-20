@@ -122,7 +122,7 @@ const Private = {
     }
 
     let objects = workset.values.filter((item) => typeof item === 'object');
-    let nonObjects = workset.values.filter((item) => typeof item !== 'object'); // mostrly strings
+    let nonObjects = workset.values.filter((item) => typeof item !== 'object'); // mostly strings
 
     // for values non objects just remove those from respective fields
     if (nonObjects.length) {
