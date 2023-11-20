@@ -41,7 +41,15 @@ const Public = {
    * notificationType: Constants.Notification  - 'added', 'modified', 'removed'
    */
   raiseNotification: async (config, notificationType, objs, _ctx) => {
-    const defaultProjection = { id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, lastModifiedTimestamp: 1 };
+    const defaultProjection = {
+      id: 1,
+      name: 1,
+      type: 1,
+      status: 1,
+      createdTimestamp: 1,
+      lastModifiedTimestamp: 1,
+      modifiedCount: 1,
+    };
 
     for (const sub of config.subscribers || []) {
       let notifyObjs = [];

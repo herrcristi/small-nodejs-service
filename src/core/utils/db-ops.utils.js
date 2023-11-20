@@ -142,6 +142,7 @@ const Public = {
     objInfo.id = objInfo.id || CommonUtils.uuidc();
     objInfo.createdTimestamp = new Date().toISOString();
     objInfo.lastModifiedTimestamp = objInfo.createdTimestamp;
+    objInfo.modifiedCount = 1;
 
     try {
       const value = await config.collection.insertOne(objInfo);
@@ -219,7 +220,10 @@ const Public = {
     try {
       const r = await config.collection.findOneAndUpdate(
         { id: objID },
-        { $set: { ...objInfo, lastModifiedTimestamp: new Date().toISOString() } },
+        {
+          $set: { ...objInfo, lastModifiedTimestamp: new Date().toISOString() },
+          $inc: { modifiedCount: 1 },
+        },
         { returnDocument: 'after', includeResultMetadata: true, projection }
       );
 
@@ -265,17 +269,16 @@ const Public = {
       // order is set, add, remove, unset
 
       // set
-      bulkOperations.push({
-        updateOne: {
-          filter,
-          update: {
-            $set: {
-              ...(patchInfo.set || {}),
-              lastModifiedTimestamp: new Date().toISOString(),
+      if (Object.keys(patchInfo.set || {}).length) {
+        bulkOperations.push({
+          updateOne: {
+            filter,
+            update: {
+              $set: { ...patchInfo.set },
             },
           },
-        },
-      });
+        });
+      }
 
       // add
       bulkOperations = bulkOperations.concat(DbOpsArrayUtils.getPushBulkOpsFromArray(filter, patchInfo.add, _ctx));
@@ -292,6 +295,17 @@ const Public = {
           updateOne: { filter, update: { $unset: unset } },
         });
       }
+
+      // add last operation for metadata (modified info)
+      bulkOperations.push({
+        updateOne: {
+          filter,
+          update: {
+            $set: { lastModifiedTimestamp: new Date().toISOString() },
+            $inc: { modifiedCount: 1 },
+          },
+        },
+      });
 
       // do a bulk write operation followed by a get
       let r = await config.collection.bulkWrite(bulkOperations, { ordered: true });
@@ -348,6 +362,9 @@ const Public = {
           $set: {
             ...setObj,
             lastModifiedTimestamp: new Date(),
+          },
+          $inc: {
+            modifiedCount: 1,
           },
         }
         // {explain: 'executionStats'}
@@ -408,6 +425,9 @@ const Public = {
             $set: {
               lastModifiedTimestamp: new Date(),
             },
+            $inc: {
+              modifiedCount: 1,
+            },
           }
         );
       } else {
@@ -417,6 +437,9 @@ const Public = {
             $unset: setProps,
             $set: {
               lastModifiedTimestamp: new Date(),
+            },
+            $inc: {
+              modifiedCount: 1,
             },
           }
         );

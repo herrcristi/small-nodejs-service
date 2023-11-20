@@ -24,9 +24,9 @@ describe('DB-Ops Utils', function () {
   after(async function () {});
 
   /**
-   * deleteManyReferences success
+   * deleteManyReferences array
    */
-  it('should deleteManyReferences with success', async () => {
+  it('should deleteManyReferences array', async () => {
     const ref = {
       fieldName: 'schools',
       isArray: true,
@@ -52,6 +52,9 @@ describe('DB-Ops Utils', function () {
           schools: { id: 'id1' },
         },
         $set: {},
+        $inc: {
+          modifiedCount: 1,
+        },
       });
 
       return {
@@ -73,9 +76,9 @@ describe('DB-Ops Utils', function () {
   }).timeout(10000);
 
   /**
-   * deleteManyReferences success at root level
+   * deleteManyReferences non-array
    */
-  it('should deleteManyReferences with success at root level', async () => {
+  it('should deleteManyReferences non-array', async () => {
     const ref = {
       fieldName: 'user',
       isArray: false,
@@ -100,6 +103,9 @@ describe('DB-Ops Utils', function () {
           'user.name': 1,
         },
         $set: {},
+        $inc: {
+          modifiedCount: 1,
+        },
       });
 
       return {
