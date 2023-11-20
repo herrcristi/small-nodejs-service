@@ -12,6 +12,7 @@ const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 
 const TestConstants = require('../../test-constants.js');
 const StudentsService = require('../../../services/students/students.service.js');
+const UsersRest = require('../../../services/rest/users.rest.js');
 const StudentsRest = require('../../../services/rest/students.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
@@ -32,7 +33,7 @@ describe('Students Service', function () {
   /**
    * notification with success for modified
    */
-  it('should do notification with success', async () => {
+  it('should do notification with success for modified', async () => {
     const notifications = _.cloneDeep(TestConstants.UsersNotifications);
     const notif = notifications[0];
     const userID = notif.modified[0].id;
@@ -186,6 +187,57 @@ describe('Students Service', function () {
   }).timeout(10000);
 
   /**
+   * notification with success for removed
+   */
+  it('should do notification with success for removed', async () => {
+    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
+    const notif = notifications[0];
+    const userID = notif.modified[0].id;
+    const userType = notif.modified[0].type;
+    const userStatus = notif.modified[0].status;
+    const username = notif.modified[0].name;
+    const userEmail = notif.modified[0].email;
+
+    notif.removed = notif.modified;
+    delete notif.modified;
+
+    // stub
+    let stubGet = sinon.stub(DbOpsUtils, 'getAllByIDs').callsFake((config, ids) => {
+      console.log(`\nDbOpsUtils.getAllByIDs called. ids: ${JSON.stringify(ids, null, 2)}\n`);
+      chai.expect(ids).to.have.deep.members([userID]);
+
+      return {
+        status: 200,
+        value: [],
+      };
+    });
+
+    let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
+      console.log(`\nNotificationsUtils.notification called ${JSON.stringify(notification, null, 2)}\n`);
+      chai.expect(ctx.tenantID).to.equal(notif.removed[0].schools[0].id);
+
+      chai.expect(notification.modified[0].status).to.equal(UsersRest.Constants.Status.Disabled);
+
+      return {
+        status: 200,
+        value: true,
+      };
+    });
+
+    // call
+    let res = await StudentsService.notification(notif, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubGet.callCount).to.equal(0);
+    chai.expect(stubNotification.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: true,
+    });
+  }).timeout(10000);
+
+  /**
    * notification fail validation
    */
   it('should notification fail validation', async () => {
@@ -234,9 +286,9 @@ describe('Students Service', function () {
   }).timeout(10000);
 
   /**
-   * notification non user
+   * notification other service (not user service)
    */
-  it('should do notification non user', async () => {
+  it('should do notification other service (not user service)', async () => {
     const notifications = _.cloneDeep(TestConstants.StudentsNotifications);
     const notif = notifications[0];
 
@@ -266,9 +318,9 @@ describe('Students Service', function () {
   }).timeout(10000);
 
   /**
-   * notification non user and fail
+   * notification other service (not user service) and fail
    */
-  it('should do notification non user and fail', async () => {
+  it('should do notification other service (not user service) and fail', async () => {
     const notifications = _.cloneDeep(TestConstants.StudentsNotifications);
     const notif = notifications[0];
 

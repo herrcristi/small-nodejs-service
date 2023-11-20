@@ -122,10 +122,28 @@ const Private = {
     }
 
     let objects = workset.values.filter((item) => typeof item === 'object');
-    let nonObjects = workset.values.filter((item) => typeof item !== 'object');
+    let nonObjects = workset.values.filter((item) => typeof item !== 'object'); // mostly strings
 
     // for values non objects just remove those from respective fields
     if (nonObjects.length) {
+      // example                                                              example nested
+      // {                                                                    {
+      //   "updateMany": {                                                      "updateMany": {
+      //       "filter": {                                                          "filter": {
+      //           "id": "79F4D50BB5C7479BB593BA6D58CC6524"                             "id": "79F4D50BB5C7479BB593BA6D58CC6524"
+      //   },                                                                   },
+      //   "update": {                                                          "update": {
+      //       "$pull": {                                                           "$pull": {
+      //           "schools": {                                                         "schools.$[schools].building.$[building].tags": {
+      //               "$in": ["s1", "s3"]                                                  "$in": [ "t1", "t2" ]
+      //           }                                                                    }
+      //       }                                                                    }
+      //   },                                                                   },
+      //   "arrayFilters": []                                                   "arrayFilters": [
+      // }                                                                          { "schools.id": "s2" },
+      //                                                                            { "building.id": "b1" }
+      //                                                                        ]
+      //                                                                      }
       bulkOps.push({
         updateMany: {
           filter: workset.mainFilter,
@@ -144,6 +162,24 @@ const Private = {
       const f = Private.getObjectFilters(obj, workset, _ctx);
 
       if (!f.hasArrays) {
+        // example                                                            example nested
+        // {                                                                  {
+        //   "updateMany": {                                                    "updateMany": {
+        //     "filter": {                                                        "filter": {
+        //         "id": "9BC357D5B813446694DECCD5C59287BB"                           "id": "9BC357D5B813446694DECCD5C59287BB"
+        //     },                                                                 },
+        //     "update": {                                                        "update": {
+        //         "$pull": {                                                         "$pull": {
+        //            "schools": {                                                        "schools.$[schools].building": {
+        //                "id": "s2"         // "name": "s3"                                 "id": "b1"
+        //            }                                                                   }
+        //         }                                                                  }
+        //     },                                                                 },
+        //     "arrayFilters": []                                                 "arrayFilters": [
+        //   }                                                                        { "schools.id": "schooldid4" }
+        // }                                                                       ]
+        //                                                                      }
+        //                                                                    }
         bulkOps.push({
           updateMany: {
             filter: workset.mainFilter,
@@ -151,6 +187,7 @@ const Private = {
             arrayFilters: workset.arrayFilters,
           },
         });
+
         continue;
       }
 
@@ -188,10 +225,28 @@ const Private = {
     }
 
     let objects = workset.values.filter((item) => typeof item === 'object');
-    let nonObjects = workset.values.filter((item) => typeof item !== 'object');
+    let nonObjects = workset.values.filter((item) => typeof item !== 'object'); // mostly strings
 
     // for values non objects just add those to respective fields
     if (nonObjects.length) {
+      // example                                                              example nested
+      // {                                                                    {
+      //   "updateMany": {                                                      "updateMany": {
+      //     "filter": {                                                          "filter": {
+      //         "id": "5240D64D7D414515AF7C388B4CEA6CED"                           "id": "5240D64D7D414515AF7C388B4CEA6CED"
+      //     },                                                                   },
+      //     "update": {                                                          "update": {
+      //         "$addToSet": {                                                       "$addToSet": {
+      //             "schools": {                                                         "schools.$[schools].roles": {
+      //                 "$each": [ "s3", "s4" ]                                              "$each": [ "role1", "role2" ]
+      //             }                                                                    }
+      //         }                                                                    }
+      //     },                                                                   },
+      //     "arrayFilters": []                                                   "arrayFilters": [
+      //   }                                                                          { "schools.id": "s1" }
+      // }                                                                        ]
+      //                                                                        }
+      //                                                                      }
       bulkOps.push({
         updateMany: {
           filter: workset.mainFilter,
@@ -212,6 +267,38 @@ const Private = {
       // add entire object if does not exists
       // (except if current object has only arrays and no other members to filter)
       if (Object.keys(f.opFilters).length) {
+        // example                                                            another example
+        // {                                                                  {
+        //   "updateMany": {                                                    "updateMany": {
+        //     "filter": {                                                        "filter": {
+        //       "$and": [                                                          "$and": [
+        //         {                                                                  {
+        //           "id": "905FE31384C4466D97A2FAB25C877CBF"                           "id": "905FE31384C4466D97A2FAB25C877CBF"
+        //         },                                                                 },
+        //         {                                                                  {
+        //           "schools": {                                                       "schools": {
+        //             "$not": {  "$elemMatch": { "id": "s1" } }                          "$elemMatch": {
+        //           }                                                                       "id": "schoolid4",
+        //         }                                                                            "principals": {
+        //       ]                                                                                "$not": { "$elemMatch": { "name": "principal2" } }
+        //     },                                                                               }
+        //     "update": {                                                                }
+        //       "$push": {                                                             }
+        //         "schools": {                                                       }
+        //           "id": "s1",                                                    ]
+        //           "name": "name1"                                              },
+        //         }                                                              "update": {
+        //       }                                                                  "$push": {
+        //     },                                                                       "schools.$[schools].principals": {
+        //     "arrayFilters": []                                                          "name": "principal2"
+        //   }                                                                          }
+        // }                                                                        }
+        //                                                                        },
+        //                                                                        "arrayFilters": [
+        //                                                                            { "schools.id": "schoolid4" }
+        //                                                                        ]
+        //                                                                      }
+        //                                                                    }
         bulkOps.push({
           updateMany: {
             filter: { $and: [workset.mainFilter, f.pathFiltersNot] },
@@ -223,6 +310,23 @@ const Private = {
 
       // set entire nonarray props
       if (Object.keys(f.patchNonArrayProps).length) {
+        // example                                                            other example
+        // {                                                                  {
+        //   "updateMany": {                                                    "updateMany": {
+        //     "filter": {                                                        "filter": {
+        //       "id": "905FE31384C4466D97A2FAB25C877CBF"                           "id": "905FE31384C4466D97A2FAB25C877CBF"
+        //     },                                                                 ),
+        //     "update": {                                                        "update": {
+        //       "$set": {                                                          "$set": {
+        //         "schools.$[schools].name": "name1"                                 "schools.$[schools].principals.$[principals].name": "principal2"
+        //       }                                                                  }
+        //     },                                                                 },
+        //     "arrayFilters": [                                                  "arrayFilters": [
+        //       { "schools.id": "s1" }                                               { "schools.id": "s1" }
+        //     ]                                                                      { "principals.name": "principal2" }
+        //   }                                                                    ]
+        // }                                                                    }
+        //                                                                    }
         bulkOps.push({
           updateMany: {
             filter: workset.mainFilter,
