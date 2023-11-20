@@ -78,6 +78,18 @@ const Private = {
     };
     return config;
   },
+
+  /**
+   * get error response for missing tenant
+   */
+  errorNoTenant: (_ctx) => {
+    const msg = 'Missing tenant';
+    console.log(`Error: ${msg}`);
+    return {
+      status: 400,
+      error: { message: msg, error: new Error(msg) },
+    };
+  },
 };
 
 const Public = {
@@ -92,6 +104,10 @@ const Public = {
    * returns: { status, value: {data, meta} } or { status, error }
    */
   getAllForReq: async (req, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
     const rf = await RestApiUtils.buildFilterFromReq(req, Schema.Student, _ctx);
     if (rf.error) {
@@ -128,6 +144,10 @@ const Public = {
    * returns { status, value } or { status, error }
    */
   getAll: async (filter, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
     return await DbOpsUtils.getAll(config, filter, _ctx);
   },
@@ -138,6 +158,10 @@ const Public = {
    * returns { status, value } or { status, error }
    */
   getAllCount: async (filter, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
     return await DbOpsUtils.getAllCount(config, filter, _ctx);
   },
@@ -147,6 +171,10 @@ const Public = {
    * returns { status, value } or { status, error }
    */
   getAllByIDs: async (ids, projection, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
     return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx);
   },
@@ -156,6 +184,10 @@ const Public = {
    * returns { status, value } or { status, error }
    */
   getOne: async (objID, projection, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
     return await DbOpsUtils.getOne(config, objID, projection, _ctx);
   },
@@ -164,6 +196,10 @@ const Public = {
    * post
    */
   post: async (objInfo, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
     objInfo.type = StudentsConstants.Type;
 
     // validate
@@ -205,6 +241,10 @@ const Public = {
   },
 
   postForUsers: async (users, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
     // check if already exists first
     const usersIDs = users.map((item) => item.id);
     let existingStudentsMap = {};
@@ -244,6 +284,10 @@ const Public = {
    * delete
    */
   delete: async (objID, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
 
@@ -269,6 +313,10 @@ const Public = {
    * put
    */
   put: async (objID, objInfo, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
     // validate
     const v = Validators.Put.validate(objInfo);
     if (v.error) {
@@ -310,6 +358,10 @@ const Public = {
    * patch
    */
   patch: async (objID, patchInfo, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
     // validate
     const v = Validators.Patch.validate(patchInfo);
     if (v.error) {

@@ -3,6 +3,8 @@
  *
  * include them in order
  */
+require('./students.database.collection.test.js');
+
 require('./students.service.getAllForReq.test.js');
 require('./students.service.getAll.test.js');
 require('./students.service.getAllCount.test.js');
