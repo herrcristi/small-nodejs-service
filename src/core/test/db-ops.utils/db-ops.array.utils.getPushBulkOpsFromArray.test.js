@@ -66,9 +66,9 @@ describe('DB-Ops Utils', function () {
   }).timeout(10000);
 
   /**
-   * getPushBulkOpsFromArray schools roles1
+   * getPushBulkOpsFromArray schools object
    */
-  it('should getPushBulkOpsFromArray schools roles1', async () => {
+  it('should getPushBulkOpsFromArray schools object', async () => {
     let filter = { id: 'objid' };
 
     let addInfo = {
@@ -105,9 +105,9 @@ describe('DB-Ops Utils', function () {
   }).timeout(10000);
 
   /**
-   * getPushBulkOpsFromArray schools roles2
+   * getPushBulkOpsFromArray schools object with update
    */
-  it('should getPushBulkOpsFromArray schools roles2', async () => {
+  it('should getPushBulkOpsFromArray schools object with update', async () => {
     let filter = { id: 'objid' };
 
     let addInfo = {
@@ -155,6 +155,7 @@ describe('DB-Ops Utils', function () {
       },
     ]);
   }).timeout(10000);
+
   /**
    * getPushBulkOpsFromArray schools roles3
    */

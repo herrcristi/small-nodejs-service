@@ -13,7 +13,7 @@ services:
     ports:
       - '27017:27017'
     volumes:
-      - /tmp/data/mongodb:/data/db
+      - '/home/devel/data/mongodb:/data/db'
     command: mongod --auth --wiredTigerCacheSizeGB 1.0
 
   # mongo-express:
