@@ -9,3 +9,5 @@ require('./functional.database.test.js');
 require('./functional.schools.test.js');
 
 require('./functional.users.test.js');
+
+require('./functional.classes.test.js');
