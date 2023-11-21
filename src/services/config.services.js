@@ -35,18 +35,38 @@ const ProfessorsDatabase = require('./professors/professors.database.js');
 const ProfessorsRouter = require('../services/professors/professors.router.js');
 const ProfessorsRest = require('./rest/professors.rest.js');
 
+const ClassesConstants = require('./classes/classes.constants.js');
+const ClassesService = require('./classes/classes.service.js');
+const ClassesDatabase = require('./classes/classes.database.js');
+const ClassesRouter = require('../services/classes/classes.router.js');
+const ClassesRest = require('./rest/classes.rest.js');
+
 const Public = {
   /**
    * init all services
    */
   init: async () => {
     // init databases
-    for (const database of [SchoolsDatabase, UsersDatabase, EventsDatabase, StudentsDatabase, ProfessorsDatabase]) {
+    for (const database of [
+      SchoolsDatabase,
+      UsersDatabase,
+      EventsDatabase,
+      StudentsDatabase,
+      ProfessorsDatabase,
+      ClassesDatabase,
+    ]) {
       await database.init();
     }
 
     // init services
-    for (const service of [SchoolsService, UsersService, EventsService, StudentsService, ProfessorsService]) {
+    for (const service of [
+      SchoolsService,
+      UsersService,
+      EventsService,
+      StudentsService,
+      ProfessorsService,
+      ClassesService,
+    ]) {
       await service.init();
     }
 
@@ -60,6 +80,14 @@ const Public = {
       callback: ProfessorsRest.notification,
       projection: { id: 1, name: 1, type: 1, status: 1, email: 1, schools: 1 },
     });
+    await ClassesRest.subscribe({
+      callback: StudentsRest.notification,
+      projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
+    });
+    await ClassesRest.subscribe({
+      callback: ProfessorsRest.notification,
+      projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
+    });
 
     // init the communication
     const config = {
@@ -69,6 +97,7 @@ const Public = {
         [EventsConstants.ServiceName]: EventsService,
         [StudentsConstants.ServiceName]: StudentsService,
         [ProfessorsConstants.ServiceName]: ProfessorsService,
+        [ClassesConstants.ServiceName]: ClassesService,
 
         // internal calls only
         [SchoolsConstants.ServiceNameInternal]: SchoolsService,
@@ -76,6 +105,7 @@ const Public = {
         [EventsConstants.ServiceNameInternal]: EventsService,
         [StudentsConstants.ServiceNameInternal]: StudentsService,
         [ProfessorsConstants.ServiceNameInternal]: ProfessorsService,
+        [ClassesConstants.ServiceNameInternal]: ClassesService,
       },
 
       rest: {
@@ -109,6 +139,12 @@ const Public = {
           port: WebConstants.Port,
           path: ProfessorsConstants.ApiPath,
         },
+        [ClassesConstants.ServiceName]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: WebConstants.Port,
+          path: ClassesConstants.ApiPath,
+        },
 
         // internal calls only
         [SchoolsConstants.ServiceNameInternal]: {
@@ -141,6 +177,12 @@ const Public = {
           port: WebConstants.Port,
           path: ProfessorsConstants.ApiPathInternal,
         },
+        [ClassesConstants.ServiceNameInternal]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: WebConstants.Port,
+          path: ClassesConstants.ApiPathInternal,
+        },
       },
     };
 
@@ -151,7 +193,7 @@ const Public = {
    * get routes
    */
   getRoutes: () => {
-    return [SchoolsRouter, UsersRouter, EventsRouter, StudentsRouter, ProfessorsRouter];
+    return [SchoolsRouter, UsersRouter, EventsRouter, StudentsRouter, ProfessorsRouter, ClassesRouter];
   },
 };
 

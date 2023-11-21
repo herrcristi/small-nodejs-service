@@ -285,6 +285,57 @@ const Public = {
       ],
     },
   ],
+
+  /**
+   * Classes
+   */
+  Classes: [
+    {
+      id: 'class1',
+      name: 'Mathematics',
+      type: 'class',
+      status: 'active',
+      description: 'Mathematics basics',
+      credits: 5,
+      required: 'required',
+      _lang_en: {
+        status: 'Active',
+        credits: '5',
+        required: 'Required',
+      },
+    },
+    {
+      id: 'class2',
+      name: 'Politics',
+      type: 'class',
+      status: 'active',
+      description: 'Politics basics',
+      credits: 3,
+      required: 'optional',
+      _lang_en: {
+        status: 'Active',
+        credits: '3',
+        required: 'Optional',
+      },
+    },
+  ],
+
+  ClassesNotifications: [
+    {
+      serviceName: 'classes',
+      modified: [
+        {
+          id: 'class1',
+          name: 'Mathematics',
+          type: 'class',
+          status: 'active',
+          description: 'Mathematics basics',
+          credits: 5,
+          required: 'required',
+        },
+      ],
+    },
+  ],
 };
 
 module.exports = { ...Public };
