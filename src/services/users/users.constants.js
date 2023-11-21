@@ -25,7 +25,7 @@ const Public = {
   // roles (must match the services types)
   Roles: {
     Admin: 'admin',
-    Teacher: 'teacher',
+    Professor: 'professor',
     Student: 'student',
   },
 };
