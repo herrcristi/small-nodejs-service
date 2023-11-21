@@ -33,25 +33,36 @@ describe('Classes Service', function () {
    */
   it('should do translate with success', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
-    let stubString = sinon.stub(TranslationsUtils, 'string').callsFake(() => {
-      console.log(`\nTranslationsUtils.string called\n`);
+    let stubString = sinon.stub(TranslationsUtils, 'string').callsFake((val) => {
+      console.log(`\nTranslationsUtils.string called for ${JSON.stringify(val, null, 2)}\n`);
+      return {};
+    });
+    let stubNumber = sinon.stub(TranslationsUtils, 'number').callsFake((val) => {
+      console.log(`\nTranslationsUtils.number called ${JSON.stringify(val, null, 2)}\n`);
       return {};
     });
 
     let stubAddTranslations = sinon.stub(TranslationsUtils, 'addTranslations').callsFake((obj, translations) => {
-      console.log(`\nTranslationsUtils.addTranslations called\n`);
+      console.log(
+        `\nTranslationsUtils.addTranslations called obj: ${JSON.stringify(
+          obj,
+          null,
+          2
+        )} with translations: ${JSON.stringify(translations, null, 2)}\n`
+      );
       return {};
     });
 
     // call
-    let res = await ClassesService.translate(testClasse, _ctx);
+    let res = await ClassesService.translate(testClass, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubString.callCount).to.equal(0);
+    chai.expect(stubString.callCount).to.equal(2);
+    chai.expect(stubNumber.callCount).to.equal(1);
     chai.expect(stubAddTranslations.callCount).to.equal(1);
   }).timeout(10000);
 });

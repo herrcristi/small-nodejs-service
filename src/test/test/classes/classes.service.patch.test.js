@@ -34,15 +34,14 @@ describe('Classes Service', function () {
    */
   it('should patch with success', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     const patchReq = {
       set: {
-        ...testClasse,
+        ...testClass,
       },
     };
     delete patchReq.set.id;
-    delete patchReq.set.user;
     delete patchReq.set.type;
     delete patchReq.set._lang_en;
 
@@ -55,7 +54,7 @@ describe('Classes Service', function () {
       console.log(`DbOpsUtils.patch called`);
       return {
         status: 200,
-        value: { ...testClasse },
+        value: { ...testClass },
       };
     });
 
@@ -68,7 +67,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.patch(testClasse.id, patchReq, _ctx);
+    let res = await ClassesService.patch(testClass.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -79,9 +78,10 @@ describe('Classes Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        id: testClasse.id,
-        user: testClasse.user,
-        type: testClasse.type,
+        id: testClass.id,
+        name: testClass.name,
+        type: testClass.type,
+        status: testClass.status,
       },
     });
   }).timeout(10000);
@@ -104,16 +104,16 @@ describe('Classes Service', function () {
    */
   it('should patch fail validation', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     const patchReq = {
       set: {
-        ...testClasse,
+        ...testClass,
       },
     };
 
     // call
-    let res = await ClassesService.patch(testClasse.id, patchReq, _ctx);
+    let res = await ClassesService.patch(testClass.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -126,15 +126,14 @@ describe('Classes Service', function () {
    */
   it('should patch fail references', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     const patchReq = {
       set: {
-        ...testClasse,
+        ...testClass,
       },
     };
     delete patchReq.set.id;
-    delete patchReq.set.user;
     delete patchReq.set.type;
     delete patchReq.set._lang_en;
 
@@ -144,7 +143,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.patch(testClasse.id, patchReq, _ctx);
+    let res = await ClassesService.patch(testClass.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -163,15 +162,14 @@ describe('Classes Service', function () {
    */
   it('should patch fail patch', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     const patchReq = {
       set: {
-        ...testClasse,
+        ...testClass,
       },
     };
     delete patchReq.set.id;
-    delete patchReq.set.user;
     delete patchReq.set.type;
     delete patchReq.set._lang_en;
 
@@ -186,7 +184,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.patch(testClasse.id, patchReq, _ctx);
+    let res = await ClassesService.patch(testClass.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

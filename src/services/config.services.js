@@ -82,11 +82,11 @@ const Public = {
     });
     await ClassesRest.subscribe({
       callback: StudentsRest.notification,
-      projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, requiredType: 1 },
+      projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
     });
     await ClassesRest.subscribe({
       callback: ProfessorsRest.notification,
-      projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, requiredType: 1 },
+      projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
     });
 
     // init the communication

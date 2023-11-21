@@ -60,6 +60,23 @@ const Public = {
   },
 
   /**
+   * translate number
+   */
+  number: (val, _ctx, args = []) => {
+    if (val === undefined) {
+      return undefined;
+    }
+
+    let r = {};
+    for (const lang in Private.Languages) {
+      const lval = `${val}`;
+      r[lang] = val === null ? null : lval;
+    }
+
+    return r;
+  },
+
+  /**
    * add translations props to object (as patch to not override existing translations)
    */
   addTranslations: (obj, translations, _ctx) => {

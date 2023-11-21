@@ -44,6 +44,7 @@ const Public = {
 
     let coll = Private.DB?.collection(collName);
     await coll?.createIndex({ id: 1 }, { unique: true });
+    await coll?.createIndex({ name: 1 }, { unique: true });
 
     console.log(`Indexes added for ${collName}`);
   },

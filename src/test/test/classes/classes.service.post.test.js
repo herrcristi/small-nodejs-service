@@ -34,26 +34,25 @@ describe('Classes Service', function () {
    */
   it('should post with success', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     const postReq = {
-      ...testClasse,
+      ...testClass,
     };
-    delete postReq.user;
+    delete postReq.id;
     delete postReq.type;
     delete postReq._lang_en;
 
     // stub
-    let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake((config, objInfo) => {
-      objInfo.user = testClasse.user;
+    let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
       return { status: 200, value: true };
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called with ${JSON.stringify(postObj, null, 2)}`);
+      console.log(`DbOpsUtils.post called`);
       return {
         status: 201,
-        value: { ...postObj, id: testClasse.id },
+        value: { ...postObj, id: testClass.id },
       };
     });
 
@@ -77,9 +76,68 @@ describe('Classes Service', function () {
     chai.expect(res).to.deep.equal({
       status: 201,
       value: {
-        id: testClasse.id,
-        user: testClasse.user,
-        type: testClasse.type,
+        id: testClass.id,
+        name: testClass.name,
+        type: testClass.type,
+        status: testClass.status,
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * post with success with defaults
+   */
+  it('should post with success with defaults', async () => {
+    const testClasses = _.cloneDeep(TestConstants.Classes);
+    const testClass = testClasses[0];
+
+    const postReq = {
+      ...testClass,
+    };
+    delete postReq.id;
+    delete postReq.type;
+    delete postReq.status;
+    delete postReq.credits;
+    delete postReq.required;
+    delete postReq._lang_en;
+
+    // stub
+    let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
+      return { status: 200, value: true };
+    });
+
+    let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
+      console.log(`DbOpsUtils.post called`);
+      return {
+        status: 201,
+        value: { ...postObj, id: testClass.id },
+      };
+    });
+
+    let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
+      console.log(`EventsRest.raiseEventForObject called`);
+    });
+
+    let stubClassesRest = sinon.stub(ClassesRest, 'raiseNotification').callsFake(() => {
+      console.log(`ClassesRest raiseNotification called`);
+    });
+
+    // call
+    let res = await ClassesService.post(postReq, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubPopulateReferences.callCount).to.equal(1);
+    chai.expect(stubBase.callCount).to.equal(1);
+    chai.expect(stubEvent.callCount).to.equal(1);
+    chai.expect(stubClassesRest.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 201,
+      value: {
+        id: testClass.id,
+        name: testClass.name,
+        type: testClass.type,
+        status: ClassesConstants.Status.Pending,
       },
     });
   }).timeout(10000);
@@ -102,10 +160,10 @@ describe('Classes Service', function () {
    */
   it('should post fail validation', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     const postReq = {
-      ...testClasse,
+      ...testClass,
     };
 
     // call
@@ -114,7 +172,7 @@ describe('Classes Service', function () {
 
     // check
     chai.expect(res.status).to.equal(400);
-    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "user" is not allowed');
+    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "id" is not allowed');
   }).timeout(10000);
 
   /**
@@ -122,12 +180,12 @@ describe('Classes Service', function () {
    */
   it('should post fail references', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     const postReq = {
-      ...testClasse,
+      ...testClass,
     };
-    delete postReq.user;
+    delete postReq.id;
     delete postReq.type;
     delete postReq._lang_en;
 
@@ -156,12 +214,12 @@ describe('Classes Service', function () {
    */
   it('should post fail post', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     const postReq = {
-      ...testClasse,
+      ...testClass,
     };
-    delete postReq.user;
+    delete postReq.id;
     delete postReq.type;
     delete postReq._lang_en;
 

@@ -2,6 +2,8 @@
   "active": "Active",
   "disabled": "Disabled",
   "pending": "Pending",
+  "required": "Required",
+  "optional": "Optional",
   "schools.delete": "School '{0}' removed",
   "schools.patch": "School '{0}' modified",
   "schools.post": "School '{0}' added",

@@ -6,6 +6,8 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
+const BaseServiceUtils = require('../../../core/utils/base-service.utils.js');
+
 const TestConstants = require('../../test-constants.js');
 const ClassesConstants = require('../../../services/classes/classes.constants.js');
 const ClassesService = require('../../../services/classes/classes.service.js');
@@ -18,14 +20,17 @@ describe('Classes Service', function () {
 
   beforeEach(async function () {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
-    // valid post req
+    // valid
     postReq = {
-      ...testClasse,
+      ...testClass,
     };
+    delete postReq.id;
     delete postReq.type;
-    delete postReq.user;
+    delete postReq.status;
+    delete postReq.description;
+    delete postReq.credits;
     delete postReq._lang_en;
   });
 
@@ -48,79 +53,191 @@ describe('Classes Service', function () {
   }).timeout(10000);
 
   /**
-   * schema post id
+   * schema post name
    */
-  it('should validate post schema for id', async () => {
-    // id is required
-    delete postReq.id;
+  it('should validate post schema for name', async () => {
+    // name is required
+    delete postReq.name;
     let res = ClassesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"id" is required');
+    chai.expect(res.error.details[0].message).to.include('"name" is required');
 
-    // id is number
-    postReq.id = 1;
+    // name is number
+    postReq.name = 1;
     res = ClassesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"id" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"name" must be a string');
 
-    // id is null
-    postReq.id = null;
+    // name is null
+    postReq.name = null;
     res = ClassesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"id" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"name" must be a string');
 
-    // id empty
-    postReq.id = '';
+    // name empty
+    postReq.name = '';
     res = ClassesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"id" is not allowed to be empty');
-  }).timeout(10000);
+    chai.expect(res.error.details[0].message).to.include('"name" is not allowed to be empty');
 
-  /**
-   * schema post classes
-   */
-  it('should validate post schema for classes', async () => {
-    // classes must be a string
-    postReq.classes = 1;
-    let res = ClassesService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"classes" must be an array');
-
-    // classes null
-    postReq.classes = null;
+    // name too long
+    postReq.name = '0123456789012345678901234567890123456789012345678901234567890123456789';
     res = ClassesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"classes" must be an array');
+    chai
+      .expect(res.error.details[0].message)
+      .to.include('"name" length must be less than or equal to 64 characters long');
 
-    // classes empty allowed
-    postReq.classes = [];
+    // name only is enough
+    postReq.name = 'name';
     res = ClassesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
+  }).timeout(10000);
 
-    // classes invalid value
-    postReq.classes = ['some value'];
+  /**
+   * schema post description
+   */
+  it('should validate post schema for description', async () => {
+    // description must be a string
+    postReq.description = 1;
+    let res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"description" must be a string');
+
+    // description too long
+    postReq.description = '';
+    for (let i = 0; i < 200; ++i) {
+      postReq.description += '0123456789';
+    }
     res = ClassesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"classes[0]" must be of type object');
+    chai
+      .expect(res.error.details[0].message)
+      .to.include('"description" length must be less than or equal to 1024 characters long');
 
-    // classes id is required
-    postReq.classes = [{}];
+    // description is null
+    postReq.description = null;
     res = ClassesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"classes[0].id" is required');
+    chai.expect(res.error).to.not.exist;
+  }).timeout(10000);
 
-    // classes id must be a string
-    postReq.classes = [{ id: 1 }];
+  /**
+   * schema post status
+   */
+  it('should validate post schema for status', async () => {
+    // status must be a string
+    postReq.status = 1;
+    let res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
+
+    // status null
+    postReq.status = null;
     res = ClassesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"classes[0].id" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
 
-    // classes id empty
-    postReq.classes = [{ id: '' }];
+    // status empty
+    postReq.status = '';
     res = ClassesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"classes[0].id" is not allowed to be empty');
+    chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
+
+    // status too long
+    postReq.status = '0123456789012345678901234567890123456789012345678901234567890123456789';
+    res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
+
+    // status invalid value
+    postReq.status = 'some value';
+    res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
+
+    // status value
+    postReq.status = ClassesConstants.Status.Active;
+    res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error).to.not.exist;
+  }).timeout(10000);
+
+  /**
+   * schema post credits
+   */
+  it('should validate post schema for credits', async () => {
+    // credits must be a number
+    postReq.credits = '1';
+    let res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"credits" must be a number');
+
+    // credits null
+    postReq.credits = null;
+    res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"credits" must be a number');
+
+    // credits negative
+    postReq.credits = -1;
+    res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"credits" must be greater than or equal to 0');
+
+    // credits too big
+    postReq.credits = 100000000000;
+    res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"credits" must be less than or equal to 1024');
+
+    // credits value
+    postReq.credits = 1;
+    res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error).to.not.exist;
+  }).timeout(10000);
+
+  /**
+   * schema post required
+   */
+  it('should validate post schema for required', async () => {
+    // required must be a string
+    postReq.required = 1;
+    let res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"required" must be one of [required, optional]');
+
+    // required null
+    postReq.required = null;
+    res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"required" must be one of [required, optional]');
+
+    // required empty
+    postReq.required = '';
+    res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"required" must be one of [required, optional]');
+
+    // required too long
+    postReq.required = '0123456789012345678901234567890123456789012345678901234567890123456789';
+    res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"required" must be one of [required, optional]');
+
+    // required invalid value
+    postReq.required = 'some value';
+    res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"required" must be one of [required, optional]');
+
+    // required value
+    postReq.required = ClassesConstants.Required.Required;
+    res = ClassesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error).to.not.exist;
   }).timeout(10000);
 
   /**
@@ -158,7 +275,7 @@ describe('Classes Service', function () {
    * schema patch
    * is the same as post - add only the extra cases
    */
-  it('should validate patch schema set', async () => {
+  it('should validate patch schema', async () => {
     // nothing is required
     let patchReq = {};
     let res = ClassesService.Validators.Patch.validate(patchReq);
@@ -188,154 +305,29 @@ describe('Classes Service', function () {
     res = ClassesService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
-  }).timeout(10000);
 
-  /**
-   * schema patch.unset
-   */
-  it('should validate patch schema unset', async () => {
     // unset must be an object
-    let patchReq = {
+    patchReq = {
       unset: 1,
     };
     res = ClassesService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"unset" is not allowed');
-  }).timeout(10000);
+    chai.expect(res.error.details[0].message).to.include('"unset" must be an array');
 
-  /**
-   * schema patch.add
-   */
-  it('should validate patch schema add', async () => {
-    // add must be an object
-    let patchReq = {
-      add: 1,
-    };
-    res = ClassesService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"add" must be of type object');
-
-    // add empty is allowed
+    // unset empty is allowed
     patchReq = {
-      add: {},
+      unset: [],
     };
     res = ClassesService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
 
-    // add extra
+    // unset invalid
     patchReq = {
-      add: {
-        extra: 1,
-      },
+      unset: ['extra'],
     };
     res = ClassesService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"add.extra" is not allowed');
-
-    // add classes
-    patchReq = {
-      add: {
-        classes: 1,
-      },
-    };
-    res = ClassesService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"add.classes" must be an array');
-
-    // add classes empty
-    patchReq = {
-      add: {
-        classes: [{}],
-      },
-    };
-    res = ClassesService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('add.classes[0].id" is required');
-
-    // add classes roles req
-    patchReq = {
-      add: {
-        classes: [
-          {
-            id: 'id1',
-          },
-        ],
-      },
-    };
-    res = ClassesService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
-  }).timeout(10000);
-
-  /**
-   * schema patch.remove
-   */
-  it('should validate patch schema remove', async () => {
-    // remove must be an object
-    let patchReq = {
-      remove: 1,
-    };
-    res = ClassesService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"remove" must be of type object');
-
-    // remove empty is allowed
-    patchReq = {
-      remove: {},
-    };
-    res = ClassesService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
-
-    // remove extra
-    patchReq = {
-      remove: {
-        extra: 1,
-      },
-    };
-    res = ClassesService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"remove.extra" is not allowed');
-
-    // remove classes
-    patchReq = {
-      remove: {
-        classes: 1,
-      },
-    };
-    res = ClassesService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"remove.classes" must be an array');
-
-    // remove classes empty
-    patchReq = {
-      remove: {
-        classes: [],
-      },
-    };
-    res = ClassesService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
-
-    // remove classes empty id
-    patchReq = {
-      remove: {
-        classes: [''],
-      },
-    };
-    res = ClassesService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"remove.classes[0]" must be of type object');
-
-    // remove classes empty
-    patchReq = {
-      remove: {
-        classes: [{}],
-      },
-    };
-    res = ClassesService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('remove.classes[0].id" is required');
+    chai.expect(res.error.details[0].message).to.include('"unset[0]" must be [description]');
   }).timeout(10000);
 });

@@ -34,19 +34,17 @@ describe('Classes Service', function () {
    */
   it('should put with success', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     const putReq = {
-      ...testClasse,
+      ...testClass,
     };
     delete putReq.id;
-    delete putReq.user;
     delete putReq.type;
     delete putReq._lang_en;
 
     // stub
-    let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake((config, objInfo) => {
-      objInfo.user = testClasse.user;
+    let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
       return { status: 200, value: true };
     });
 
@@ -54,7 +52,7 @@ describe('Classes Service', function () {
       console.log(`DbOpsUtils.put called`);
       return {
         status: 200,
-        value: { ...testClasse },
+        value: { ...testClass },
       };
     });
 
@@ -67,7 +65,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.put(testClasse.id, putReq, _ctx);
+    let res = await ClassesService.put(testClass.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -78,9 +76,10 @@ describe('Classes Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        id: testClasse.id,
-        user: testClasse.user,
-        type: testClasse.type,
+        id: testClass.id,
+        name: testClass.name,
+        type: testClass.type,
+        status: testClass.status,
       },
     });
   }).timeout(10000);
@@ -103,14 +102,14 @@ describe('Classes Service', function () {
    */
   it('should put fail validation', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     const putReq = {
-      ...testClasse,
+      ...testClass,
     };
 
     // call
-    let res = await ClassesService.put(testClasse.id, putReq, _ctx);
+    let res = await ClassesService.put(testClass.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -123,13 +122,12 @@ describe('Classes Service', function () {
    */
   it('should put fail references', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     const putReq = {
-      ...testClasse,
+      ...testClass,
     };
     delete putReq.id;
-    delete putReq.user;
     delete putReq.type;
     delete putReq._lang_en;
 
@@ -139,7 +137,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.put(testClasse.id, putReq, _ctx);
+    let res = await ClassesService.put(testClass.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -158,13 +156,12 @@ describe('Classes Service', function () {
    */
   it('should put fail put', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     const putReq = {
-      ...testClasse,
+      ...testClass,
     };
     delete putReq.id;
-    delete putReq.user;
     delete putReq.type;
     delete putReq._lang_en;
 
@@ -179,7 +176,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.put(testClasse.id, putReq, _ctx);
+    let res = await ClassesService.put(testClass.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

@@ -74,7 +74,7 @@ const Private = {
           projection: { id: 1, name: 1, type: 1, status: 1, email: 1 },
         },
       ],
-      notifications: { projection: Private.ResProjection } /* for sync+async */,
+      notifications: { projection: { ...BaseServiceUtils.Constants.DefaultProjection, user: 1 } } /* for sync+async */,
     };
     return config;
   },

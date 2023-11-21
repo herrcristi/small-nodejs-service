@@ -37,13 +37,13 @@ describe('Classes Service', function () {
    */
   it('should delete with success', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     let stubBase = sinon.stub(DbOpsUtils, 'delete').callsFake((config, objID) => {
       console.log(`DbOpsUtils.delete called`);
       return {
         status: 200,
-        value: { ...testClasse },
+        value: { ...testClass },
       };
     });
 
@@ -56,7 +56,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.delete(testClasse.id, _ctx);
+    let res = await ClassesService.delete(testClass.id, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -66,9 +66,10 @@ describe('Classes Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        id: testClasse.id,
-        user: testClasse.user,
-        type: testClasse.type,
+        id: testClass.id,
+        name: testClass.name,
+        type: testClass.type,
+        status: testClass.status,
       },
     });
   }).timeout(10000);
@@ -91,7 +92,7 @@ describe('Classes Service', function () {
    */
   it('should delete fail ', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'delete').callsFake((config, objID) => {
@@ -100,7 +101,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.delete(testClasse.id, _ctx);
+    let res = await ClassesService.delete(testClass.id, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

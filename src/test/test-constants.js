@@ -297,7 +297,12 @@ const Public = {
       status: 'active',
       description: 'Mathematics basics',
       credits: 5,
-      requiredType: 'required',
+      required: 'required',
+      _lang_en: {
+        status: 'Active',
+        credits: '5',
+        required: 'Required',
+      },
     },
     {
       id: 'class2',
@@ -306,7 +311,12 @@ const Public = {
       status: 'active',
       description: 'Politics basics',
       credits: 3,
-      requiredType: 'optional',
+      required: 'optional',
+      _lang_en: {
+        status: 'Active',
+        credits: '3',
+        required: 'Optional',
+      },
     },
   ],
 
@@ -321,7 +331,7 @@ const Public = {
           status: 'active',
           description: 'Mathematics basics',
           credits: 5,
-          requiredType: 'required',
+          required: 'required',
         },
       ],
     },
