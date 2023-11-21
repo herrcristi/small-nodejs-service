@@ -23,7 +23,7 @@ const Public = {
   },
 
   // Required
-  RequiredType: {
+  Required: {
     Required: 'required',
     Optional: 'optional',
   },
