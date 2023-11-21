@@ -17,5 +17,9 @@
   "users.delete": "User '{0}' removed",
   "users.patch": "User '{0}' modified",
   "users.post": "User '{0}' added",
-  "users.put": "User '{0}' modified"
+  "users.put": "User '{0}' modified",
+  "classes.delete": "Class '{0}' removed",
+  "classes.patch": "Class '{0}' modified",
+  "classes.post": "Class '{0}' added",
+  "classes.put": "Class '{0}' modified"
 }
