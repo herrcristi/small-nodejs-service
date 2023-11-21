@@ -321,7 +321,7 @@ describe('Users Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai
       .expect(res.error.details[0].message)
-      .to.include('"schools[0].roles[0]" must be one of [admin, teacher, student]');
+      .to.include('"schools[0].roles[0]" must be one of [admin, professor, student]');
 
     // schools roles must be strings
     postReq.schools = [{ id: 'id1', roles: [''] }];
@@ -329,7 +329,7 @@ describe('Users Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai
       .expect(res.error.details[0].message)
-      .to.include('"schools[0].roles[0]" must be one of [admin, teacher, student]');
+      .to.include('"schools[0].roles[0]" must be one of [admin, professor, student]');
   }).timeout(10000);
 
   /**

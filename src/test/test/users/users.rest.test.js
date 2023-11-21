@@ -253,13 +253,13 @@ describe('Users Rest', function () {
   }).timeout(10000);
 
   /**
-   * filterNotificationByRole for teacher
+   * filterNotificationByRole for professor
    */
-  it('should do filterNotificationByRole for teacher', async () => {
+  it('should do filterNotificationByRole for professor', async () => {
     const notification = _.cloneDeep(TestConstants.UsersNotifications[0]);
 
     // call
-    let res = UsersRest.filterNotificationByRole(notification, 'teacher', _ctx);
+    let res = UsersRest.filterNotificationByRole(notification, 'professor', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -275,7 +275,7 @@ describe('Users Rest', function () {
           schools: [
             {
               id: 'school-high2',
-              roles: ['teacher'],
+              roles: ['professor'],
             },
           ],
         },
@@ -411,7 +411,7 @@ describe('Users Rest', function () {
               schools: [
                 {
                   id: 'school-high2',
-                  roles: ['teacher', 'admin'],
+                  roles: ['professor', 'admin'],
                 },
               ],
             },

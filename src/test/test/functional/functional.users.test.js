@@ -11,6 +11,7 @@ const TestConstants = require('../../test-constants.js');
 const SchoolsDatabase = require('../../../services/schools/schools.database.js');
 const UsersDatabase = require('../../../services/users/users.database.js');
 const StudentsDatabase = require('../../../services/students/students.database.js');
+const ProfessorsDatabase = require('../../../services/professors/professors.database.js');
 const EventsDatabase = require('../../../services/events/events.database.js');
 
 const UsersRest = require('../../../services/rest/users.rest.js');
@@ -32,6 +33,96 @@ describe('Users Functional', function () {
   });
 
   after(async function () {});
+
+  /**
+   * check schools before for events/students/professors
+   */
+  checkSchoolsBefore = async (testUser, _ctx) => {
+    // events/students/professors before (in each school)
+    for (const school of testUser.schools) {
+      let eventsSchoolCountBefore = await (
+        await EventsDatabase.collection({ ..._ctx, tenantID: school.id })
+      ).countDocuments();
+      console.log(`\nEvents for schools ${school.id} count before: ${eventsSchoolCountBefore}\n`);
+      chai.expect(eventsSchoolCountBefore).to.equal(0);
+
+      let studentsBefore = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
+        .find({})
+        .toArray();
+      console.log(`\nStudents for school ${school.id} before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
+      chai.expect(studentsBefore.length).to.equal(0);
+
+      let professorsBefore = await (await ProfessorsDatabase.collection({ ..._ctx, tenantID: school.id }))
+        .find({})
+        .toArray();
+      console.log(`\nProfessors for school ${school.id} before: ${JSON.stringify(professorsBefore, null, 2)}\n`);
+      chai.expect(professorsBefore.length).to.equal(0);
+    }
+  };
+
+  /**
+   * check schools after for events/students/professors
+   */
+  checkSchoolsAfter = async (testUserID, testUser, testUserStatus, _ctx) => {
+    const testStudentSchoolsIDs = testUser.schools
+      .filter((item) => item.roles.includes('student'))
+      .map((item) => item.id);
+    const testProfessorSchoolsIDs = testUser.schools
+      .filter((item) => item.roles.includes('professor'))
+      .map((item) => item.id);
+
+    // events/students/professors after (in each school)
+    for (const school of testUser.schools) {
+      let expectedEvents = 0;
+      let studentsAfter = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
+        .find({})
+        .toArray();
+      console.log(`\nStudents for school ${school.id} after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
+
+      if (testStudentSchoolsIDs.includes(school.id)) {
+        expectedEvents++;
+        chai.expect(studentsAfter.length).to.equal(1);
+
+        chai.expect(studentsAfter.map((item) => item.id).includes(testUserID)).to.equal(true);
+        for (const student of studentsAfter) {
+          if (student.id === testUserID) {
+            chai.expect(student.user.name).to.equal(testUser.name);
+            chai.expect(student.user.email).to.equal(testUser.email);
+            chai.expect(student.user.status).to.equal(testUserStatus);
+          }
+        }
+      } else {
+        chai.expect(studentsAfter.length).to.equal(0);
+      }
+
+      let professorsAfter = await (await ProfessorsDatabase.collection({ ..._ctx, tenantID: school.id }))
+        .find({})
+        .toArray();
+      console.log(`\nProfessors for school ${school.id} after: ${JSON.stringify(professorsAfter, null, 2)}\n`);
+
+      if (testProfessorSchoolsIDs.includes(school.id)) {
+        expectedEvents++;
+        chai.expect(professorsAfter.length).to.equal(1);
+
+        chai.expect(professorsAfter.map((item) => item.id).includes(testUserID)).to.equal(true);
+        for (const professor of professorsAfter) {
+          if (professor.id === testUserID) {
+            chai.expect(professor.user.name).to.equal(testUser.name);
+            chai.expect(professor.user.email).to.equal(testUser.email);
+            chai.expect(professor.user.status).to.equal(testUserStatus);
+          }
+        }
+      } else {
+        chai.expect(professorsAfter.length).to.equal(0);
+      }
+
+      let eventsSchoolCountAfter = await (
+        await EventsDatabase.collection({ ..._ctx, tenantID: school.id })
+      ).countDocuments();
+      console.log(`\nEvents for schools ${school.id} count after: ${eventsSchoolCountAfter}\n`);
+      chai.expect(eventsSchoolCountAfter).to.equal(expectedEvents);
+    }
+  };
 
   /**
    * getAll with success
@@ -113,22 +204,12 @@ describe('Users Functional', function () {
     delete testUser.type;
     delete testUser._lang_en;
 
-    const testStudentSchoolsIDs = testUser.schools
-      .filter((item) => item.roles.includes('student'))
-      .map((item) => item.id);
-
-    // check events before
+    // check global events before
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
-    // students before (in each school)
-    for (const school of testUser.schools) {
-      let studentsBefore = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
-        .find({})
-        .toArray();
-      console.log(`\nStudents for school ${school.id} before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
-      chai.expect(studentsBefore.length).to.equal(0);
-    }
+    // events/students/professors before (in each school)
+    await checkSchoolsBefore(testUser, _ctx);
 
     // call
     let res = await chai
@@ -149,32 +230,13 @@ describe('Users Functional', function () {
 
     const testUserID = res.body.id;
 
-    // events after
+    // global events after
     let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
-    // students after (in each school)
-    for (const school of testUser.schools) {
-      let studentsAfter = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
-        .find({})
-        .toArray();
-      console.log(`\nStudents for school ${school.id} after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
-
-      if (testStudentSchoolsIDs.includes(school.id)) {
-        chai.expect(studentsAfter.length).to.equal(1);
-
-        chai.expect(studentsAfter.map((item) => item.id).includes(testUserID)).to.equal(true);
-        for (const student of studentsAfter) {
-          if (student.id === testUserID) {
-            chai.expect(student.user.name).to.equal(testUser.name);
-            chai.expect(student.user.email).to.equal(testUser.email);
-          }
-        }
-      } else {
-        chai.expect(studentsAfter.length).to.equal(0);
-      }
-    }
+    // events/students/professors after (in each school)
+    await checkSchoolsAfter(testUserID, testUser, testUser.status, _ctx);
 
     // do a get
     res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUserID}`);
@@ -207,20 +269,10 @@ describe('Users Functional', function () {
     delete testUser.type;
     delete testUser._lang_en;
 
-    const testStudentSchoolsIDs = testUser.schools
-      .filter((item) => item.roles.includes('student'))
-      .map((item) => item.id);
+    // events/students/professors before (in each school)
+    await checkSchoolsBefore(testUser, _ctx);
 
-    // students before (in each school)
-    for (const school of testUser.schools) {
-      let studentsBefore = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
-        .find({})
-        .toArray();
-      console.log(`\nStudents for school ${school.id} before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
-      chai.expect(studentsBefore.length).to.equal(0);
-    }
-
-    // call put first to update users and create students, ...
+    // call put first to update users and create students, professors, etc ...
     let res = await chai
       .request(TestConstants.WebServer)
       .put(`${UsersConstants.ApiPath}/${testUserID}`)
@@ -231,29 +283,10 @@ describe('Users Functional', function () {
 
     chai.expect(res.status).to.equal(200);
 
-    // check students after put
-    for (const school of testUser.schools) {
-      let studentsBefore = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
-        .find({})
-        .toArray();
-      console.log(`\nStudents for school ${school.id} after: ${JSON.stringify(studentsBefore, null, 2)}\n`);
+    // events/students/professors after put (in each school)
+    await checkSchoolsAfter(testUserID, testUser, testUser.status, _ctx);
 
-      if (testStudentSchoolsIDs.includes(school.id)) {
-        chai.expect(studentsBefore.length).to.equal(1);
-
-        chai.expect(studentsBefore.map((item) => item.id).includes(testUserID)).to.equal(true);
-        for (const student of studentsBefore) {
-          if (student.id === testUserID) {
-            chai.expect(student.user.name).to.equal(testUser.name);
-            chai.expect(student.user.email).to.equal(testUser.email);
-          }
-        }
-      } else {
-        chai.expect(studentsBefore.length).to.equal(0);
-      }
-    }
-
-    // check events before
+    // check global events before
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
@@ -269,33 +302,13 @@ describe('Users Functional', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(res.body.id).to.equal(testUserID);
 
-    // events after
+    // global events after
     let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
-    // check students after (should rename the same even after user is deleted)
-    for (const school of testUser.schools) {
-      let studentsBefore = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
-        .find({})
-        .toArray();
-      console.log(`\nStudents for school ${school.id} after: ${JSON.stringify(studentsBefore, null, 2)}\n`);
-
-      if (testStudentSchoolsIDs.includes(school.id)) {
-        chai.expect(studentsBefore.length).to.equal(1);
-
-        chai.expect(studentsBefore.map((item) => item.id).includes(testUserID)).to.equal(true);
-        for (const student of studentsBefore) {
-          if (student.id === testUserID) {
-            chai.expect(student.user.name).to.equal(testUser.name);
-            chai.expect(student.user.email).to.equal(testUser.email);
-            chai.expect(student.user.status).to.equal(UsersRest.Constants.Status.Disabled);
-          }
-        }
-      } else {
-        chai.expect(studentsBefore.length).to.equal(0);
-      }
-    }
+    // check events/students/professors after (should remain the same with status disabled even after user is deleted)
+    await checkSchoolsAfter(testUserID, testUser, UsersRest.Constants.Status.Disabled, _ctx);
 
     // do a get
     testUser.id = res.body.id;
@@ -320,22 +333,12 @@ describe('Users Functional', function () {
     delete testUser.type;
     delete testUser._lang_en;
 
-    const testStudentSchoolsIDs = testUser.schools
-      .filter((item) => item.roles.includes('student'))
-      .map((item) => item.id);
-
-    // events before
+    // global events before
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
-    // students before (in each school)
-    for (const school of testUser.schools) {
-      let studentsBefore = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
-        .find({})
-        .toArray();
-      console.log(`\nStudents for school ${school.id} before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
-      chai.expect(studentsBefore.length).to.equal(0);
-    }
+    // events/students/professors before (in each school)
+    await checkSchoolsBefore(testUser, _ctx);
 
     // call
     let res = await chai
@@ -348,32 +351,13 @@ describe('Users Functional', function () {
 
     chai.expect(res.status).to.equal(200);
 
-    // events after
+    // global events after
     let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
-    // check students after
-    for (const school of testUser.schools) {
-      let studentsBefore = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
-        .find({})
-        .toArray();
-      console.log(`\nStudents for school ${school.id} after: ${JSON.stringify(studentsBefore, null, 2)}\n`);
-
-      if (testStudentSchoolsIDs.includes(school.id)) {
-        chai.expect(studentsBefore.length).to.equal(1);
-
-        chai.expect(studentsBefore.map((item) => item.id).includes(testUserID)).to.equal(true);
-        for (const student of studentsBefore) {
-          if (student.id === testUserID) {
-            chai.expect(student.user.name).to.equal(testUser.name);
-            chai.expect(student.user.email).to.equal(testUser.email);
-          }
-        }
-      } else {
-        chai.expect(studentsBefore.length).to.equal(0);
-      }
-    }
+    // events/students/professors after (in each school)
+    await checkSchoolsAfter(testUserID, testUser, testUser.status, _ctx);
 
     // do a get
     res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUserID}`);
@@ -396,22 +380,12 @@ describe('Users Functional', function () {
     delete testUser.type;
     delete testUser._lang_en;
 
-    const testStudentSchoolsIDs = testUser.schools
-      .filter((item) => item.roles.includes('student'))
-      .map((item) => item.id);
-
-    // events before
+    // global events before
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
-    // students before (in each school)
-    for (const school of testUser.schools) {
-      let studentsBefore = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
-        .find({})
-        .toArray();
-      console.log(`\nStudents for school ${school.id} before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
-      chai.expect(studentsBefore.length).to.equal(0);
-    }
+    // events/students/professors before (in each school)
+    await checkSchoolsBefore(testUser, _ctx);
 
     // call
     let res = await chai
@@ -427,32 +401,13 @@ describe('Users Functional', function () {
     chai.expect(res.body.id).to.equal(testUserID);
     chai.expect(res.body.name).to.equal(testUser.name);
 
-    // events after
+    // global events after
     let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
-    // check students after
-    for (const school of testUser.schools) {
-      let studentsBefore = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
-        .find({})
-        .toArray();
-      console.log(`\nStudents for school ${school.id} after: ${JSON.stringify(studentsBefore, null, 2)}\n`);
-
-      if (testStudentSchoolsIDs.includes(school.id)) {
-        chai.expect(studentsBefore.length).to.equal(1);
-
-        chai.expect(studentsBefore.map((item) => item.id).includes(testUserID)).to.equal(true);
-        for (const student of studentsBefore) {
-          if (student.id === testUserID) {
-            chai.expect(student.user.name).to.equal(testUser.name);
-            chai.expect(student.user.email).to.equal(testUser.email);
-          }
-        }
-      } else {
-        chai.expect(studentsBefore.length).to.equal(0);
-      }
-    }
+    // events/students/professors after put (in each school)
+    await checkSchoolsAfter(testUserID, testUser, testUser.status, _ctx);
 
     // do a get
     res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUserID}`);

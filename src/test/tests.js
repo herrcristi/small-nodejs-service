@@ -14,6 +14,7 @@ require('./test/users/users.all.tests.js');
 require('./test/events/events.all.tests.js');
 
 require('./test/students/students.all.tests.js');
+require('./test/professors/professors.all.tests.js');
 
 if (process.env.TEST_DB) {
   require('./test/functional/functional.all.tests.js');

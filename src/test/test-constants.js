@@ -68,7 +68,7 @@ const Public = {
         },
         {
           id: 'school-high2',
-          roles: ['teacher', 'admin'],
+          roles: ['professor', 'admin'],
         },
       ],
       _lang_en: {
@@ -87,7 +87,7 @@ const Public = {
       schools: [
         {
           id: 'school-univ1',
-          roles: ['teacher'],
+          roles: ['professor'],
         },
       ],
       _lang_en: {
@@ -113,7 +113,7 @@ const Public = {
             },
             {
               id: 'school-high2',
-              roles: ['teacher', 'admin'],
+              roles: ['professor', 'admin'],
             },
           ],
         },
@@ -236,6 +236,51 @@ const Public = {
             email: 'big.ben@testdomain.test',
           },
           type: 'student',
+        },
+      ],
+    },
+  ],
+
+  /**
+   * Professors
+   */
+  Professors: [
+    {
+      id: 'user1',
+      user: {
+        id: 'user1',
+        name: 'Big Ben',
+        type: 'user',
+        status: 'active',
+        email: 'big.ben@testdomain.test',
+      },
+      type: 'professor',
+      classes: [],
+    },
+    {
+      id: 'user2',
+      type: 'Professor',
+      user: {
+        id: 'user2',
+      },
+      classes: [],
+    },
+  ],
+
+  ProfessorsNotifications: [
+    {
+      serviceName: 'professors',
+      modified: [
+        {
+          id: 'user1',
+          user: {
+            id: 'user1',
+            name: 'Big Ben',
+            type: 'user',
+            status: 'active',
+            email: 'big.ben@testdomain.test',
+          },
+          type: 'professor',
         },
       ],
     },
