@@ -336,6 +336,47 @@ const Public = {
       ],
     },
   ],
+
+  /**
+   * Locations
+   */
+  Locations: [
+    {
+      id: 'location1',
+      name: 'Main Conference Room',
+      type: 'location',
+      status: 'active',
+      address: 'Main Building, Main Conference Room',
+      _lang_en: {
+        status: 'Active',
+      },
+    },
+    {
+      id: 'location2',
+      name: 'Second Room',
+      type: 'location',
+      status: 'active',
+      address: 'Main Building, 1st floor, second room',
+      _lang_en: {
+        status: 'Active',
+      },
+    },
+  ],
+
+  LocationsNotifications: [
+    {
+      serviceName: 'locations',
+      modified: [
+        {
+          id: 'location1',
+          name: 'Main Conference Room',
+          type: 'location',
+          status: 'active',
+          address: 'Main Building, Main Conference Room',
+        },
+      ],
+    },
+  ],
 };
 
 module.exports = { ...Public };

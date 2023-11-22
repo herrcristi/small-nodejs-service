@@ -23,5 +23,9 @@
   "classes.delete": "Class '{0}' removed",
   "classes.patch": "Class '{0}' modified",
   "classes.post": "Class '{0}' added",
-  "classes.put": "Class '{0}' modified"
+  "classes.put": "Class '{0}' modified",
+  "locations.delete": "Location '{0}' removed",
+  "locations.patch": "Location '{0}' modified",
+  "locations.post": "Location '{0}' added",
+  "locations.put": "Location '{0}' modified"
 }

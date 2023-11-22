@@ -1,5 +1,5 @@
 /**
- * Classes service
+ * Locations service
  */
 
 const Joi = require('joi');
@@ -13,40 +13,34 @@ const ReferencesUtils = require('../../core/utils/base-service.references.utils.
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 
 const EventsRest = require('../rest/events.rest.js');
-const ClassesRest = require('../rest/classes.rest.js');
-const ClassesConstants = require('./classes.constants.js');
-const ClassesDatabase = require('./classes.database.js');
+const LocationsRest = require('../rest/locations.rest.js');
+const LocationsConstants = require('./locations.constants.js');
+const LocationsDatabase = require('./locations.database.js');
 
 /**
  * validation
  */
 const Schema = {
-  Class: Joi.object().keys({
+  Location: Joi.object().keys({
     name: Joi.string().min(1).max(64),
     status: Joi.string()
       .min(1)
       .max(64)
-      .valid(...Object.values(ClassesConstants.Status)),
-    description: Joi.string().min(0).max(1024).allow(null),
-    credits: Joi.number().min(0).max(1024).prefs({ convert: false }),
-    required: Joi.string()
-      .min(1)
-      .max(64)
-      .valid(...Object.values(ClassesConstants.Required)),
+      .valid(...Object.values(LocationsConstants.Status)),
+    address: Joi.string().min(1).max(1024),
   }),
 };
 
 const Validators = {
-  Post: Schema.Class.fork(['name'], (x) => x.required() /*make required */).keys({
-    type: Joi.string().valid(ClassesConstants.Type),
+  Post: Schema.Location.fork(['name', 'address'], (x) => x.required() /*make required */).keys({
+    type: Joi.string().valid(LocationsConstants.Type),
   }),
 
-  Put: Schema.Class,
+  Put: Schema.Location,
 
   Patch: Joi.object().keys({
-    // for patch allowed operations are set, unset
-    set: Schema.Class,
-    unset: Joi.array().items(Joi.string().min(1).max(128).valid('description')),
+    // for patch allowed operations are set
+    set: Schema.Location,
   }),
 };
 
@@ -60,11 +54,11 @@ const Private = {
    */
   getConfig: async (_ctx) => {
     const config = {
-      serviceName: ClassesConstants.ServiceName,
-      collection: await ClassesDatabase.collection(_ctx),
+      serviceName: LocationsConstants.ServiceName,
+      collection: await LocationsDatabase.collection(_ctx),
       references: [], // to be populated (like foreign keys)
       notifications: {
-        projection: { ...BaseServiceUtils.Constants.DefaultProjection, description: 1, credits: 1, required: 1 },
+        projection: { ...BaseServiceUtils.Constants.DefaultProjection, address: 1 },
       } /* for sync+async */,
     };
     return config;
@@ -100,7 +94,7 @@ const Public = {
     }
 
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-    const rf = await RestApiUtils.buildFilterFromReq(req, Schema.Classe, _ctx);
+    const rf = await RestApiUtils.buildFilterFromReq(req, Schema.Location, _ctx);
     if (rf.error) {
       return rf;
     }
@@ -191,10 +185,8 @@ const Public = {
       return Private.errorNoTenant(_ctx);
     }
 
-    objInfo.type = ClassesConstants.Type;
-    objInfo.status = objInfo.status || ClassesConstants.Status.Pending; // add default status if not set
-    objInfo.credits = objInfo.credits || 0; // add default credits if not set
-    objInfo.required = objInfo.required || ClassesConstants.Required.Required; // add default required if not set
+    objInfo.type = LocationsConstants.Type;
+    objInfo.status = objInfo.status || LocationsConstants.Status.Pending; // add default status if not set
 
     // validate
     const v = Validators.Post.validate(objInfo);
@@ -222,11 +214,11 @@ const Public = {
     }
 
     // raise event for post
-    await EventsRest.raiseEventForObject(ClassesConstants.ServiceName, Private.Action.Post, r.value, r.value, _ctx);
+    await EventsRest.raiseEventForObject(LocationsConstants.ServiceName, Private.Action.Post, r.value, r.value, _ctx);
 
     // raise a notification for new obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await ClassesRest.raiseNotification(Private.Notification.Added, [rnp.value], _ctx);
+    let rn = await LocationsRest.raiseNotification(Private.Notification.Added, [rnp.value], _ctx);
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, null /*def projection */, _ctx);
@@ -250,11 +242,11 @@ const Public = {
     }
 
     // raise event for delete
-    await EventsRest.raiseEventForObject(ClassesConstants.ServiceName, Private.Action.Delete, r.value, r.value, _ctx);
+    await EventsRest.raiseEventForObject(LocationsConstants.ServiceName, Private.Action.Delete, r.value, r.value, _ctx);
 
     // raise a notification for removed obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await ClassesRest.raiseNotification(Private.Notification.Removed, [rnp.value], _ctx);
+    let rn = await LocationsRest.raiseNotification(Private.Notification.Removed, [rnp.value], _ctx);
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, null /*def projection */, _ctx);
@@ -294,11 +286,11 @@ const Public = {
     }
 
     // raise event for put
-    await EventsRest.raiseEventForObject(ClassesConstants.ServiceName, Private.Action.Put, r.value, objInfo, _ctx);
+    await EventsRest.raiseEventForObject(LocationsConstants.ServiceName, Private.Action.Put, r.value, objInfo, _ctx);
 
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await ClassesRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+    let rn = await LocationsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, null /*def projection */, _ctx);
@@ -339,11 +331,17 @@ const Public = {
     }
 
     // raise event for patch
-    await EventsRest.raiseEventForObject(ClassesConstants.ServiceName, Private.Action.Patch, r.value, patchInfo, _ctx);
+    await EventsRest.raiseEventForObject(
+      LocationsConstants.ServiceName,
+      Private.Action.Patch,
+      r.value,
+      patchInfo,
+      _ctx
+    );
 
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await ClassesRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+    let rn = await LocationsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, null /*def projection */, _ctx);
@@ -377,8 +375,6 @@ const Public = {
   translate: async (obj, _ctx) => {
     const translations = {
       status: TranslationsUtils.string(obj?.status, _ctx),
-      required: TranslationsUtils.string(obj?.required, _ctx),
-      credits: TranslationsUtils.number(obj?.credits, _ctx), // add credits as strings in order to be search for with regex
     };
 
     return await TranslationsUtils.addTranslations(obj, translations, _ctx);
@@ -388,5 +384,5 @@ const Public = {
 module.exports = {
   ...Public,
   Validators,
-  Constants: ClassesConstants,
+  Constants: LocationsConstants,
 };
