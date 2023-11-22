@@ -9,11 +9,11 @@ chai.use(chaiHttp);
 const TranslationsUtils = require('../../../core/utils/translations.utils.js');
 
 const TestConstants = require('../../test-constants.js');
-const ClassesService = require('../../../services/classes/classes.service.js');
+const LocationsService = require('../../../services/locations/locations.service.js');
 
-describe('Classes Service', function () {
+describe('Locations Service', function () {
   const tenantID = _.cloneDeep(TestConstants.Schools[0].id);
-  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Classes' };
+  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Locations' };
 
   before(async function () {});
 
@@ -32,16 +32,12 @@ describe('Classes Service', function () {
    * translate with success
    */
   it('should do translate with success', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClass = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
     let stubString = sinon.stub(TranslationsUtils, 'string').callsFake((val) => {
       console.log(`\nTranslationsUtils.string called for ${JSON.stringify(val, null, 2)}\n`);
-      return {};
-    });
-    let stubNumber = sinon.stub(TranslationsUtils, 'number').callsFake((val) => {
-      console.log(`\nTranslationsUtils.number called ${JSON.stringify(val, null, 2)}\n`);
       return {};
     });
 
@@ -57,12 +53,11 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.translate(testClass, _ctx);
+    let res = await LocationsService.translate(testLocation, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubString.callCount).to.equal(2);
-    chai.expect(stubNumber.callCount).to.equal(1);
     chai.expect(stubAddTranslations.callCount).to.equal(1);
   }).timeout(10000);
 });

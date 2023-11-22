@@ -31,23 +31,23 @@ describe('Classes Service', function () {
    */
   it('should getOne with success', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'getOne').callsFake(() => {
       console.log(`\nDbOpsUtils.getOne called\n`);
-      return { status: 200, value: { ...testClasse } };
+      return { status: 200, value: { ...testClass } };
     });
 
     // call
-    let res = await ClassesService.getOne(testClasse.id, { id: 1 }, _ctx);
+    let res = await ClassesService.getOne(testClass.id, { id: 1 }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: { ...testClasse },
+      value: { ...testClass },
     });
   }).timeout(10000);
 

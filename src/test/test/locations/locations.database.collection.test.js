@@ -10,12 +10,12 @@ const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 
 const TestConstants = require('../../test-constants.js');
-const ClassesService = require('../../../services/classes/classes.service.js');
-const ClassesDatabase = require('../../../services/classes/classes.database.js');
+const LocationsService = require('../../../services/locations/locations.service.js');
+const LocationsDatabase = require('../../../services/locations/locations.database.js');
 
-describe('Classes Database', function () {
+describe('Locations Database', function () {
   const tenantID = _.cloneDeep(TestConstants.Schools[0].id);
-  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Classes' };
+  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Locations' };
 
   before(async function () {});
 
@@ -32,7 +32,7 @@ describe('Classes Database', function () {
    */
   it('should collection failed tenant', async () => {
     // call
-    let res = await ClassesDatabase.collection({ ..._ctx, tenantID: undefined });
+    let res = await LocationsDatabase.collection({ ..._ctx, tenantID: undefined });
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

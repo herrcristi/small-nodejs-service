@@ -11,11 +11,11 @@ const RestApiUtils = require('../../../core/utils/rest-api.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 
 const TestConstants = require('../../test-constants.js');
-const ClassesService = require('../../../services/classes/classes.service.js');
+const LocationsService = require('../../../services/locations/locations.service.js');
 
-describe('Classes Service', function () {
+describe('Locations Service', function () {
   const tenantID = _.cloneDeep(TestConstants.Schools[0].id);
-  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Classes' };
+  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Locations' };
 
   before(async function () {});
 
@@ -31,7 +31,7 @@ describe('Classes Service', function () {
    * getAllForReq with success
    */
   it('should getAllForReq with success', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
+    const testLocations = _.cloneDeep(TestConstants.Locations);
 
     // stub
     let stubBuild = sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
@@ -43,7 +43,7 @@ describe('Classes Service', function () {
       console.log(`\nDbOpsUtils.getAll called\n`);
       return {
         status: 200,
-        value: [...testClasses],
+        value: [...testLocations],
       };
     });
 
@@ -51,12 +51,12 @@ describe('Classes Service', function () {
       console.log(`\nDbOpsUtils.getAllCount called\n`);
       return {
         status: 200,
-        value: testClasses.length,
+        value: testLocations.length,
       };
     });
 
     // call
-    let res = await ClassesService.getAllForReq({ query: {} }, _ctx);
+    let res = await LocationsService.getAllForReq({ query: {} }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -66,9 +66,9 @@ describe('Classes Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        data: [...testClasses],
+        data: [...testLocations],
         meta: {
-          count: testClasses.length,
+          count: testLocations.length,
           limit: 0,
           skip: 0,
           sort: undefined,
@@ -82,7 +82,7 @@ describe('Classes Service', function () {
    */
   it('should getAllForReq failed tenant', async () => {
     // call
-    let res = await ClassesService.getAllForReq({ query: {} }, { ..._ctx, tenantID: undefined });
+    let res = await LocationsService.getAllForReq({ query: {} }, { ..._ctx, tenantID: undefined });
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -101,7 +101,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.getAllForReq({ query: {} }, _ctx);
+    let res = await LocationsService.getAllForReq({ query: {} }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -131,7 +131,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.getAllForReq({ query: {} }, { ..._ctx });
+    let res = await LocationsService.getAllForReq({ query: {} }, { ..._ctx });
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -150,7 +150,7 @@ describe('Classes Service', function () {
    * getAllForReq failed getAllCount
    */
   it('should getAllForReq failed getAllCount', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
+    const testLocations = _.cloneDeep(TestConstants.Locations);
 
     // stub
     let stubBuild = sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
@@ -160,7 +160,7 @@ describe('Classes Service', function () {
 
     let stubBaseGetAll = sinon.stub(DbOpsUtils, 'getAll').callsFake((config, filter) => {
       console.log(`\nDbOpsUtils.getAll called\n`);
-      return { status: 200, value: [...testClasses] };
+      return { status: 200, value: [...testLocations] };
     });
 
     let stubBaseGetAllCount = sinon.stub(DbOpsUtils, 'getAllCount').callsFake((config, filter) => {
@@ -169,7 +169,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.getAllForReq({ query: {} }, _ctx);
+    let res = await LocationsService.getAllForReq({ query: {} }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

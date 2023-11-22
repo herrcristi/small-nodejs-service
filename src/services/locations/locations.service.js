@@ -47,6 +47,7 @@ const Validators = {
 const Private = {
   Action: BaseServiceUtils.Constants.Action,
   Notification: NotificationsUtils.Constants.Notification,
+  ResProjection: { ...BaseServiceUtils.Constants.DefaultProjection, address: 1 },
 
   /**
    * config
@@ -221,7 +222,7 @@ const Public = {
     let rn = await LocationsRest.raiseNotification(Private.Notification.Added, [rnp.value], _ctx);
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, null /*def projection */, _ctx);
+    return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
   },
 
   /**
@@ -249,7 +250,7 @@ const Public = {
     let rn = await LocationsRest.raiseNotification(Private.Notification.Removed, [rnp.value], _ctx);
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, null /*def projection */, _ctx);
+    return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
   },
 
   /**
@@ -293,7 +294,7 @@ const Public = {
     let rn = await LocationsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, null /*def projection */, _ctx);
+    return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
   },
 
   /**
@@ -344,7 +345,7 @@ const Public = {
     let rn = await LocationsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, null /*def projection */, _ctx);
+    return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
   },
 
   /**

@@ -7,10 +7,10 @@ const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
 const TestConstants = require('../../test-constants.js');
-const ClassesConstants = require('../../../services/classes/classes.constants.js');
-const ClassesService = require('../../../services/classes/classes.service.js');
+const LocationsConstants = require('../../../services/locations/locations.constants.js');
+const LocationsService = require('../../../services/locations/locations.service.js');
 
-describe('Classes Controller', function () {
+describe('Locations Controller', function () {
   const _ctx = { tenantID: 'school-univ1', reqID: 'testReq', lang: 'en', service: 'Service' };
 
   before(async function () {});
@@ -27,16 +27,16 @@ describe('Classes Controller', function () {
    * getAll with success
    */
   it('should getAll with success', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
+    const testLocations = _.cloneDeep(TestConstants.Locations);
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'getAllForReq').callsFake(() => {
-      console.log(`\nClassesService.getAllForReq called\n`);
+    let stubService = sinon.stub(LocationsService, 'getAllForReq').callsFake(() => {
+      console.log(`\nLocationsService.getAllForReq called\n`);
       return {
         status: 200,
         value: {
-          data: testClasses,
-          meta: { count: testClasses.length, skip: 0, limit: 0 },
+          data: testLocations,
+          meta: { count: testLocations.length, skip: 0, limit: 0 },
         },
       };
     });
@@ -44,7 +44,7 @@ describe('Classes Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .get(`${ClassesConstants.ApiPath}`)
+      .get(`${LocationsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -52,9 +52,9 @@ describe('Classes Controller', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      data: [...testClasses],
+      data: [...testLocations],
       meta: {
-        count: testClasses.length,
+        count: testLocations.length,
         limit: 0,
         skip: 0,
       },
@@ -65,18 +65,18 @@ describe('Classes Controller', function () {
    * getAll fail
    */
   it('should getAll fail', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
+    const testLocations = _.cloneDeep(TestConstants.Locations);
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'getAllForReq').callsFake(() => {
-      console.log(`\nClassesService.getAllForReq called\n`);
+    let stubService = sinon.stub(LocationsService, 'getAllForReq').callsFake(() => {
+      console.log(`\nLocationsService.getAllForReq called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .get(`${ClassesConstants.ApiPath}`)
+      .get(`${LocationsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -90,18 +90,18 @@ describe('Classes Controller', function () {
    * getAll fail exception
    */
   it('should getAll fail exception', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
+    const testLocations = _.cloneDeep(TestConstants.Locations);
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'getAllForReq').callsFake(() => {
-      console.log(`\nClassesService.getAllForReq called\n`);
+    let stubService = sinon.stub(LocationsService, 'getAllForReq').callsFake(() => {
+      console.log(`\nLocationsService.getAllForReq called\n`);
       throw new Error('Test error message');
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .get(`${ClassesConstants.ApiPath}`)
+      .get(`${LocationsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -116,22 +116,22 @@ describe('Classes Controller', function () {
    * getOne with success
    */
   it('should getOne with success', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'getOne').callsFake(() => {
-      console.log(`\nClassesService.getOne called\n`);
+    let stubService = sinon.stub(LocationsService, 'getOne').callsFake(() => {
+      console.log(`\nLocationsService.getOne called\n`);
       return {
         status: 200,
-        value: testClasse,
+        value: testLocation,
       };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .get(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .get(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -139,7 +139,7 @@ describe('Classes Controller', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      ...testClasse,
+      ...testLocation,
     });
   }).timeout(10000);
 
@@ -147,19 +147,19 @@ describe('Classes Controller', function () {
    * getOne fail
    */
   it('should getOne fail', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'getOne').callsFake(() => {
-      console.log(`\nClassesService.getOne called\n`);
+    let stubService = sinon.stub(LocationsService, 'getOne').callsFake(() => {
+      console.log(`\nLocationsService.getOne called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .get(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .get(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -173,19 +173,19 @@ describe('Classes Controller', function () {
    * getOne fail exception
    */
   it('should getOne fail exception', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'getOne').callsFake(() => {
-      console.log(`\nClassesService.getOne called\n`);
+    let stubService = sinon.stub(LocationsService, 'getOne').callsFake(() => {
+      console.log(`\nLocationsService.getOne called\n`);
       throw new Error('Test error message');
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .get(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .get(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -200,31 +200,31 @@ describe('Classes Controller', function () {
    * post with success
    */
   it('should post with success', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'post').callsFake(() => {
-      console.log(`\nClassesService.post called\n`);
+    let stubService = sinon.stub(LocationsService, 'post').callsFake(() => {
+      console.log(`\nLocationsService.post called\n`);
       return {
         status: 201,
-        value: { ...testClasse },
+        value: { ...testLocation },
       };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${ClassesConstants.ApiPath}`)
+      .post(`${LocationsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testClasse });
+      .send({ ...testLocation });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(201);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      ...testClasse,
+      ...testLocation,
     });
   }).timeout(10000);
 
@@ -232,21 +232,21 @@ describe('Classes Controller', function () {
    * post fail
    */
   it('should post fail', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'post').callsFake(() => {
-      console.log(`\nClassesService.post called\n`);
+    let stubService = sinon.stub(LocationsService, 'post').callsFake(() => {
+      console.log(`\nLocationsService.post called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${ClassesConstants.ApiPath}`)
+      .post(`${LocationsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testClasse });
+      .send({ ...testLocation });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -259,21 +259,21 @@ describe('Classes Controller', function () {
    * post fail exception
    */
   it('should post fail exception', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'post').callsFake(() => {
-      console.log(`\nClassesService.post called\n`);
+    let stubService = sinon.stub(LocationsService, 'post').callsFake(() => {
+      console.log(`\nLocationsService.post called\n`);
       throw new Error('Test error message');
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${ClassesConstants.ApiPath}`)
+      .post(`${LocationsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testClasse });
+      .send({ ...testLocation });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -287,22 +287,22 @@ describe('Classes Controller', function () {
    * delete with success
    */
   it('should delete with success', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'delete').callsFake(() => {
-      console.log(`\nClassesService.delete called\n`);
+    let stubService = sinon.stub(LocationsService, 'delete').callsFake(() => {
+      console.log(`\nLocationsService.delete called\n`);
       return {
         status: 200,
-        value: testClasse,
+        value: testLocation,
       };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .delete(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .delete(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -310,7 +310,7 @@ describe('Classes Controller', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      ...testClasse,
+      ...testLocation,
     });
   }).timeout(10000);
 
@@ -318,19 +318,19 @@ describe('Classes Controller', function () {
    * delete fail
    */
   it('should delete fail', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'delete').callsFake(() => {
-      console.log(`\nClassesService.delete called\n`);
+    let stubService = sinon.stub(LocationsService, 'delete').callsFake(() => {
+      console.log(`\nLocationsService.delete called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .delete(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .delete(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -344,19 +344,19 @@ describe('Classes Controller', function () {
    * delete fail exception
    */
   it('should delete fail exception', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'delete').callsFake(() => {
-      console.log(`\nClassesService.delete called\n`);
+    let stubService = sinon.stub(LocationsService, 'delete').callsFake(() => {
+      console.log(`\nLocationsService.delete called\n`);
       throw new Error('Test error message');
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .delete(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .delete(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -371,31 +371,31 @@ describe('Classes Controller', function () {
    * put with success
    */
   it('should put with success', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'put').callsFake(() => {
-      console.log(`\nClassesService.put called\n`);
+    let stubService = sinon.stub(LocationsService, 'put').callsFake(() => {
+      console.log(`\nLocationsService.put called\n`);
       return {
         status: 200,
-        value: testClasse,
+        value: testLocation,
       };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .put(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .put(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testClasse });
+      .send({ ...testLocation });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      ...testClasse,
+      ...testLocation,
     });
   }).timeout(10000);
 
@@ -403,21 +403,21 @@ describe('Classes Controller', function () {
    * put fail
    */
   it('should put fail', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'put').callsFake(() => {
-      console.log(`\nClassesService.put called\n`);
+    let stubService = sinon.stub(LocationsService, 'put').callsFake(() => {
+      console.log(`\nLocationsService.put called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .put(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .put(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testClasse });
+      .send({ ...testLocation });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -430,21 +430,21 @@ describe('Classes Controller', function () {
    * put fail exception
    */
   it('should put fail exception', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'put').callsFake(() => {
-      console.log(`\nClassesService.put called\n`);
+    let stubService = sinon.stub(LocationsService, 'put').callsFake(() => {
+      console.log(`\nLocationsService.put called\n`);
       throw new Error('Test error message');
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .put(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .put(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testClasse });
+      .send({ ...testLocation });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -458,31 +458,31 @@ describe('Classes Controller', function () {
    * patch with success
    */
   it('should patch with success', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'patch').callsFake(() => {
-      console.log(`\nClassesService.patch called\n`);
+    let stubService = sinon.stub(LocationsService, 'patch').callsFake(() => {
+      console.log(`\nLocationsService.patch called\n`);
       return {
         status: 200,
-        value: testClasse,
+        value: testLocation,
       };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .patch(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .patch(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ set: { ...testClasse } });
+      .send({ set: { ...testLocation } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      ...testClasse,
+      ...testLocation,
     });
   }).timeout(10000);
 
@@ -490,21 +490,21 @@ describe('Classes Controller', function () {
    * patch fail
    */
   it('should patch fail', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'patch').callsFake(() => {
-      console.log(`\nClassesService.patch called\n`);
+    let stubService = sinon.stub(LocationsService, 'patch').callsFake(() => {
+      console.log(`\nLocationsService.patch called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .patch(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .patch(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ set: { ...testClasse } });
+      .send({ set: { ...testLocation } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -517,21 +517,21 @@ describe('Classes Controller', function () {
    * patch fail exception
    */
   it('should patch fail exception', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'patch').callsFake(() => {
-      console.log(`\nClassesService.patch called\n`);
+    let stubService = sinon.stub(LocationsService, 'patch').callsFake(() => {
+      console.log(`\nLocationsService.patch called\n`);
       throw new Error('Test error message');
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .patch(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .patch(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ set: { ...testClasse } });
+      .send({ set: { ...testLocation } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -549,8 +549,8 @@ describe('Classes Controller', function () {
     const notif = notifications[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'notification').callsFake(() => {
-      console.log(`\nClassesService.notification called\n`);
+    let stubService = sinon.stub(LocationsService, 'notification').callsFake(() => {
+      console.log(`\nLocationsService.notification called\n`);
       return {
         status: 200,
         value: true,
@@ -560,7 +560,7 @@ describe('Classes Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${ClassesConstants.ApiPathInternal}/notifications`)
+      .post(`${LocationsConstants.ApiPathInternal}/notifications`)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -578,15 +578,15 @@ describe('Classes Controller', function () {
     const notif = notifications[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'notification').callsFake(() => {
-      console.log(`\nClassesService.notification called\n`);
+    let stubService = sinon.stub(LocationsService, 'notification').callsFake(() => {
+      console.log(`\nLocationsService.notification called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${ClassesConstants.ApiPathInternal}/notifications`)
+      .post(`${LocationsConstants.ApiPathInternal}/notifications`)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -604,15 +604,15 @@ describe('Classes Controller', function () {
     const notif = notifications[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'notification').callsFake(() => {
-      console.log(`\nClassesService.notification called\n`);
+    let stubService = sinon.stub(LocationsService, 'notification').callsFake(() => {
+      console.log(`\nLocationsService.notification called\n`);
       throw new Error('Test error message');
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${ClassesConstants.ApiPathInternal}/notifications`)
+      .post(`${LocationsConstants.ApiPathInternal}/notifications`)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 

@@ -9,11 +9,11 @@ chai.use(chaiHttp);
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 
 const TestConstants = require('../../test-constants.js');
-const ClassesService = require('../../../services/classes/classes.service.js');
+const LocationsService = require('../../../services/locations/locations.service.js');
 
-describe('Classes Service', function () {
+describe('Locations Service', function () {
   const tenantID = _.cloneDeep(TestConstants.Schools[0].id);
-  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Classes' };
+  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Locations' };
 
   before(async function () {});
 
@@ -29,7 +29,7 @@ describe('Classes Service', function () {
    * getAllCount with success
    */
   it('should getAllCount with success', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
+    const testLocations = _.cloneDeep(TestConstants.Locations);
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'getAllCount').callsFake(() => {
@@ -38,7 +38,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.getAllCount({}, _ctx);
+    let res = await LocationsService.getAllCount({}, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -54,7 +54,7 @@ describe('Classes Service', function () {
    */
   it('should getAllCount failed tenant', async () => {
     // call
-    let res = await ClassesService.getAllCount({ query: {} }, { ..._ctx, tenantID: undefined });
+    let res = await LocationsService.getAllCount({ query: {} }, { ..._ctx, tenantID: undefined });
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

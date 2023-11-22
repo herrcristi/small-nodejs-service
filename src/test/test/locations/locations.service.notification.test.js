@@ -11,13 +11,13 @@ const ReferencesUtils = require('../../../core/utils/base-service.references.uti
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 
 const TestConstants = require('../../test-constants.js');
-const ClassesService = require('../../../services/classes/classes.service.js');
-const ClassesRest = require('../../../services/rest/classes.rest.js');
+const LocationsService = require('../../../services/locations/locations.service.js');
+const LocationsRest = require('../../../services/rest/locations.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
-describe('Classes Service', function () {
+describe('Locations Service', function () {
   const tenantID = _.cloneDeep(TestConstants.Schools[0].id);
-  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Classes' };
+  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Locations' };
 
   before(async function () {});
 
@@ -33,7 +33,7 @@ describe('Classes Service', function () {
    * notification with success
    */
   it('should do notification with success', async () => {
-    const notifications = _.cloneDeep(TestConstants.ClassesNotifications);
+    const notifications = _.cloneDeep(TestConstants.LocationsNotifications);
     const notif = notifications[0];
 
     // stub
@@ -46,7 +46,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.notification(notif, _ctx);
+    let res = await LocationsService.notification(notif, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -62,7 +62,7 @@ describe('Classes Service', function () {
    */
   it('should notification failed tenant', async () => {
     // call
-    let res = await ClassesService.notification({}, { ..._ctx, tenantID: undefined });
+    let res = await LocationsService.notification({}, { ..._ctx, tenantID: undefined });
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -74,7 +74,7 @@ describe('Classes Service', function () {
    * notification fail validation
    */
   it('should notification fail validation', async () => {
-    const notifications = _.cloneDeep(TestConstants.ClassesNotifications);
+    const notifications = _.cloneDeep(TestConstants.LocationsNotifications);
     const notif = notifications[0];
     delete notif.serviceName;
 
@@ -88,7 +88,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.notification(notif, _ctx);
+    let res = await LocationsService.notification(notif, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

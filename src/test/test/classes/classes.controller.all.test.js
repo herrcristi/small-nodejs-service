@@ -117,21 +117,21 @@ describe('Classes Controller', function () {
    */
   it('should getOne with success', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubService = sinon.stub(ClassesService, 'getOne').callsFake(() => {
       console.log(`\nClassesService.getOne called\n`);
       return {
         status: 200,
-        value: testClasse,
+        value: testClass,
       };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .get(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .get(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -148,7 +148,7 @@ describe('Classes Controller', function () {
    */
   it('should getOne fail', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubService = sinon.stub(ClassesService, 'getOne').callsFake(() => {
@@ -159,7 +159,7 @@ describe('Classes Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .get(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .get(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -174,7 +174,7 @@ describe('Classes Controller', function () {
    */
   it('should getOne fail exception', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubService = sinon.stub(ClassesService, 'getOne').callsFake(() => {
@@ -185,7 +185,7 @@ describe('Classes Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .get(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .get(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -201,14 +201,14 @@ describe('Classes Controller', function () {
    */
   it('should post with success', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubService = sinon.stub(ClassesService, 'post').callsFake(() => {
       console.log(`\nClassesService.post called\n`);
       return {
         status: 201,
-        value: { ...testClasse },
+        value: { ...testClass },
       };
     });
 
@@ -217,7 +217,7 @@ describe('Classes Controller', function () {
       .request(TestConstants.WebServer)
       .post(`${ClassesConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testClasse });
+      .send({ ...testClass });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -233,7 +233,7 @@ describe('Classes Controller', function () {
    */
   it('should post fail', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubService = sinon.stub(ClassesService, 'post').callsFake(() => {
@@ -246,7 +246,7 @@ describe('Classes Controller', function () {
       .request(TestConstants.WebServer)
       .post(`${ClassesConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testClasse });
+      .send({ ...testClass });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -260,7 +260,7 @@ describe('Classes Controller', function () {
    */
   it('should post fail exception', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubService = sinon.stub(ClassesService, 'post').callsFake(() => {
@@ -273,7 +273,7 @@ describe('Classes Controller', function () {
       .request(TestConstants.WebServer)
       .post(`${ClassesConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testClasse });
+      .send({ ...testClass });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -288,21 +288,21 @@ describe('Classes Controller', function () {
    */
   it('should delete with success', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubService = sinon.stub(ClassesService, 'delete').callsFake(() => {
       console.log(`\nClassesService.delete called\n`);
       return {
         status: 200,
-        value: testClasse,
+        value: testClass,
       };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .delete(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .delete(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -319,7 +319,7 @@ describe('Classes Controller', function () {
    */
   it('should delete fail', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubService = sinon.stub(ClassesService, 'delete').callsFake(() => {
@@ -330,7 +330,7 @@ describe('Classes Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .delete(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .delete(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -345,7 +345,7 @@ describe('Classes Controller', function () {
    */
   it('should delete fail exception', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubService = sinon.stub(ClassesService, 'delete').callsFake(() => {
@@ -356,7 +356,7 @@ describe('Classes Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .delete(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .delete(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -372,7 +372,7 @@ describe('Classes Controller', function () {
    */
   it('should put with success', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubService = sinon.stub(ClassesService, 'put').callsFake(() => {
@@ -386,9 +386,9 @@ describe('Classes Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .put(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .put(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testClasse });
+      .send({ ...testClass });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -404,7 +404,7 @@ describe('Classes Controller', function () {
    */
   it('should put fail', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubService = sinon.stub(ClassesService, 'put').callsFake(() => {
@@ -415,9 +415,9 @@ describe('Classes Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .put(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .put(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testClasse });
+      .send({ ...testClass });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -431,7 +431,7 @@ describe('Classes Controller', function () {
    */
   it('should put fail exception', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubService = sinon.stub(ClassesService, 'put').callsFake(() => {
@@ -442,9 +442,9 @@ describe('Classes Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .put(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .put(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testClasse });
+      .send({ ...testClass });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -459,7 +459,7 @@ describe('Classes Controller', function () {
    */
   it('should patch with success', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubService = sinon.stub(ClassesService, 'patch').callsFake(() => {
@@ -473,16 +473,16 @@ describe('Classes Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .patch(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .patch(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ set: { ...testClasse } });
+      .send({ set: { ...testClass } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      ...testClasse,
+      ...testClass,
     });
   }).timeout(10000);
 
@@ -491,7 +491,7 @@ describe('Classes Controller', function () {
    */
   it('should patch fail', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubService = sinon.stub(ClassesService, 'patch').callsFake(() => {
@@ -502,9 +502,9 @@ describe('Classes Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .patch(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .patch(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ set: { ...testClasse } });
+      .send({ set: { ...testClass } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -518,7 +518,7 @@ describe('Classes Controller', function () {
    */
   it('should patch fail exception', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClasse = testClasses[0];
+    const testClass = testClasses[0];
 
     // stub
     let stubService = sinon.stub(ClassesService, 'patch').callsFake(() => {
@@ -529,9 +529,9 @@ describe('Classes Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .patch(`${ClassesConstants.ApiPath}/${testClasse.id}`)
+      .patch(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ set: { ...testClasse } });
+      .send({ set: { ...testClass } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check

@@ -10,9 +10,9 @@ const RestCommsUtils = require('../../../core/utils/rest-communications.utils.js
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
 
 const TestConstants = require('../../test-constants.js');
-const ClassesRest = require('../../../services/rest/classes.rest.js');
+const LocationsRest = require('../../../services/rest/locations.rest.js');
 
-describe('Classes Rest', function () {
+describe('Locations Rest', function () {
   const _ctx = { tenantID: 'school-univ1', reqID: 'testReq', lang: 'en', service: 'Service' };
 
   before(async function () {});
@@ -36,7 +36,7 @@ describe('Classes Rest', function () {
     });
 
     // call
-    let res = await ClassesRest.getAll('?', _ctx);
+    let res = await LocationsRest.getAll('?', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -54,7 +54,7 @@ describe('Classes Rest', function () {
     });
 
     // call
-    let res = await ClassesRest.getAllByIDs(['id1'], { id: 1, name: 1 } /*projection*/, _ctx);
+    let res = await LocationsRest.getAllByIDs(['id1'], { id: 1, name: 1 } /*projection*/, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -72,7 +72,7 @@ describe('Classes Rest', function () {
     });
 
     // call
-    let res = await ClassesRest.getOne('id1', _ctx);
+    let res = await LocationsRest.getOne('id1', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -90,7 +90,7 @@ describe('Classes Rest', function () {
     });
 
     // call
-    let res = await ClassesRest.post({}, _ctx);
+    let res = await LocationsRest.post({}, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -108,7 +108,7 @@ describe('Classes Rest', function () {
     });
 
     // call
-    let res = await ClassesRest.delete('id1', _ctx);
+    let res = await LocationsRest.delete('id1', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -126,7 +126,7 @@ describe('Classes Rest', function () {
     });
 
     // call
-    let res = await ClassesRest.put('id1', {}, _ctx);
+    let res = await LocationsRest.put('id1', {}, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -144,7 +144,7 @@ describe('Classes Rest', function () {
     });
 
     // call
-    let res = await ClassesRest.patch('id1', {}, _ctx);
+    let res = await LocationsRest.patch('id1', {}, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -162,7 +162,7 @@ describe('Classes Rest', function () {
     });
 
     // call
-    let res = await ClassesRest.notification({}, _ctx);
+    let res = await LocationsRest.notification({}, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -175,7 +175,7 @@ describe('Classes Rest', function () {
    */
   it('should do subscribe', async () => {
     // call
-    let res = await ClassesRest.subscribe({ callback: null, projection: { id: 1 } }, _ctx);
+    let res = await LocationsRest.subscribe({ callback: null, projection: { id: 1 } }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -194,7 +194,7 @@ describe('Classes Rest', function () {
     });
 
     // call
-    let res = await ClassesRest.consume({ callback: null, projection: { id: 1 } }, _ctx);
+    let res = await LocationsRest.consume({ callback: null, projection: { id: 1 } }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -213,7 +213,7 @@ describe('Classes Rest', function () {
     });
 
     // call
-    let res = await ClassesRest.raiseNotification(
+    let res = await LocationsRest.raiseNotification(
       NotificationsUtils.Constants.Notification.Added,
       [{ id: 'id1' }],
       _ctx

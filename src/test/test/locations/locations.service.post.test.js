@@ -10,14 +10,14 @@ const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 
 const TestConstants = require('../../test-constants.js');
-const ClassesConstants = require('../../../services/classes/classes.constants.js');
-const ClassesService = require('../../../services/classes/classes.service.js');
-const ClassesRest = require('../../../services/rest/classes.rest.js');
+const LocationsConstants = require('../../../services/locations/locations.constants.js');
+const LocationsService = require('../../../services/locations/locations.service.js');
+const LocationsRest = require('../../../services/rest/locations.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
-describe('Classes Service', function () {
+describe('Locations Service', function () {
   const tenantID = _.cloneDeep(TestConstants.Schools[0].id);
-  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Classes' };
+  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Locations' };
 
   before(async function () {});
 
@@ -33,11 +33,11 @@ describe('Classes Service', function () {
    * post with success
    */
   it('should post with success', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClass = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     const postReq = {
-      ...testClass,
+      ...testLocation,
     };
     delete postReq.id;
     delete postReq.type;
@@ -52,7 +52,7 @@ describe('Classes Service', function () {
       console.log(`DbOpsUtils.post called`);
       return {
         status: 201,
-        value: { ...postObj, id: testClass.id },
+        value: { ...postObj, id: testLocation.id },
       };
     });
 
@@ -60,26 +60,27 @@ describe('Classes Service', function () {
       console.log(`EventsRest.raiseEventForObject called`);
     });
 
-    let stubClassesRest = sinon.stub(ClassesRest, 'raiseNotification').callsFake(() => {
-      console.log(`ClassesRest raiseNotification called`);
+    let stubLocationsRest = sinon.stub(LocationsRest, 'raiseNotification').callsFake(() => {
+      console.log(`LocationsRest raiseNotification called`);
     });
 
     // call
-    let res = await ClassesService.post(postReq, _ctx);
+    let res = await LocationsService.post(postReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubPopulateReferences.callCount).to.equal(1);
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(stubEvent.callCount).to.equal(1);
-    chai.expect(stubClassesRest.callCount).to.equal(1);
+    chai.expect(stubLocationsRest.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 201,
       value: {
-        id: testClass.id,
-        name: testClass.name,
-        type: testClass.type,
-        status: testClass.status,
+        id: testLocation.id,
+        name: testLocation.name,
+        type: testLocation.type,
+        status: testLocation.status,
+        address: testLocation.address,
       },
     });
   }).timeout(10000);
@@ -88,17 +89,15 @@ describe('Classes Service', function () {
    * post with success with defaults
    */
   it('should post with success with defaults', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClass = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     const postReq = {
-      ...testClass,
+      ...testLocation,
     };
     delete postReq.id;
     delete postReq.type;
     delete postReq.status;
-    delete postReq.credits;
-    delete postReq.required;
     delete postReq._lang_en;
 
     // stub
@@ -110,7 +109,7 @@ describe('Classes Service', function () {
       console.log(`DbOpsUtils.post called`);
       return {
         status: 201,
-        value: { ...postObj, id: testClass.id },
+        value: { ...postObj, id: testLocation.id },
       };
     });
 
@@ -118,26 +117,27 @@ describe('Classes Service', function () {
       console.log(`EventsRest.raiseEventForObject called`);
     });
 
-    let stubClassesRest = sinon.stub(ClassesRest, 'raiseNotification').callsFake(() => {
-      console.log(`ClassesRest raiseNotification called`);
+    let stubLocationsRest = sinon.stub(LocationsRest, 'raiseNotification').callsFake(() => {
+      console.log(`LocationsRest raiseNotification called`);
     });
 
     // call
-    let res = await ClassesService.post(postReq, _ctx);
+    let res = await LocationsService.post(postReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubPopulateReferences.callCount).to.equal(1);
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(stubEvent.callCount).to.equal(1);
-    chai.expect(stubClassesRest.callCount).to.equal(1);
+    chai.expect(stubLocationsRest.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 201,
       value: {
-        id: testClass.id,
-        name: testClass.name,
-        type: testClass.type,
-        status: ClassesConstants.Status.Pending,
+        id: testLocation.id,
+        name: testLocation.name,
+        type: testLocation.type,
+        status: LocationsConstants.Status.Pending,
+        address: testLocation.address,
       },
     });
   }).timeout(10000);
@@ -147,7 +147,7 @@ describe('Classes Service', function () {
    */
   it('should post failed tenant', async () => {
     // call
-    let res = await ClassesService.post({}, { ..._ctx, tenantID: undefined });
+    let res = await LocationsService.post({}, { ..._ctx, tenantID: undefined });
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -159,15 +159,15 @@ describe('Classes Service', function () {
    * post fail validation
    */
   it('should post fail validation', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClass = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     const postReq = {
-      ...testClass,
+      ...testLocation,
     };
 
     // call
-    let res = await ClassesService.post(postReq, _ctx);
+    let res = await LocationsService.post(postReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -179,11 +179,11 @@ describe('Classes Service', function () {
    * post fail references
    */
   it('should post fail references', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClass = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     const postReq = {
-      ...testClass,
+      ...testLocation,
     };
     delete postReq.id;
     delete postReq.type;
@@ -195,7 +195,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.post(postReq, _ctx);
+    let res = await LocationsService.post(postReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -213,11 +213,11 @@ describe('Classes Service', function () {
    * post fail post
    */
   it('should post fail post', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClass = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     const postReq = {
-      ...testClass,
+      ...testLocation,
     };
     delete postReq.id;
     delete postReq.type;
@@ -234,7 +234,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.post(postReq, _ctx);
+    let res = await LocationsService.post(postReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

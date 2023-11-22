@@ -10,14 +10,14 @@ const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 
 const TestConstants = require('../../test-constants.js');
-const ClassesConstants = require('../../../services/classes/classes.constants.js');
-const ClassesService = require('../../../services/classes/classes.service.js');
-const ClassesRest = require('../../../services/rest/classes.rest.js');
+const LocationsConstants = require('../../../services/locations/locations.constants.js');
+const LocationsService = require('../../../services/locations/locations.service.js');
+const LocationsRest = require('../../../services/rest/locations.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
-describe('Classes Service', function () {
+describe('Locations Service', function () {
   const tenantID = _.cloneDeep(TestConstants.Schools[0].id);
-  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Classes' };
+  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Locations' };
 
   before(async function () {});
 
@@ -33,12 +33,12 @@ describe('Classes Service', function () {
    * patch with success
    */
   it('should patch with success', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClass = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     const patchReq = {
       set: {
-        ...testClass,
+        ...testLocation,
       },
     };
     delete patchReq.set.id;
@@ -54,7 +54,7 @@ describe('Classes Service', function () {
       console.log(`DbOpsUtils.patch called`);
       return {
         status: 200,
-        value: { ...testClass },
+        value: { ...testLocation },
       };
     });
 
@@ -62,26 +62,27 @@ describe('Classes Service', function () {
       console.log(`EventsRest.raiseEventForObject called`);
     });
 
-    let stubClassesRest = sinon.stub(ClassesRest, 'raiseNotification').callsFake(() => {
-      console.log(`ClassesRest raiseNotification called`);
+    let stubLocationsRest = sinon.stub(LocationsRest, 'raiseNotification').callsFake(() => {
+      console.log(`LocationsRest raiseNotification called`);
     });
 
     // call
-    let res = await ClassesService.patch(testClass.id, patchReq, _ctx);
+    let res = await LocationsService.patch(testLocation.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubPopulateReferences.callCount).to.equal(1);
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(stubEvent.callCount).to.equal(1);
-    chai.expect(stubClassesRest.callCount).to.equal(1);
+    chai.expect(stubLocationsRest.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        id: testClass.id,
-        name: testClass.name,
-        type: testClass.type,
-        status: testClass.status,
+        id: testLocation.id,
+        name: testLocation.name,
+        type: testLocation.type,
+        status: testLocation.status,
+        address: testLocation.address,
       },
     });
   }).timeout(10000);
@@ -91,7 +92,7 @@ describe('Classes Service', function () {
    */
   it('should patch failed tenant', async () => {
     // call
-    let res = await ClassesService.patch('id', {}, { ..._ctx, tenantID: undefined });
+    let res = await LocationsService.patch('id', {}, { ..._ctx, tenantID: undefined });
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -103,17 +104,17 @@ describe('Classes Service', function () {
    * patch fail validation
    */
   it('should patch fail validation', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClass = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     const patchReq = {
       set: {
-        ...testClass,
+        ...testLocation,
       },
     };
 
     // call
-    let res = await ClassesService.patch(testClass.id, patchReq, _ctx);
+    let res = await LocationsService.patch(testLocation.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -125,12 +126,12 @@ describe('Classes Service', function () {
    * patch fail references
    */
   it('should patch fail references', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClass = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     const patchReq = {
       set: {
-        ...testClass,
+        ...testLocation,
       },
     };
     delete patchReq.set.id;
@@ -143,7 +144,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.patch(testClass.id, patchReq, _ctx);
+    let res = await LocationsService.patch(testLocation.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -161,12 +162,12 @@ describe('Classes Service', function () {
    * patch fail patch
    */
   it('should patch fail patch', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClass = testClasses[0];
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocation = testLocations[0];
 
     const patchReq = {
       set: {
-        ...testClass,
+        ...testLocation,
       },
     };
     delete patchReq.set.id;
@@ -184,7 +185,7 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.patch(testClass.id, patchReq, _ctx);
+    let res = await LocationsService.patch(testLocation.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
