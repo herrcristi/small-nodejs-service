@@ -29,7 +29,6 @@ describe('Locations Service', function () {
     delete postReq.id;
     delete postReq.type;
     delete postReq.status;
-    delete postReq.address;
     delete postReq._lang_en;
   });
 
@@ -87,39 +86,40 @@ describe('Locations Service', function () {
       .expect(res.error.details[0].message)
       .to.include('"name" length must be less than or equal to 64 characters long');
 
-    // name only is enough
+    // name and address are enough
     postReq.name = 'name';
+    postReq.address = 'address';
     res = LocationsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
   }).timeout(10000);
 
   /**
-   * schema post description
+   * schema post address
    */
-  it('should validate post schema for description', async () => {
-    // description must be a string
-    postReq.description = 1;
+  it('should validate post schema for address', async () => {
+    // address must be a string
+    postReq.address = 1;
     let res = LocationsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"description" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"address" must be a string');
 
-    // description too long
-    postReq.description = '';
+    // address too long
+    postReq.address = '';
     for (let i = 0; i < 200; ++i) {
-      postReq.description += '0123456789';
+      postReq.address += '0123456789';
     }
     res = LocationsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai
       .expect(res.error.details[0].message)
-      .to.include('"description" length must be less than or equal to 1024 characters long');
+      .to.include('"address" length must be less than or equal to 1024 characters long');
 
-    // description is null
-    postReq.description = null;
+    // address is null
+    postReq.address = null;
     res = LocationsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
+    chai.expect(res.error.details[0].message).to.include('"address" must be a string');
   }).timeout(10000);
 
   /**
@@ -158,82 +158,6 @@ describe('Locations Service', function () {
 
     // status value
     postReq.status = LocationsConstants.Status.Active;
-    res = LocationsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
-  }).timeout(10000);
-
-  /**
-   * schema post credits
-   */
-  it('should validate post schema for credits', async () => {
-    // credits must be a number
-    postReq.credits = '1';
-    let res = LocationsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"credits" must be a number');
-
-    // credits null
-    postReq.credits = null;
-    res = LocationsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"credits" must be a number');
-
-    // credits negative
-    postReq.credits = -1;
-    res = LocationsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"credits" must be greater than or equal to 0');
-
-    // credits too big
-    postReq.credits = 100000000000;
-    res = LocationsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"credits" must be less than or equal to 1024');
-
-    // credits value
-    postReq.credits = 1;
-    res = LocationsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
-  }).timeout(10000);
-
-  /**
-   * schema post required
-   */
-  it('should validate post schema for required', async () => {
-    // required must be a string
-    postReq.required = 1;
-    let res = LocationsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"required" must be one of [required, optional]');
-
-    // required null
-    postReq.required = null;
-    res = LocationsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"required" must be one of [required, optional]');
-
-    // required empty
-    postReq.required = '';
-    res = LocationsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"required" must be one of [required, optional]');
-
-    // required too long
-    postReq.required = '0123456789012345678901234567890123456789012345678901234567890123456789';
-    res = LocationsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"required" must be one of [required, optional]');
-
-    // required invalid value
-    postReq.required = 'some value';
-    res = LocationsService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"required" must be one of [required, optional]');
-
-    // required value
-    postReq.required = LocationsConstants.Required.Required;
     res = LocationsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
@@ -304,29 +228,5 @@ describe('Locations Service', function () {
     res = LocationsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
-
-    // unset must be an object
-    patchReq = {
-      unset: 1,
-    };
-    res = LocationsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"unset" must be an array');
-
-    // unset empty is allowed
-    patchReq = {
-      unset: [],
-    };
-    res = LocationsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
-
-    // unset invalid
-    patchReq = {
-      unset: ['extra'],
-    };
-    res = LocationsService.Validators.Patch.validate(patchReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"unset[0]" must be [description]');
   }).timeout(10000);
 });

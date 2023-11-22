@@ -28,9 +28,6 @@ describe('Locations Service', function () {
   /**
    * translate with success
    */
-  /**
-   * translate with success
-   */
   it('should do translate with success', async () => {
     const testLocations = _.cloneDeep(TestConstants.Locations);
     const testLocation = testLocations[0];
@@ -57,7 +54,7 @@ describe('Locations Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubString.callCount).to.equal(2);
+    chai.expect(stubString.callCount).to.equal(1);
     chai.expect(stubAddTranslations.callCount).to.equal(1);
   }).timeout(10000);
 });

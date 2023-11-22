@@ -139,7 +139,7 @@ describe('Classes Controller', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      ...testClasse,
+      ...testClass,
     });
   }).timeout(10000);
 
@@ -224,7 +224,7 @@ describe('Classes Controller', function () {
     chai.expect(res.status).to.equal(201);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      ...testClasse,
+      ...testClass,
     });
   }).timeout(10000);
 
@@ -310,7 +310,7 @@ describe('Classes Controller', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      ...testClasse,
+      ...testClass,
     });
   }).timeout(10000);
 
@@ -379,7 +379,7 @@ describe('Classes Controller', function () {
       console.log(`\nClassesService.put called\n`);
       return {
         status: 200,
-        value: testClasse,
+        value: testClass,
       };
     });
 
@@ -395,7 +395,7 @@ describe('Classes Controller', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
-      ...testClasse,
+      ...testClass,
     });
   }).timeout(10000);
 
@@ -466,7 +466,7 @@ describe('Classes Controller', function () {
       console.log(`\nClassesService.patch called\n`);
       return {
         status: 200,
-        value: testClasse,
+        value: testClass,
       };
     });
 
