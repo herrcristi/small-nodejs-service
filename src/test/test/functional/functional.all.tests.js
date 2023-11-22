@@ -11,3 +11,4 @@ require('./functional.schools.test.js');
 require('./functional.users.test.js');
 
 require('./functional.classes.test.js');
+require('./functional.locations.test.js');

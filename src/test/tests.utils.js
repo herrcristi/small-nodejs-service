@@ -11,6 +11,7 @@ const UsersDatabase = require('../services/users/users.database.js');
 const StudentsDatabase = require('../services/students/students.database.js');
 const ProfessorsDatabase = require('../services/professors/professors.database.js');
 const ClassesDatabase = require('../services/classes/classes.database.js');
+const LocationsDatabase = require('../services/locations/locations.database.js');
 
 const Public = {
   /**
@@ -28,6 +29,7 @@ const Public = {
       await (await StudentsDatabase.collection(_ctx)).insertMany(_.cloneDeep(TestConstants.Students));
       await (await ProfessorsDatabase.collection(_ctx)).insertMany(_.cloneDeep(TestConstants.Professors));
       await (await ClassesDatabase.collection(_ctx)).insertMany(_.cloneDeep(TestConstants.Classes));
+      await (await LocationsDatabase.collection(_ctx)).insertMany(_.cloneDeep(TestConstants.Locations));
     }
   },
 
@@ -45,12 +47,14 @@ const Public = {
       await (await StudentsDatabase.collection(_ctx)).deleteMany();
       await (await ProfessorsDatabase.collection(_ctx)).deleteMany();
       await (await ClassesDatabase.collection(_ctx)).deleteMany();
+      await (await LocationsDatabase.collection(_ctx)).deleteMany();
     }
     for (const school of TestConstants.Schools) {
       await (await EventsDatabase.collection({ ..._ctx, tenantID: school.id })).deleteMany();
       await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id })).deleteMany();
       await (await ProfessorsDatabase.collection({ ..._ctx, tenantID: school.id })).deleteMany();
       await (await ClassesDatabase.collection({ ..._ctx, tenantID: school.id })).deleteMany();
+      await (await LocationsDatabase.collection({ ..._ctx, tenantID: school.id })).deleteMany();
     }
   },
 };

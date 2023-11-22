@@ -10,11 +10,11 @@ const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 
 const TestConstants = require('../../test-constants.js');
-const ClassesService = require('../../../services/classes/classes.service.js');
+const LocationsService = require('../../../services/locations/locations.service.js');
 
-describe('Classes Service', function () {
+describe('Locations Service', function () {
   const tenantID = _.cloneDeep(TestConstants.Schools[0].id);
-  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Classes' };
+  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Locations' };
 
   before(async function () {});
 
@@ -27,36 +27,36 @@ describe('Classes Service', function () {
   after(async function () {});
 
   /**
-   * getOne with success
+   * getAllByIDs with success
    */
-  it('should getOne with success', async () => {
-    const testClasses = _.cloneDeep(TestConstants.Classes);
-    const testClass = testClasses[0];
+  it('should getAllByIDs with success', async () => {
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+    const testLocationsIDs = testLocations.map((item) => item.id);
 
     // stub
-    let stubBase = sinon.stub(DbOpsUtils, 'getOne').callsFake(() => {
-      console.log(`\nDbOpsUtils.getOne called\n`);
-      return { status: 200, value: { ...testClass } };
+    let stubBase = sinon.stub(DbOpsUtils, 'getAllByIDs').callsFake(() => {
+      console.log(`\nDbOpsUtils.getAllByIDs called\n`);
+      return { status: 200, value: [...testLocations] };
     });
 
     // call
-    let res = await ClassesService.getOne(testClass.id, { id: 1 }, _ctx);
+    let res = await LocationsService.getAllByIDs(testLocationsIDs, { id: 1 }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: { ...testClass },
+      value: [...testLocations],
     });
   }).timeout(10000);
 
   /**
-   * getOne failed no tenant
+   * getAllByIDs failed no tenant
    */
-  it('should getOne failed tenant', async () => {
+  it('should getAllByIDs failed tenant', async () => {
     // call
-    let res = await ClassesService.getOne('id', {}, { ..._ctx, tenantID: undefined });
+    let res = await LocationsService.getAllByIDs([], {}, { ..._ctx, tenantID: undefined });
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
