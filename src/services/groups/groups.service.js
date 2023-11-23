@@ -51,10 +51,10 @@ const Validators = {
     set: Schema.Group,
     unset: Joi.array().items(Joi.string().min(1).max(128).valid('description')),
     add: Joi.object().keys({
-      schools: SchemaStudents,
+      students: SchemaStudents,
     }),
     remove: Joi.object().keys({
-      schools: SchemaStudents,
+      students: SchemaStudents,
     }),
   }),
 };
