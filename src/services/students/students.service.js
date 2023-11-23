@@ -14,6 +14,8 @@ const NotificationsUtils = require('../../core/utils/base-service.notifications.
 
 const EventsRest = require('../rest/events.rest.js');
 const UsersRest = require('../rest/users.rest.js');
+const ClassesRest = require('../rest/classes.rest.js');
+const GroupsRest = require('../rest/groups.rest.js');
 const StudentsRest = require('../rest/students.rest.js');
 const StudentsConstants = require('./students.constants.js');
 const StudentsDatabase = require('./students.database.js');
@@ -72,6 +74,18 @@ const Private = {
           service: UsersRest,
           isArray: false,
           projection: { id: 1, name: 1, type: 1, status: 1, email: 1 },
+        },
+        {
+          fieldName: 'classes',
+          service: ClassesRest,
+          isArray: true,
+          projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
+        },
+        {
+          fieldName: 'groups',
+          service: GroupsRest,
+          isArray: true,
+          projection: { id: 1, name: 1, type: 1, status: 1, students: 1 },
         },
       ],
       notifications: { projection: { ...BaseServiceUtils.Constants.DefaultProjection, user: 1 } } /* for sync+async */,

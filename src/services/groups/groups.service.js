@@ -13,6 +13,7 @@ const ReferencesUtils = require('../../core/utils/base-service.references.utils.
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 
 const EventsRest = require('../rest/events.rest.js');
+const StudentsRest = require('../rest/students.rest.js');
 const GroupsRest = require('../rest/groups.rest.js');
 const GroupsConstants = require('./groups.constants.js');
 const GroupsDatabase = require('./groups.database.js');
@@ -20,6 +21,12 @@ const GroupsDatabase = require('./groups.database.js');
 /**
  * validation
  */
+const SchemaStudents = Joi.array().items(
+  Joi.object().keys({
+    id: Joi.string().min(1).max(64).required(),
+  })
+);
+
 const Schema = {
   Group: Joi.object().keys({
     name: Joi.string().min(1).max(64),
@@ -27,27 +34,35 @@ const Schema = {
       .min(1)
       .max(64)
       .valid(...Object.values(GroupsConstants.Status)),
-    address: Joi.string().min(1).max(1024),
+    description: Joi.string().min(1).max(1024).allow(null),
+    students: SchemaStudents,
   }),
 };
 
 const Validators = {
-  Post: Schema.Group.fork(['name', 'address'], (x) => x.required() /*make required */).keys({
+  Post: Schema.Group.fork(['name', 'students'], (x) => x.required() /*make required */).keys({
     type: Joi.string().valid(GroupsConstants.Type),
   }),
 
   Put: Schema.Group,
 
   Patch: Joi.object().keys({
-    // for patch allowed operations are set
+    // for patch allowed operations are set, unset, add, remove
     set: Schema.Group,
+    unset: Joi.array().items(Joi.string().min(1).max(128).valid('description')),
+    add: Joi.object().keys({
+      schools: SchemaStudents,
+    }),
+    remove: Joi.object().keys({
+      schools: SchemaStudents,
+    }),
   }),
 };
 
 const Private = {
   Action: BaseServiceUtils.Constants.Action,
   Notification: NotificationsUtils.Constants.Notification,
-  ResProjection: { ...BaseServiceUtils.Constants.DefaultProjection, address: 1 },
+  ResProjection: { ...BaseServiceUtils.Constants.DefaultProjection },
 
   /**
    * config
@@ -57,9 +72,16 @@ const Private = {
     const config = {
       serviceName: GroupsConstants.ServiceName,
       collection: await GroupsDatabase.collection(_ctx),
-      references: [], // to be populated (like foreign keys)
+      references: [
+        {
+          fieldName: 'students',
+          service: StudentsRest,
+          isArray: true,
+          projection: null /*default*/,
+        },
+      ],
       notifications: {
-        projection: { ...BaseServiceUtils.Constants.DefaultProjection, address: 1 },
+        projection: { ...BaseServiceUtils.Constants.DefaultProjection, students: 1 },
       } /* for sync+async */,
     };
     return config;
@@ -75,6 +97,34 @@ const Private = {
       status: 400,
       error: { message: msg, error: new Error(msg) },
     };
+  },
+
+  /**
+   * get the difference that was removed
+   */
+  getStudentsDiff: (user, newUser) => {
+    let userDiff = {
+      ...newUser,
+      students: [],
+    };
+
+    // create a map for students
+    let studentsMap = {};
+    for (const student of newUser.students) {
+      studentsMap[student.id] = student;
+    }
+
+    for (const student of user.students) {
+      const newStudent = studentsMap[student.id];
+      if (!newStudent) {
+        // the student was removed
+        userDiff.students.push(student);
+        continue;
+      }
+      // nothing else to check
+    }
+
+    return userDiff;
   },
 };
 
@@ -269,6 +319,13 @@ const Public = {
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+
+    // need to take diff before and after and trigger notification for deleted students changes
+    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
+    if (rget.error) {
+      return rget;
+    }
 
     // populate references
     let rf = await ReferencesUtils.populateReferences({ ...config, fillReferences: true }, objInfo, _ctx);
@@ -280,7 +337,6 @@ const Public = {
     await Public.translate(objInfo, _ctx);
 
     // put
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
     const r = await DbOpsUtils.put(config, objID, objInfo, projection, _ctx);
     if (r.error) {
       return r;
@@ -292,6 +348,13 @@ const Public = {
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await GroupsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+
+    // take the difference and notify removed students roles
+    let rdiff = { status: 200, value: Private.getStudentsDiff(rget.value, r.value) };
+    if (Object.keys(rdiff.value.students).length) {
+      let rp = BaseServiceUtils.getProjectedResponse(rdiff, config.notifications.projection /* for sync+async */, _ctx);
+      let rndiff = await GroupsRest.raiseNotification(Private.Notification.Removed, [rp.value], _ctx);
+    }
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
@@ -313,6 +376,13 @@ const Public = {
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+
+    // need to take diff before and after and trigger notification for deleted students roles changes
+    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
+    if (rget.error) {
+      return rget;
+    }
 
     // populate references
     const configRef = { ...config, fillReferences: true };
@@ -325,7 +395,6 @@ const Public = {
     await Public.translate(patchInfo.set, _ctx);
 
     // patch
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
     const r = await DbOpsUtils.patch(config, objID, patchInfo, projection, _ctx);
     if (r.error) {
       return r;
@@ -337,6 +406,13 @@ const Public = {
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await GroupsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+
+    // take the difference and notify removed students roles
+    let rdiff = { status: 200, value: Private.getStudentsDiff(rget.value, r.value) };
+    if (Object.keys(rdiff.value.students).length) {
+      let rp = BaseServiceUtils.getProjectedResponse(rdiff, config.notifications.projection /* for sync+async */, _ctx);
+      let rndiff = await GroupsRest.raiseNotification(Private.Notification.Removed, [rp.value], _ctx);
+    }
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);

@@ -38,6 +38,7 @@ describe('Groups Service', function () {
 
     const postReq = {
       ...testGroup,
+      students: [{ id: testGroup.students[0].id }],
     };
     delete postReq.id;
     delete postReq.type;
@@ -80,7 +81,6 @@ describe('Groups Service', function () {
         name: testGroup.name,
         type: testGroup.type,
         status: testGroup.status,
-        address: testGroup.address,
       },
     });
   }).timeout(10000);
@@ -94,6 +94,7 @@ describe('Groups Service', function () {
 
     const postReq = {
       ...testGroup,
+      students: [{ id: testGroup.students[0].id }],
     };
     delete postReq.id;
     delete postReq.type;
@@ -137,7 +138,6 @@ describe('Groups Service', function () {
         name: testGroup.name,
         type: testGroup.type,
         status: GroupsConstants.Status.Pending,
-        address: testGroup.address,
       },
     });
   }).timeout(10000);
@@ -164,6 +164,7 @@ describe('Groups Service', function () {
 
     const postReq = {
       ...testGroup,
+      students: [{ id: testGroup.students[0].id }],
     };
 
     // call
@@ -184,6 +185,7 @@ describe('Groups Service', function () {
 
     const postReq = {
       ...testGroup,
+      students: [{ id: testGroup.students[0].id }],
     };
     delete postReq.id;
     delete postReq.type;
@@ -218,6 +220,7 @@ describe('Groups Service', function () {
 
     const postReq = {
       ...testGroup,
+      students: [{ id: testGroup.students[0].id }],
     };
     delete postReq.id;
     delete postReq.type;

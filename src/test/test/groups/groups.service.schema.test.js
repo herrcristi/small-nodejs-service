@@ -25,10 +25,12 @@ describe('Groups Service', function () {
     // valid
     postReq = {
       ...testGroup,
+      students: [{ id: testGroup.students[0].id }],
     };
     delete postReq.id;
     delete postReq.type;
     delete postReq.status;
+    delete postReq.description;
     delete postReq._lang_en;
   });
 
@@ -86,40 +88,39 @@ describe('Groups Service', function () {
       .expect(res.error.details[0].message)
       .to.include('"name" length must be less than or equal to 64 characters long');
 
-    // name and address are enough
+    // name is enough
     postReq.name = 'name';
-    postReq.address = 'address';
     res = GroupsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
   }).timeout(10000);
 
   /**
-   * schema post address
+   * schema post description
    */
-  it('should validate post schema for address', async () => {
-    // address must be a string
-    postReq.address = 1;
+  it('should validate post schema for description', async () => {
+    // description must be a string
+    postReq.description = 1;
     let res = GroupsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"address" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"description" must be a string');
 
-    // address too long
-    postReq.address = '';
+    // description too long
+    postReq.description = '';
     for (let i = 0; i < 200; ++i) {
-      postReq.address += '0123456789';
+      postReq.description += '0123456789';
     }
     res = GroupsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai
       .expect(res.error.details[0].message)
-      .to.include('"address" length must be less than or equal to 1024 characters long');
+      .to.include('"description" length must be less than or equal to 1024 characters long');
 
-    // address is null
-    postReq.address = null;
+    // description is null
+    postReq.description = null;
     res = GroupsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"address" must be a string');
+    chai.expect(res.error).to.not.exist;
   }).timeout(10000);
 
   /**
@@ -229,4 +230,28 @@ describe('Groups Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
   }).timeout(10000);
+
+  // unset must be an object
+  patchReq = {
+    unset: 1,
+  };
+  res = GroupsService.Validators.Patch.validate(patchReq);
+  console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+  chai.expect(res.error.details[0].message).to.include('"unset" must be an array');
+
+  // unset empty is allowed
+  patchReq = {
+    unset: [],
+  };
+  res = GroupsService.Validators.Patch.validate(patchReq);
+  console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+  chai.expect(res.error).to.not.exist;
+
+  // unset invalid
+  patchReq = {
+    unset: ['extra'],
+  };
+  res = GroupsService.Validators.Patch.validate(patchReq);
+  console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+  chai.expect(res.error.details[0].message).to.include('"unset[0]" must be [description]');
 });

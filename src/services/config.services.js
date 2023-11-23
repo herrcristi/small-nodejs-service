@@ -107,6 +107,16 @@ const Public = {
       projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
     });
 
+    await GroupsRest.subscribe({
+      callback: StudentsRest.notification,
+      projection: { id: 1, name: 1, type: 1, status: 1, students: 1 },
+    });
+
+    await StudentsRest.subscribe({
+      callback: GroupsRest.notification,
+      projection: { id: 1, name: 1, type: 1, status: 1 },
+    });
+
     // init the communication
     const config = {
       local: {

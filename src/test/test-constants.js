@@ -210,7 +210,25 @@ const Public = {
         email: 'big.ben@testdomain.test',
       },
       type: 'student',
-      classes: [],
+      classes: [
+        {
+          id: 'class1',
+          name: 'Mathematics',
+          type: 'class',
+          status: 'active',
+          description: 'Mathematics basics',
+          credits: 5,
+          required: 'required',
+        },
+      ],
+      groups: [
+        {
+          id: 'group1',
+          name: 'Group 1A',
+          type: 'group',
+          status: 'active',
+        },
+      ],
     },
     {
       id: 'user2',
@@ -219,6 +237,7 @@ const Public = {
         id: 'user2',
       },
       classes: [],
+      groups: [],
     },
   ],
 
@@ -235,7 +254,9 @@ const Public = {
             status: 'active',
             email: 'big.ben@testdomain.test',
           },
+          name: 'Big Ben',
           type: 'student',
+          status: 'active',
         },
       ],
     },
@@ -255,7 +276,17 @@ const Public = {
         email: 'big.ben@testdomain.test',
       },
       type: 'professor',
-      classes: [],
+      classes: [
+        {
+          id: 'class1',
+          name: 'Mathematics',
+          type: 'class',
+          status: 'active',
+          description: 'Mathematics basics',
+          credits: 5,
+          required: 'required',
+        },
+      ],
     },
     {
       id: 'user2',
@@ -281,6 +312,8 @@ const Public = {
             email: 'big.ben@testdomain.test',
           },
           type: 'professor',
+          name: 'Big Ben',
+          status: 'active',
         },
       ],
     },
@@ -363,6 +396,21 @@ const Public = {
     },
   ],
 
+  LocationsNotifications: [
+    {
+      serviceName: 'locations',
+      modified: [
+        {
+          id: 'location1',
+          name: 'Main Conference Room',
+          type: 'location',
+          status: 'active',
+          address: 'Main Building, Main Conference Room',
+        },
+      ],
+    },
+  ],
+
   /**
    * Groups
    */
@@ -373,6 +421,14 @@ const Public = {
       type: 'group',
       status: 'active',
       description: 'Group 1A. First year',
+      students: [
+        {
+          id: 'user1',
+          name: 'Big Ben',
+          type: 'student',
+          status: 'active',
+        },
+      ],
       _lang_en: {
         status: 'Active',
       },
@@ -388,6 +444,14 @@ const Public = {
           name: 'Group1A',
           type: 'group',
           status: 'active',
+          students: [
+            {
+              id: 'user1',
+              name: 'Big Ben',
+              type: 'student',
+              status: 'active',
+            },
+          ],
         },
       ],
     },
