@@ -1,56 +1,60 @@
 /**
- * Students service
+ * Groups service
  */
 
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
-const RestApiUtils = require('../../core/utils/rest-api.utils');
+const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
-const CommonUtils = require('../../core/utils/common.utils');
+const CommonUtils = require('../../core/utils/common.utils.js');
 const ReferencesUtils = require('../../core/utils/base-service.references.utils.js');
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 
 const EventsRest = require('../rest/events.rest.js');
-const UsersRest = require('../rest/users.rest.js');
-const ClassesRest = require('../rest/classes.rest.js');
-const GroupsRest = require('../rest/groups.rest.js');
 const StudentsRest = require('../rest/students.rest.js');
-const StudentsConstants = require('./students.constants.js');
-const StudentsDatabase = require('./students.database.js');
+const GroupsRest = require('../rest/groups.rest.js');
+const GroupsConstants = require('./groups.constants.js');
+const GroupsDatabase = require('./groups.database.js');
 
 /**
  * validation
  */
-const SchemaClasses = Joi.array().items(
+const SchemaStudents = Joi.array().items(
   Joi.object().keys({
     id: Joi.string().min(1).max(64).required(),
   })
 );
 
 const Schema = {
-  Student: Joi.object().keys({
-    classes: SchemaClasses,
+  Group: Joi.object().keys({
+    name: Joi.string().min(1).max(64),
+    status: Joi.string()
+      .min(1)
+      .max(64)
+      .valid(...Object.values(GroupsConstants.Status)),
+    description: Joi.string().min(1).max(1024).allow(null),
+    students: SchemaStudents,
   }),
 };
 
 const Validators = {
-  Post: Schema.Student.fork(['classes'], (x) => x.required() /*make required */).keys({
-    id: Joi.string().min(1).max(64).required(),
-    type: Joi.string().valid(StudentsConstants.Type),
+  Post: Schema.Group.fork(['name', 'students'], (x) => x.required() /*make required */).keys({
+    type: Joi.string().valid(GroupsConstants.Type),
   }),
 
-  Put: Schema.Student,
+  Put: Schema.Group,
 
   Patch: Joi.object().keys({
-    // for patch allowed operations are add, remove, set
-    set: Schema.Student,
+    // for patch allowed operations are set, unset, add, remove
+    set: Schema.Group,
+    unset: Joi.array().items(Joi.string().min(1).max(128).valid('description')),
     add: Joi.object().keys({
-      classes: SchemaClasses,
+      schools: SchemaStudents,
     }),
     remove: Joi.object().keys({
-      classes: SchemaClasses,
+      schools: SchemaStudents,
     }),
   }),
 };
@@ -58,7 +62,7 @@ const Validators = {
 const Private = {
   Action: BaseServiceUtils.Constants.Action,
   Notification: NotificationsUtils.Constants.Notification,
-  ResProjection: { ...BaseServiceUtils.Constants.DefaultProjection, user: 1 },
+  ResProjection: { ...BaseServiceUtils.Constants.DefaultProjection },
 
   /**
    * config
@@ -66,29 +70,19 @@ const Private = {
    */
   getConfig: async (_ctx) => {
     const config = {
-      serviceName: StudentsConstants.ServiceName,
-      collection: await StudentsDatabase.collection(_ctx),
+      serviceName: GroupsConstants.ServiceName,
+      collection: await GroupsDatabase.collection(_ctx),
       references: [
         {
-          fieldName: 'user',
-          service: UsersRest,
-          isArray: false,
-          projection: { id: 1, name: 1, type: 1, status: 1, email: 1 },
-        },
-        {
-          fieldName: 'classes',
-          service: ClassesRest,
+          fieldName: 'students',
+          service: StudentsRest,
           isArray: true,
-          projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
-        },
-        {
-          fieldName: 'groups',
-          service: GroupsRest,
-          isArray: true,
-          projection: { id: 1, name: 1, type: 1, status: 1, students: 1 },
+          projection: { id: 1, name: 1, type: 1, status: 1, user: 1 },
         },
       ],
-      notifications: { projection: { ...BaseServiceUtils.Constants.DefaultProjection, user: 1 } } /* for sync+async */,
+      notifications: {
+        projection: { ...BaseServiceUtils.Constants.DefaultProjection, students: 1 },
+      } /* for sync+async */,
     };
     return config;
   },
@@ -103,6 +97,34 @@ const Private = {
       status: 400,
       error: { message: msg, error: new Error(msg) },
     };
+  },
+
+  /**
+   * get the difference that was removed
+   */
+  getStudentsDiff: (user, newUser) => {
+    let userDiff = {
+      ...newUser,
+      students: [],
+    };
+
+    // create a map for students
+    let studentsMap = {};
+    for (const student of newUser.students) {
+      studentsMap[student.id] = student;
+    }
+
+    for (const student of user.students) {
+      const newStudent = studentsMap[student.id];
+      if (!newStudent) {
+        // the student was removed
+        userDiff.students.push(student);
+        continue;
+      }
+      // nothing else to check
+    }
+
+    return userDiff;
   },
 };
 
@@ -123,7 +145,7 @@ const Public = {
     }
 
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-    const rf = await RestApiUtils.buildFilterFromReq(req, Schema.Student, _ctx);
+    const rf = await RestApiUtils.buildFilterFromReq(req, Schema.Group, _ctx);
     if (rf.error) {
       return rf;
     }
@@ -214,14 +236,14 @@ const Public = {
       return Private.errorNoTenant(_ctx);
     }
 
-    objInfo.type = StudentsConstants.Type;
+    objInfo.type = GroupsConstants.Type;
+    objInfo.status = objInfo.status || GroupsConstants.Status.Pending; // add default status if not set
 
     // validate
     const v = Validators.Post.validate(objInfo);
     if (v.error) {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
-    objInfo.user = objInfo.id;
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
@@ -243,55 +265,14 @@ const Public = {
     }
 
     // raise event for post
-    const eventObj = { ...r.value, name: r.value.user.name };
-    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Post, eventObj, r.value, _ctx);
+    await EventsRest.raiseEventForObject(GroupsConstants.ServiceName, Private.Action.Post, r.value, r.value, _ctx);
 
     // raise a notification for new obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await StudentsRest.raiseNotification(Private.Notification.Added, [rnp.value], _ctx);
+    let rn = await GroupsRest.raiseNotification(Private.Notification.Added, [rnp.value], _ctx);
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
-  },
-
-  postForUsers: async (users, _ctx) => {
-    if (!_ctx.tenantID) {
-      return Private.errorNoTenant(_ctx);
-    }
-
-    // check if already exists first
-    const usersIDs = users.map((item) => item.id);
-    let existingStudentsMap = {};
-    if (usersIDs.length) {
-      let r = await Public.getAllByIDs(usersIDs, { _id: 0, id: 1 }, _ctx);
-      if (r.error) {
-        return r;
-      }
-      r.value?.forEach((item) => (existingStudentsMap[item.id] = true));
-    }
-
-    let newUsers = [];
-    for (const user of users) {
-      if (existingStudentsMap[user.id]) {
-        console.log(`Skipping create student ${user.id}`);
-        continue;
-      }
-
-      // create
-      r = await Public.post(
-        {
-          id: user.id,
-          classes: [],
-        },
-        _ctx
-      );
-      if (r.error) {
-        return r;
-      }
-      newUsers.push(r.value);
-    }
-
-    return { status: 201, value: newUsers };
   },
 
   /**
@@ -312,12 +293,11 @@ const Public = {
     }
 
     // raise event for delete
-    const eventObj = { ...r.value, name: r.value.user.name };
-    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Delete, eventObj, r.value, _ctx);
+    await EventsRest.raiseEventForObject(GroupsConstants.ServiceName, Private.Action.Delete, r.value, r.value, _ctx);
 
     // raise a notification for removed obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await StudentsRest.raiseNotification(Private.Notification.Removed, [rnp.value], _ctx);
+    let rn = await GroupsRest.raiseNotification(Private.Notification.Removed, [rnp.value], _ctx);
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
@@ -339,6 +319,13 @@ const Public = {
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+
+    // need to take diff before and after and trigger notification for deleted students changes
+    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
+    if (rget.error) {
+      return rget;
+    }
 
     // populate references
     let rf = await ReferencesUtils.populateReferences({ ...config, fillReferences: true }, objInfo, _ctx);
@@ -350,19 +337,24 @@ const Public = {
     await Public.translate(objInfo, _ctx);
 
     // put
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
     const r = await DbOpsUtils.put(config, objID, objInfo, projection, _ctx);
     if (r.error) {
       return r;
     }
 
     // raise event for put
-    const eventObj = { ...r.value, name: r.value.user.name };
-    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Put, eventObj, objInfo, _ctx);
+    await EventsRest.raiseEventForObject(GroupsConstants.ServiceName, Private.Action.Put, r.value, objInfo, _ctx);
 
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await StudentsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+    let rn = await GroupsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+
+    // take the difference and notify removed students roles
+    let rdiff = { status: 200, value: Private.getStudentsDiff(rget.value, r.value) };
+    if (Object.keys(rdiff.value.students).length) {
+      let rp = BaseServiceUtils.getProjectedResponse(rdiff, config.notifications.projection /* for sync+async */, _ctx);
+      let rndiff = await GroupsRest.raiseNotification(Private.Notification.Removed, [rp.value], _ctx);
+    }
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
@@ -384,6 +376,13 @@ const Public = {
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+
+    // need to take diff before and after and trigger notification for deleted students roles changes
+    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
+    if (rget.error) {
+      return rget;
+    }
 
     // populate references
     const configRef = { ...config, fillReferences: true };
@@ -396,19 +395,24 @@ const Public = {
     await Public.translate(patchInfo.set, _ctx);
 
     // patch
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
     const r = await DbOpsUtils.patch(config, objID, patchInfo, projection, _ctx);
     if (r.error) {
       return r;
     }
 
     // raise event for patch
-    const eventO = { ...r.value, name: r.value.user.name };
-    await EventsRest.raiseEventForObject(StudentsConstants.ServiceName, Private.Action.Patch, eventO, patchInfo, _ctx);
+    await EventsRest.raiseEventForObject(GroupsConstants.ServiceName, Private.Action.Patch, r.value, patchInfo, _ctx);
 
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await StudentsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+    let rn = await GroupsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+
+    // take the difference and notify removed students roles
+    let rdiff = { status: 200, value: Private.getStudentsDiff(rget.value, r.value) };
+    if (Object.keys(rdiff.value.students).length) {
+      let rp = BaseServiceUtils.getProjectedResponse(rdiff, config.notifications.projection /* for sync+async */, _ctx);
+      let rndiff = await GroupsRest.raiseNotification(Private.Notification.Removed, [rp.value], _ctx);
+    }
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
@@ -419,69 +423,31 @@ const Public = {
    * notification: { serviceName, added: [ { id, ... } ], removed, modified  }
    */
   notification: async (notification, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
     // validate
     const v = NotificationsUtils.getNotificationSchema().validate(notification);
     if (v.error) {
       return BaseServiceUtils.getSchemaValidationError(v, notification, _ctx);
     }
 
-    let tenantNotifications = [];
-    if (notification.serviceName === UsersRest.Constants?.ServiceName) {
-      // users notification must be filtered by role
-      const studentNotification = UsersRest.filterNotificationByRole(notification, StudentsConstants.Type, _ctx);
-      tenantNotifications = UsersRest.convertToTenantNotifications(studentNotification, _ctx);
+    // { serviceName, collection, references, fillReferences }
+    const config = await Private.getConfig(_ctx);
 
-      // create new users
-      for (const tenantNotif of tenantNotifications) {
-        const nCtx = { ..._ctx, tenantID: tenantNotif.tenantID };
-
-        const newUsers = (tenantNotif.notification[Private.Notification.Added] || []).concat(
-          tenantNotif.notification[Private.Notification.Modified] || []
-        );
-
-        const rN = await Public.postForUsers(newUsers, nCtx);
-        if (rN.error) {
-          return rN;
-        }
-      }
-
-      // currently if a role is removed from an org the students entry will still be kept
-      // convert to modified changes with status disabled
-      for (const tenantNotif of tenantNotifications) {
-        const n = tenantNotif.notification;
-        if (n[Private.Notification.Removed]) {
-          n[Private.Notification.Modified] = n[Private.Notification.Removed];
-          delete n[Private.Notification.Removed];
-          for (const user of n[Private.Notification.Modified]) {
-            user.status = UsersRest.Constants.Status.Disabled;
-          }
-        }
-      }
-    } else {
-      // other notification
-      tenantNotifications = [{ tenantID: _ctx.tenantID, notification }];
-    }
-
-    // process notifications (references) for each tenant
-    for (const tenantNotif of tenantNotifications) {
-      const nCtx = { ..._ctx, tenantID: tenantNotif.tenantID };
-      let config = await Private.getConfig(nCtx); // { serviceName, collection, references, fillReferences }
-      config = { ...config, fillReferences: true };
-
-      let r = await NotificationsUtils.notification(config, tenantNotif.notification, nCtx);
-      if (r.error) {
-        return r;
-      }
-    }
-
-    return { status: 200, value: true };
+    // notification (process references)
+    return await NotificationsUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
   },
 
   /**
    * translate
    */
   translate: async (obj, _ctx) => {
-    const translations = {};
+    const translations = {
+      status: TranslationsUtils.string(obj?.status, _ctx),
+    };
+
     return await TranslationsUtils.addTranslations(obj, translations, _ctx);
   },
 };
@@ -489,5 +455,5 @@ const Public = {
 module.exports = {
   ...Public,
   Validators,
-  Constants: StudentsConstants,
+  Constants: GroupsConstants,
 };

@@ -38,6 +38,7 @@ describe('Professors Service', function () {
 
     const putReq = {
       ...testProfessor,
+      classes: [{ id: testProfessor.classes[0].id }],
     };
     delete putReq.id;
     delete putReq.user;
@@ -107,6 +108,7 @@ describe('Professors Service', function () {
 
     const putReq = {
       ...testProfessor,
+      classes: [{ id: testProfessor.classes[0].id }],
     };
 
     // call
@@ -127,6 +129,7 @@ describe('Professors Service', function () {
 
     const putReq = {
       ...testProfessor,
+      classes: [{ id: testProfessor.classes[0].id }],
     };
     delete putReq.id;
     delete putReq.user;
@@ -162,6 +165,7 @@ describe('Professors Service', function () {
 
     const putReq = {
       ...testProfessor,
+      classes: [{ id: testProfessor.classes[0].id }],
     };
     delete putReq.id;
     delete putReq.user;

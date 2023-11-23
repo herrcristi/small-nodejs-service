@@ -47,6 +47,12 @@ const LocationsDatabase = require('./locations/locations.database.js');
 const LocationsRouter = require('../services/locations/locations.router.js');
 const LocationsRest = require('./rest/locations.rest.js');
 
+const GroupsConstants = require('./groups/groups.constants.js');
+const GroupsService = require('./groups/groups.service.js');
+const GroupsDatabase = require('./groups/groups.database.js');
+const GroupsRouter = require('../services/groups/groups.router.js');
+const GroupsRest = require('./rest/groups.rest.js');
+
 const Public = {
   /**
    * init all services
@@ -61,6 +67,7 @@ const Public = {
       ProfessorsDatabase,
       ClassesDatabase,
       LocationsDatabase,
+      GroupsDatabase,
     ]) {
       await database.init();
     }
@@ -74,6 +81,7 @@ const Public = {
       ProfessorsService,
       ClassesService,
       LocationsService,
+      GroupsService,
     ]) {
       await service.init();
     }
@@ -99,6 +107,16 @@ const Public = {
       projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
     });
 
+    await GroupsRest.subscribe({
+      callback: StudentsRest.notification,
+      projection: { id: 1, name: 1, type: 1, status: 1, students: 1 },
+    });
+
+    await StudentsRest.subscribe({
+      callback: GroupsRest.notification,
+      projection: { id: 1, name: 1, type: 1, status: 1, user: 1 },
+    });
+
     // init the communication
     const config = {
       local: {
@@ -109,6 +127,7 @@ const Public = {
         [ProfessorsConstants.ServiceName]: ProfessorsService,
         [ClassesConstants.ServiceName]: ClassesService,
         [LocationsConstants.ServiceName]: LocationsService,
+        [GroupsConstants.ServiceName]: GroupsService,
 
         // internal calls only
         [SchoolsConstants.ServiceNameInternal]: SchoolsService,
@@ -118,6 +137,7 @@ const Public = {
         [ProfessorsConstants.ServiceNameInternal]: ProfessorsService,
         [ClassesConstants.ServiceNameInternal]: ClassesService,
         [LocationsConstants.ServiceNameInternal]: LocationsService,
+        [GroupsConstants.ServiceNameInternal]: GroupsService,
       },
 
       rest: {
@@ -163,6 +183,12 @@ const Public = {
           port: WebConstants.Port,
           path: LocationsConstants.ApiPath,
         },
+        [GroupsConstants.ServiceName]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: WebConstants.Port,
+          path: GroupsConstants.ApiPath,
+        },
 
         // internal calls only
         [SchoolsConstants.ServiceNameInternal]: {
@@ -207,6 +233,12 @@ const Public = {
           port: WebConstants.Port,
           path: LocationsConstants.ApiPathInternal,
         },
+        [GroupsConstants.ServiceNameInternal]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: WebConstants.Port,
+          path: GroupsConstants.ApiPathInternal,
+        },
       },
     };
 
@@ -217,7 +249,16 @@ const Public = {
    * get routes
    */
   getRoutes: () => {
-    return [SchoolsRouter, UsersRouter, EventsRouter, StudentsRouter, ProfessorsRouter, ClassesRouter, LocationsRouter];
+    return [
+      SchoolsRouter,
+      UsersRouter,
+      EventsRouter,
+      StudentsRouter,
+      ProfessorsRouter,
+      ClassesRouter,
+      LocationsRouter,
+      GroupsRouter,
+    ];
   },
 };
 

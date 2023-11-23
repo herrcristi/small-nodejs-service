@@ -38,10 +38,12 @@ describe('Students Service', function () {
 
     const putReq = {
       ...testStudent,
+      classes: [{ id: testStudent.classes[0].id }],
     };
     delete putReq.id;
     delete putReq.user;
     delete putReq.type;
+    delete putReq.groups;
     delete putReq._lang_en;
 
     // stub
@@ -107,6 +109,7 @@ describe('Students Service', function () {
 
     const putReq = {
       ...testStudent,
+      classes: [{ id: testStudent.classes[0].id }],
     };
 
     // call
@@ -127,10 +130,12 @@ describe('Students Service', function () {
 
     const putReq = {
       ...testStudent,
+      classes: [{ id: testStudent.classes[0].id }],
     };
     delete putReq.id;
     delete putReq.user;
     delete putReq.type;
+    delete putReq.groups;
     delete putReq._lang_en;
 
     // stub
@@ -162,10 +167,12 @@ describe('Students Service', function () {
 
     const putReq = {
       ...testStudent,
+      classes: [{ id: testStudent.classes[0].id }],
     };
     delete putReq.id;
     delete putReq.user;
     delete putReq.type;
+    delete putReq.groups;
     delete putReq._lang_en;
 
     // stub
