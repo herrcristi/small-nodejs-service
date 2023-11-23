@@ -114,7 +114,7 @@ const Public = {
 
     await StudentsRest.subscribe({
       callback: GroupsRest.notification,
-      projection: { id: 1, name: 1, type: 1, status: 1 },
+      projection: { id: 1, name: 1, type: 1, status: 1, user: 1 },
     });
 
     // init the communication

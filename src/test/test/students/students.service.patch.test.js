@@ -39,11 +39,13 @@ describe('Students Service', function () {
     const patchReq = {
       set: {
         ...testStudent,
+        classes: [{ id: testStudent.classes[0].id }],
       },
     };
     delete patchReq.set.id;
     delete patchReq.set.user;
     delete patchReq.set.type;
+    delete patchReq.set.groups;
     delete patchReq.set._lang_en;
 
     // stub
@@ -109,6 +111,7 @@ describe('Students Service', function () {
     const patchReq = {
       set: {
         ...testStudent,
+        classes: [{ id: testStudent.classes[0].id }],
       },
     };
 
@@ -131,11 +134,13 @@ describe('Students Service', function () {
     const patchReq = {
       set: {
         ...testStudent,
+        classes: [{ id: testStudent.classes[0].id }],
       },
     };
     delete patchReq.set.id;
     delete patchReq.set.user;
     delete patchReq.set.type;
+    delete patchReq.set.groups;
     delete patchReq.set._lang_en;
 
     // stub
@@ -168,11 +173,13 @@ describe('Students Service', function () {
     const patchReq = {
       set: {
         ...testStudent,
+        classes: [{ id: testStudent.classes[0].id }],
       },
     };
     delete patchReq.set.id;
     delete patchReq.set.user;
     delete patchReq.set.type;
+    delete patchReq.set.groups;
     delete patchReq.set._lang_en;
 
     // stub

@@ -77,7 +77,7 @@ const Private = {
           fieldName: 'students',
           service: StudentsRest,
           isArray: true,
-          projection: null /*default*/,
+          projection: { id: 1, name: 1, type: 1, status: 1, user: 1 },
         },
       ],
       notifications: {

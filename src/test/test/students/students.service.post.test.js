@@ -38,9 +38,11 @@ describe('Students Service', function () {
 
     const postReq = {
       ...testStudent,
+      classes: [{ id: testStudent.classes[0].id }],
     };
     delete postReq.user;
     delete postReq.type;
+    delete postReq.groups;
     delete postReq._lang_en;
 
     // stub
@@ -106,6 +108,7 @@ describe('Students Service', function () {
 
     const postReq = {
       ...testStudent,
+      classes: [{ id: testStudent.classes[0].id }],
     };
 
     // call
@@ -126,9 +129,11 @@ describe('Students Service', function () {
 
     const postReq = {
       ...testStudent,
+      classes: [{ id: testStudent.classes[0].id }],
     };
     delete postReq.user;
     delete postReq.type;
+    delete postReq.groups;
     delete postReq._lang_en;
 
     // stub
@@ -160,9 +165,11 @@ describe('Students Service', function () {
 
     const postReq = {
       ...testStudent,
+      classes: [{ id: testStudent.classes[0].id }],
     };
     delete postReq.user;
     delete postReq.type;
+    delete postReq.groups;
     delete postReq._lang_en;
 
     // stub

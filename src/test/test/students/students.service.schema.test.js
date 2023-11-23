@@ -23,9 +23,11 @@ describe('Students Service', function () {
     // valid post req
     postReq = {
       ...testStudent,
+      classes: [{ id: testStudent.classes[0].id }],
     };
     delete postReq.type;
     delete postReq.user;
+    delete postReq.groups;
     delete postReq._lang_en;
   });
 

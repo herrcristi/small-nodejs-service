@@ -424,9 +424,14 @@ const Public = {
       students: [
         {
           id: 'user1',
-          name: 'Big Ben',
+          user: {
+            id: 'user1',
+            name: 'Big Ben',
+            type: 'user',
+            status: 'active',
+            email: 'big.ben@testdomain.test',
+          },
           type: 'student',
-          status: 'active',
         },
       ],
       _lang_en: {

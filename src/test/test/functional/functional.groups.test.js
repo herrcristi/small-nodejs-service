@@ -87,6 +87,7 @@ describe('Groups Functional', function () {
     delete testGroup.id;
     delete testGroup.type;
     delete testGroup._lang_en;
+    testGroup.students = [{ id: testGroup.students[0].id }];
 
     // call
     let res = await chai
@@ -128,7 +129,10 @@ describe('Groups Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testGroup });
+      .send({
+        ...testGroup,
+        students: [{ id: testGroup.students[0].id }],
+      });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -151,6 +155,7 @@ describe('Groups Functional', function () {
       .get(`${GroupsConstants.ApiPath}/${testGroup.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+    console.log(`\ngr: ${JSON.stringify(testGroup, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(200);
@@ -168,23 +173,6 @@ describe('Groups Functional', function () {
     const testGroups = _.cloneDeep(TestConstants.Groups);
     const testGroup = testGroups[0];
     const testGroupID = testGroup.id;
-
-    testGroup.name = 'new name';
-    delete testGroup.id;
-    delete testGroup.type;
-    delete testGroup._lang_en;
-
-    // call put first to update users
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .put(`${GroupsConstants.ApiPath}/${testGroupID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
-      .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testGroup });
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    chai.expect(res.status).to.equal(200);
 
     // events before
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
@@ -245,7 +233,10 @@ describe('Groups Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testGroup });
+      .send({
+        ...testGroup,
+        students: [{ id: testGroup.students[0].id }],
+      });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -293,7 +284,12 @@ describe('Groups Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ set: { ...testGroup } });
+      .send({
+        set: {
+          ...testGroup,
+          students: [{ id: testGroup.students[0].id }],
+        },
+      });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check

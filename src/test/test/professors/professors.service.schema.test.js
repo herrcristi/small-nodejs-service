@@ -23,6 +23,7 @@ describe('Professors Service', function () {
     // valid post req
     postReq = {
       ...testProfessor,
+      classes: [{ id: testProfessor.classes[0].id }],
     };
     delete postReq.type;
     delete postReq.user;

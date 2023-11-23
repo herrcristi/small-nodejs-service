@@ -156,12 +156,14 @@ describe('Students Service', function () {
       console.log(`EventsRest.raiseEventForObject called`);
     });
 
-    let stubStudentsRest = sinon.stub(StudentsRest, 'raiseNotification').callsFake(() => {
+    let stubStudentsRest = sinon.stub(StudentsRest, 'raiseNotification').callsFake((notificationType, objs) => {
       console.log(`StudentsRest raiseNotification called`);
+      console.log(`NotificationType: ${JSON.stringify(notificationType, null, 2)}`);
+      console.log(`Objs: ${JSON.stringify(objs, null, 2)}`);
     });
 
     let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
-      console.log(`\nNotificationsUtils.notification called\n`);
+      console.log(`\nNotificationsUtils.notification called with ${JSON.stringify(notification, null, 2)}\n`);
       chai.expect(ctx.tenantID).to.equal(notif.added[0].schools[0].id);
       return {
         status: 200,

@@ -92,11 +92,6 @@ const Public = {
    */
   raiseNotification: async (notificationType, objs, _ctx) => {
     const config = { serviceName: StudentsConstants.ServiceName, subscribers: Private.Subscribers };
-    // add user details into main object
-    for (const obj of objs) {
-      obj.name = obj.user?.name;
-      obj.status = obj.user?.status;
-    }
     return await NotificationsUtils.raiseNotification(config, notificationType, objs, _ctx);
   },
 };

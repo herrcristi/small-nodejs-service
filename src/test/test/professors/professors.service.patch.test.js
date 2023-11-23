@@ -39,6 +39,7 @@ describe('Professors Service', function () {
     const patchReq = {
       set: {
         ...testProfessor,
+        classes: [{ id: testProfessor.classes[0].id }],
       },
     };
     delete patchReq.set.id;
@@ -109,6 +110,7 @@ describe('Professors Service', function () {
     const patchReq = {
       set: {
         ...testProfessor,
+        classes: [{ id: testProfessor.classes[0].id }],
       },
     };
 
@@ -131,6 +133,7 @@ describe('Professors Service', function () {
     const patchReq = {
       set: {
         ...testProfessor,
+        classes: [{ id: testProfessor.classes[0].id }],
       },
     };
     delete patchReq.set.id;
@@ -168,6 +171,7 @@ describe('Professors Service', function () {
     const patchReq = {
       set: {
         ...testProfessor,
+        classes: [{ id: testProfessor.classes[0].id }],
       },
     };
     delete patchReq.set.id;
