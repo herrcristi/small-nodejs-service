@@ -349,24 +349,49 @@ const Public = {
       const filterField = `${ref.fieldName}.id`;
       const fieldName = ref.fieldName;
 
+      let setObj = {};
+      for (const key in objInfo) {
+        const setKey = `${fieldName}.${key}`;
+        setObj[setKey] = objInfo[key];
+      }
+
       // update obj
-      const r = await config.collection.updateMany(
-        {
-          id: { $in: targetIDs },
-          [filterField]: { $nin: [objInfo.id] },
-        },
-        {
-          $push: {
-            [fieldName]: objInfo,
+      let r = null;
+      if (ref.isArray) {
+        // add to array
+        r = await config.collection.updateMany(
+          {
+            id: { $in: targetIDs },
+            [filterField]: { $nin: [objInfo.id] },
           },
-          $set: {
-            lastModifiedTimestamp: new Date(),
+          {
+            $push: {
+              [fieldName]: objInfo,
+            },
+            $set: {
+              lastModifiedTimestamp: new Date(),
+            },
+            $inc: {
+              modifiedCount: 1,
+            },
+          }
+        );
+      } else {
+        r = await config.collection.updateMany(
+          {
+            id: { $in: targetIDs },
           },
-          $inc: {
-            modifiedCount: 1,
-          },
-        }
-      );
+          {
+            $set: {
+              ...setObj,
+              lastModifiedTimestamp: new Date(),
+            },
+            $inc: {
+              modifiedCount: 1,
+            },
+          }
+        );
+      }
 
       console.log(
         `DB Calling: ${config.serviceName} addManyReferences for field '${ref.fieldName}' for ids ${JSON.stringify(

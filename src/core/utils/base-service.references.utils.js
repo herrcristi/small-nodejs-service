@@ -178,7 +178,8 @@ const Public = {
         for (const refObj of notification.added) {
           // changes are applied only if object has an array (of ids or objects with id field)
           // with same name where this is applied
-          if (!Array.isArray(refObj[config.serviceName])) {
+          let targets = refObj[config.serviceName];
+          if (targets == null) {
             console.log(
               `${config.serviceName}: For '${configRef.fieldName}' skip apply added changes from notification`
             );
@@ -186,9 +187,11 @@ const Public = {
           }
 
           processed = true;
-          const targetIDs = refObj[config.serviceName]
+          targets = Array.isArray(targets) ? targets : [targets]; // make array
+          const targetIDs = targets
             .map((item) => (typeof item === 'string' ? item : typeof item === 'object' ? item.id : null))
             .filter((item) => item != null);
+
           const projectedValue = CommonUtils.getProjectedObj(refObj, projection);
           const rn = await DbOpsUtils.addManyReferences(config, targetIDs, configRef, projectedValue, _ctx);
           if (rn.error) {

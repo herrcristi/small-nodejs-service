@@ -16,7 +16,7 @@ describe('Base Service', function () {
     references: [
       {
         fieldName: 'target',
-        service: { getAllByIDs: () => {}, Constants: { ServiceName: 'service' } },
+        service: { getAllByIDs: () => {}, Constants: { ServiceName: 'serviceRef' } },
         isArray: false,
         projection: null /*default*/,
       },
@@ -40,7 +40,7 @@ describe('Base Service', function () {
    */
   it('should call onNotificationReferences skipping with success', async () => {
     const notification = {
-      serviceName: 'service',
+      serviceName: 'serviceRef',
       added: [
         {
           id: 'id1',
@@ -67,7 +67,7 @@ describe('Base Service', function () {
    */
   it('should call onNotificationReferences different service', async () => {
     const notification = {
-      serviceName: 'service-different',
+      serviceName: 'serviceRef-different',
       added: [
         {
           id: 'id1',
@@ -88,11 +88,11 @@ describe('Base Service', function () {
   }).timeout(10000);
 
   /**
-   * onNotificationReferences added with success
+   * onNotificationReferences added skipped with success
    */
-  it('should call onNotificationReferences added with success', async () => {
+  it('should call onNotificationReferences added skipped with success', async () => {
     const notification = {
-      serviceName: 'service',
+      serviceName: 'serviceRef',
       added: [
         {
           id: 'id1',
@@ -109,6 +109,187 @@ describe('Base Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: null,
+    });
+  }).timeout(10000);
+
+  /**
+   * onNotificationReferences added applied with success (for array)
+   */
+  it('should call onNotificationReferences added applied with success (for array)', async () => {
+    const notification = {
+      serviceName: 'serviceRef',
+      added: [
+        {
+          id: 'id1',
+          name: 'name1',
+          [config.serviceName]: ['targetID'], // field must match config.serviceName
+        },
+      ],
+    };
+
+    // stub
+    let stubDB = sinon.stub(DbOpsUtils, 'addManyReferences').callsFake((config, targetIDs, ref, obj) => {
+      console.log(
+        `\nDbOpsUtils.addManyReferences service called with ref ${JSON.stringify(ref)}, ids ${JSON.stringify(
+          targetIDs,
+          null,
+          2
+        )} and obj ${JSON.stringify(obj, null, 2)}`
+      );
+      chai.expect(targetIDs).to.deep.equal(['targetID']);
+      chai.expect(ref).to.deep.include({ fieldName: 'target', isArray: false });
+      chai.expect(obj).to.deep.equal({ id: 'id1', name: 'name1' });
+
+      return {
+        status: 200,
+        value: 1,
+      };
+    });
+
+    // call
+    let res = await ReferencesUtils.onNotificationReferences(config, notification, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubDB.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: true,
+    });
+  }).timeout(10000);
+
+  /**
+   * onNotificationReferences added applied with success (for non-array)
+   */
+  it('should call onNotificationReferences added applied with success (for non-array)', async () => {
+    const notification = {
+      serviceName: 'serviceRef',
+      added: [
+        {
+          id: 'id1',
+          name: 'name1',
+          [config.serviceName]: { id: 'targetID' }, // field must match config.serviceName
+        },
+      ],
+    };
+
+    // stub
+    let stubDB = sinon.stub(DbOpsUtils, 'addManyReferences').callsFake((config, targetIDs, ref, obj) => {
+      console.log(
+        `\nDbOpsUtils.addManyReferences service called with ref ${JSON.stringify(ref)}, ids ${JSON.stringify(
+          targetIDs,
+          null,
+          2
+        )} and obj ${JSON.stringify(obj, null, 2)}`
+      );
+      chai.expect(targetIDs).to.deep.equal(['targetID']);
+      chai.expect(ref).to.deep.include({ fieldName: 'target', isArray: false });
+      chai.expect(obj).to.deep.equal({ id: 'id1', name: 'name1' });
+
+      return {
+        status: 200,
+        value: 1,
+      };
+    });
+
+    // call
+    let res = await ReferencesUtils.onNotificationReferences(config, notification, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubDB.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: true,
+    });
+  }).timeout(10000);
+
+  /**
+   * onNotificationReferences added applied with success with no targetids
+   */
+  it('should call onNotificationReferences added applied with success with no targetids', async () => {
+    const notification = {
+      serviceName: 'serviceRef',
+      added: [
+        {
+          id: 'id1',
+          name: 'name1',
+          [config.serviceName]: 1, // field must match config.serviceName
+        },
+      ],
+    };
+
+    // stub
+    let stubDB = sinon.stub(DbOpsUtils, 'addManyReferences').callsFake((config, targetIDs, ref, obj) => {
+      console.log(
+        `\nDbOpsUtils.addManyReferences service called with ref ${JSON.stringify(ref)}, ids ${JSON.stringify(
+          targetIDs,
+          null,
+          2
+        )} and obj ${JSON.stringify(obj, null, 2)}`
+      );
+      chai.expect(targetIDs).to.deep.equal([]);
+      chai.expect(ref).to.deep.include({ fieldName: 'target', isArray: false });
+      chai.expect(obj).to.deep.equal({ id: 'id1', name: 'name1' });
+
+      return {
+        status: 200,
+        value: 1,
+      };
+    });
+
+    // call
+    let res = await ReferencesUtils.onNotificationReferences(config, notification, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubDB.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: true,
+    });
+  }).timeout(10000);
+
+  /**
+   * onNotificationReferences added with error
+   */
+  it('should call onNotificationReferences added with error', async () => {
+    const notification = {
+      serviceName: 'serviceRef',
+      added: [
+        {
+          id: 'id1',
+          name: 'name1',
+          [config.serviceName]: 'targetID', // field must match config.serviceName
+        },
+      ],
+    };
+
+    // stub
+    let stubDB = sinon.stub(DbOpsUtils, 'addManyReferences').callsFake((config, targetIDs, ref, obj) => {
+      console.log(
+        `\nDbOpsUtils.addManyReferences service called with ref ${JSON.stringify(ref)}, ids ${JSON.stringify(
+          targetIDs,
+          null,
+          2
+        )} and obj ${JSON.stringify(obj, null, 2)}`
+      );
+      return {
+        error: { message: 'Test error message', error: new Error('Test error').toString() },
+      };
+    });
+
+    // call
+    let res = await ReferencesUtils.onNotificationReferences(config, notification, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubDB.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      error: {
+        error: 'Error: Test error',
+        message: 'Test error message',
+      },
     });
   }).timeout(10000);
 
@@ -117,7 +298,7 @@ describe('Base Service', function () {
    */
   it('should call onNotificationReferences modified with success', async () => {
     const notification = {
-      serviceName: 'service',
+      serviceName: 'serviceRef',
       modified: [
         {
           id: 'id1',
@@ -146,11 +327,11 @@ describe('Base Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stubDB.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
       value: true,
     });
-    chai.expect(stubDB.callCount).to.equal(1);
   }).timeout(10000);
 
   /**
@@ -158,7 +339,7 @@ describe('Base Service', function () {
    */
   it('should call onNotificationReferences modified with fail', async () => {
     const notification = {
-      serviceName: 'service',
+      serviceName: 'serviceRef',
       modified: [
         {
           id: 'id1',
@@ -183,13 +364,13 @@ describe('Base Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stubDB.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       error: {
         error: 'Error: Test error',
         message: 'Test error message',
       },
     });
-    chai.expect(stubDB.callCount).to.equal(1);
   }).timeout(10000);
 
   /**
@@ -197,7 +378,7 @@ describe('Base Service', function () {
    */
   it('should call onNotificationReferences removed with success', async () => {
     const notification = {
-      serviceName: 'service',
+      serviceName: 'serviceRef',
       removed: [
         {
           id: 'id1',
@@ -226,11 +407,11 @@ describe('Base Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stubDB.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
       value: true,
     });
-    chai.expect(stubDB.callCount).to.equal(1);
   }).timeout(10000);
 
   /**
@@ -238,7 +419,7 @@ describe('Base Service', function () {
    */
   it('should call onNotificationReferences removed with fail', async () => {
     const notification = {
-      serviceName: 'service',
+      serviceName: 'serviceRef',
       removed: [
         {
           id: 'id1',
@@ -263,12 +444,12 @@ describe('Base Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stubDB.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       error: {
         error: 'Error: Test error',
         message: 'Test error message',
       },
     });
-    chai.expect(stubDB.callCount).to.equal(1);
   }).timeout(10000);
 });
