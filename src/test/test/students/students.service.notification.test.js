@@ -31,9 +31,9 @@ describe('Students Service', function () {
   after(async function () {});
 
   /**
-   * notification with success for modified
+   * notification with success for user modified
    */
-  it('should do notification with success for modified', async () => {
+  it('should do notification with success for user modified', async () => {
     const notifications = _.cloneDeep(TestConstants.UsersNotifications);
     const notif = notifications[0];
     const userID = notif.modified[0].id;
@@ -108,9 +108,9 @@ describe('Students Service', function () {
   }).timeout(10000);
 
   /**
-   * notification with success for added
+   * notification with success for user added
    */
-  it('should do notification with success for added', async () => {
+  it('should do notification with success for user added', async () => {
     const notifications = _.cloneDeep(TestConstants.UsersNotifications);
     const notif = notifications[0];
     const userID = notif.modified[0].id;
@@ -189,9 +189,9 @@ describe('Students Service', function () {
   }).timeout(10000);
 
   /**
-   * notification with success for removed
+   * notification with success for user removed
    */
-  it('should do notification with success for removed', async () => {
+  it('should do notification with success for user removed', async () => {
     const notifications = _.cloneDeep(TestConstants.UsersNotifications);
     const notif = notifications[0];
     const userID = notif.modified[0].id;
@@ -257,9 +257,9 @@ describe('Students Service', function () {
   }).timeout(10000);
 
   /**
-   * notification fail error
+   * notification user fail error
    */
-  it('should do notification fail error', async () => {
+  it('should do notification user fail error', async () => {
     const notifications = _.cloneDeep(TestConstants.UsersNotifications);
     const notif = notifications[0];
     const userID = notif.modified[0].id;
@@ -288,10 +288,10 @@ describe('Students Service', function () {
   }).timeout(10000);
 
   /**
-   * notification other service (not user service)
+   * notification groups service
    */
-  it('should do notification other service (not user service)', async () => {
-    const notifications = _.cloneDeep(TestConstants.StudentsNotifications);
+  it('should do notification groups service', async () => {
+    const notifications = _.cloneDeep(TestConstants.GroupsNotifications);
     const notif = notifications[0];
 
     // stub
@@ -320,9 +320,9 @@ describe('Students Service', function () {
   }).timeout(10000);
 
   /**
-   * notification other service (not user service) and fail
+   * notification groups service and fail
    */
-  it('should do notification other service (not user service) and fail', async () => {
+  it('should do notification group service and fail', async () => {
     const notifications = _.cloneDeep(TestConstants.StudentsNotifications);
     const notif = notifications[0];
 
