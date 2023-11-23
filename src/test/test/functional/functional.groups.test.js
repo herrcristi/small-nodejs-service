@@ -10,6 +10,7 @@ const TestConstants = require('../../test-constants.js');
 
 const GroupsDatabase = require('../../../services/groups/groups.database.js');
 const UsersDatabase = require('../../../services/users/users.database.js');
+const StudentsDatabase = require('../../../services/students/students.database.js');
 const EventsDatabase = require('../../../services/events/events.database.js');
 
 const GroupsConstants = require('../../../services/groups/groups.constants.js');
@@ -122,6 +123,11 @@ describe('Groups Functional', function () {
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
+    // check students before
+    let studentsBefore = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testGroup.students[0].id });
+    console.log(`\nStudents before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
+    chai.expect(studentsBefore.groups.length).to.equal(1);
+
     // call
     let res = await chai
       .request(TestConstants.WebServer)
@@ -148,6 +154,11 @@ describe('Groups Functional', function () {
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
+    // check students after
+    let studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testGroup.students[0].id });
+    console.log(`\nStudents after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
+    chai.expect(studentsAfter.groups.length).to.equal(2);
+
     // do a get
     testGroup.id = res.body.id;
     res = await chai
@@ -155,7 +166,6 @@ describe('Groups Functional', function () {
       .get(`${GroupsConstants.ApiPath}/${testGroup.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-    console.log(`\ngr: ${JSON.stringify(testGroup, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(200);
@@ -178,6 +188,11 @@ describe('Groups Functional', function () {
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
+    // check students before
+    let studentsBefore = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testGroup.students[0].id });
+    console.log(`\nStudents before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
+    chai.expect(studentsBefore.groups.length).to.equal(1);
+
     // call
     res = await chai
       .request(TestConstants.WebServer)
@@ -195,6 +210,11 @@ describe('Groups Functional', function () {
     let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // check students after
+    let studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testGroup.students[0].id });
+    console.log(`\nStudents after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
+    chai.expect(studentsAfter.groups.length).to.equal(0);
 
     // do a get
     testGroup.id = res.body.id;
@@ -226,6 +246,11 @@ describe('Groups Functional', function () {
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
+    // check students before
+    let studentsBefore = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testGroup.students[0].id });
+    console.log(`\nStudents before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
+    chai.expect(studentsBefore.groups.length).to.equal(1);
+
     // call
     let res = await chai
       .request(TestConstants.WebServer)
@@ -248,6 +273,100 @@ describe('Groups Functional', function () {
     let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // check students after
+    let studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testGroup.students[0].id });
+    console.log(`\nStudents after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
+    chai.expect(studentsAfter.groups.length).to.equal(1);
+
+    // do a get
+    res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${GroupsConstants.ApiPath}/${testGroupID}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    chai.expect(res.body.id).to.equal(testGroupID);
+    chai.expect(res.body.name).to.equal(testGroup.name);
+  }).timeout(10000);
+
+  /**
+   * put with success remove students and add students
+   */
+  it('should put with success remove students and add students', async () => {
+    const testGroups = _.cloneDeep(TestConstants.Groups);
+    const testGroup = _.cloneDeep(testGroups[0]);
+    const testGroupID = testGroup.id;
+
+    testGroup.name = 'new name';
+    delete testGroup.id;
+    delete testGroup.type;
+    delete testGroup._lang_en;
+
+    // events before
+    let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count before: ${eventsCountBefore}\n`);
+
+    // check students before
+    let studentsBefore = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testGroup.students[0].id });
+    console.log(`\nStudents before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
+    chai.expect(studentsBefore.groups.length).to.equal(1);
+
+    // call to remove students
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${GroupsConstants.ApiPath}/${testGroupID}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .set('x-tenant-id', _ctx.tenantID)
+      .send({
+        ...testGroup,
+        students: [],
+      });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body.id).to.equal(testGroupID);
+    chai.expect(res.body.name).to.equal(testGroup.name);
+
+    // events after
+    let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // check students after
+    let studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testGroup.students[0].id });
+    console.log(`\nStudents after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
+    chai.expect(studentsAfter.groups.length).to.equal(0);
+
+    // call again and add student
+    res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${GroupsConstants.ApiPath}/${testGroupID}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .set('x-tenant-id', _ctx.tenantID)
+      .send({
+        ...testGroup,
+        students: [{ id: testGroup.students[0].id }],
+      });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body.id).to.equal(testGroupID);
+    chai.expect(res.body.name).to.equal(testGroup.name);
+
+    // events after
+    eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 2);
+
+    // check students after
+    studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testGroup.students[0].id });
+    console.log(`\nStudents after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
+    chai.expect(studentsAfter.groups.length).to.equal(1);
 
     // do a get
     res = await chai
@@ -277,6 +396,11 @@ describe('Groups Functional', function () {
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
+    // check students before
+    let studentsBefore = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testGroup.students[0].id });
+    console.log(`\nStudents before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
+    chai.expect(studentsBefore.groups.length).to.equal(1);
+
     // call
     let res = await chai
       .request(TestConstants.WebServer)
@@ -301,6 +425,11 @@ describe('Groups Functional', function () {
     let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // check students after
+    let studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testGroup.students[0].id });
+    console.log(`\nStudents after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
+    chai.expect(studentsAfter.groups.length).to.equal(1);
 
     // do a get
     res = await chai

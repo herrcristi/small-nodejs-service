@@ -85,7 +85,7 @@ const Private = {
           fieldName: 'groups',
           service: GroupsRest,
           isArray: true,
-          projection: { id: 1, name: 1, type: 1, status: 1, students: 1 },
+          projection: { id: 1, name: 1, type: 1, status: 1 },
         },
       ],
       notifications: { projection: { ...BaseServiceUtils.Constants.DefaultProjection, user: 1 } } /* for sync+async */,
@@ -460,6 +460,14 @@ const Public = {
     } else {
       // other notification
       tenantNotifications = [{ tenantID: _ctx.tenantID, notification }];
+
+      // groups notification -> auto add groups for students
+      if (
+        notification.serviceName === GroupsRest.Constants?.ServiceName &&
+        notification[Private.Notification.Modified]
+      ) {
+        tenantNotifications[0].notification[Private.Notification.Added] = notification[Private.Notification.Modified];
+      }
     }
 
     // process notifications (references) for each tenant

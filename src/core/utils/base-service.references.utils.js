@@ -167,12 +167,37 @@ const Public = {
     // configRef: { fieldName, service, isArray, projection }
     for (const configRef of config.references) {
       if (configRef.service?.Constants?.ServiceName !== notification.serviceName) {
-        console.log(`${config.serviceName}: For '${configRef.fieldName}' notification is ignored`);
         continue;
       }
 
       const projection = configRef.projection || { id: 1, name: 1, type: 1, status: 1 };
 
+      // added
+      if (notification.added) {
+        // apply added changes one by one
+        for (const refObj of notification.added) {
+          // changes are applied only if object has an array (of ids or objects with id field)
+          // with same name where this is applied
+          if (!Array.isArray(refObj[config.serviceName])) {
+            console.log(
+              `${config.serviceName}: For '${configRef.fieldName}' skip apply added changes from notification`
+            );
+            continue;
+          }
+
+          processed = true;
+          const targetIDs = refObj[config.serviceName]
+            .map((item) => (typeof item === 'string' ? item : typeof item === 'object' ? item.id : null))
+            .filter((item) => item != null);
+          const projectedValue = CommonUtils.getProjectedObj(refObj, projection);
+          const rn = await DbOpsUtils.addManyReferences(config, targetIDs, configRef, projectedValue, _ctx);
+          if (rn.error) {
+            return rn;
+          }
+        }
+      }
+
+      // modified
       if (notification.modified) {
         console.log(
           `${config.serviceName}: For '${
@@ -189,7 +214,10 @@ const Public = {
             return rn;
           }
         }
-      } else if (notification.removed) {
+      }
+
+      // removed
+      if (notification.removed) {
         console.log(
           `${config.serviceName}: For '${configRef.fieldName}' apply deletion from notification ${JSON.stringify(
             notification
@@ -205,8 +233,6 @@ const Public = {
             return rn;
           }
         }
-      } else {
-        console.log(`${config.serviceName}: For '${configRef.fieldName}' skip apply added changes from notification`);
       }
     }
 

@@ -342,6 +342,59 @@ const Public = {
    * ref: { fieldName, isArray }
    * return: { status, value } or { status, error: { message, error } }
    */
+  addManyReferences: async (config, targetIDs, ref, objInfo, _ctx) => {
+    const time = new Date();
+
+    try {
+      const filterField = `${ref.fieldName}.id`;
+      const fieldName = ref.fieldName;
+
+      // update obj
+      const r = await config.collection.updateMany(
+        {
+          id: { $in: targetIDs },
+          [filterField]: { $nin: [objInfo.id] },
+        },
+        {
+          $push: {
+            [fieldName]: objInfo,
+          },
+          $set: {
+            lastModifiedTimestamp: new Date(),
+          },
+          $inc: {
+            modifiedCount: 1,
+          },
+        }
+      );
+
+      console.log(
+        `DB Calling: ${config.serviceName} addManyReferences for field '${ref.fieldName}' for ids ${JSON.stringify(
+          targetIDs
+        )} with info ${JSON.stringify(objInfo)} returned ${JSON.stringify(r, null, 2)}. Finished in ${
+          new Date() - time
+        } ms`
+      );
+
+      return { status: 200, value: r.modifiedCount, time: new Date() - time };
+    } catch (e) {
+      console.log(
+        `DB Calling Failed: ${config.serviceName} addManyReferences for field '${
+          ref.fieldName
+        }' for ids ${JSON.stringify(targetIDs)} with info ${JSON.stringify(objInfo)}. Error ${CommonUtils.getLogError(
+          e
+        )}. Finished in ${new Date() - time} ms`
+      );
+      return Utils.exception(e, time, _ctx);
+    }
+  },
+
+  /**
+   * references update many
+   * config: { serviceName, collection }
+   * ref: { fieldName, isArray }
+   * return: { status, value } or { status, error: { message, error } }
+   */
   updateManyReferences: async (config, ref, objInfo, _ctx) => {
     const time = new Date();
 
