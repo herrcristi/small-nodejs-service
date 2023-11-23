@@ -17,6 +17,7 @@ require('./test/students/students.all.tests.js');
 require('./test/professors/professors.all.tests.js');
 require('./test/classes/classes.all.tests.js');
 require('./test/locations/locations.all.tests.js');
+require('./test/groups/groups.all.tests.js');
 
 if (process.env.TEST_DB) {
   require('./test/functional/functional.all.tests.js');

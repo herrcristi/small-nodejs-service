@@ -8,7 +8,7 @@ The reasons behind this project include:
 
 - multi tenant with schools
 - users have roles inside every entity (school) like professor, student, admin
-- relationships between schools - users (professors/students/etc) - classes - locations
+- relationships between schools - users (professors/students/etc) - classes - locations - groups - schedules
 
 For the backend part every entity should show
 

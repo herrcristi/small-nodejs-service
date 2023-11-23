@@ -363,16 +363,31 @@ const Public = {
     },
   ],
 
-  LocationsNotifications: [
+  /**
+   * Groups
+   */
+  Groups: [
     {
-      serviceName: 'locations',
+      id: 'group1',
+      name: 'Group 1A',
+      type: 'group',
+      status: 'active',
+      description: 'Group 1A. First year',
+      _lang_en: {
+        status: 'Active',
+      },
+    },
+  ],
+
+  GroupsNotifications: [
+    {
+      serviceName: 'groups',
       modified: [
         {
-          id: 'location1',
-          name: 'Main Conference Room',
-          type: 'location',
+          id: 'group1',
+          name: 'Group1A',
+          type: 'group',
           status: 'active',
-          address: 'Main Building, Main Conference Room',
         },
       ],
     },

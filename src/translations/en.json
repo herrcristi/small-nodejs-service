@@ -27,5 +27,9 @@
   "locations.delete": "Location '{0}' removed",
   "locations.patch": "Location '{0}' modified",
   "locations.post": "Location '{0}' added",
-  "locations.put": "Location '{0}' modified"
+  "locations.put": "Location '{0}' modified",
+  "groups.delete": "Group '{0}' removed",
+  "groups.patch": "Group '{0}' modified",
+  "groups.post": "Group '{0}' added",
+  "groups.put": "Group '{0}' modified"
 }
