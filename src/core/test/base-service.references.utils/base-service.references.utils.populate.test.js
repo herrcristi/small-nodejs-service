@@ -277,30 +277,22 @@ describe('Base Service', function () {
         {
           id: 'id2',
           name: 'name2',
-          target: {},
+          target: null,
         },
         {
           id: 'id3',
           name: 'name3',
-          target: [
-            {
-              id: 'targetID3',
-            },
-          ],
+          target: [],
         },
         {
           id: 'id4',
           name: 'name4',
-          target: [
-            {
-              id: 'targetID4',
-            },
-          ],
+          target: [],
         },
         {
           id: 'id1',
           name: 'name1',
-          target: 5,
+          target: null,
         },
       ],
     });

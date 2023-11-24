@@ -58,15 +58,20 @@ const Utils = {
       return;
     }
 
-    const vals = Array.isArray(field) ? field : [field];
+    const isArray = Array.isArray(field);
+    const vals = isArray ? field : [field];
+    let newVals = [];
     for (const o of vals) {
       if (o?.id) {
         const details = targetsMap[o.id];
         if (details) {
           Object.assign(o, details);
+          newVals.push(o); // keep only found ones
         }
       }
     }
+
+    obj[fieldName] = isArray ? newVals : newVals.length ? newVals[0] : null;
   },
 };
 
@@ -88,25 +93,25 @@ const Public = {
     }
 
     let targetsIDs = Object.keys(targetsMap);
-    if (!targetsIDs.length) {
-      console.log(`Skipping calling targets to populate info for field '${configRef.fieldName}'`);
-      return { status: 200, value: objs };
-    }
-
-    // get all targets
-    const projection = configRef.projection || { id: 1, name: 1, type: 1, status: 1 };
-    let rs = await configRef.service.getAllByIDs(targetsIDs, { ...projection, _id: 0 }, _ctx);
-    if (rs.error) {
-      return rs;
-    }
-
-    if (targetsIDs.length != rs.value.length) {
-      console.log(`Not all targets were found for field '${configRef.fieldName}'`);
-    }
 
     targetsMap = {};
-    for (const obj of rs.value) {
-      targetsMap[obj.id] = obj;
+    if (!targetsIDs.length) {
+      console.log(`Skipping calling targets to populate info for field '${configRef.fieldName}'`);
+    } else {
+      // get all targets
+      const projection = configRef.projection || { id: 1, name: 1, type: 1, status: 1 };
+      let rs = await configRef.service.getAllByIDs(targetsIDs, { ...projection, _id: 0 }, _ctx);
+      if (rs.error) {
+        return rs;
+      }
+
+      if (targetsIDs.length != rs.value.length) {
+        console.log(`Not all targets were found for field '${configRef.fieldName}'`);
+      }
+
+      for (const obj of rs.value) {
+        targetsMap[obj.id] = obj;
+      }
     }
 
     // update info
