@@ -461,6 +461,57 @@ const Public = {
       ],
     },
   ],
+
+  /**
+   * Schedules
+   */
+  Schedules: [
+    {
+      id: 'schedule1',
+      name: 'Schedule 1A',
+      type: 'schedule',
+      status: 'active',
+      description: 'Schedule 1A. First year',
+      students: [
+        {
+          id: 'user1',
+          user: {
+            id: 'user1',
+            name: 'Big Ben',
+            type: 'user',
+            status: 'active',
+            email: 'big.ben@testdomain.test',
+          },
+          type: 'student',
+        },
+      ],
+      _lang_en: {
+        status: 'Active',
+      },
+    },
+  ],
+
+  SchedulesNotifications: [
+    {
+      serviceName: 'schedules',
+      modified: [
+        {
+          id: 'schedule1',
+          name: 'schedule1A',
+          type: 'schedule',
+          status: 'active',
+          students: [
+            {
+              id: 'user1',
+              name: 'Big Ben',
+              type: 'student',
+              status: 'active',
+            },
+          ],
+        },
+      ],
+    },
+  ],
 };
 
 module.exports = { ...Public };

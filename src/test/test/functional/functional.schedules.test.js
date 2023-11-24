@@ -1,0 +1,444 @@
+const _ = require('lodash');
+const mocha = require('mocha');
+const assert = require('assert');
+const sinon = require('sinon');
+const chai = require('chai');
+const chaiHttp = require('chai-http');
+chai.use(chaiHttp);
+
+const TestConstants = require('../../test-constants.js');
+
+const SchedulesDatabase = require('../../../services/schedules/schedules.database.js');
+const UsersDatabase = require('../../../services/users/users.database.js');
+const StudentsDatabase = require('../../../services/students/students.database.js');
+const EventsDatabase = require('../../../services/events/events.database.js');
+
+const SchedulesConstants = require('../../../services/schedules/schedules.constants.js');
+const TestsUtils = require('../../tests.utils.js');
+
+describe('Schedules Functional', function () {
+  let _ctx = { reqID: 'Test-Schedules', tenantID: TestConstants.Schools[0].id, lang: 'en' };
+
+  before(async function () {});
+
+  beforeEach(async function () {
+    await TestsUtils.initDatabase(_ctx);
+  });
+
+  afterEach(async function () {
+    sinon.restore();
+    await TestsUtils.cleanupDatabase(_ctx);
+  });
+
+  after(async function () {});
+
+  /**
+   * getAll with success
+   */
+  it('should getAll with success', async () => {
+    const testSchedules = _.cloneDeep(TestConstants.Schedules);
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${SchedulesConstants.ApiPath}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal({
+      data: [...testSchedules],
+      meta: {
+        count: testSchedules.length,
+        limit: 0,
+        skip: 0,
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * getOne with success
+   */
+  it('should getOne with success', async () => {
+    const testSchedules = _.cloneDeep(TestConstants.Schedules);
+    const testSchedule = testSchedules[0];
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${SchedulesConstants.ApiPath}/${testSchedule.id}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal({
+      ...testSchedule,
+    });
+  }).timeout(10000);
+
+  /**
+   * post fail duplicate name
+   */
+  it('should post fail duplicate name', async () => {
+    const testSchedules = _.cloneDeep(TestConstants.Schedules);
+    const testSchedule = _.cloneDeep(testSchedules[0]);
+
+    delete testSchedule.id;
+    delete testSchedule.type;
+    delete testSchedule._lang_en;
+    testSchedule.students = [{ id: testSchedule.students[0].id }];
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .post(`${SchedulesConstants.ApiPath}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .set('x-tenant-id', _ctx.tenantID)
+      .send({ ...testSchedule });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai
+      .expect(res.body.error)
+      .to.include(`E11000 duplicate key error collection: Small-Test.schedules_${_ctx.tenantID} index: name_1 dup key`);
+  }).timeout(10000);
+
+  /**
+   * post with success
+   */
+  it('should post with success', async () => {
+    const testSchedules = _.cloneDeep(TestConstants.Schedules);
+    const testSchedule = _.cloneDeep(testSchedules[0]);
+
+    testSchedule.name = 'new name';
+    delete testSchedule.id;
+    delete testSchedule.type;
+    delete testSchedule._lang_en;
+
+    // check events before
+    let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count before: ${eventsCountBefore}\n`);
+
+    // check students before
+    let studentsBefore = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
+    console.log(`\nStudents before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
+    chai.expect(studentsBefore.schedules.length).to.equal(1);
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .post(`${SchedulesConstants.ApiPath}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .set('x-tenant-id', _ctx.tenantID)
+      .send({
+        ...testSchedule,
+        students: [{ id: testSchedule.students[0].id }],
+      });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(201);
+    chai.expect(res.body.id).to.exist;
+    chai.expect(res.body.type).to.equal(testSchedules[0].type);
+    chai.expect(res.body.status).to.equal(SchedulesConstants.Status.Active);
+    chai.expect(res.body.createdTimestamp).to.exist;
+    chai.expect(res.body.lastModifiedTimestamp).to.exist;
+
+    // after
+    let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // check students after
+    let studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
+    console.log(`\nStudents after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
+    chai.expect(studentsAfter.schedules.length).to.equal(2);
+
+    // do a get
+    testSchedule.id = res.body.id;
+    res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${SchedulesConstants.ApiPath}/${testSchedule.id}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.include({
+      ...testSchedule,
+    });
+    chai.expect(res.body._lang_en).to.exist;
+    chai.expect(res.body._lang_ro).to.exist;
+  }).timeout(10000);
+
+  /**
+   * delete with success
+   */
+  it('should delete with success', async () => {
+    const testSchedules = _.cloneDeep(TestConstants.Schedules);
+    const testSchedule = testSchedules[0];
+    const testScheduleID = testSchedule.id;
+
+    // events before
+    let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count before: ${eventsCountBefore}\n`);
+
+    // check students before
+    let studentsBefore = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
+    console.log(`\nStudents before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
+    chai.expect(studentsBefore.schedules.length).to.equal(1);
+
+    // call
+    res = await chai
+      .request(TestConstants.WebServer)
+      .delete(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body.id).to.equal(testScheduleID);
+
+    // events after
+    let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // check students after
+    let studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
+    console.log(`\nStudents after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
+    chai.expect(studentsAfter.schedules.length).to.equal(0);
+
+    // do a get
+    testSchedule.id = res.body.id;
+    res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${SchedulesConstants.ApiPath}/${testSchedule.id}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(404);
+    chai.expect(res.body.message).to.include('Not found');
+  }).timeout(10000);
+
+  /**
+   * put with success
+   */
+  it('should put with success', async () => {
+    const testSchedules = _.cloneDeep(TestConstants.Schedules);
+    const testSchedule = _.cloneDeep(testSchedules[0]);
+    const testScheduleID = testSchedule.id;
+
+    testSchedule.name = 'new name';
+    delete testSchedule.id;
+    delete testSchedule.type;
+    delete testSchedule._lang_en;
+
+    // events before
+    let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count before: ${eventsCountBefore}\n`);
+
+    // check students before
+    let studentsBefore = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
+    console.log(`\nStudents before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
+    chai.expect(studentsBefore.schedules.length).to.equal(1);
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .set('x-tenant-id', _ctx.tenantID)
+      .send({
+        ...testSchedule,
+        students: [{ id: testSchedule.students[0].id }],
+      });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body.id).to.equal(testScheduleID);
+    chai.expect(res.body.name).to.equal(testSchedule.name);
+
+    // events after
+    let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // check students after
+    let studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
+    console.log(`\nStudents after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
+    chai.expect(studentsAfter.schedules.length).to.equal(1);
+
+    // do a get
+    res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    chai.expect(res.body.id).to.equal(testScheduleID);
+    chai.expect(res.body.name).to.equal(testSchedule.name);
+  }).timeout(10000);
+
+  /**
+   * put with success remove students and add students
+   */
+  it('should put with success remove students and add students', async () => {
+    const testSchedules = _.cloneDeep(TestConstants.Schedules);
+    const testSchedule = _.cloneDeep(testSchedules[0]);
+    const testScheduleID = testSchedule.id;
+
+    testSchedule.name = 'new name';
+    delete testSchedule.id;
+    delete testSchedule.type;
+    delete testSchedule._lang_en;
+
+    // events before
+    let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count before: ${eventsCountBefore}\n`);
+
+    // check students before
+    let studentsBefore = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
+    console.log(`\nStudents before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
+    chai.expect(studentsBefore.schedules.length).to.equal(1);
+
+    // call to remove students
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .set('x-tenant-id', _ctx.tenantID)
+      .send({
+        ...testSchedule,
+        students: [],
+      });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body.id).to.equal(testScheduleID);
+    chai.expect(res.body.name).to.equal(testSchedule.name);
+
+    // events after
+    let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // check students after
+    let studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
+    console.log(`\nStudents after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
+    chai.expect(studentsAfter.schedules.length).to.equal(0);
+
+    // call again and add student
+    res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .set('x-tenant-id', _ctx.tenantID)
+      .send({
+        ...testSchedule,
+        students: [{ id: testSchedule.students[0].id }],
+      });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body.id).to.equal(testScheduleID);
+    chai.expect(res.body.name).to.equal(testSchedule.name);
+
+    // events after
+    eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 2);
+
+    // check students after
+    studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
+    console.log(`\nStudents after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
+    chai.expect(studentsAfter.schedules.length).to.equal(1);
+
+    // do a get
+    res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    chai.expect(res.body.id).to.equal(testScheduleID);
+    chai.expect(res.body.name).to.equal(testSchedule.name);
+  }).timeout(10000);
+
+  /**
+   * patch with success
+   */
+  it('should patch with success', async () => {
+    const testSchedules = _.cloneDeep(TestConstants.Schedules);
+    const testSchedule = testSchedules[0];
+    const testScheduleID = testSchedule.id;
+
+    testSchedule.name = 'new name';
+    delete testSchedule.id;
+    delete testSchedule.type;
+    delete testSchedule._lang_en;
+
+    // events before
+    let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count before: ${eventsCountBefore}\n`);
+
+    // check students before
+    let studentsBefore = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
+    console.log(`\nStudents before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
+    chai.expect(studentsBefore.schedules.length).to.equal(1);
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .patch(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .set('x-tenant-id', _ctx.tenantID)
+      .send({
+        set: {
+          ...testSchedule,
+          students: [{ id: testSchedule.students[0].id }],
+        },
+      });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body.id).to.equal(testScheduleID);
+    chai.expect(res.body.name).to.equal(testSchedule.name);
+
+    // events after
+    let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // check students after
+    let studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
+    console.log(`\nStudents after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
+    chai.expect(studentsAfter.schedules.length).to.equal(1);
+
+    // do a get
+    res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    chai.expect(res.body.id).to.equal(testScheduleID);
+    chai.expect(res.body.name).to.equal(testSchedule.name);
+  }).timeout(10000);
+});

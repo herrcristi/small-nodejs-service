@@ -280,6 +280,7 @@ const Public = {
       ClassesRouter,
       LocationsRouter,
       GroupsRouter,
+      SchedulesRouter,
     ];
   },
 };
