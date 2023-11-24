@@ -179,9 +179,9 @@ const Private = {
     let professorsMap = {};
     let groupsMap = {};
     let studentsMap = {};
-    for (const schedule of newSchedule.schedules) {
-      const key = `${schedule.day}.${schedule.hour}.${schedule.freq}.${schedule.location.id}`;
-      schedulesMap[key] = schedule;
+    for (const s of newSchedule.schedules) {
+      const key = `${s.day}.${s.hour}.${s.freq}.${s.location.id}`;
+      schedulesMap[key] = s;
     }
     for (const professor of newSchedule.professors) {
       professorsMap[professor.id] = professor;
@@ -193,12 +193,12 @@ const Private = {
       studentsMap[student.id] = student;
     }
 
-    for (const schedule of schedule.schedules) {
-      const key = `${schedule.day}.${schedule.hour}.${schedule.freq}.${schedule.location.id}`;
+    for (const s of schedule.schedules) {
+      const key = `${s.day}.${s.hour}.${s.freq}.${s.location.id}`;
       const newSchedule = schedulesMap[key];
       if (!newSchedule) {
         // the schedule was removed
-        scheduleDiff.schedules.push(schedule);
+        scheduleDiff.schedules.push(s);
         continue;
       }
     }

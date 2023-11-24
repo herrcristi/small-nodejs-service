@@ -19,6 +19,21 @@ describe('Schedules Service', function () {
   const tenantID = _.cloneDeep(TestConstants.Schools[0].id);
   const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Schedules' };
 
+  const testSchedules = _.cloneDeep(TestConstants.Schedules);
+  const testSchedule = testSchedules[0];
+
+  const testPostReq = {
+    ...testSchedule,
+    class: testSchedule.class.id,
+    schedules: [{ ...testSchedule.schedules[0], location: testSchedule.schedules[0].location.id }],
+    professors: [{ id: testSchedule.professors[0].id }],
+    groups: [{ id: testSchedule.groups[0].id }],
+    students: [{ id: testSchedule.students[0].id }],
+  };
+  delete testPostReq.id;
+  delete testPostReq.type;
+  delete testPostReq._lang_en;
+
   before(async function () {});
 
   beforeEach(async function () {});
@@ -33,16 +48,7 @@ describe('Schedules Service', function () {
    * post with success
    */
   it('should post with success', async () => {
-    const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testGroup = testSchedules[0];
-
-    const postReq = {
-      ...testGroup,
-      students: [{ id: testGroup.students[0].id }],
-    };
-    delete postReq.id;
-    delete postReq.type;
-    delete postReq._lang_en;
+    const postReq = _.cloneDeep(testPostReq);
 
     // stub
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
@@ -53,7 +59,7 @@ describe('Schedules Service', function () {
       console.log(`DbOpsUtils.post called`);
       return {
         status: 201,
-        value: { ...postObj, id: testGroup.id },
+        value: { ...postObj, id: testSchedule.id, class: testSchedule.class },
       };
     });
 
@@ -77,10 +83,11 @@ describe('Schedules Service', function () {
     chai.expect(res).to.deep.equal({
       status: 201,
       value: {
-        id: testGroup.id,
-        name: testGroup.name,
-        type: testGroup.type,
-        status: testGroup.status,
+        id: testSchedule.id,
+        name: testSchedule.name,
+        type: testSchedule.type,
+        status: testSchedule.status,
+        class: testSchedule.class,
       },
     });
   }).timeout(10000);
@@ -89,17 +96,8 @@ describe('Schedules Service', function () {
    * post with success with defaults
    */
   it('should post with success with defaults', async () => {
-    const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testGroup = testSchedules[0];
-
-    const postReq = {
-      ...testGroup,
-      students: [{ id: testGroup.students[0].id }],
-    };
-    delete postReq.id;
-    delete postReq.type;
+    const postReq = _.cloneDeep(testPostReq);
     delete postReq.status;
-    delete postReq._lang_en;
 
     // stub
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
@@ -110,7 +108,7 @@ describe('Schedules Service', function () {
       console.log(`DbOpsUtils.post called`);
       return {
         status: 201,
-        value: { ...postObj, id: testGroup.id },
+        value: { ...postObj, id: testSchedule.id, class: testSchedule.class },
       };
     });
 
@@ -134,10 +132,11 @@ describe('Schedules Service', function () {
     chai.expect(res).to.deep.equal({
       status: 201,
       value: {
-        id: testGroup.id,
-        name: testGroup.name,
-        type: testGroup.type,
+        id: testSchedule.id,
+        name: testSchedule.name,
+        type: testSchedule.type,
         status: SchedulesConstants.Status.Pending,
+        class: testSchedule.class,
       },
     });
   }).timeout(10000);
@@ -159,13 +158,8 @@ describe('Schedules Service', function () {
    * post fail validation
    */
   it('should post fail validation', async () => {
-    const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testGroup = testSchedules[0];
-
-    const postReq = {
-      ...testGroup,
-      students: [{ id: testGroup.students[0].id }],
-    };
+    const postReq = _.cloneDeep(testPostReq);
+    postReq.id = testSchedule.id;
 
     // call
     let res = await SchedulesService.post(postReq, _ctx);
@@ -180,16 +174,7 @@ describe('Schedules Service', function () {
    * post fail references
    */
   it('should post fail references', async () => {
-    const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testGroup = testSchedules[0];
-
-    const postReq = {
-      ...testGroup,
-      students: [{ id: testGroup.students[0].id }],
-    };
-    delete postReq.id;
-    delete postReq.type;
-    delete postReq._lang_en;
+    const postReq = _.cloneDeep(testPostReq);
 
     // stub
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
@@ -215,16 +200,7 @@ describe('Schedules Service', function () {
    * post fail post
    */
   it('should post fail post', async () => {
-    const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testGroup = testSchedules[0];
-
-    const postReq = {
-      ...testGroup,
-      students: [{ id: testGroup.students[0].id }],
-    };
-    delete postReq.id;
-    delete postReq.type;
-    delete postReq._lang_en;
+    const postReq = _.cloneDeep(testPostReq);
 
     // stub
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {

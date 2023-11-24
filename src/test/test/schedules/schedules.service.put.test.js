@@ -20,6 +20,21 @@ describe('Schedules Service', function () {
   const tenantID = _.cloneDeep(TestConstants.Schools[0].id);
   const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Schedules' };
 
+  const testSchedules = _.cloneDeep(TestConstants.Schedules);
+  const testSchedule = testSchedules[0];
+
+  const testPutReq = {
+    ...testSchedule,
+    class: testSchedule.class.id,
+    schedules: [{ ...testSchedule.schedules[0], location: testSchedule.schedules[0].location.id }],
+    professors: [{ id: testSchedule.professors[0].id }],
+    groups: [{ id: testSchedule.groups[0].id }],
+    students: [{ id: testSchedule.students[0].id }],
+  };
+  delete testPutReq.id;
+  delete testPutReq.type;
+  delete testPutReq._lang_en;
+
   before(async function () {});
 
   beforeEach(async function () {});
@@ -34,23 +49,14 @@ describe('Schedules Service', function () {
    * put with success
    */
   it('should put with success', async () => {
-    const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testGroup = testSchedules[0];
-
-    const putReq = {
-      ...testGroup,
-      students: [{ id: testGroup.students[0].id }],
-    };
-    delete putReq.id;
-    delete putReq.type;
-    delete putReq._lang_en;
+    const putReq = _.cloneDeep(testPutReq);
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
       console.log(`DbOpsUtils.get called`);
       return {
         status: 200,
-        value: { ...testGroup },
+        value: { ...testSchedule },
       };
     });
 
@@ -62,7 +68,7 @@ describe('Schedules Service', function () {
       console.log(`DbOpsUtils.put called`);
       return {
         status: 200,
-        value: { ...testGroup },
+        value: { ...testSchedule },
       };
     });
 
@@ -75,7 +81,7 @@ describe('Schedules Service', function () {
     });
 
     // call
-    let res = await SchedulesService.put(testGroup.id, putReq, _ctx);
+    let res = await SchedulesService.put(testSchedule.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -87,10 +93,11 @@ describe('Schedules Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        id: testGroup.id,
-        name: testGroup.name,
-        type: testGroup.type,
-        status: testGroup.status,
+        id: testSchedule.id,
+        name: testSchedule.name,
+        type: testSchedule.type,
+        status: testSchedule.status,
+        class: testSchedule.class,
       },
     });
   }).timeout(10000);
@@ -99,23 +106,18 @@ describe('Schedules Service', function () {
    * put with success with removed notif
    */
   it('should put with success with removed notif', async () => {
-    const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testGroup = testSchedules[0];
-
-    const putReq = {
-      ...testGroup,
-      students: [], // no more students
-    };
-    delete putReq.id;
-    delete putReq.type;
-    delete putReq._lang_en;
+    const putReq = _.cloneDeep(testPutReq);
+    putReq.schedules = []; // no more schedules
+    putReq.professors = []; // no more professors
+    putReq.groups = []; // no more groups
+    putReq.students = []; // no more students
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
       console.log(`DbOpsUtils.get called`);
       return {
         status: 200,
-        value: { ...testGroup },
+        value: { ...testSchedule },
       };
     });
 
@@ -127,7 +129,7 @@ describe('Schedules Service', function () {
       console.log(`DbOpsUtils.put called`);
       return {
         status: 200,
-        value: { ...testGroup, ...putReq },
+        value: { ...testSchedule, ...putReq, class: testSchedule.class },
       };
     });
 
@@ -144,10 +146,14 @@ describe('Schedules Service', function () {
       chai.expect(notificationType).to.equal(NotificationsUtils.Constants.Notification.Modified);
       chai.expect(objs).to.deep.equal([
         {
-          id: testGroup.id,
-          name: testGroup.name,
-          type: testGroup.type,
-          status: testGroup.status,
+          id: testSchedule.id,
+          name: testSchedule.name,
+          type: testSchedule.type,
+          status: testSchedule.status,
+          class: testSchedule.class,
+          schedules: putReq.schedules,
+          professors: putReq.professors,
+          groups: putReq.groups,
           students: putReq.students,
         },
       ]);
@@ -160,17 +166,21 @@ describe('Schedules Service', function () {
       chai.expect(notificationType).to.equal(NotificationsUtils.Constants.Notification.Removed);
       chai.expect(objs).to.deep.equal([
         {
-          id: testGroup.id,
-          name: testGroup.name,
-          type: testGroup.type,
-          status: testGroup.status,
-          students: [testGroup.students[0]],
+          id: testSchedule.id,
+          name: testSchedule.name,
+          type: testSchedule.type,
+          status: testSchedule.status,
+          class: testSchedule.class,
+          schedules: [testSchedule.schedules[0]],
+          professors: [testSchedule.professors[0]],
+          groups: [testSchedule.groups[0]],
+          students: [testSchedule.students[0]],
         },
       ]);
     });
 
     // call
-    let res = await SchedulesService.put(testGroup.id, putReq, _ctx);
+    let res = await SchedulesService.put(testSchedule.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -182,10 +192,11 @@ describe('Schedules Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        id: testGroup.id,
-        name: testGroup.name,
-        type: testGroup.type,
-        status: testGroup.status,
+        id: testSchedule.id,
+        name: testSchedule.name,
+        type: testSchedule.type,
+        status: testSchedule.status,
+        class: testSchedule.class,
       },
     });
   }).timeout(10000);
@@ -207,16 +218,11 @@ describe('Schedules Service', function () {
    * put fail validation
    */
   it('should put fail validation', async () => {
-    const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testGroup = testSchedules[0];
-
-    const putReq = {
-      ...testGroup,
-      students: [{ id: testGroup.students[0].id }],
-    };
+    const putReq = _.cloneDeep(testPutReq);
+    putReq.id = testSchedule.id;
 
     // call
-    let res = await SchedulesService.put(testGroup.id, putReq, _ctx);
+    let res = await SchedulesService.put(testSchedule.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -228,16 +234,7 @@ describe('Schedules Service', function () {
    * put fail get
    */
   it('should put fail get', async () => {
-    const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testGroup = testSchedules[0];
-
-    const putReq = {
-      ...testGroup,
-      students: [{ id: testGroup.students[0].id }],
-    };
-    delete putReq.id;
-    delete putReq.type;
-    delete putReq._lang_en;
+    const putReq = _.cloneDeep(testPutReq);
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
@@ -246,7 +243,7 @@ describe('Schedules Service', function () {
     });
 
     // call
-    let res = await SchedulesService.put(testGroup.id, putReq, _ctx);
+    let res = await SchedulesService.put(testSchedule.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -264,23 +261,14 @@ describe('Schedules Service', function () {
    * put fail references
    */
   it('should put fail references', async () => {
-    const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testGroup = testSchedules[0];
-
-    const putReq = {
-      ...testGroup,
-      students: [{ id: testGroup.students[0].id }],
-    };
-    delete putReq.id;
-    delete putReq.type;
-    delete putReq._lang_en;
+    const putReq = _.cloneDeep(testPutReq);
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
       console.log(`DbOpsUtils.get called`);
       return {
         status: 200,
-        value: { ...testGroup },
+        value: { ...testSchedule },
       };
     });
 
@@ -289,7 +277,7 @@ describe('Schedules Service', function () {
     });
 
     // call
-    let res = await SchedulesService.put(testGroup.id, putReq, _ctx);
+    let res = await SchedulesService.put(testSchedule.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -308,23 +296,14 @@ describe('Schedules Service', function () {
    * put fail put
    */
   it('should put fail put', async () => {
-    const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testGroup = testSchedules[0];
-
-    const putReq = {
-      ...testGroup,
-      students: [{ id: testGroup.students[0].id }],
-    };
-    delete putReq.id;
-    delete putReq.type;
-    delete putReq._lang_en;
+    const putReq = _.cloneDeep(testPutReq);
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
       console.log(`DbOpsUtils.get called`);
       return {
         status: 200,
-        value: { ...testGroup },
+        value: { ...testSchedule },
       };
     });
 
@@ -338,7 +317,7 @@ describe('Schedules Service', function () {
     });
 
     // call
-    let res = await SchedulesService.put(testGroup.id, putReq, _ctx);
+    let res = await SchedulesService.put(testSchedule.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

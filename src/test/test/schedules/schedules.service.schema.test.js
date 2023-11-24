@@ -230,28 +230,4 @@ describe('Schedules Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
   }).timeout(10000);
-
-  // unset must be an object
-  patchReq = {
-    unset: 1,
-  };
-  res = SchedulesService.Validators.Patch.validate(patchReq);
-  console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-  chai.expect(res.error.details[0].message).to.include('"unset" must be an array');
-
-  // unset empty is allowed
-  patchReq = {
-    unset: [],
-  };
-  res = SchedulesService.Validators.Patch.validate(patchReq);
-  console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-  chai.expect(res.error).to.not.exist;
-
-  // unset invalid
-  patchReq = {
-    unset: ['extra'],
-  };
-  res = SchedulesService.Validators.Patch.validate(patchReq);
-  console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-  chai.expect(res.error.details[0].message).to.include('"unset[0]" must be [description]');
 });
