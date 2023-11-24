@@ -195,7 +195,7 @@ describe('Base Service', function () {
 
     // call
 
-    let res = await ReferencesUtils.populateReferences(config, objs[0], _ctx);
+    let res = await ReferencesUtils.populateReferences(config, objs[0] /*simple object*/, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     console.log(`\nObjs returned: ${JSON.stringify(objs, null, 2)}\n`);
 
