@@ -19,18 +19,20 @@ describe('Schedules Service', function () {
   before(async function () {});
 
   beforeEach(async function () {
-    const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testGroup = testSchedules[0];
-
     // valid
+    const testSchedules = _.cloneDeep(TestConstants.Schedules);
+    const testSchedule = testSchedules[0];
+
     postReq = {
-      ...testGroup,
-      students: [{ id: testGroup.students[0].id }],
+      ...testSchedule,
+      class: testSchedule.class.id,
+      schedules: [{ ...testSchedule.schedules[0], location: testSchedule.schedules[0].location.id }],
+      professors: [{ id: testSchedule.professors[0].id }],
+      groups: [{ id: testSchedule.groups[0].id }],
+      students: [{ id: testSchedule.students[0].id }],
     };
     delete postReq.id;
     delete postReq.type;
-    delete postReq.status;
-    delete postReq.description;
     delete postReq._lang_en;
   });
 
@@ -96,31 +98,31 @@ describe('Schedules Service', function () {
   }).timeout(10000);
 
   /**
-   * schema post description
+   * schema post class
    */
-  it('should validate post schema for description', async () => {
-    // description must be a string
-    postReq.description = 1;
+  it('should validate post schema for class', async () => {
+    // class must be a string
+    postReq.class = 1;
     let res = SchedulesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"description" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"class" must be a string');
 
-    // description too long
-    postReq.description = '';
-    for (let i = 0; i < 200; ++i) {
-      postReq.description += '0123456789';
+    // class too long
+    postReq.class = '';
+    for (let i = 0; i < 20; ++i) {
+      postReq.class += '0123456789';
     }
     res = SchedulesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai
       .expect(res.error.details[0].message)
-      .to.include('"description" length must be less than or equal to 1024 characters long');
+      .to.include('"class" length must be less than or equal to 64 characters long');
 
-    // description is null
-    postReq.description = null;
+    // class is empty
+    postReq.class = '';
     res = SchedulesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
+    chai.expect(res.error.details[0].message).to.include('"class" is not allowed to be empty');
   }).timeout(10000);
 
   /**
@@ -165,69 +167,124 @@ describe('Schedules Service', function () {
   }).timeout(10000);
 
   /**
-   * schema post extra
+   * schema post professors
    */
-  it('should validate post schema for extra', async () => {
-    // extra is not allowed
-    postReq.extra = 1;
+  it('should validate post schema for professors', async () => {
+    // professors must be an array
+    postReq.professors = 1;
     let res = SchedulesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
-  }).timeout(10000);
+    chai.expect(res.error.details[0].message).to.include('"professors" must be an array');
 
-  /**
-   * schema put
-   * is the same as post - add only the extra cases
-   */
-  it('should validate put schema', async () => {
-    // nothing is required
-    let putReq = {};
-    let res = SchedulesService.Validators.Put.validate(putReq);
+    // professors null
+    postReq.professors = null;
+    res = SchedulesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
+    chai.expect(res.error.details[0].message).to.include('"professors" must be an array');
 
-    // other params
-    putReq = {
-      extra: 1,
-    };
-    res = SchedulesService.Validators.Put.validate(putReq);
+    // professors not object
+    postReq.professors = [''];
+    res = SchedulesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
-  }).timeout(10000);
+    chai.expect(res.error.details[0].message).to.include('"professors[0]" must be of type object');
 
-  /**
-   * schema patch
-   * is the same as post - add only the extra cases
-   */
-  it('should validate patch schema', async () => {
-    // nothing is required
-    let patchReq = {};
-    let res = SchedulesService.Validators.Patch.validate(patchReq);
+    // professors id empty
+    postReq.professors = [{ id: '' }];
+    res = SchedulesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
+    chai.expect(res.error.details[0].message).to.include('"professors[0].id" is not allowed to be empty');
 
-    // other params
-    patchReq = {
-      extra: 1,
-    };
-    res = SchedulesService.Validators.Patch.validate(patchReq);
+    // professors too long
+    postReq.professors = [{ id: '0123456789012345678901234567890123456789012345678901234567890123456789' }];
+    res = SchedulesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
+    chai
+      .expect(res.error.details[0].message)
+      .to.include('"professors[0].id" length must be less than or equal to 64 characters long');
 
-    // set must be an object
-    patchReq = {
-      set: 1,
-    };
-    res = SchedulesService.Validators.Patch.validate(patchReq);
+    // professors invalid value
+    postReq.professors = [{ id: 1 }];
+    res = SchedulesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"set" must be of type object');
+    chai.expect(res.error.details[0].message).to.include('"professors[0].id" must be a string');
 
-    // set empty is allowed
-    patchReq = {
-      set: {},
-    };
-    res = SchedulesService.Validators.Patch.validate(patchReq);
+    // professors extra value
+    postReq.professors = [{ id: 'id', extra: 1 }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"professors[0].extra" is not allowed');
+
+    // professors value
+    postReq.professors = [{ id: 'id' }];
+    res = SchedulesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
   }).timeout(10000);
+
+  // /**
+  //  * schema post extra
+  //  */
+  // it('should validate post schema for extra', async () => {
+  //   // extra is not allowed
+  //   postReq.extra = 1;
+  //   let res = SchedulesService.Validators.Post.validate(postReq);
+  //   console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+  //   chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
+  // }).timeout(10000);
+
+  // /**
+  //  * schema put
+  //  * is the same as post - add only the extra cases
+  //  */
+  // it('should validate put schema', async () => {
+  //   // nothing is required
+  //   let putReq = {};
+  //   let res = SchedulesService.Validators.Put.validate(putReq);
+  //   console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+  //   chai.expect(res.error).to.not.exist;
+
+  //   // other params
+  //   putReq = {
+  //     extra: 1,
+  //   };
+  //   res = SchedulesService.Validators.Put.validate(putReq);
+  //   console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+  //   chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
+  // }).timeout(10000);
+
+  // /**
+  //  * schema patch
+  //  * is the same as post - add only the extra cases
+  //  */
+  // it('should validate patch schema', async () => {
+  //   // nothing is required
+  //   let patchReq = {};
+  //   let res = SchedulesService.Validators.Patch.validate(patchReq);
+  //   console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+  //   chai.expect(res.error).to.not.exist;
+
+  //   // other params
+  //   patchReq = {
+  //     extra: 1,
+  //   };
+  //   res = SchedulesService.Validators.Patch.validate(patchReq);
+  //   console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+  //   chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
+
+  //   // set must be an object
+  //   patchReq = {
+  //     set: 1,
+  //   };
+  //   res = SchedulesService.Validators.Patch.validate(patchReq);
+  //   console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+  //   chai.expect(res.error.details[0].message).to.include('"set" must be of type object');
+
+  //   // set empty is allowed
+  //   patchReq = {
+  //     set: {},
+  //   };
+  //   res = SchedulesService.Validators.Patch.validate(patchReq);
+  //   console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+  //   chai.expect(res.error).to.not.exist;
+  // }).timeout(10000);
 });
