@@ -1,5 +1,5 @@
 /**
- * Classes service tests
+ * Groups service tests
  *
  * include them in order
  */

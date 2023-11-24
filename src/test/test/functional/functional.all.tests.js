@@ -13,3 +13,4 @@ require('./functional.users.test.js');
 require('./functional.classes.test.js');
 require('./functional.locations.test.js');
 require('./functional.groups.test.js');
+require('./functional.schedules.test.js');
