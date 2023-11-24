@@ -31,5 +31,9 @@
   "groups.delete": "Group '{0}' removed",
   "groups.patch": "Group '{0}' modified",
   "groups.post": "Group '{0}' added",
-  "groups.put": "Group '{0}' modified"
+  "groups.put": "Group '{0}' modified",
+  "schedules.delete": "Schedule '{0}' removed",
+  "schedules.patch": "Schedule '{0}' modified",
+  "schedules.post": "Schedule '{0}' added",
+  "schedules.put": "Schedule '{0}' modified"
 }

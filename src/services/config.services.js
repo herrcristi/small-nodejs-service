@@ -53,6 +53,12 @@ const GroupsDatabase = require('./groups/groups.database.js');
 const GroupsRouter = require('../services/groups/groups.router.js');
 const GroupsRest = require('./rest/groups.rest.js');
 
+const SchedulesConstants = require('./schedules/schedules.constants.js');
+const SchedulesService = require('./schedules/schedules.service.js');
+const SchedulesDatabase = require('./schedules/schedules.database.js');
+const SchedulesRouter = require('../services/schedules/schedules.router.js');
+const SchedulesRest = require('./rest/schedules.rest.js');
+
 const Public = {
   /**
    * init all services
@@ -68,6 +74,7 @@ const Public = {
       ClassesDatabase,
       LocationsDatabase,
       GroupsDatabase,
+      SchedulesDatabase,
     ]) {
       await database.init();
     }
@@ -82,6 +89,7 @@ const Public = {
       ClassesService,
       LocationsService,
       GroupsService,
+      SchedulesService,
     ]) {
       await service.init();
     }
@@ -128,6 +136,7 @@ const Public = {
         [ClassesConstants.ServiceName]: ClassesService,
         [LocationsConstants.ServiceName]: LocationsService,
         [GroupsConstants.ServiceName]: GroupsService,
+        [SchedulesConstants.ServiceName]: SchedulesService,
 
         // internal calls only
         [SchoolsConstants.ServiceNameInternal]: SchoolsService,
@@ -138,6 +147,7 @@ const Public = {
         [ClassesConstants.ServiceNameInternal]: ClassesService,
         [LocationsConstants.ServiceNameInternal]: LocationsService,
         [GroupsConstants.ServiceNameInternal]: GroupsService,
+        [SchedulesConstants.ServiceNameInternal]: SchedulesService,
       },
 
       rest: {
@@ -189,6 +199,12 @@ const Public = {
           port: WebConstants.Port,
           path: GroupsConstants.ApiPath,
         },
+        [SchedulesConstants.ServiceName]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: WebConstants.Port,
+          path: SchedulesConstants.ApiPath,
+        },
 
         // internal calls only
         [SchoolsConstants.ServiceNameInternal]: {
@@ -238,6 +254,12 @@ const Public = {
           host: 'localhost',
           port: WebConstants.Port,
           path: GroupsConstants.ApiPathInternal,
+        },
+        [SchedulesConstants.ServiceNameInternal]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: WebConstants.Port,
+          path: SchedulesConstants.ApiPathInternal,
         },
       },
     };
