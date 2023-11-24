@@ -221,70 +221,70 @@ describe('Schedules Service', function () {
     chai.expect(res.error).to.not.exist;
   }).timeout(10000);
 
-  // /**
-  //  * schema post extra
-  //  */
-  // it('should validate post schema for extra', async () => {
-  //   // extra is not allowed
-  //   postReq.extra = 1;
-  //   let res = SchedulesService.Validators.Post.validate(postReq);
-  //   console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-  //   chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
-  // }).timeout(10000);
+  /**
+   * schema post extra
+   */
+  it('should validate post schema for extra', async () => {
+    // extra is not allowed
+    postReq.extra = 1;
+    let res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
+  }).timeout(10000);
 
-  // /**
-  //  * schema put
-  //  * is the same as post - add only the extra cases
-  //  */
-  // it('should validate put schema', async () => {
-  //   // nothing is required
-  //   let putReq = {};
-  //   let res = SchedulesService.Validators.Put.validate(putReq);
-  //   console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-  //   chai.expect(res.error).to.not.exist;
+  /**
+   * schema put
+   * is the same as post - add only the extra cases
+   */
+  it('should validate put schema', async () => {
+    // nothing is required
+    let putReq = {};
+    let res = SchedulesService.Validators.Put.validate(putReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error).to.not.exist;
 
-  //   // other params
-  //   putReq = {
-  //     extra: 1,
-  //   };
-  //   res = SchedulesService.Validators.Put.validate(putReq);
-  //   console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-  //   chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
-  // }).timeout(10000);
+    // other params
+    putReq = {
+      extra: 1,
+    };
+    res = SchedulesService.Validators.Put.validate(putReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
+  }).timeout(10000);
 
-  // /**
-  //  * schema patch
-  //  * is the same as post - add only the extra cases
-  //  */
-  // it('should validate patch schema', async () => {
-  //   // nothing is required
-  //   let patchReq = {};
-  //   let res = SchedulesService.Validators.Patch.validate(patchReq);
-  //   console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-  //   chai.expect(res.error).to.not.exist;
+  /**
+   * schema patch
+   * is the same as post - add only the extra cases
+   */
+  it('should validate patch schema', async () => {
+    // nothing is required
+    let patchReq = {};
+    let res = SchedulesService.Validators.Patch.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error).to.not.exist;
 
-  //   // other params
-  //   patchReq = {
-  //     extra: 1,
-  //   };
-  //   res = SchedulesService.Validators.Patch.validate(patchReq);
-  //   console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-  //   chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
+    // other params
+    patchReq = {
+      extra: 1,
+    };
+    res = SchedulesService.Validators.Patch.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
 
-  //   // set must be an object
-  //   patchReq = {
-  //     set: 1,
-  //   };
-  //   res = SchedulesService.Validators.Patch.validate(patchReq);
-  //   console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-  //   chai.expect(res.error.details[0].message).to.include('"set" must be of type object');
+    // set must be an object
+    patchReq = {
+      set: 1,
+    };
+    res = SchedulesService.Validators.Patch.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"set" must be of type object');
 
-  //   // set empty is allowed
-  //   patchReq = {
-  //     set: {},
-  //   };
-  //   res = SchedulesService.Validators.Patch.validate(patchReq);
-  //   console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-  //   chai.expect(res.error).to.not.exist;
-  // }).timeout(10000);
+    // set empty is allowed
+    patchReq = {
+      set: {},
+    };
+    res = SchedulesService.Validators.Patch.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error).to.not.exist;
+  }).timeout(10000);
 });
