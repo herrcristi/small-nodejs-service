@@ -230,15 +230,6 @@ const Public = {
         },
       ],
     },
-    {
-      id: 'user2',
-      type: 'student',
-      user: {
-        id: 'user2',
-      },
-      classes: [],
-      groups: [],
-    },
   ],
 
   StudentsNotifications: [
@@ -267,13 +258,13 @@ const Public = {
    */
   Professors: [
     {
-      id: 'user1',
+      id: 'user2',
       user: {
-        id: 'user1',
-        name: 'Big Ben',
+        id: 'user2',
+        name: 'John Bravo',
         type: 'user',
         status: 'active',
-        email: 'big.ben@testdomain.test',
+        email: 'john.bravo@testdomain.test',
       },
       type: 'professor',
       classes: [
@@ -287,14 +278,6 @@ const Public = {
           required: 'required',
         },
       ],
-    },
-    {
-      id: 'user2',
-      type: 'Professor',
-      user: {
-        id: 'user2',
-      },
-      classes: [],
     },
   ],
 
@@ -468,10 +451,54 @@ const Public = {
   Schedules: [
     {
       id: 'schedule1',
-      name: 'Schedule 1A',
+      name: 'Schedule Mathematics 1A',
       type: 'schedule',
       status: 'active',
-      description: 'Schedule 1A. First year',
+      class: {
+        id: 'class1',
+        name: 'Mathematics',
+        type: 'class',
+        status: 'active',
+        description: 'Mathematics basics',
+        credits: 5,
+        required: 'required',
+      },
+      schedules: [
+        {
+          day: 'Monday',
+          hour: '08:00',
+          freq: 'weekly',
+          status: 'active',
+          location: {
+            id: 'location1',
+            name: 'Main Conference Room',
+            type: 'location',
+            status: 'active',
+            address: 'Main Building, Main Conference Room',
+          },
+        },
+      ],
+      professors: [
+        {
+          id: 'user2',
+          user: {
+            id: 'user2',
+            name: 'John Bravo',
+            type: 'user',
+            status: 'active',
+            email: 'john.bravo@testdomain.test',
+          },
+          type: 'professor',
+        },
+      ],
+      groups: [
+        {
+          id: 'group1',
+          name: 'Group 1A',
+          type: 'group',
+          status: 'active',
+        },
+      ],
       students: [
         {
           id: 'user1',
