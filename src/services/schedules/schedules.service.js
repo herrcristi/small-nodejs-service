@@ -115,6 +115,12 @@ const Private = {
       collection: await SchedulesDatabase.collection(_ctx),
       references: [
         {
+          fieldName: 'class',
+          service: ClassesRest,
+          isArray: false,
+          projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
+        },
+        {
           fieldName: 'schedules.location', // TODO
           service: LocationsRest,
           isArray: false,

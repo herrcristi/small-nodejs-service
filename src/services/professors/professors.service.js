@@ -15,6 +15,7 @@ const NotificationsUtils = require('../../core/utils/base-service.notifications.
 const EventsRest = require('../rest/events.rest.js');
 const UsersRest = require('../rest/users.rest.js');
 const ClassesRest = require('../rest/classes.rest.js');
+const SchedulesRest = require('../rest/schedules.rest.js');
 const ProfessorsRest = require('../rest/professors.rest.js');
 const ProfessorsConstants = require('./professors.constants.js');
 const ProfessorsDatabase = require('./professors.database.js');
@@ -79,6 +80,12 @@ const Private = {
           service: ClassesRest,
           isArray: true,
           projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
+        },
+        {
+          fieldName: 'schedules',
+          service: SchedulesRest,
+          isArray: true,
+          projection: { id: 1, name: 1, type: 1, status: 1, class: 1 },
         },
       ],
       notifications: { projection: Private.ResProjection } /* for sync+async */,
@@ -465,6 +472,14 @@ const Public = {
     } else {
       // other notification
       tenantNotifications = [{ tenantID: _ctx.tenantID, notification }];
+
+      // schedules notification -> auto add schedules for professors
+      if (
+        notification.serviceName === SchedulesRest.Constants?.ServiceName &&
+        notification[Private.Notification.Modified]
+      ) {
+        tenantNotifications[0].notification[Private.Notification.Added] = notification[Private.Notification.Modified];
+      }
     }
 
     // process notifications (references) for each tenant

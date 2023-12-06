@@ -14,6 +14,7 @@ const NotificationsUtils = require('../../core/utils/base-service.notifications.
 
 const EventsRest = require('../rest/events.rest.js');
 const StudentsRest = require('../rest/students.rest.js');
+const SchedulesRest = require('../rest/schedules.rest.js');
 const GroupsRest = require('../rest/groups.rest.js');
 const GroupsConstants = require('./groups.constants.js');
 const GroupsDatabase = require('./groups.database.js');
@@ -78,6 +79,12 @@ const Private = {
           service: StudentsRest,
           isArray: true,
           projection: { id: 1, name: 1, type: 1, status: 1, user: 1 },
+        },
+        {
+          fieldName: 'schedules',
+          service: SchedulesRest,
+          isArray: true,
+          projection: { id: 1, name: 1, type: 1, status: 1, class: 1 },
         },
       ],
       notifications: {
@@ -431,6 +438,14 @@ const Public = {
     const v = NotificationsUtils.getNotificationSchema().validate(notification);
     if (v.error) {
       return BaseServiceUtils.getSchemaValidationError(v, notification, _ctx);
+    }
+
+    // schedules notification -> auto add schedules for groups
+    if (
+      notification.serviceName === SchedulesRest.Constants?.ServiceName &&
+      notification[Private.Notification.Modified]
+    ) {
+      notification[Private.Notification.Added] = notification[Private.Notification.Modified];
     }
 
     // { serviceName, collection, references, fillReferences }

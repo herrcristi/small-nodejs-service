@@ -229,6 +229,23 @@ const Public = {
           status: 'active',
         },
       ],
+      schedules: [
+        {
+          id: 'schedule1',
+          name: 'Schedule Mathematics 1A',
+          type: 'schedule',
+          status: 'active',
+          class: {
+            id: 'class1',
+            name: 'Mathematics',
+            type: 'class',
+            status: 'active',
+            description: 'Mathematics basics',
+            credits: 5,
+            required: 'required',
+          },
+        },
+      ],
     },
   ],
 
@@ -276,6 +293,23 @@ const Public = {
           description: 'Mathematics basics',
           credits: 5,
           required: 'required',
+        },
+      ],
+      schedules: [
+        {
+          id: 'schedule1',
+          name: 'Schedule Mathematics 1A',
+          type: 'schedule',
+          status: 'active',
+          class: {
+            id: 'class1',
+            name: 'Mathematics',
+            type: 'class',
+            status: 'active',
+            description: 'Mathematics basics',
+            credits: 5,
+            required: 'required',
+          },
         },
       ],
     },
@@ -415,6 +449,23 @@ const Public = {
             email: 'big.ben@testdomain.test',
           },
           type: 'student',
+        },
+      ],
+      schedules: [
+        {
+          id: 'schedule1',
+          name: 'Schedule Mathematics 1A',
+          type: 'schedule',
+          status: 'active',
+          class: {
+            id: 'class1',
+            name: 'Mathematics',
+            type: 'class',
+            status: 'active',
+            description: 'Mathematics basics',
+            credits: 5,
+            required: 'required',
+          },
         },
       ],
       _lang_en: {
