@@ -21,6 +21,14 @@ const Public = {
     Active: 'active',
     Disabled: 'disabled',
   },
+
+  // freq
+  Frequency: {
+    Once: 'once',
+    Weekly: 'weekly',
+    BiWeekly: 'biWeekly',
+    Monthly: 'monthly',
+  },
 };
 
 module.exports = { ...Public };

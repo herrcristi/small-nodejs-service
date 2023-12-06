@@ -43,9 +43,12 @@ const SchemaGroups = Joi.array().items(
 );
 const SchemaScheduleLocation = Joi.array().items(
   Joi.object().keys({
-    day: Joi.string().min(1).max(64).required(),
-    hour: Joi.string().min(1).max(64).required(),
-    freq: Joi.string().min(1).max(64).required(), // TODO weekly, biweekly
+    timestamp: Joi.date().iso().required(),
+    frequency: Joi.string()
+      .min(1)
+      .max(64)
+      .valid(...Object.values(SchedulesConstants.Frequency))
+      .required(),
     location: Joi.string().min(1).max(64).required(),
     status: Joi.string()
       .min(1)
@@ -180,7 +183,7 @@ const Private = {
     let groupsMap = {};
     let studentsMap = {};
     for (const s of newSchedule.schedules) {
-      const key = `${s.day}.${s.hour}.${s.freq}.${s.location.id}`;
+      const key = `${s.timestamp}.${s.frequency}.${s.location.id}`;
       schedulesMap[key] = s;
     }
     for (const professor of newSchedule.professors) {
@@ -194,7 +197,7 @@ const Private = {
     }
 
     for (const s of schedule.schedules) {
-      const key = `${s.day}.${s.hour}.${s.freq}.${s.location.id}`;
+      const key = `${s.timestamp}.${s.frequency}.${s.location.id}`;
       const newSchedule = schedulesMap[key];
       if (!newSchedule) {
         // the schedule was removed

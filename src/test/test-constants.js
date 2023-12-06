@@ -465,9 +465,8 @@ const Public = {
       },
       schedules: [
         {
-          day: 'Monday',
-          hour: '08:00',
-          freq: 'weekly',
+          timestamp: '2023-12-04T08:00:00.000Z', // every Monday at 08:00
+          frequency: 'weekly',
           status: 'active',
           location: {
             id: 'location1',

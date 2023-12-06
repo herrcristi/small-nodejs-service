@@ -167,6 +167,77 @@ describe('Schedules Service', function () {
   }).timeout(10000);
 
   /**
+   * schema post schedules
+   */
+  it('should validate post schema for schedules', async () => {
+    let currentSchedule = postReq.schedules[0];
+
+    // schedules must be an array
+    postReq.schedules = 1;
+    let res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"schedules" must be an array');
+
+    // schedules null
+    postReq.schedules = null;
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"schedules" must be an array');
+
+    // schedules not object
+    postReq.schedules = [''];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"schedules[0]" must be of type object');
+
+    // schedules timestamp empty
+    postReq.schedules = [{ ...currentSchedule, timestamp: '' }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"schedules[0].timestamp" must be in ISO 8601 date format');
+
+    // schedules frequency not valid
+    postReq.schedules = [{ ...currentSchedule, frequency: 1 }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai
+      .expect(res.error.details[0].message)
+      .to.include('"schedules[0].frequency" must be one of [once, weekly, biWeekly, monthly]');
+
+    // schedules location not string
+    postReq.schedules = [{ ...currentSchedule, location: 1 }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"schedules[0].location" must be a string');
+
+    // schedules location emtpy
+    postReq.schedules = [{ ...currentSchedule, location: '' }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"schedules[0].location" is not allowed to be empty');
+
+    // schedules status not valid
+    postReq.schedules = [{ ...currentSchedule, status: '' }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai
+      .expect(res.error.details[0].message)
+      .to.include('"schedules[0].status" must be one of [pending, active, disabled]');
+
+    // schedules extra value
+    postReq.schedules = [{ ...currentSchedule, extra: 1 }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"schedules[0].extra" is not allowed');
+
+    // schedules value
+    postReq.schedules = [{ ...currentSchedule }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error).to.not.exist;
+  }).timeout(10000);
+
+  /**
    * schema post professors
    */
   it('should validate post schema for professors', async () => {
@@ -216,6 +287,116 @@ describe('Schedules Service', function () {
 
     // professors value
     postReq.professors = [{ id: 'id' }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error).to.not.exist;
+  }).timeout(10000);
+
+  /**
+   * schema post groups
+   */
+  it('should validate post schema for groups', async () => {
+    // groups must be an array
+    postReq.groups = 1;
+    let res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"groups" must be an array');
+
+    // groups null
+    postReq.groups = null;
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"groups" must be an array');
+
+    // groups not object
+    postReq.groups = [''];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"groups[0]" must be of type object');
+
+    // groups id empty
+    postReq.groups = [{ id: '' }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"groups[0].id" is not allowed to be empty');
+
+    // groups too long
+    postReq.groups = [{ id: '0123456789012345678901234567890123456789012345678901234567890123456789' }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai
+      .expect(res.error.details[0].message)
+      .to.include('"groups[0].id" length must be less than or equal to 64 characters long');
+
+    // groups invalid value
+    postReq.groups = [{ id: 1 }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"groups[0].id" must be a string');
+
+    // groups extra value
+    postReq.groups = [{ id: 'id', extra: 1 }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"groups[0].extra" is not allowed');
+
+    // groups value
+    postReq.groups = [{ id: 'id' }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error).to.not.exist;
+  }).timeout(10000);
+
+  /**
+   * schema post students
+   */
+  it('should validate post schema for students', async () => {
+    // students must be an array
+    postReq.students = 1;
+    let res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"students" must be an array');
+
+    // students null
+    postReq.students = null;
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"students" must be an array');
+
+    // students not object
+    postReq.students = [''];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"students[0]" must be of type object');
+
+    // students id empty
+    postReq.students = [{ id: '' }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"students[0].id" is not allowed to be empty');
+
+    // students too long
+    postReq.students = [{ id: '0123456789012345678901234567890123456789012345678901234567890123456789' }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai
+      .expect(res.error.details[0].message)
+      .to.include('"students[0].id" length must be less than or equal to 64 characters long');
+
+    // students invalid value
+    postReq.students = [{ id: 1 }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"students[0].id" must be a string');
+
+    // students extra value
+    postReq.students = [{ id: 'id', extra: 1 }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"students[0].extra" is not allowed');
+
+    // students value
+    postReq.students = [{ id: 'id' }];
     res = SchedulesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
