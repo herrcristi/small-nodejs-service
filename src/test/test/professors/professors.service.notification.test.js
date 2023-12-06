@@ -286,10 +286,10 @@ describe('Professors Service', function () {
   }).timeout(10000);
 
   /**
-   * notification other service (not user service)
+   * notification schedules
    */
-  it('should do notification other service (not user service)', async () => {
-    const notifications = _.cloneDeep(TestConstants.ProfessorsNotifications);
+  it('should do notification schedules', async () => {
+    const notifications = _.cloneDeep(TestConstants.SchedulesNotifications);
     const notif = notifications[0];
 
     // stub

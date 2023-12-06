@@ -320,6 +320,38 @@ describe('Students Service', function () {
   }).timeout(10000);
 
   /**
+   * notification schedules service
+   */
+  it('should do notification schedules service', async () => {
+    const notifications = _.cloneDeep(TestConstants.SchedulesNotifications);
+    const notif = notifications[0];
+
+    // stub
+    let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
+      console.log(`\nNotificationsUtils.notification called\n`);
+
+      chai.expect(notification).to.deep.equal(notif);
+      chai.expect(ctx.tenantID).to.deep.equal(_ctx.tenantID);
+
+      return {
+        status: 200,
+        value: true,
+      };
+    });
+
+    // call
+    let res = await StudentsService.notification(notif, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubNotification.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: true,
+    });
+  }).timeout(10000);
+
+  /**
    * notification groups service and fail
    */
   it('should do notification group service and fail', async () => {
