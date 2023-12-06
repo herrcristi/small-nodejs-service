@@ -43,6 +43,7 @@ describe('Professors Service', function () {
     delete putReq.id;
     delete putReq.user;
     delete putReq.type;
+    delete putReq.schedules;
     delete putReq._lang_en;
 
     // stub
@@ -134,6 +135,7 @@ describe('Professors Service', function () {
     delete putReq.id;
     delete putReq.user;
     delete putReq.type;
+    delete putReq.schedules;
     delete putReq._lang_en;
 
     // stub
@@ -170,6 +172,7 @@ describe('Professors Service', function () {
     delete putReq.id;
     delete putReq.user;
     delete putReq.type;
+    delete putReq.schedules;
     delete putReq._lang_en;
 
     // stub

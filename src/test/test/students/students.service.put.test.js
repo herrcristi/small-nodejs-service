@@ -44,6 +44,7 @@ describe('Students Service', function () {
     delete putReq.user;
     delete putReq.type;
     delete putReq.groups;
+    delete putReq.schedules;
     delete putReq._lang_en;
 
     // stub
@@ -136,6 +137,7 @@ describe('Students Service', function () {
     delete putReq.user;
     delete putReq.type;
     delete putReq.groups;
+    delete putReq.schedules;
     delete putReq._lang_en;
 
     // stub
@@ -173,6 +175,7 @@ describe('Students Service', function () {
     delete putReq.user;
     delete putReq.type;
     delete putReq.groups;
+    delete putReq.schedules;
     delete putReq._lang_en;
 
     // stub

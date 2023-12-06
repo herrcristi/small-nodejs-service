@@ -31,6 +31,7 @@ describe('Groups Service', function () {
     delete postReq.type;
     delete postReq.status;
     delete postReq.description;
+    delete postReq.schedules;
     delete postReq._lang_en;
   });
 

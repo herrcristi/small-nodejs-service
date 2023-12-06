@@ -87,6 +87,7 @@ describe('Groups Functional', function () {
 
     delete testGroup.id;
     delete testGroup.type;
+    delete testGroup.schedules;
     delete testGroup._lang_en;
     testGroup.students = [{ id: testGroup.students[0].id }];
 
@@ -117,6 +118,7 @@ describe('Groups Functional', function () {
     testGroup.name = 'new name';
     delete testGroup.id;
     delete testGroup.type;
+    delete testGroup.schedules;
     delete testGroup._lang_en;
 
     // check events before
@@ -240,6 +242,7 @@ describe('Groups Functional', function () {
     testGroup.name = 'new name';
     delete testGroup.id;
     delete testGroup.type;
+    delete testGroup.schedules;
     delete testGroup._lang_en;
 
     // events before
@@ -301,6 +304,7 @@ describe('Groups Functional', function () {
     testGroup.name = 'new name';
     delete testGroup.id;
     delete testGroup.type;
+    delete testGroup.schedules;
     delete testGroup._lang_en;
 
     // events before
@@ -390,6 +394,7 @@ describe('Groups Functional', function () {
     testGroup.name = 'new name';
     delete testGroup.id;
     delete testGroup.type;
+    delete testGroup.schedules;
     delete testGroup._lang_en;
 
     // events before

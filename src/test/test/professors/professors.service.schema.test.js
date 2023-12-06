@@ -26,6 +26,7 @@ describe('Professors Service', function () {
       classes: [{ id: testProfessor.classes[0].id }],
     };
     delete postReq.type;
+    delete postReq.schedules;
     delete postReq.user;
     delete postReq._lang_en;
   });
