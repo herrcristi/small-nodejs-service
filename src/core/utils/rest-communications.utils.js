@@ -248,6 +248,39 @@ const Public = {
     }
     return await Private.restCall({ serviceName, method: 'POST', path: '/notifications', body: notification }, _ctx);
   },
+
+  /**
+   * login
+   */
+  login: async (serviceName, objInfo, _ctx) => {
+    const localService = Private.Config.local[serviceName];
+    if (localService) {
+      return await localService.login(objInfo, _ctx);
+    }
+    return await Private.restCall({ serviceName, method: 'POST', path: '/login', body: objInfo }, _ctx);
+  },
+
+  /**
+   * signup
+   */
+  signup: async (serviceName, objInfo, _ctx) => {
+    const localService = Private.Config.local[serviceName];
+    if (localService) {
+      return await localService.signup(objInfo, _ctx);
+    }
+    return await Private.restCall({ serviceName, method: 'POST', path: '/signup', body: objInfo }, _ctx);
+  },
+
+  /**
+   * validate
+   */
+  validate: async (serviceName, objInfo, _ctx) => {
+    const localService = Private.Config.local[serviceName];
+    if (localService) {
+      return await localService.validate(objInfo, _ctx);
+    }
+    return await Private.restCall({ serviceName, method: 'POST', path: '/validate', body: objInfo }, _ctx);
+  },
 };
 
 module.exports = { ...Public };
