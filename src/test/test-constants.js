@@ -229,15 +229,23 @@ const Public = {
           status: 'active',
         },
       ],
-    },
-    {
-      id: 'user2',
-      type: 'student',
-      user: {
-        id: 'user2',
-      },
-      classes: [],
-      groups: [],
+      schedules: [
+        {
+          id: 'schedule1',
+          name: 'Schedule Mathematics 1A',
+          type: 'schedule',
+          status: 'active',
+          class: {
+            id: 'class1',
+            name: 'Mathematics',
+            type: 'class',
+            status: 'active',
+            description: 'Mathematics basics',
+            credits: 5,
+            required: 'required',
+          },
+        },
+      ],
     },
   ],
 
@@ -267,13 +275,13 @@ const Public = {
    */
   Professors: [
     {
-      id: 'user1',
+      id: 'user2',
       user: {
-        id: 'user1',
-        name: 'Big Ben',
+        id: 'user2',
+        name: 'John Bravo',
         type: 'user',
         status: 'active',
-        email: 'big.ben@testdomain.test',
+        email: 'john.bravo@testdomain.test',
       },
       type: 'professor',
       classes: [
@@ -287,14 +295,23 @@ const Public = {
           required: 'required',
         },
       ],
-    },
-    {
-      id: 'user2',
-      type: 'Professor',
-      user: {
-        id: 'user2',
-      },
-      classes: [],
+      schedules: [
+        {
+          id: 'schedule1',
+          name: 'Schedule Mathematics 1A',
+          type: 'schedule',
+          status: 'active',
+          class: {
+            id: 'class1',
+            name: 'Mathematics',
+            type: 'class',
+            status: 'active',
+            description: 'Mathematics basics',
+            credits: 5,
+            required: 'required',
+          },
+        },
+      ],
     },
   ],
 
@@ -434,6 +451,23 @@ const Public = {
           type: 'student',
         },
       ],
+      schedules: [
+        {
+          id: 'schedule1',
+          name: 'Schedule Mathematics 1A',
+          type: 'schedule',
+          status: 'active',
+          class: {
+            id: 'class1',
+            name: 'Mathematics',
+            type: 'class',
+            status: 'active',
+            description: 'Mathematics basics',
+            credits: 5,
+            required: 'required',
+          },
+        },
+      ],
       _lang_en: {
         status: 'Active',
       },
@@ -468,10 +502,53 @@ const Public = {
   Schedules: [
     {
       id: 'schedule1',
-      name: 'Schedule 1A',
+      name: 'Schedule Mathematics 1A',
       type: 'schedule',
       status: 'active',
-      description: 'Schedule 1A. First year',
+      class: {
+        id: 'class1',
+        name: 'Mathematics',
+        type: 'class',
+        status: 'active',
+        description: 'Mathematics basics',
+        credits: 5,
+        required: 'required',
+      },
+      schedules: [
+        {
+          timestamp: '2023-12-04T08:00:00.000Z', // every Monday at 08:00
+          frequency: 'weekly',
+          status: 'active',
+          location: {
+            id: 'location1',
+            name: 'Main Conference Room',
+            type: 'location',
+            status: 'active',
+            address: 'Main Building, Main Conference Room',
+          },
+        },
+      ],
+      professors: [
+        {
+          id: 'user2',
+          user: {
+            id: 'user2',
+            name: 'John Bravo',
+            type: 'user',
+            status: 'active',
+            email: 'john.bravo@testdomain.test',
+          },
+          type: 'professor',
+        },
+      ],
+      groups: [
+        {
+          id: 'group1',
+          name: 'Group 1A',
+          type: 'group',
+          status: 'active',
+        },
+      ],
       students: [
         {
           id: 'user1',

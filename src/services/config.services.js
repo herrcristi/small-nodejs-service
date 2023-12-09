@@ -95,35 +95,49 @@ const Public = {
     }
 
     // add sync subscribers
-    await SchoolsRest.subscribe({ callback: UsersRest.notification, projection: null /*default*/ });
+    const notifyProjection = { id: 1, name: 1, type: 1, status: 1 };
 
-    await UsersRest.subscribe({
-      callback: StudentsRest.notification,
-      projection: { id: 1, name: 1, type: 1, status: 1, email: 1, schools: 1 },
-    });
-    await UsersRest.subscribe({
-      callback: ProfessorsRest.notification,
-      projection: { id: 1, name: 1, type: 1, status: 1, email: 1, schools: 1 },
-    });
+    // schools
+    for (const rest of [UsersRest]) {
+      const projection = { ...notifyProjection };
+      await SchoolsRest.subscribe({ callback: rest.notification, projection });
+    }
 
-    await ClassesRest.subscribe({
-      callback: StudentsRest.notification,
-      projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
-    });
-    await ClassesRest.subscribe({
-      callback: ProfessorsRest.notification,
-      projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
-    });
+    // users
+    for (const rest of [StudentsRest, ProfessorsRest]) {
+      const projection = { ...notifyProjection, email: 1, schools: 1 };
+      await UsersRest.subscribe({ callback: rest.notification, projection });
+    }
 
-    await GroupsRest.subscribe({
-      callback: StudentsRest.notification,
-      projection: { id: 1, name: 1, type: 1, status: 1, students: 1 },
-    });
+    // classes
+    for (const rest of [StudentsRest, ProfessorsRest, SchedulesRest]) {
+      const projection = { ...notifyProjection, description: 1, credits: 1, required: 1 };
+      await ClassesRest.subscribe({ callback: rest.notification, projection });
+    }
 
-    await StudentsRest.subscribe({
-      callback: GroupsRest.notification,
-      projection: { id: 1, name: 1, type: 1, status: 1, user: 1 },
-    });
+    // groups
+    for (const rest of [StudentsRest, SchedulesRest]) {
+      const projection = { ...notifyProjection, students: 1 };
+      await GroupsRest.subscribe({ callback: rest.notification, projection });
+    }
+
+    // students
+    for (const rest of [GroupsRest, SchedulesRest]) {
+      const projection = { ...notifyProjection, user: 1 };
+      await StudentsRest.subscribe({ callback: rest.notification, projection });
+    }
+
+    // professors
+    for (const rest of [SchedulesRest]) {
+      const projection = { ...notifyProjection, user: 1 };
+      await ProfessorsRest.subscribe({ callback: rest.notification, projection });
+    }
+
+    // schedules
+    for (const rest of [ProfessorsRest, GroupsRest, StudentsRest]) {
+      const projection = { ...notifyProjection, class: 1, schedules: 1, professors: 1, groups: 1, students: 1 };
+      await SchedulesRest.subscribe({ callback: rest.notification, projection });
+    }
 
     // init the communication
     const config = {

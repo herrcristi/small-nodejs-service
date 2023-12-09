@@ -96,4 +96,36 @@ describe('Groups Service', function () {
     chai.expect(res.status).to.equal(400);
     chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "serviceName" is required');
   }).timeout(10000);
+
+  /**
+   * notification schedules
+   */
+  it('should do notification schedules', async () => {
+    const notifications = _.cloneDeep(TestConstants.SchedulesNotifications);
+    const notif = notifications[0];
+
+    // stub
+    let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
+      console.log(`\nNotificationsUtils.notification called\n`);
+
+      chai.expect(notification).to.deep.equal(notif);
+      chai.expect(ctx.tenantID).to.deep.equal(_ctx.tenantID);
+
+      return {
+        status: 200,
+        value: true,
+      };
+    });
+
+    // call
+    let res = await GroupsService.notification(notif, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubNotification.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: true,
+    });
+  }).timeout(10000);
 });

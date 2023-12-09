@@ -46,6 +46,7 @@ describe('Students Service', function () {
     delete patchReq.set.user;
     delete patchReq.set.type;
     delete patchReq.set.groups;
+    delete patchReq.set.schedules;
     delete patchReq.set._lang_en;
 
     // stub
@@ -141,6 +142,7 @@ describe('Students Service', function () {
     delete patchReq.set.user;
     delete patchReq.set.type;
     delete patchReq.set.groups;
+    delete patchReq.set.schedules;
     delete patchReq.set._lang_en;
 
     // stub
@@ -180,6 +182,7 @@ describe('Students Service', function () {
     delete patchReq.set.user;
     delete patchReq.set.type;
     delete patchReq.set.groups;
+    delete patchReq.set.schedules;
     delete patchReq.set._lang_en;
 
     // stub

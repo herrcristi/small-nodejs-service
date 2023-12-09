@@ -17,7 +17,18 @@ describe('Base Service', function () {
       description: Joi.string().min(0).max(1024).allow(null),
     }),
     collection: 'collection',
-    references: [{ fieldName: 'target', service: { getAllByIDs: () => {} }, projection: null /*default*/ }],
+    references: [
+      {
+        fieldName: 'target',
+        service: { getAllByIDs: () => {} },
+        projection: null /*default*/,
+      },
+      {
+        fieldName: 'inner.target',
+        service: { getAllByIDs: () => {} },
+        projection: null /*default*/,
+      },
+    ],
     fillReferences: false,
   };
 
@@ -32,9 +43,9 @@ describe('Base Service', function () {
   after(async function () {});
 
   /**
-   * populate with success
+   * populate with success simple field
    */
-  it('should call populate with success', async () => {
+  it('should call populate with success simple field', async () => {
     const objs = [
       {
         id: 'id1',
@@ -124,6 +135,90 @@ describe('Base Service', function () {
               name: 't4',
             },
           ],
+        },
+      ],
+    });
+  }).timeout(10000);
+
+  /**
+   * populate with success multi field
+   */
+  it('should call populate with success multi field', async () => {
+    const objs = [
+      {
+        id: 'id5',
+        name: 'name5',
+        inner: {
+          // inner is object
+          target: 'targetID5',
+        },
+      },
+      {
+        id: 'id6',
+        name: 'name6',
+        inner: [
+          // inner is array
+          {
+            target: 'targetID6',
+          },
+        ],
+      },
+      {
+        id: 'id7',
+        name: 'name7',
+        inner: 'inner', // inner is string, has no target
+      },
+    ];
+
+    sinon.stub(config.references[1].service, 'getAllByIDs').callsFake((ids, projection) => {
+      console.log(`\nrest service called with ids ${JSON.stringify(ids)} and projection ${JSON.stringify(projection)}`);
+      chai.expect(ids).to.deep.equal(['targetID5', 'targetID6']);
+      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1 });
+
+      return {
+        status: 200,
+        value: [
+          { id: 'targetID5', name: 't5' },
+          { id: 'targetID6', name: 't6' },
+        ],
+      };
+    });
+
+    // call
+    let res = await ReferencesUtils.populate(config.references[1], objs, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(config.references[1].service.getAllByIDs.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: [
+        {
+          id: 'id5',
+          name: 'name5',
+          inner: {
+            target: {
+              id: 'targetID5',
+              name: 't5',
+            },
+          },
+        },
+        {
+          id: 'id6',
+          name: 'name6',
+          inner: [
+            {
+              target: {
+                id: 'targetID6',
+                name: 't6',
+              },
+            },
+          ],
+        },
+        {
+          id: 'id7',
+          name: 'name7',
+          inner: 'inner',
         },
       ],
     });

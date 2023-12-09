@@ -43,6 +43,7 @@ describe('Students Service', function () {
     delete postReq.user;
     delete postReq.type;
     delete postReq.groups;
+    delete postReq.schedules;
     delete postReq._lang_en;
 
     // stub
@@ -134,6 +135,7 @@ describe('Students Service', function () {
     delete postReq.user;
     delete postReq.type;
     delete postReq.groups;
+    delete postReq.schedules;
     delete postReq._lang_en;
 
     // stub
@@ -170,6 +172,7 @@ describe('Students Service', function () {
     delete postReq.user;
     delete postReq.type;
     delete postReq.groups;
+    delete postReq.schedules;
     delete postReq._lang_en;
 
     // stub

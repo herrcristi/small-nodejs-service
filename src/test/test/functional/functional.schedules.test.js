@@ -10,6 +10,9 @@ const TestConstants = require('../../test-constants.js');
 
 const SchedulesDatabase = require('../../../services/schedules/schedules.database.js');
 const UsersDatabase = require('../../../services/users/users.database.js');
+const LocationsDatabase = require('../../../services/locations/locations.database.js');
+const ProfessorsDatabase = require('../../../services/professors/professors.database.js');
+const GroupsDatabase = require('../../../services/groups/groups.database.js');
 const StudentsDatabase = require('../../../services/students/students.database.js');
 const EventsDatabase = require('../../../services/events/events.database.js');
 
@@ -83,12 +86,11 @@ describe('Schedules Functional', function () {
    */
   it('should post fail duplicate name', async () => {
     const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testSchedule = _.cloneDeep(testSchedules[0]);
+    let testSchedule = _.cloneDeep(testSchedules[0]);
 
     delete testSchedule.id;
     delete testSchedule.type;
     delete testSchedule._lang_en;
-    testSchedule.students = [{ id: testSchedule.students[0].id }];
 
     // call
     let res = await chai
@@ -97,7 +99,14 @@ describe('Schedules Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
-      .send({ ...testSchedule });
+      .send({
+        ...testSchedule,
+        class: testSchedule.class.id,
+        schedules: [{ ...testSchedule.schedules[0], location: testSchedule.schedules[0].location.id }],
+        professors: [{ id: testSchedule.professors[0].id }],
+        groups: [{ id: testSchedule.groups[0].id }],
+        students: [{ id: testSchedule.students[0].id }],
+      });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -123,6 +132,18 @@ describe('Schedules Functional', function () {
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
+    // check professors before
+    let professorsBefore = await (
+      await ProfessorsDatabase.collection(_ctx)
+    ).findOne({ id: testSchedule.professors[0].id });
+    console.log(`\nProfessors before: ${JSON.stringify(professorsBefore, null, 2)}\n`);
+    chai.expect(professorsBefore.schedules.length).to.equal(1);
+
+    // check groups before
+    let groupsBefore = await (await GroupsDatabase.collection(_ctx)).findOne({ id: testSchedule.groups[0].id });
+    console.log(`\nGroups before: ${JSON.stringify(groupsBefore, null, 2)}\n`);
+    chai.expect(groupsBefore.schedules.length).to.equal(1);
+
     // check students before
     let studentsBefore = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
     console.log(`\nStudents before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
@@ -137,6 +158,10 @@ describe('Schedules Functional', function () {
       .set('x-tenant-id', _ctx.tenantID)
       .send({
         ...testSchedule,
+        class: testSchedule.class.id,
+        schedules: [{ ...testSchedule.schedules[0], location: testSchedule.schedules[0].location.id }],
+        professors: [{ id: testSchedule.professors[0].id }],
+        groups: [{ id: testSchedule.groups[0].id }],
         students: [{ id: testSchedule.students[0].id }],
       });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -153,6 +178,18 @@ describe('Schedules Functional', function () {
     let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // check professors after
+    let professorsAfter = await (
+      await ProfessorsDatabase.collection(_ctx)
+    ).findOne({ id: testSchedule.professors[0].id });
+    console.log(`\nProfessors after: ${JSON.stringify(professorsAfter, null, 2)}\n`);
+    chai.expect(professorsAfter.schedules.length).to.equal(2);
+
+    // check groups after
+    let groupsAfter = await (await GroupsDatabase.collection(_ctx)).findOne({ id: testSchedule.groups[0].id });
+    console.log(`\nGroups after: ${JSON.stringify(groupsAfter, null, 2)}\n`);
+    chai.expect(groupsAfter.schedules.length).to.equal(2);
 
     // check students after
     let studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
@@ -188,6 +225,18 @@ describe('Schedules Functional', function () {
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
+    // check professors before
+    let professorsBefore = await (
+      await ProfessorsDatabase.collection(_ctx)
+    ).findOne({ id: testSchedule.professors[0].id });
+    console.log(`\nProfessors before: ${JSON.stringify(professorsBefore, null, 2)}\n`);
+    chai.expect(professorsBefore.schedules.length).to.equal(1);
+
+    // check groups before
+    let groupsBefore = await (await GroupsDatabase.collection(_ctx)).findOne({ id: testSchedule.groups[0].id });
+    console.log(`\nGroups before: ${JSON.stringify(groupsBefore, null, 2)}\n`);
+    chai.expect(groupsBefore.schedules.length).to.equal(1);
+
     // check students before
     let studentsBefore = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
     console.log(`\nStudents before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
@@ -210,6 +259,18 @@ describe('Schedules Functional', function () {
     let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // check professors after
+    let professorsAfter = await (
+      await ProfessorsDatabase.collection(_ctx)
+    ).findOne({ id: testSchedule.professors[0].id });
+    console.log(`\nProfessors after: ${JSON.stringify(professorsAfter, null, 2)}\n`);
+    chai.expect(professorsAfter.schedules.length).to.equal(0);
+
+    // check groups after
+    let groupsAfter = await (await GroupsDatabase.collection(_ctx)).findOne({ id: testSchedule.groups[0].id });
+    console.log(`\nGroups after: ${JSON.stringify(groupsAfter, null, 2)}\n`);
+    chai.expect(groupsAfter.schedules.length).to.equal(0);
 
     // check students after
     let studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
@@ -246,6 +307,18 @@ describe('Schedules Functional', function () {
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
+    // check professors before
+    let professorsBefore = await (
+      await ProfessorsDatabase.collection(_ctx)
+    ).findOne({ id: testSchedule.professors[0].id });
+    console.log(`\nProfessors before: ${JSON.stringify(professorsBefore, null, 2)}\n`);
+    chai.expect(professorsBefore.schedules.length).to.equal(1);
+
+    // check groups before
+    let groupsBefore = await (await GroupsDatabase.collection(_ctx)).findOne({ id: testSchedule.groups[0].id });
+    console.log(`\nGroups before: ${JSON.stringify(groupsBefore, null, 2)}\n`);
+    chai.expect(groupsBefore.schedules.length).to.equal(1);
+
     // check students before
     let studentsBefore = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
     console.log(`\nStudents before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
@@ -260,6 +333,10 @@ describe('Schedules Functional', function () {
       .set('x-tenant-id', _ctx.tenantID)
       .send({
         ...testSchedule,
+        class: testSchedule.class.id,
+        schedules: [{ ...testSchedule.schedules[0], location: testSchedule.schedules[0].location.id }],
+        professors: [{ id: testSchedule.professors[0].id }],
+        groups: [{ id: testSchedule.groups[0].id }],
         students: [{ id: testSchedule.students[0].id }],
       });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -274,97 +351,20 @@ describe('Schedules Functional', function () {
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
-    // check students after
-    let studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
-    console.log(`\nStudents after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
-    chai.expect(studentsAfter.schedules.length).to.equal(1);
+    // check professors after
+    let professorsAfter = await (
+      await ProfessorsDatabase.collection(_ctx)
+    ).findOne({ id: testSchedule.professors[0].id });
+    console.log(`\nProfessors after: ${JSON.stringify(professorsAfter, null, 2)}\n`);
+    chai.expect(professorsAfter.schedules.length).to.equal(1);
 
-    // do a get
-    res = await chai
-      .request(TestConstants.WebServer)
-      .get(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
-      .set('x-tenant-id', _ctx.tenantID);
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    chai.expect(res.body.id).to.equal(testScheduleID);
-    chai.expect(res.body.name).to.equal(testSchedule.name);
-  }).timeout(10000);
-
-  /**
-   * put with success remove students and add students
-   */
-  it('should put with success remove students and add students', async () => {
-    const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testSchedule = _.cloneDeep(testSchedules[0]);
-    const testScheduleID = testSchedule.id;
-
-    testSchedule.name = 'new name';
-    delete testSchedule.id;
-    delete testSchedule.type;
-    delete testSchedule._lang_en;
-
-    // events before
-    let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
-    console.log(`\nEvents count before: ${eventsCountBefore}\n`);
-
-    // check students before
-    let studentsBefore = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
-    console.log(`\nStudents before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
-    chai.expect(studentsBefore.schedules.length).to.equal(1);
-
-    // call to remove students
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .put(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
-      .set('x-tenant-id', _ctx.tenantID)
-      .send({
-        ...testSchedule,
-        students: [],
-      });
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(200);
-    chai.expect(res.body.id).to.equal(testScheduleID);
-    chai.expect(res.body.name).to.equal(testSchedule.name);
-
-    // events after
-    let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
-    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
-    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+    // check groups after
+    let groupsAfter = await (await GroupsDatabase.collection(_ctx)).findOne({ id: testSchedule.groups[0].id });
+    console.log(`\nGroups after: ${JSON.stringify(groupsAfter, null, 2)}\n`);
+    chai.expect(groupsAfter.schedules.length).to.equal(1);
 
     // check students after
     let studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
-    console.log(`\nStudents after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
-    chai.expect(studentsAfter.schedules.length).to.equal(0);
-
-    // call again and add student
-    res = await chai
-      .request(TestConstants.WebServer)
-      .put(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
-      .set('x-tenant-id', _ctx.tenantID)
-      .send({
-        ...testSchedule,
-        students: [{ id: testSchedule.students[0].id }],
-      });
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(200);
-    chai.expect(res.body.id).to.equal(testScheduleID);
-    chai.expect(res.body.name).to.equal(testSchedule.name);
-
-    // events after
-    eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
-    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
-    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 2);
-
-    // check students after
-    studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
     console.log(`\nStudents after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
     chai.expect(studentsAfter.schedules.length).to.equal(1);
 
@@ -396,6 +396,18 @@ describe('Schedules Functional', function () {
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
+    // check professors before
+    let professorsBefore = await (
+      await ProfessorsDatabase.collection(_ctx)
+    ).findOne({ id: testSchedule.professors[0].id });
+    console.log(`\nProfessors before: ${JSON.stringify(professorsBefore, null, 2)}\n`);
+    chai.expect(professorsBefore.schedules.length).to.equal(1);
+
+    // check groups before
+    let groupsBefore = await (await GroupsDatabase.collection(_ctx)).findOne({ id: testSchedule.groups[0].id });
+    console.log(`\nGroups before: ${JSON.stringify(groupsBefore, null, 2)}\n`);
+    chai.expect(groupsBefore.schedules.length).to.equal(1);
+
     // check students before
     let studentsBefore = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });
     console.log(`\nStudents before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
@@ -411,6 +423,10 @@ describe('Schedules Functional', function () {
       .send({
         set: {
           ...testSchedule,
+          class: testSchedule.class.id,
+          schedules: [{ ...testSchedule.schedules[0], location: testSchedule.schedules[0].location.id }],
+          professors: [{ id: testSchedule.professors[0].id }],
+          groups: [{ id: testSchedule.groups[0].id }],
           students: [{ id: testSchedule.students[0].id }],
         },
       });
@@ -425,6 +441,18 @@ describe('Schedules Functional', function () {
     let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // check professors after
+    let professorsAfter = await (
+      await ProfessorsDatabase.collection(_ctx)
+    ).findOne({ id: testSchedule.professors[0].id });
+    console.log(`\nProfessors after: ${JSON.stringify(professorsAfter, null, 2)}\n`);
+    chai.expect(professorsAfter.schedules.length).to.equal(1);
+
+    // check groups after
+    let groupsAfter = await (await GroupsDatabase.collection(_ctx)).findOne({ id: testSchedule.groups[0].id });
+    console.log(`\nGroups after: ${JSON.stringify(groupsAfter, null, 2)}\n`);
+    chai.expect(groupsAfter.schedules.length).to.equal(1);
 
     // check students after
     let studentsAfter = await (await StudentsDatabase.collection(_ctx)).findOne({ id: testSchedule.students[0].id });

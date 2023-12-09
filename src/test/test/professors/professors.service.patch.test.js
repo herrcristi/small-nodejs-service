@@ -45,6 +45,7 @@ describe('Professors Service', function () {
     delete patchReq.set.id;
     delete patchReq.set.user;
     delete patchReq.set.type;
+    delete patchReq.set.schedules;
     delete patchReq.set._lang_en;
 
     // stub
@@ -139,6 +140,7 @@ describe('Professors Service', function () {
     delete patchReq.set.id;
     delete patchReq.set.user;
     delete patchReq.set.type;
+    delete patchReq.set.schedules;
     delete patchReq.set._lang_en;
 
     // stub
@@ -177,6 +179,7 @@ describe('Professors Service', function () {
     delete patchReq.set.id;
     delete patchReq.set.user;
     delete patchReq.set.type;
+    delete patchReq.set.schedules;
     delete patchReq.set._lang_en;
 
     // stub

@@ -37,13 +37,13 @@ describe('Schedules Service', function () {
    */
   it('should delete with success', async () => {
     const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testGroup = testSchedules[0];
+    const testSchedule = testSchedules[0];
 
     let stubBase = sinon.stub(DbOpsUtils, 'delete').callsFake((config, objID) => {
       console.log(`DbOpsUtils.delete called`);
       return {
         status: 200,
-        value: { ...testGroup },
+        value: { ...testSchedule },
       };
     });
 
@@ -56,7 +56,7 @@ describe('Schedules Service', function () {
     });
 
     // call
-    let res = await SchedulesService.delete(testGroup.id, _ctx);
+    let res = await SchedulesService.delete(testSchedule.id, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -66,10 +66,11 @@ describe('Schedules Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        id: testGroup.id,
-        name: testGroup.name,
-        type: testGroup.type,
-        status: testGroup.status,
+        id: testSchedule.id,
+        name: testSchedule.name,
+        type: testSchedule.type,
+        status: testSchedule.status,
+        class: testSchedule.class,
       },
     });
   }).timeout(10000);
@@ -92,7 +93,7 @@ describe('Schedules Service', function () {
    */
   it('should delete fail ', async () => {
     const testSchedules = _.cloneDeep(TestConstants.Schedules);
-    const testGroup = testSchedules[0];
+    const testSchedule = testSchedules[0];
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'delete').callsFake((config, objID) => {
@@ -101,7 +102,7 @@ describe('Schedules Service', function () {
     });
 
     // call
-    let res = await SchedulesService.delete(testGroup.id, _ctx);
+    let res = await SchedulesService.delete(testSchedule.id, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

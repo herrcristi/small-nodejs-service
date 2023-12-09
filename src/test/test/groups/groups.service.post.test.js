@@ -42,6 +42,7 @@ describe('Groups Service', function () {
     };
     delete postReq.id;
     delete postReq.type;
+    delete postReq.schedules;
     delete postReq._lang_en;
 
     // stub
@@ -98,6 +99,7 @@ describe('Groups Service', function () {
     };
     delete postReq.id;
     delete postReq.type;
+    delete postReq.schedules;
     delete postReq.status;
     delete postReq._lang_en;
 
@@ -189,6 +191,7 @@ describe('Groups Service', function () {
     };
     delete postReq.id;
     delete postReq.type;
+    delete postReq.schedules;
     delete postReq._lang_en;
 
     // stub
@@ -224,6 +227,7 @@ describe('Groups Service', function () {
     };
     delete postReq.id;
     delete postReq.type;
+    delete postReq.schedules;
     delete postReq._lang_en;
 
     // stub

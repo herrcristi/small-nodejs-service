@@ -14,6 +14,7 @@ const NotificationsUtils = require('../../core/utils/base-service.notifications.
 
 const EventsRest = require('../rest/events.rest.js');
 const StudentsRest = require('../rest/students.rest.js');
+const SchedulesRest = require('../rest/schedules.rest.js');
 const GroupsRest = require('../rest/groups.rest.js');
 const GroupsConstants = require('./groups.constants.js');
 const GroupsDatabase = require('./groups.database.js');
@@ -79,6 +80,12 @@ const Private = {
           isArray: true,
           projection: { id: 1, name: 1, type: 1, status: 1, user: 1 },
         },
+        {
+          fieldName: 'schedules',
+          service: SchedulesRest,
+          isArray: true,
+          projection: { id: 1, name: 1, type: 1, status: 1, class: 1 },
+        },
       ],
       notifications: {
         projection: { ...BaseServiceUtils.Constants.DefaultProjection, students: 1 },
@@ -102,29 +109,29 @@ const Private = {
   /**
    * get the difference that was removed
    */
-  getStudentsDiff: (user, newUser) => {
-    let userDiff = {
-      ...newUser,
+  getDiff: (group, newGroup) => {
+    let groupDiff = {
+      ...newGroup,
       students: [],
     };
 
     // create a map for students
     let studentsMap = {};
-    for (const student of newUser.students) {
+    for (const student of newGroup.students) {
       studentsMap[student.id] = student;
     }
 
-    for (const student of user.students) {
+    for (const student of group.students) {
       const newStudent = studentsMap[student.id];
       if (!newStudent) {
         // the student was removed
-        userDiff.students.push(student);
+        groupDiff.students.push(student);
         continue;
       }
       // nothing else to check
     }
 
-    return userDiff;
+    return groupDiff;
   },
 };
 
@@ -349,8 +356,8 @@ const Public = {
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await GroupsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
 
-    // take the difference and notify removed students roles
-    let rdiff = { status: 200, value: Private.getStudentsDiff(rget.value, r.value) };
+    // take the difference and notify removed students
+    let rdiff = { status: 200, value: Private.getDiff(rget.value, r.value) };
     if (Object.keys(rdiff.value.students).length) {
       let rp = BaseServiceUtils.getProjectedResponse(rdiff, config.notifications.projection /* for sync+async */, _ctx);
       let rndiff = await GroupsRest.raiseNotification(Private.Notification.Removed, [rp.value], _ctx);
@@ -407,8 +414,8 @@ const Public = {
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await GroupsRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
 
-    // take the difference and notify removed students roles
-    let rdiff = { status: 200, value: Private.getStudentsDiff(rget.value, r.value) };
+    // take the difference and notify removed students
+    let rdiff = { status: 200, value: Private.getDiff(rget.value, r.value) };
     if (Object.keys(rdiff.value.students).length) {
       let rp = BaseServiceUtils.getProjectedResponse(rdiff, config.notifications.projection /* for sync+async */, _ctx);
       let rndiff = await GroupsRest.raiseNotification(Private.Notification.Removed, [rp.value], _ctx);
@@ -431,6 +438,14 @@ const Public = {
     const v = NotificationsUtils.getNotificationSchema().validate(notification);
     if (v.error) {
       return BaseServiceUtils.getSchemaValidationError(v, notification, _ctx);
+    }
+
+    // schedules notification -> auto add schedules for groups
+    if (
+      notification.serviceName === SchedulesRest.Constants?.ServiceName &&
+      notification[Private.Notification.Modified]
+    ) {
+      notification[Private.Notification.Added] = notification[Private.Notification.Modified];
     }
 
     // { serviceName, collection, references, fillReferences }

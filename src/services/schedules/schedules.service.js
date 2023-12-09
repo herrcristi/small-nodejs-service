@@ -13,8 +13,13 @@ const ReferencesUtils = require('../../core/utils/base-service.references.utils.
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 
 const EventsRest = require('../rest/events.rest.js');
+const ClassesRest = require('../rest/classes.rest.js');
+const LocationsRest = require('../rest/locations.rest.js');
 const StudentsRest = require('../rest/students.rest.js');
+const ProfessorsRest = require('../rest/professors.rest.js');
+const GroupsRest = require('../rest/groups.rest.js');
 const SchedulesRest = require('../rest/schedules.rest.js');
+
 const SchedulesConstants = require('./schedules.constants.js');
 const SchedulesDatabase = require('./schedules.database.js');
 
@@ -26,34 +31,70 @@ const SchemaStudents = Joi.array().items(
     id: Joi.string().min(1).max(64).required(),
   })
 );
-
-const Schema = {
-  Schedule: Joi.object().keys({
-    name: Joi.string().min(1).max(64),
+const SchemaProfessors = Joi.array().items(
+  Joi.object().keys({
+    id: Joi.string().min(1).max(64).required(),
+  })
+);
+const SchemaGroups = Joi.array().items(
+  Joi.object().keys({
+    id: Joi.string().min(1).max(64).required(),
+  })
+);
+const SchemaScheduleLocation = Joi.array().items(
+  Joi.object().keys({
+    timestamp: Joi.date().iso().required(),
+    frequency: Joi.string()
+      .min(1)
+      .max(64)
+      .valid(...Object.values(SchedulesConstants.Frequency))
+      .required(),
+    location: Joi.string().min(1).max(64).required(),
     status: Joi.string()
       .min(1)
       .max(64)
       .valid(...Object.values(SchedulesConstants.Status)),
-    description: Joi.string().min(1).max(1024).allow(null),
+  })
+);
+
+const Schema = {
+  Schedule: Joi.object().keys({
+    name: Joi.string().min(1).max(64),
+    class: Joi.string().min(1).max(64),
+    status: Joi.string()
+      .min(1)
+      .max(64)
+      .valid(...Object.values(SchedulesConstants.Status)),
+    schedules: SchemaScheduleLocation,
+    professors: SchemaProfessors,
+    groups: SchemaGroups,
     students: SchemaStudents,
   }),
 };
 
 const Validators = {
-  Post: Schema.Schedule.fork(['name', 'students'], (x) => x.required() /*make required */).keys({
+  Post: Schema.Schedule.fork(
+    ['name', 'class', 'schedules', 'professors', 'groups', 'students'],
+    (x) => x.required() /*make required */
+  ).keys({
     type: Joi.string().valid(SchedulesConstants.Type),
   }),
 
   Put: Schema.Schedule,
 
   Patch: Joi.object().keys({
-    // for patch allowed operations are set, unset, add, remove
+    // for patch allowed operations are set, add, remove
     set: Schema.Schedule,
-    unset: Joi.array().items(Joi.string().min(1).max(128).valid('description')),
     add: Joi.object().keys({
+      schedules: SchemaScheduleLocation,
+      professors: SchemaProfessors,
+      groups: SchemaGroups,
       students: SchemaStudents,
     }),
     remove: Joi.object().keys({
+      schedules: SchemaScheduleLocation,
+      professors: SchemaProfessors,
+      groups: SchemaGroups,
       students: SchemaStudents,
     }),
   }),
@@ -62,7 +103,7 @@ const Validators = {
 const Private = {
   Action: BaseServiceUtils.Constants.Action,
   Notification: NotificationsUtils.Constants.Notification,
-  ResProjection: { ...BaseServiceUtils.Constants.DefaultProjection },
+  ResProjection: { ...BaseServiceUtils.Constants.DefaultProjection, class: 1 },
 
   /**
    * config
@@ -74,6 +115,30 @@ const Private = {
       collection: await SchedulesDatabase.collection(_ctx),
       references: [
         {
+          fieldName: 'class',
+          service: ClassesRest,
+          isArray: false,
+          projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
+        },
+        {
+          fieldName: 'schedules.location', // TODO
+          service: LocationsRest,
+          isArray: false,
+          projection: { id: 1, name: 1, type: 1, status: 1, address: 1 },
+        },
+        {
+          fieldName: 'professors',
+          service: ProfessorsRest,
+          isArray: true,
+          projection: { id: 1, name: 1, type: 1, status: 1, user: 1 },
+        },
+        {
+          fieldName: 'groups',
+          service: GroupsRest,
+          isArray: true,
+          projection: { id: 1, name: 1, type: 1, status: 1 },
+        },
+        {
           fieldName: 'students',
           service: StudentsRest,
           isArray: true,
@@ -81,7 +146,14 @@ const Private = {
         },
       ],
       notifications: {
-        projection: { ...BaseServiceUtils.Constants.DefaultProjection, students: 1 },
+        projection: {
+          ...BaseServiceUtils.Constants.DefaultProjection,
+          class: 1,
+          schedules: 1,
+          professors: 1,
+          groups: 1,
+          students: 1,
+        },
       } /* for sync+async */,
     };
     return config;
@@ -102,29 +174,69 @@ const Private = {
   /**
    * get the difference that was removed
    */
-  getStudentsDiff: (user, newUser) => {
-    let userDiff = {
-      ...newUser,
+  getDiff: (schedule, newSchedule) => {
+    let scheduleDiff = {
+      ...newSchedule,
+      schedules: [],
+      professors: [],
+      groups: [],
       students: [],
     };
 
-    // create a map for students
+    // create maps
+    let schedulesMap = {};
+    let professorsMap = {};
+    let groupsMap = {};
     let studentsMap = {};
-    for (const student of newUser.students) {
+    for (const s of newSchedule.schedules) {
+      const key = `${s.timestamp}.${s.frequency}.${s.location.id}`;
+      schedulesMap[key] = s;
+    }
+    for (const professor of newSchedule.professors) {
+      professorsMap[professor.id] = professor;
+    }
+    for (const group of newSchedule.groups) {
+      groupsMap[group.id] = group;
+    }
+    for (const student of newSchedule.students) {
       studentsMap[student.id] = student;
     }
 
-    for (const student of user.students) {
+    for (const s of schedule.schedules) {
+      const key = `${s.timestamp}.${s.frequency}.${s.location.id}`;
+      const newSchedule = schedulesMap[key];
+      if (!newSchedule) {
+        // the schedule was removed
+        scheduleDiff.schedules.push(s);
+        continue;
+      }
+    }
+    for (const professor of schedule.professors) {
+      const newProfessor = professorsMap[professor.id];
+      if (!newProfessor) {
+        // the professor was removed
+        scheduleDiff.professors.push(professor);
+        continue;
+      }
+    }
+    for (const group of schedule.groups) {
+      const newGroup = groupsMap[group.id];
+      if (!newGroup) {
+        // the group was removed
+        scheduleDiff.groups.push(group);
+        continue;
+      }
+    }
+    for (const student of schedule.students) {
       const newStudent = studentsMap[student.id];
       if (!newStudent) {
         // the student was removed
-        userDiff.students.push(student);
+        scheduleDiff.students.push(student);
         continue;
       }
-      // nothing else to check
     }
 
-    return userDiff;
+    return scheduleDiff;
   },
 };
 
@@ -321,7 +433,7 @@ const Public = {
     const config = await Private.getConfig(_ctx);
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
-    // need to take diff before and after and trigger notification for deleted students changes
+    // need to take diff before and after and trigger notification for deleted changes
     const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
     if (rget.error) {
       return rget;
@@ -349,8 +461,8 @@ const Public = {
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await SchedulesRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
 
-    // take the difference and notify removed students roles
-    let rdiff = { status: 200, value: Private.getStudentsDiff(rget.value, r.value) };
+    // take the difference and notify removed schedules, professors, groups, students
+    let rdiff = { status: 200, value: Private.getDiff(rget.value, r.value) };
     if (Object.keys(rdiff.value.students).length) {
       let rp = BaseServiceUtils.getProjectedResponse(rdiff, config.notifications.projection /* for sync+async */, _ctx);
       let rndiff = await SchedulesRest.raiseNotification(Private.Notification.Removed, [rp.value], _ctx);
@@ -378,7 +490,7 @@ const Public = {
     const config = await Private.getConfig(_ctx);
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
-    // need to take diff before and after and trigger notification for deleted students roles changes
+    // need to take diff before and after and trigger notification for deleted changes
     const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
     if (rget.error) {
       return rget;
@@ -413,8 +525,8 @@ const Public = {
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await SchedulesRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
 
-    // take the difference and notify removed students roles
-    let rdiff = { status: 200, value: Private.getStudentsDiff(rget.value, r.value) };
+    // take the difference and notify removed schedules, professors, groups, students
+    let rdiff = { status: 200, value: Private.getDiff(rget.value, r.value) };
     if (Object.keys(rdiff.value.students).length) {
       let rp = BaseServiceUtils.getProjectedResponse(rdiff, config.notifications.projection /* for sync+async */, _ctx);
       let rndiff = await SchedulesRest.raiseNotification(Private.Notification.Removed, [rp.value], _ctx);

@@ -42,6 +42,7 @@ describe('Professors Service', function () {
     };
     delete postReq.user;
     delete postReq.type;
+    delete postReq.schedules;
     delete postReq._lang_en;
 
     // stub
@@ -132,6 +133,7 @@ describe('Professors Service', function () {
     };
     delete postReq.user;
     delete postReq.type;
+    delete postReq.schedules;
     delete postReq._lang_en;
 
     // stub
@@ -167,6 +169,7 @@ describe('Professors Service', function () {
     };
     delete postReq.user;
     delete postReq.type;
+    delete postReq.schedules;
     delete postReq._lang_en;
 
     // stub

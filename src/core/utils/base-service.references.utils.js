@@ -13,38 +13,64 @@ const Utils = {
    *    array of strings, array of object.id  -> [ object.id, ... ]
    *
    */
-  convertToObject: (obj, fieldName) => {
+  convertToObject: (obj, fieldsPath, index /*use index to avoid slice*/) => {
+    const fieldName = fieldsPath[index];
     const field = obj[fieldName];
     if (!field) {
       return;
     }
 
-    if (Array.isArray(field)) {
-      for (const i in field) {
-        if (typeof field[i] === 'string') {
-          // assume string is the id
-          field[i] = { id: field[i] };
+    if (index === fieldsPath.length - 1) {
+      // last field is the field to be converted
+      if (Array.isArray(field)) {
+        for (const i in field) {
+          if (typeof field[i] === 'string') {
+            // assume string is the id
+            field[i] = { id: field[i] };
+          }
         }
+      } else if (typeof field === 'string') {
+        // assume string is the id
+        obj[fieldName] = { id: field };
       }
-    } else if (typeof field === 'string') {
-      // assume string is the id
-      obj[fieldName] = { id: field };
+    } else {
+      // intermediate fields
+      if (Array.isArray(field)) {
+        for (const i in field) {
+          Utils.convertToObject(field[i], fieldsPath, index + 1);
+        }
+      } else if (typeof field === 'object') {
+        Utils.convertToObject(field, fieldsPath, index + 1);
+      }
     }
   },
 
   /**
    * get ids from fieldName
    */
-  collectIDs: (targetsMap, obj, fieldName) => {
+  collectIDs: (targetsMap, obj, fieldsPath, index /*use index to avoid slice*/) => {
+    const fieldName = fieldsPath[index];
     const field = obj[fieldName];
     if (!field) {
       return;
     }
 
-    const vals = Array.isArray(field) ? field : [field];
-    for (const o of vals) {
-      if (o?.id) {
-        targetsMap[o.id] = 1;
+    if (index === fieldsPath.length - 1) {
+      // last field is the populate field
+      const vals = Array.isArray(field) ? field : [field];
+      for (const o of vals) {
+        if (o?.id) {
+          targetsMap[o.id] = 1;
+        }
+      }
+    } else {
+      // intermediate fields
+      if (Array.isArray(field)) {
+        for (const i in field) {
+          Utils.collectIDs(targetsMap, field[i], fieldsPath, index + 1);
+        }
+      } else if (typeof field === 'object') {
+        Utils.collectIDs(targetsMap, field, fieldsPath, index + 1);
       }
     }
   },
@@ -52,26 +78,39 @@ const Utils = {
   /**
    * populate
    */
-  populate: (targetsMap, obj, fieldName) => {
+  populate: (targetsMap, obj, fieldsPath, index /*use index to avoid slice*/) => {
+    const fieldName = fieldsPath[index];
     const field = obj[fieldName];
     if (!field) {
       return;
     }
 
-    const isArray = Array.isArray(field);
-    const vals = isArray ? field : [field];
-    let newVals = [];
-    for (const o of vals) {
-      if (o?.id) {
-        const details = targetsMap[o.id];
-        if (details) {
-          Object.assign(o, details);
-          newVals.push(o); // keep only found ones
+    if (index === fieldsPath.length - 1) {
+      // last field is the populate field
+      const isArray = Array.isArray(field);
+      const vals = isArray ? field : [field];
+      let newVals = [];
+      for (const o of vals) {
+        if (o?.id) {
+          const details = targetsMap[o.id];
+          if (details) {
+            Object.assign(o, details);
+            newVals.push(o); // keep only found ones
+          }
         }
       }
-    }
 
-    obj[fieldName] = isArray ? newVals : newVals.length ? newVals[0] : null;
+      obj[fieldName] = isArray ? newVals : newVals.length ? newVals[0] : null;
+    } else {
+      // intermediate fields
+      if (Array.isArray(field)) {
+        for (const i in field) {
+          Utils.populate(targetsMap, field[i], fieldsPath, index + 1);
+        }
+      } else if (typeof field === 'object') {
+        Utils.populate(targetsMap, field, fieldsPath, index + 1);
+      }
+    }
   },
 };
 
@@ -81,15 +120,16 @@ const Public = {
    * config: {fieldName, service, isArray, projection}
    */
   populate: async (configRef, objs, _ctx) => {
+    const fieldsPath = configRef.fieldName.split('.');
     // convert to object first
     for (const i in objs) {
-      Utils.convertToObject(objs[i], configRef.fieldName);
+      Utils.convertToObject(objs[i], fieldsPath, 0);
     }
 
     // get all ids first
     let targetsMap = {};
     for (const i in objs) {
-      Utils.collectIDs(targetsMap, objs[i], configRef.fieldName);
+      Utils.collectIDs(targetsMap, objs[i], fieldsPath, 0);
     }
 
     let targetsIDs = Object.keys(targetsMap);
@@ -116,7 +156,7 @@ const Public = {
 
     // update info
     for (let i in objs) {
-      Utils.populate(targetsMap, objs[i], configRef.fieldName);
+      Utils.populate(targetsMap, objs[i], fieldsPath, 0);
     }
 
     console.log(`Targets expanded for field '${configRef.fieldName}'`);
