@@ -50,7 +50,7 @@ const Public = {
         `${_ctx.serviceName}: Signup called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
 
-      // post
+      // signup
       const r = await UsersAuthService.signup(req.body, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
@@ -76,7 +76,7 @@ const Public = {
         `${_ctx.serviceName}: Validate called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
 
-      // post
+      // validate
       const r = await UsersAuthService.validate(req.body, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
