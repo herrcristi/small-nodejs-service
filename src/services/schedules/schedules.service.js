@@ -136,7 +136,7 @@ const Private = {
           fieldName: 'groups',
           service: GroupsRest,
           isArray: true,
-          projection: { id: 1, name: 1, type: 1, status: 1 },
+          projection: { id: 1, name: 1, type: 1, status: 1, students: 1 },
         },
         {
           fieldName: 'students',
