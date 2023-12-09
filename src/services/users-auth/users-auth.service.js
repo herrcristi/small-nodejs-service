@@ -7,10 +7,9 @@ const Joi = require('joi');
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const CommonUtils = require('../../core/utils/common.utils.js');
-const ReferencesUtils = require('../../core/utils/base-service.references.utils.js');
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 
-const UsersRest = require('../rest/users.rest.js');
+const UsersAuthRest = require('../rest/users-auth.rest.js');
 const EventsRest = require('../rest/events.rest.js');
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthServiceLocal = require('./users-local-auth.service.js'); // use local auth service
@@ -99,19 +98,6 @@ const Public = {
    * init
    */
   init: async () => {},
-
-  /**
-   * get all by ids
-   * returns { status, value } or { status, error }
-   */
-  getAllByIDs: async (ids, projection, _ctx) => {
-    const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    if (config.isFirebaseAuth) {
-      return await UsersAuthServiceFirebase.getAllByIDs(config, ids, projection, _ctx);
-    } else {
-      return await UsersAuthServiceLocal.getAllByIDs(config, ids, projection, _ctx);
-    }
-  },
 
   /**
    * get one
@@ -239,12 +225,9 @@ const Public = {
       return r;
     }
 
-    // raise event for post
-    // await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, r.value, r.value, _ctx);
-
     // raise a notification for new obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await UsersRest.raiseNotification(Private.Notification.Added, [rnp.value], _ctx);
+    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Added, [rnp.value], _ctx);
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
@@ -269,12 +252,9 @@ const Public = {
       return r;
     }
 
-    // raise event for delete
-    // await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Delete, r.value, r.value, _ctx);
-
     // raise a notification for removed obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await UsersRest.raiseNotification(Private.Notification.Removed, [rnp.value], _ctx);
+    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Removed, [rnp.value], _ctx);
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
@@ -302,13 +282,16 @@ const Public = {
     } else {
       r = await UsersAuthServiceLocal.put(config, objID, objInfo, projection, _ctx);
     }
+    if (r.error) {
+      return r;
+    }
 
-    // raise event for put
+    // TODO raise event for put (changed password)
     // await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Put, r.value, objInfo, _ctx);
 
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await UsersRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
@@ -339,12 +322,12 @@ const Public = {
       return r;
     }
 
-    // raise event for patch
+    // TODO raise event for patch (changed password)
     // await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName,Private.Action.Patch,r.value,patchInfo,_ctx);
 
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await UsersRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
@@ -364,6 +347,7 @@ const Public = {
     const config = await Private.getConfig(_ctx);
 
     // TODO delete on delete users notification
+    // TODO change email on modified users notification
 
     // notification (process references)
     return await NotificationsUtils.notification({ ...config, fillReferences: true }, notification, _ctx);

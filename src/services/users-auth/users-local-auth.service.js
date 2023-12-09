@@ -26,17 +26,6 @@ const Public = {
   init: async () => {},
 
   /**
-   * get all by ids
-   * config: { serviceName, collection }
-   * returns { status, value } or { status, error }
-   */
-  getAllByIDs: async (config, ids, projection, _ctx) => {
-    await Private.setupConfig(config, _ctx);
-
-    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx);
-  },
-
-  /**
    * get one
    * config: { serviceName, collection }
    * returns { status, value } or { status, error }

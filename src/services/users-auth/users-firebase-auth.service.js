@@ -2,10 +2,7 @@
  * Users service
  */
 
-const Joi = require('joi');
-
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
-const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const CommonUtils = require('../../core/utils/common.utils.js');
 
@@ -24,17 +21,6 @@ const Public = {
    * init
    */
   init: async () => {},
-
-  /**
-   * get all by ids
-   * config: { serviceName, collection }
-   * returns { status, value } or { status, error }
-   */
-  getAllByIDs: async (config, ids, projection, _ctx) => {
-    await Private.setupConfig(config, _ctx);
-
-    return { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
-  },
 
   /**
    * get one

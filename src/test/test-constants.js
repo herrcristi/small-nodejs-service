@@ -51,6 +51,21 @@ const Public = {
   /**
    * users
    */
+  UsersAuth: [
+    {
+      id: 'user1',
+      email: 'big.ben@testdomain.test',
+      password: 'hashedpassword1',
+      type: 'user-auth',
+    },
+    {
+      id: 'user2',
+      email: 'john.bravo@testdomain.test',
+      password: 'hashedpassword2',
+      type: 'user-auth',
+    },
+  ],
+
   Users: [
     {
       id: 'user1',
