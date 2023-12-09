@@ -5,8 +5,8 @@ const WebConstants = require('../../web-server/web-server.constants.js');
 
 const Public = {
   // paths
-  ApiPath: `${WebConstants.BaseApiPath}/user-auth`,
-  ApiPathInternal: `${WebConstants.BaseApiPathInternal}/user-auth`,
+  ApiPath: `${WebConstants.BaseApiPath}/users-auth`,
+  ApiPathInternal: `${WebConstants.BaseApiPathInternal}/users-auth`,
 
   // service name
   ServiceName: 'users-auth',

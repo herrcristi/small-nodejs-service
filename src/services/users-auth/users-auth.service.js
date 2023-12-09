@@ -34,13 +34,27 @@ const Schema = {
       .min(1)
       .max(128),
     password: Joi.string().min(1).max(64),
+    name: Joi.string().min(1).max(128),
+    birthday: Joi.date().iso(),
+    phoneNumber: Joi.string()
+      .min(1)
+      .max(32)
+      .regex(/^(\d|\+|\-|\.|' ')*$/), // allow 0-9 + - . in any order
+    address: Joi.string().min(1).max(256),
+    school: Joi.object().keys({
+      name: Joi.string().min(1).max(64).required(),
+      description: Joi.string().min(0).max(1024).allow(null),
+    }),
   }),
 };
 
 const Validators = {
   Login: Schema.User.fork(['email', 'password'], (x) => x.required() /*make required */),
 
-  Signup: Schema.Signup.fork(['email', 'password'], (x) => x.required() /*make required */),
+  Signup: Schema.Signup.fork(
+    ['email', 'password', 'name', 'birthday', 'address'],
+    (x) => x.required() /*make required */
+  ),
 
   Token: Joi.object().keys({
     token: Joi.string().min(1).required(),
@@ -147,8 +161,6 @@ const Public = {
    * signup
    */
   signup: async (objInfo, _ctx) => {
-    objInfo.type = UsersAuthConstants.Type;
-
     // validate
     const v = Validators.Signup.validate(objInfo);
     if (v.error) {
