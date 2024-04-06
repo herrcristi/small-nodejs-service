@@ -153,7 +153,7 @@ const Public = {
       args: [],
       user: {
         id: 'user1',
-        name: 'Big Ben',
+        username: 'big.ben@testdomain.test',
       },
       type: 'event',
       createdTimestamp: '2023-08-04T12:12:12.001Z',
@@ -175,7 +175,7 @@ const Public = {
       args: [],
       user: {
         id: 'user1',
-        name: 'Big Ben',
+        username: 'big.ben@testdomain.test',
       },
       type: 'event',
       createdTimestamp: '2023-08-04T12:12:12.001Z',
@@ -203,7 +203,7 @@ const Public = {
           args: [],
           user: {
             id: 'user1',
-            name: 'Big Ben',
+            username: 'Big Ben',
           },
           type: 'event',
         },

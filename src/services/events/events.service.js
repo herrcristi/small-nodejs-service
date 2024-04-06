@@ -31,7 +31,7 @@ const Schema = {
     args: Joi.array().items(Joi.string().min(1).max(16384)),
     user: Joi.object().keys({
       id: Joi.string().min(1).max(64).required(),
-      name: Joi.string().min(1).max(128).required(),
+      username: Joi.string().min(1).max(128).required(),
     }),
   }),
 };
@@ -206,7 +206,7 @@ const Public = {
    * translate
    */
   translate: async (obj, _ctx) => {
-    let args = [obj?.target.name, obj?.user?.name];
+    let args = [obj?.target.name, obj?.user?.username];
     if (obj?.args) {
       args = [...args, ...obj.args];
     }

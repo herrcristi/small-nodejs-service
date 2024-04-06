@@ -241,12 +241,12 @@ describe('Events Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"user.id" is required');
 
-    // user.name is required
+    // user.username is required
     postReq.user = _.cloneDeep(user);
-    delete postReq.user.name;
+    delete postReq.user.username;
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"user.name" is required');
+    chai.expect(res.error.details[0].message).to.include('"user.username" is required');
 
     // user is number
     postReq.user = 1;
@@ -281,26 +281,26 @@ describe('Events Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"user.id" is not allowed to be empty');
 
-    // user.name is number
+    // user.username is number
     postReq.user = _.cloneDeep(user);
-    postReq.user.name = 1;
+    postReq.user.username = 1;
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"user.name" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"user.username" must be a string');
 
-    // user.name is null
+    // user.username is null
     postReq.user = _.cloneDeep(user);
-    postReq.user.name = null;
+    postReq.user.username = null;
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"user.name" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"user.username" must be a string');
 
-    // user.name empty
+    // user.username empty
     postReq.user = _.cloneDeep(user);
-    postReq.user.name = '';
+    postReq.user.username = '';
     res = EventsService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"user.name" is not allowed to be empty');
+    chai.expect(res.error.details[0].message).to.include('"user.username" is not allowed to be empty');
   }).timeout(10000);
 
   /**
