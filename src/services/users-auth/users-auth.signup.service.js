@@ -66,25 +66,51 @@ const Public = {
     _ctx.username = objInfo.email;
 
     // signup has 3 steps
-    const errorO = { id: objInfo.email, email: objInfo.email, name: objInfo.name, type: UsersAuthConstants.Type };
-
-    // create first user details (with default status pending) and get the id
-    const rUser = await UsersRest.post({
+    const errorO = {
+      id: objInfo.email,
       email: objInfo.email,
       name: objInfo.name,
-      birthday: objInfo.birthday,
-      phoneNumber: objInfo.phoneNumber,
-      address: objInfo.address,
-    });
+      type: UsersAuthConstants.Type,
+      school: objInfo.school.name,
+    };
+
+    // create school (with default status pending)
+    const rSchool = await SchoolsRest.post(objInfo.school, _ctx);
+    if (rSchool.error) {
+      // raise event for invalid signup
+      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, errorO, errorO, _ctx);
+      return rSchool;
+    }
+
+    const schoolID = rSchool.value.id;
+
+    // create first user details (with default status pending) and get the id
+    const rUser = await UsersRest.post(
+      {
+        email: objInfo.email,
+        name: objInfo.name,
+        birthday: objInfo.birthday,
+        phoneNumber: objInfo.phoneNumber,
+        address: objInfo.address,
+        schools: [
+          {
+            id: schoolID,
+            roles: [UsersRest.Constants.Roles.Admin],
+          },
+        ],
+      },
+      _ctx
+    );
     if (rUser.error) {
+      // delete school
+      await SchoolsRest.delete(schoolID, _ctx);
+
       // raise event for invalid signup
       await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, errorO, errorO, _ctx);
       return rUser;
     }
 
-    console.log('-----------------------------');
-
-    const userID = rUser.id;
+    const userID = rUser.value.id;
     errorO.id = userID;
     _ctx.userid = userID;
 
@@ -98,24 +124,13 @@ const Public = {
       _ctx
     );
     if (rAuth.error) {
-      // delete user details
-      await UsersAuthRest.delete(userID, _ctx);
+      // delete previous
+      await SchoolsRest.delete(schoolID, _ctx);
+      await UsersRest.delete(userID, _ctx);
 
       // raise event for invalid signup
       await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, errorO, errorO, _ctx);
       return rAuth;
-    }
-
-    // then create school (with default status pending)
-    const rSchool = await SchoolsRest.post(objInfo.school, _ctx);
-    if (rSchool.error) {
-      // delete user details
-      await UsersRest.delete(userID, _ctx);
-      await UsersAuthRest.delete(userID, _ctx);
-
-      // raise event for invalid signup
-      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, errorO, errorO, _ctx);
-      return rSchool;
     }
 
     // success
