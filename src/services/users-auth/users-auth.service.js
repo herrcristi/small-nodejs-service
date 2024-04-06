@@ -20,40 +20,17 @@ const UsersAuthServiceFirebase = require('./users-firebase-auth.service.js'); //
  */
 const Schema = {
   User: Joi.object().keys({
+    id: Joi.string().min(1).max(64),
     email: Joi.string()
       .email({ tlds: { allow: false } })
       .min(1)
       .max(128),
     password: Joi.string().min(1).max(64),
-  }),
-
-  Signup: Joi.object().keys({
-    email: Joi.string()
-      .email({ tlds: { allow: false } })
-      .min(1)
-      .max(128),
-    password: Joi.string().min(1).max(64),
-    name: Joi.string().min(1).max(128),
-    birthday: Joi.date().iso(),
-    phoneNumber: Joi.string()
-      .min(1)
-      .max(32)
-      .regex(/^(\d|\+|\-|\.|' ')*$/), // allow 0-9 + - . in any order
-    address: Joi.string().min(1).max(256),
-    school: Joi.object().keys({
-      name: Joi.string().min(1).max(64).required(),
-      description: Joi.string().min(0).max(1024).allow(null),
-    }),
   }),
 };
 
 const Validators = {
   Login: Schema.User.fork(['email', 'password'], (x) => x.required() /*make required */),
-
-  Signup: Schema.Signup.fork(
-    ['email', 'password', 'name', 'birthday', 'address'],
-    (x) => x.required() /*make required */
-  ),
 
   Token: Joi.object().keys({
     token: Joi.string().min(1).required(),
@@ -85,7 +62,7 @@ const Private = {
       //collection: ... // will be added only for local auth
       references: [],
       notifications: {
-        projection: { id: 1, email: 1 } /* for sync+async */,
+        projection: { id: 1, email: 1, type: 1 } /* for sync+async */,
       },
       isFirebaseAuth: false, // TODO is firebase auth or local auth
     };
@@ -138,34 +115,6 @@ const Public = {
 
     // raise event for login
     // await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, r.value, r.value, _ctx);
-
-    // success
-    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
-  },
-
-  /**
-   * signup
-   */
-  signup: async (objInfo, _ctx) => {
-    // validate
-    const v = Validators.Signup.validate(objInfo);
-    if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
-    }
-
-    // { serviceName, collection, references, notifications.projection }
-    const config = await Private.getConfig(_ctx);
-
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
-
-    // signup
-    // TODO
-    const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
-    if (r.error) {
-      // raise event for invalid signup??
-      // await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, r.value, r.value, _ctx);
-      return r;
-    }
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);

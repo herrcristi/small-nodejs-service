@@ -208,6 +208,24 @@ describe('Schedules Functional', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(res.body).to.deep.include({
       ...testSchedule,
+      groups: [
+        {
+          ...testSchedule.groups[0],
+          students: [
+            {
+              id: 'user1',
+              user: {
+                id: 'user1',
+                name: 'Big Ben',
+                type: 'user',
+                status: 'active',
+                email: 'big.ben@testdomain.test',
+              },
+              type: 'student',
+            },
+          ],
+        },
+      ],
     });
     chai.expect(res.body._lang_en).to.exist;
     chai.expect(res.body._lang_ro).to.exist;

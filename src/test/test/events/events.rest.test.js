@@ -123,7 +123,7 @@ describe('Events Rest', function () {
 
         user: {
           id: _ctx.userid,
-          name: _ctx.username,
+          username: _ctx.username,
         },
       });
 

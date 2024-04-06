@@ -48,7 +48,7 @@ describe('Events Service', function () {
       console.log(`\nTranslationsUtils.string called`);
       console.log(`args=${JSON.stringify(args, null, 2)}\n`);
 
-      chai.expect(args).to.deep.equal(['GitHub University', 'Big Ben', 'other']);
+      chai.expect(args).to.deep.equal(['GitHub University', 'big.ben@testdomain.test', 'other']);
       return {};
     });
 
@@ -87,7 +87,7 @@ describe('Events Service', function () {
       console.log(`\nTranslationsUtils.string called`);
       console.log(`args=${JSON.stringify(args, null, 2)}\n`);
 
-      chai.expect(args).to.deep.equal(['GitHub University', 'Big Ben']);
+      chai.expect(args).to.deep.equal(['GitHub University', 'big.ben@testdomain.test']);
       return {};
     });
 
