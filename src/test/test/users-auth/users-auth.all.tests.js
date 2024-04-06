@@ -17,3 +17,4 @@ require('./users-auth.signup.service.all.test.js');
 
 // schema tests
 require('./users-auth.service.schema.test.js');
+require('./users-auth.signup.service.schema.test.js');
