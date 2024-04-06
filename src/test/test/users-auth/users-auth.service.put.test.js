@@ -39,6 +39,7 @@ describe('Users Auth Service', function () {
       ...testUser,
     };
     delete putReq.id;
+    delete putReq.email;
     delete putReq.type;
 
     // stub
@@ -75,7 +76,7 @@ describe('Users Auth Service', function () {
 
     // check
     chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubEvent.callCount).to.equal(0);
+    chai.expect(stubEvent.callCount).to.equal(1);
     chai.expect(stubUsersAuthRest.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
@@ -104,7 +105,7 @@ describe('Users Auth Service', function () {
 
     // check
     chai.expect(res.status).to.equal(400);
-    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "type" is not allowed');
+    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "id" is not allowed');
   }).timeout(10000);
 
   /**
@@ -119,6 +120,7 @@ describe('Users Auth Service', function () {
     };
     delete putReq.id;
     delete putReq.type;
+    delete putReq.email;
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'put').callsFake((config, objID, putObj) => {

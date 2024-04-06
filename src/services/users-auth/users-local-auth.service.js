@@ -45,8 +45,6 @@ const Public = {
 
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
-    // TODO password crypt
-
     // post
     const r = await DbOpsUtils.post(config, objInfo, _ctx);
     if (r.error) {

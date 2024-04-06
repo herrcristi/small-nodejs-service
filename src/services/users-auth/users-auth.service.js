@@ -1,7 +1,7 @@
 /**
  * Users service
  */
-
+const crypto = require('node:crypto');
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
@@ -27,6 +27,10 @@ const Schema = {
       .max(128),
     password: Joi.string().min(1).max(64),
   }),
+
+  UserPass: Joi.object().keys({
+    password: Joi.string().min(1).max(64).required(),
+  }),
 };
 
 const Validators = {
@@ -40,17 +44,18 @@ const Validators = {
     type: Joi.string().valid(UsersAuthConstants.Type),
   }),
 
-  Put: Schema.User,
+  Put: Schema.UserPass,
 
   Patch: Joi.object().keys({
     // for patch allowed operations are: set
-    set: Schema.User,
+    set: Schema.UserPass,
   }),
 };
 
 const Private = {
   Action: BaseServiceUtils.Constants.Action,
   Notification: NotificationsUtils.Constants.Notification,
+  SiteSalt: null, // will be initialized on init
 
   /**
    * config
@@ -68,13 +73,34 @@ const Private = {
     };
     return config;
   },
+
+  /**
+   * generate salt
+   */
+  genSalt: (_ctx) => {
+    return crypto.randomBytes(32).toString('hex');
+  },
+
+  /**
+   * hash a password
+   */
+  hashPassword: (password, salt, _ctx) => {
+    let hash = crypto.scryptSync(password, salt, 64);
+    hash = hash.toString('hex');
+
+    hash = crypto.scryptSync(hash, Private.SiteSalt, 64);
+    hash = hash.toString('hex');
+    return hash;
+  },
 };
 
 const Public = {
   /**
    * init
    */
-  init: async () => {},
+  init: async () => {
+    Private.SiteSalt = process.env.SALT;
+  },
 
   /**
    * get one
@@ -105,7 +131,7 @@ const Public = {
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // login
-    // TODO
+    // TODO impl
     const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
     if (r.error) {
       // raise event for invalid login
@@ -136,7 +162,7 @@ const Public = {
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // token
-    // TODO
+    // TODO impl
     const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
     if (r.error) {
       return r;
@@ -158,6 +184,10 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
+    // hash password
+    objInfo.salt = Private.genSalt(_ctx);
+    objInfo.password = Private.hashPassword(objInfo.password, objInfo.salt, _ctx);
+
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
 
@@ -173,6 +203,10 @@ const Public = {
     if (r.error) {
       return r;
     }
+
+    // raise event
+    const eventObj = { id: objInfo.id, name: objInfo.email, type: objInfo.type };
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, eventObj, eventObj, _ctx);
 
     // raise a notification for new obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
@@ -201,6 +235,10 @@ const Public = {
       return r;
     }
 
+    // raise event
+    const eventO = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Delete, eventO, eventO, _ctx);
+
     // raise a notification for removed obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Removed, [rnp.value], _ctx);
@@ -210,7 +248,7 @@ const Public = {
   },
 
   /**
-   * put
+   * put (only password)
    */
   put: async (objID, objInfo, _ctx) => {
     // validate
@@ -218,6 +256,10 @@ const Public = {
     if (v.error) {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+
+    // hash password with new salt
+    objInfo.salt = Private.genSalt(_ctx);
+    objInfo.password = Private.hashPassword(objInfo.password, objInfo.salt, _ctx);
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
@@ -235,8 +277,9 @@ const Public = {
       return r;
     }
 
-    // TODO raise event for put (changed password)
-    // await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Put, r.value, objInfo, _ctx);
+    // raise event for put (changed password)
+    const eventO = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Put, eventO, eventO, _ctx);
 
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
@@ -247,7 +290,7 @@ const Public = {
   },
 
   /**
-   * patch
+   * patch (only password)
    */
   patch: async (objID, patchInfo, _ctx) => {
     // validate
@@ -255,6 +298,10 @@ const Public = {
     if (v.error) {
       return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
+
+    // hash password with new salt
+    patchInfo.set.salt = Private.genSalt(_ctx);
+    patchInfo.set.password = Private.hashPassword(patchInfo.set.password, patchInfo.set.salt, _ctx);
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
@@ -271,8 +318,9 @@ const Public = {
       return r;
     }
 
-    // TODO raise event for patch (changed password)
-    // await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName,Private.Action.Patch,r.value,patchInfo,_ctx);
+    // raise event for patch (changed password)
+    const eventO = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Patch, eventO, eventO, _ctx);
 
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
