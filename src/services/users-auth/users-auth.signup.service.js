@@ -53,11 +53,6 @@ const Private = {
 
 const Public = {
   /**
-   * init
-   */
-  init: async () => {},
-
-  /**
    * signup
    */
   signup: async (objInfo, _ctx) => {
@@ -71,7 +66,7 @@ const Public = {
     _ctx.username = objInfo.email;
 
     // signup has 3 steps
-    const errorO = { email: objInfo.email };
+    const errorO = { id: objInfo.email, email: objInfo.email, name: objInfo.name, type: UsersAuthConstants.Type };
 
     // create first user details (with default status pending) and get the id
     const rUser = await UsersRest.post({
@@ -87,7 +82,10 @@ const Public = {
       return rUser;
     }
 
+    console.log('-----------------------------');
+
     const userID = rUser.id;
+    errorO.id = userID;
     _ctx.userid = userID;
 
     // create user auth

@@ -103,7 +103,7 @@ describe('Users Auth Service', function () {
 
     // check
     chai.expect(res.status).to.equal(400);
-    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "id" is not allowed');
+    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "type" is not allowed');
   }).timeout(10000);
 
   /**

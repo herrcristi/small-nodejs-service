@@ -51,7 +51,7 @@ const Public = {
         messageID: `${serviceName}.${action}`,
         target: { id: objTarget.id, name: objTarget.name, type: objTarget.type },
         args: [JSON.stringify(CommonUtils.protectData(objArg))],
-        user: { id: _ctx.userid, name: _ctx.username },
+        user: { id: _ctx.userid, username: _ctx.username },
       },
       _ctx
     );
