@@ -64,6 +64,7 @@ describe('Users Auth Service', function () {
         {
           id: testUser.id,
           email: testUser.email,
+          type: UsersAuthConstants.Type,
         },
       ]);
     });

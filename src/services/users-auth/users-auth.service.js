@@ -62,7 +62,7 @@ const Private = {
       //collection: ... // will be added only for local auth
       references: [],
       notifications: {
-        projection: { id: 1, email: 1 } /* for sync+async */,
+        projection: { id: 1, email: 1, type: 1 } /* for sync+async */,
       },
       isFirebaseAuth: false, // TODO is firebase auth or local auth
     };
