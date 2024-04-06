@@ -66,6 +66,27 @@ const Public = {
     },
   ],
 
+  UsersSignup: [
+    {
+      email: 'big.ben1@testdomain.test',
+      password: 'Big Ben1',
+      name: 'Big Ben1',
+      birthday: '1980-01-01T00:00:00Z',
+      phoneNumber: '+0',
+      address: 'London',
+      school: {
+        name: 'GitHub University',
+        description: 'GitHub University. The place to code.',
+      },
+    },
+  ],
+
+  UsersToken: [
+    {
+      token: 'token1',
+    },
+  ],
+
   Users: [
     {
       id: 'user1',

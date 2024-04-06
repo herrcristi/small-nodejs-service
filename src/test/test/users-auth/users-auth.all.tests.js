@@ -6,6 +6,7 @@
 
 // controller tests
 require('./users-auth.controller.all.test.js');
+require('./users-auth.signup.controller.all.test.js');
 
 // rest tests
 require('./users-auth.rest.test.js');
