@@ -82,6 +82,7 @@ const Public = {
 
     let newObj = { ...obj };
     delete newObj.password;
+    delete newObj.salt;
 
     if (newObj.set) {
       newObj.set = Public.protectData(newObj.set);
