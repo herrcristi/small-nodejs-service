@@ -23,6 +23,7 @@
   "users-auth.delete": "User auth '{0}' removed",
   "users-auth.patch": "User auth '{0}' modified",
   "users-auth.post": "User auth '{0}' added",
+  "users-auth.post.failed": "User auth '{0}' failed to be added",
   "users-auth.put": "User auth '{0}' modified",
   "classes.delete": "Class '{0}' removed",
   "classes.patch": "Class '{0}' modified",

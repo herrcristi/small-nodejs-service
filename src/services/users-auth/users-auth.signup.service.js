@@ -78,7 +78,8 @@ const Public = {
     const rSchool = await SchoolsRest.post(objInfo.school, _ctx);
     if (rSchool.error) {
       // raise event for invalid signup
-      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, errorO, errorO, _ctx);
+      const failedAction = `${Private.Action.Post}.failed`;
+      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
       return rSchool;
     }
 
@@ -106,7 +107,8 @@ const Public = {
       await SchoolsRest.delete(schoolID, _ctx);
 
       // raise event for invalid signup
-      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, errorO, errorO, _ctx);
+      const failedAction = `${Private.Action.Post}.failed`;
+      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
       return rUser;
     }
 
@@ -129,7 +131,8 @@ const Public = {
       await UsersRest.delete(userID, _ctx);
 
       // raise event for invalid signup
-      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, errorO, errorO, _ctx);
+      const failedAction = `${Private.Action.Post}.failed`;
+      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
       return rAuth;
     }
 
