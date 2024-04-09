@@ -101,18 +101,18 @@ describe('Users Auth Service', function () {
       };
     });
 
-    // stub users atuh
+    // stub users auth
     let stubUsersAuthPost = sinon.stub(UsersAuthService, 'post').callsFake((userAuthReq) => {
       console.log(`UsersAuthRest.post called with ${JSON.stringify(userAuthReq, null, 2)}`);
       chai.expect(userAuthReq).to.deep.equal({
-        id: testUserID,
-        email: testUser.email,
+        id: testUser.email,
         password: testUser.password,
+        userID: testUserID,
       });
 
       return {
         status: 201,
-        value: { id: testUserID, email: testUser.email, type: UsersAuthRest.Constants.Type },
+        value: { id: testUser.email, type: UsersAuthRest.Constants.Type, userID: testUserID },
       };
     });
 
@@ -138,9 +138,9 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 201,
       value: {
-        id: testUserID,
-        email: testUser.email,
+        id: testUser.email,
         type: UsersAuthRest.Constants.Type,
+        userID: testUserID,
       },
     });
   }).timeout(10000);
@@ -234,18 +234,18 @@ describe('Users Auth Service', function () {
       };
     });
 
-    // stub users atuh
+    // stub users auth
     let stubUsersAuthPost = sinon.stub(UsersAuthService, 'post').callsFake((userAuthReq) => {
       console.log(`UsersAuthRest.post called with ${JSON.stringify(userAuthReq, null, 2)}`);
       chai.expect(userAuthReq).to.deep.equal({
-        id: testUserID,
-        email: testUser.email,
+        id: testUser.email,
         password: testUser.password,
+        userID: testUserID,
       });
 
       return {
         status: 201,
-        value: { id: testUserID, email: testUser.email, type: UsersAuthRest.Constants.Type },
+        value: { id: testUser.email, type: UsersAuthRest.Constants.Type, userID: testUserID },
       };
     });
 
@@ -345,18 +345,18 @@ describe('Users Auth Service', function () {
       };
     });
 
-    // stub users atuh
+    // stub users auth
     let stubUsersAuthPost = sinon.stub(UsersAuthService, 'post').callsFake((userAuthReq) => {
       console.log(`UsersAuthRest.post called with ${JSON.stringify(userAuthReq, null, 2)}`);
       chai.expect(userAuthReq).to.deep.equal({
-        id: testUserID,
-        email: testUser.email,
+        id: testUser.email,
         password: testUser.password,
+        userID: testUserID,
       });
 
       return {
         status: 201,
-        value: { id: testUserID, email: testUser.email, type: UsersAuthRest.Constants.Type },
+        value: { id: testUser.email, type: UsersAuthRest.Constants.Type, userID: testUserID },
       };
     });
 
@@ -459,13 +459,13 @@ describe('Users Auth Service', function () {
       };
     });
 
-    // stub users atuh
+    // stub users auth
     let stubUsersAuthPost = sinon.stub(UsersAuthService, 'post').callsFake((userAuthReq) => {
       console.log(`UsersAuthRest.post called with ${JSON.stringify(userAuthReq, null, 2)}`);
       chai.expect(userAuthReq).to.deep.equal({
-        id: testUserID,
-        email: testUser.email,
+        id: testUser.email,
         password: testUser.password,
+        userID: testUserID,
       });
 
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };

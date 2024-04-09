@@ -24,8 +24,6 @@ router.route(`${UsersAuthConstants.ApiPath}/:id`).patch(UsersAuthController.patc
  */
 router.route(`${UsersAuthConstants.ApiPathInternal}/validate`).post(UsersAuthController.validate);
 
-router.route(`${UsersAuthConstants.ApiPathInternal}/:id`).get(UsersAuthController.getOne);
-
 router.route(`${UsersAuthConstants.ApiPathInternal}`).post(UsersAuthController.post);
 router.route(`${UsersAuthConstants.ApiPathInternal}/:id`).delete(UsersAuthController.delete);
 

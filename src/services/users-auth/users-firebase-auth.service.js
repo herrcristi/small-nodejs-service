@@ -25,9 +25,10 @@ const Public = {
   /**
    * get one
    * config: { serviceName, collection }
+   * objInfo: { email, password }
    * returns { status, value } or { status, error }
    */
-  getOne: async (config, objID, projection, _ctx) => {
+  login: async (config, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
 
     return { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
@@ -36,6 +37,7 @@ const Public = {
   /**
    * post
    * config: { serviceName, collection, notifications.projection }
+   * objInfo: { id, salt, password }
    */
   post: async (config, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
@@ -73,6 +75,7 @@ const Public = {
   /**
    * put
    * config: { serviceName, collection, notifications.projection }
+   * objInfo: { salt, password }
    */
   put: async (config, objID, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
@@ -92,6 +95,7 @@ const Public = {
   /**
    * patch
    * config: { serviceName, collection, notifications.projection }
+   * patchInfo: { set: { salt, password } }
    */
   patch: async (config, objID, patchInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);

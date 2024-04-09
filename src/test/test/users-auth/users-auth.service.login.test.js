@@ -25,9 +25,9 @@ describe('Users Auth Service', function () {
   after(async function () {});
 
   /**
-   * getOne with success
+   * login with success
    */
-  it('should getOne with success', async () => {
+  it('should login with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
@@ -38,7 +38,7 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.getOne(testUser.id, { id: 1 }, _ctx);
+    let res = await UsersAuthService.login(testUser.id, { id: 1 }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

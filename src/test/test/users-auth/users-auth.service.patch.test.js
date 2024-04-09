@@ -40,7 +40,7 @@ describe('Users Auth Service', function () {
       set: _.cloneDeep(testUser),
     };
     delete patchReq.set.id;
-    delete patchReq.set.email;
+    delete patchReq.set.userID;
     delete patchReq.set.type;
 
     // stub
@@ -72,8 +72,8 @@ describe('Users Auth Service', function () {
       status: 200,
       value: {
         id: testUser.id,
-        email: testUser.email,
         type: testUser.type,
+        userID: testUser.userID,
       },
     });
   }).timeout(10000);
@@ -113,7 +113,7 @@ describe('Users Auth Service', function () {
       },
     };
     delete patchReq.set.id;
-    delete patchReq.set.email;
+    delete patchReq.set.userID;
     delete patchReq.set.type;
 
     // stub

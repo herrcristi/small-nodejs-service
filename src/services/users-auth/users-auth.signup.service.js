@@ -62,7 +62,7 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
-    _ctx.userid = objInfo.email;
+    _ctx.userID = objInfo.email;
     _ctx.username = objInfo.email;
 
     // signup has 3 steps
@@ -112,14 +112,14 @@ const Public = {
 
     const userID = rUser.value.id;
     errorO.id = userID;
-    _ctx.userid = userID;
+    _ctx.userID = userID;
 
     // create user auth
     const rAuth = await UsersAuthRest.post(
       {
-        id: userID,
-        email: objInfo.email,
+        id: objInfo.email,
         password: objInfo.password,
+        userID: userID,
       },
       _ctx
     );

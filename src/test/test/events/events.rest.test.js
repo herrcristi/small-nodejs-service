@@ -13,7 +13,7 @@ const TestConstants = require('../../test-constants.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
 describe('Events Rest', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Events', userid: 'userid', username: 'username' };
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Events', userID: 'userid', username: 'username' };
 
   before(async function () {});
 
@@ -122,7 +122,7 @@ describe('Events Rest', function () {
         args: ['{"id":"id","name":"name","type":"type"}'],
 
         user: {
-          id: _ctx.userid,
+          id: _ctx.userID,
           username: _ctx.username,
         },
       });

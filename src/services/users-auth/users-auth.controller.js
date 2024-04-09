@@ -65,33 +65,6 @@ const Public = {
   },
 
   /**
-   * get one
-   */
-  getOne: async (req, res, next) => {
-    let _ctx = req._ctx;
-    _ctx.serviceName = UsersAuthConstants.ServiceName;
-
-    try {
-      console.log(
-        `${_ctx.serviceName}: Get one called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
-      );
-      const objID = req.params.id;
-
-      // get
-      const r = await UsersAuthService.getOne(objID, { _id: 0 }, _ctx);
-      if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
-      }
-
-      res.status(r.status).json(r.value);
-    } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
-    } finally {
-      res.end();
-    }
-  },
-
-  /**
    * post
    */
   post: async (req, res, next) => {

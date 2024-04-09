@@ -65,7 +65,7 @@ const Private = {
           'x-request-id': _ctx.reqID,
           'x-lang': _ctx.lang,
           'x-forwarded-for': _ctx.ipAddress,
-          'x-user-id': _ctx.userid,
+          'x-user-id': _ctx.userID,
           'x-user-name': _ctx.username,
           'content-type': 'application/json',
         },

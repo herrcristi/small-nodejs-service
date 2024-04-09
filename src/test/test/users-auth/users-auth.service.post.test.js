@@ -15,7 +15,13 @@ const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
 describe('Users Auth Service', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
+  const _ctx = {
+    reqID: 'testReq',
+    lang: 'en',
+    service: 'Users',
+    userID: TestConstants.UsersAuth[0].userID,
+    username: TestConstants.UsersAuth[0].id,
+  };
 
   before(async function () {});
 
@@ -37,12 +43,11 @@ describe('Users Auth Service', function () {
     const postReq = {
       ...testUser,
     };
-    delete postReq.id;
     delete postReq.type;
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`DbOpsUtils.post called with ${JSON.stringify(postObj, null, 2)}`);
       return {
         status: 201,
         value: { ...postObj, id: testUser.id },
@@ -52,6 +57,8 @@ describe('Users Auth Service', function () {
     let stubUsersAuthRest = sinon.stub(UsersAuthRest, 'raiseNotification').callsFake(() => {
       console.log(`UsersAuthRest raiseNotification called`);
     });
+
+    let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject');
 
     // call
     let res = await UsersAuthService.post(postReq, _ctx);
@@ -64,8 +71,8 @@ describe('Users Auth Service', function () {
       status: 201,
       value: {
         id: testUser.id,
-        email: testUser.email,
         type: testUser.type,
+        userID: testUser.userID,
       },
     });
   }).timeout(10000);
@@ -101,7 +108,6 @@ describe('Users Auth Service', function () {
     const postReq = {
       ...testUser,
     };
-    delete postReq.id;
     delete postReq.type;
 
     // stub

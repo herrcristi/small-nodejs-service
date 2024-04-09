@@ -19,13 +19,23 @@ const UsersAuthServiceFirebase = require('./users-firebase-auth.service.js'); //
  * validation
  */
 const Schema = {
-  User: Joi.object().keys({
-    id: Joi.string().min(1).max(64),
+  Login: Joi.object().keys({
     email: Joi.string()
       .email({ tlds: { allow: false } })
       .min(1)
-      .max(128),
-    password: Joi.string().min(1).max(64),
+      .max(128)
+      .required(),
+    password: Joi.string().min(1).max(64).required(),
+  }),
+
+  User: Joi.object().keys({
+    id: Joi.string()
+      .email({ tlds: { allow: false } })
+      .min(1)
+      .max(128)
+      .required(),
+    password: Joi.string().min(1).max(64).required(),
+    userID: Joi.string().min(1).max(64).required(),
   }),
 
   UserPass: Joi.object().keys({
@@ -34,13 +44,13 @@ const Schema = {
 };
 
 const Validators = {
-  Login: Schema.User.fork(['email', 'password'], (x) => x.required() /*make required */),
+  Login: Schema.Login,
 
   Token: Joi.object().keys({
     token: Joi.string().min(1).required(),
   }),
 
-  Post: Schema.User.fork(['email', 'password'], (x) => x.required() /*make required */).keys({
+  Post: Schema.User.keys({
     type: Joi.string().valid(UsersAuthConstants.Type),
   }),
 
@@ -55,7 +65,10 @@ const Validators = {
 const Private = {
   Action: BaseServiceUtils.Constants.Action,
   Notification: NotificationsUtils.Constants.Notification,
-  SiteSalt: null, // will be initialized on init
+
+  // will be initialized on init
+  SiteSalt: null,
+  UsersAuthProvider: null,
 
   /**
    * config
@@ -67,9 +80,9 @@ const Private = {
       //collection: ... // will be added only for local auth
       references: [],
       notifications: {
-        projection: { id: 1, email: 1, type: 1 } /* for sync+async */,
+        projection: { id: 1, type: 1, userID: 1 } /* for sync+async */,
       },
-      isFirebaseAuth: false, // TODO is firebase auth or local auth
+      isFirebaseAuth: Private.UsersAuthProvider === 'firebase',
     };
     return config;
   },
@@ -100,19 +113,7 @@ const Public = {
    */
   init: async () => {
     Private.SiteSalt = process.env.SALT;
-  },
-
-  /**
-   * get one
-   * returns { status, value } or { status, error }
-   */
-  getOne: async (objID, projection, _ctx) => {
-    const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    if (config.isFirebaseAuth) {
-      return await UsersAuthServiceFirebase.getOne(config, objID, projection, _ctx);
-    } else {
-      return await UsersAuthServiceLocal.getOne(config, objID, projection, _ctx);
-    }
+    Private.UsersAuthProvider = process.env.USERS_AUTH_PROVIDER;
   },
 
   /**
@@ -205,7 +206,7 @@ const Public = {
     }
 
     // raise event
-    const eventObj = { id: objInfo.id, name: objInfo.email, type: objInfo.type };
+    const eventObj = { id: objInfo.id, name: objInfo.id, type: objInfo.type };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, eventObj, eventObj, _ctx);
 
     // raise a notification for new obj
@@ -344,7 +345,7 @@ const Public = {
     const config = await Private.getConfig(_ctx);
 
     // TODO delete on delete users notification
-    // TODO change email on modified users notification
+    // TODO change id on modified email users notification
 
     // notification (process references)
     return await NotificationsUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
