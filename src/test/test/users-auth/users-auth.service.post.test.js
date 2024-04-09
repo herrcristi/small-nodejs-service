@@ -15,13 +15,7 @@ const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
 describe('Users Auth Service', function () {
-  const _ctx = {
-    reqID: 'testReq',
-    lang: 'en',
-    service: 'Users',
-    userID: TestConstants.UsersAuth[0].userID,
-    username: TestConstants.UsersAuth[0].id,
-  };
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
 
   before(async function () {});
 
