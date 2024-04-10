@@ -38,9 +38,10 @@ describe('Rest Communications Utils', function () {
     let localConfig = {
       local: {
         [serviceName]: {
-          getOne: sinon.stub().callsFake((id) => {
+          getOne: sinon.stub().callsFake((id, projection) => {
             return {
               status: 200,
+              projection, // added only for test purposes
               value: {
                 id: 'id1',
               },
@@ -52,7 +53,7 @@ describe('Rest Communications Utils', function () {
 
     // call
     await RestCommsUtils.init(localConfig);
-    let res = await RestCommsUtils.getOne(serviceName, 'id1', _ctx);
+    let res = await RestCommsUtils.getOne(serviceName, 'id1', { id: 1 }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -60,6 +61,7 @@ describe('Rest Communications Utils', function () {
 
     chai.expect(res).to.deep.equal({
       status: 200,
+      projection: { id: 1 },
       value: {
         id: 'id1',
       },
@@ -75,7 +77,7 @@ describe('Rest Communications Utils', function () {
     let localConfig = {
       local: {
         [serviceName]: {
-          getOne: sinon.stub().callsFake((id) => {
+          getOne: sinon.stub().callsFake((id, projection) => {
             return { error: { message: 'Test error message', error: new Error('Test error').toString() } };
           }),
         },
@@ -84,7 +86,7 @@ describe('Rest Communications Utils', function () {
 
     // call
     await RestCommsUtils.init(localConfig);
-    let res = await RestCommsUtils.getOne(serviceName, 'id1', _ctx);
+    let res = await RestCommsUtils.getOne(serviceName, 'id1', {}, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -124,7 +126,7 @@ describe('Rest Communications Utils', function () {
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.getOne(serviceName, 'id1', _ctx);
+    let res = await RestCommsUtils.getOne(serviceName, 'id1', { id: 1, name: 1 }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai.expect(res).to.deep.equal({
@@ -159,7 +161,38 @@ describe('Rest Communications Utils', function () {
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.getOne(serviceName, 'id1', _ctx);
+    let res = await RestCommsUtils.getOne(serviceName, 'id1', { id: 1, name: 1 } /*projection*/, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    chai
+      .expect(res.error.message)
+      .to.include('Calling GET http://localhost:8080/api/v1/service/id1?projection=id,name failed with status 500');
+  }).timeout(10000);
+
+  /**
+   * getOne remote with failure with null projection
+   */
+  it('should call getOne remote with failure', async () => {
+    // local config
+    let serviceName = 'Service';
+    let restConfig = {
+      rest: {
+        [serviceName]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: process.env.PORT, // see test.utils.js
+          path: '/api/v1/service',
+        },
+      },
+    };
+
+    // stub
+    mockAxios.onGet().reply(500, {});
+
+    // call
+    await RestCommsUtils.init(restConfig);
+
+    let res = await RestCommsUtils.getOne(serviceName, 'id1', null /*projection*/, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai

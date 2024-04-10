@@ -186,12 +186,13 @@ const Public = {
   /**
    * get one
    */
-  getOne: async (serviceName, objID, _ctx) => {
+  getOne: async (serviceName, objID, projection, _ctx) => {
     const localService = Private.Config.local[serviceName];
     if (localService) {
-      return await localService.getOne(objID, _ctx);
+      return await localService.getOne(objID, projection, _ctx);
     }
-    return await Private.restCall({ serviceName, method: 'GET', path: `/${objID}` }, _ctx);
+    const queryParams = projection ? `?projection=${Object.keys(projection).join(',')}` : '';
+    return await Private.restCall({ serviceName, method: 'GET', path: `/${objID}${queryParams}` }, _ctx);
   },
 
   /**
