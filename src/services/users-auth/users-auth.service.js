@@ -1,7 +1,6 @@
 /**
  * Users service
  */
-const crypto = require('node:crypto');
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
@@ -72,12 +71,13 @@ const Private = {
 
   /**
    * config
-   * returns { serviceName, collection, schema, references, fillReferences, events }
+   * returns { serviceName, references, fillReferences, events }
    */
   getConfig: async (_ctx) => {
     const config = {
       serviceName: UsersAuthConstants.ServiceName,
       //collection: ... // will be added only for local auth
+      references: [],
       isFirebaseAuth: Private.UsersAuthProvider === 'firebase',
     };
     return config;
@@ -131,8 +131,9 @@ const Public = {
     }
 
     // get user details
+    const userProjection = { id: 1, email: 1, schools: 1 };
     const userID = r.value.userID; // TODO objInfo.email
-    const rUserDetails = await UsersRest.getOne(userID, _ctx); // TODO get one by email
+    const rUserDetails = await UsersRest.getOne(userID, userProjection, _ctx); // TODO get one by email
     if (rUserDetails.error) {
       return rError;
     }
@@ -144,7 +145,7 @@ const Public = {
     // await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, r.value, r.value, _ctx);
 
     // success
-    return BaseServiceUtils.getProjectedResponse(rUserDetails, { id: 1, email: 1, schools: 1 }, _ctx);
+    return BaseServiceUtils.getProjectedResponse(rUserDetails, userProjection, _ctx);
   },
 
   /**
@@ -205,7 +206,7 @@ const Public = {
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Added, [newObj], _ctx);
 
     // success
-    return newObj;
+    return { status: 200, value: newObj };
   },
 
   /**
@@ -233,7 +234,7 @@ const Public = {
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Removed, [newObj], _ctx);
 
     // success
-    return newObj;
+    return { status: 200, value: newObj };
   },
 
   /**
@@ -268,7 +269,7 @@ const Public = {
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
 
     // success
-    return newObj;
+    return { status: 200, value: newObj };
   },
 
   /**
@@ -303,7 +304,7 @@ const Public = {
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
 
     // success
-    return newObj;
+    return { status: 200, value: newObj };
   },
 
   /**

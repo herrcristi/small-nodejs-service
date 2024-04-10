@@ -148,6 +148,7 @@ const Public = {
     }
 
     // init the communication
+    const port = process.env.PORT;
     const config = {
       local: {
         [SchoolsConstants.ServiceName]: SchoolsService,
@@ -160,7 +161,6 @@ const Public = {
         [LocationsConstants.ServiceName]: LocationsService,
         [GroupsConstants.ServiceName]: GroupsService,
         [SchedulesConstants.ServiceName]: SchedulesService,
-
         // internal calls only
         [SchoolsConstants.ServiceNameInternal]: SchoolsService,
         [UsersAuthConstants.ServiceNameInternal]: UsersAuthService,
@@ -178,61 +178,61 @@ const Public = {
         [SchoolsConstants.ServiceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: SchoolsConstants.ApiPath,
         },
         [UsersAuthConstants.ServiceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: UsersAuthConstants.ApiPath,
         },
         [UsersConstants.ServiceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: UsersConstants.ApiPath,
         },
         [EventsConstants.ServiceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: EventsConstants.ApiPath,
         },
         [StudentsConstants.ServiceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: StudentsConstants.ApiPath,
         },
         [ProfessorsConstants.ServiceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: ProfessorsConstants.ApiPath,
         },
         [ClassesConstants.ServiceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: ClassesConstants.ApiPath,
         },
         [LocationsConstants.ServiceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: LocationsConstants.ApiPath,
         },
         [GroupsConstants.ServiceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: GroupsConstants.ApiPath,
         },
         [SchedulesConstants.ServiceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: SchedulesConstants.ApiPath,
         },
 
@@ -240,61 +240,61 @@ const Public = {
         [SchoolsConstants.ServiceNameInternal]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: SchoolsConstants.ApiPathInternal,
         },
         [UsersAuthConstants.ServiceNameInternal]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: UsersAuthConstants.ApiPathInternal,
         },
         [UsersConstants.ServiceNameInternal]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: UsersConstants.ApiPathInternal,
         },
         [EventsConstants.ServiceNameInternal]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: EventsConstants.ApiPathInternal,
         },
         [StudentsConstants.ServiceNameInternal]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: StudentsConstants.ApiPathInternal,
         },
         [ProfessorsConstants.ServiceNameInternal]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: ProfessorsConstants.ApiPathInternal,
         },
         [ClassesConstants.ServiceNameInternal]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: ClassesConstants.ApiPathInternal,
         },
         [LocationsConstants.ServiceNameInternal]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: LocationsConstants.ApiPathInternal,
         },
         [GroupsConstants.ServiceNameInternal]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: GroupsConstants.ApiPathInternal,
         },
         [SchedulesConstants.ServiceNameInternal]: {
           protocol: 'http',
           host: 'localhost',
-          port: WebConstants.Port,
+          port: port,
           path: SchedulesConstants.ApiPathInternal,
         },
       },
