@@ -1,6 +1,7 @@
 /**
  * Users service
  */
+const crypto = require('node:crypto');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
