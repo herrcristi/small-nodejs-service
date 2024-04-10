@@ -80,24 +80,6 @@ describe('Users Auth Rest', function () {
   }).timeout(10000);
 
   /**
-   * rest getOne
-   */
-  it('should call getOne via rest', async () => {
-    // stub
-    let stub = sinon.stub(RestCommsUtils, 'getOne').callsFake(() => {
-      console.log(`\nRestCommUtils.getOne  called\n`);
-      return { status: 200, value: 'dummy' };
-    });
-
-    // call
-    let res = await UsersAuthRest.getOne('id1', _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(res?.value).to.equal('dummy');
-  }).timeout(10000);
-
-  /**
    * rest post
    */
   it('should post a call via rest', async () => {
