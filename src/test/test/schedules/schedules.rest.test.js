@@ -72,7 +72,7 @@ describe('Schedules Rest', function () {
     });
 
     // call
-    let res = await SchedulesRest.getOne('id1', _ctx);
+    let res = await SchedulesRest.getOne('id1', {}, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
