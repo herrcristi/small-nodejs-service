@@ -9,6 +9,7 @@ chai.use(chaiHttp);
 const TestConstants = require('../../test-constants.js');
 const SchoolsConstants = require('../../../services/schools/schools.constants.js');
 const SchoolsService = require('../../../services/schools/schools.service.js');
+const RestApiUtils = require('../../../core/utils/rest-api.utils.js');
 
 describe('Schools Controller', function () {
   before(async function () {});
@@ -109,8 +110,10 @@ describe('Schools Controller', function () {
     const testSchool = testSchools[0];
 
     // stub
-    let stubService = sinon.stub(SchoolsService, 'getOne').callsFake(() => {
-      console.log(`\nSchoolsService.getOne called\n`);
+    let stubService = sinon.stub(SchoolsService, 'getOne').callsFake((objID, projection) => {
+      console.log(`\nSchoolsService.getOne called ${JSON.stringify({ objID, projection }, null, 2)}\n`);
+      chai.expect(objID).to.equal(testSchool.id);
+      chai.expect(projection).to.deep.equal({ _id: 0 });
       return {
         status: 200,
         value: testSchool,
@@ -130,9 +133,64 @@ describe('Schools Controller', function () {
   }).timeout(10000);
 
   /**
-   * getOne fail
+   * getOne with success and projection
+   */
+  it('should getOne with success and projection', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+    const testSchool = testSchools[0];
+
+    // stub
+    let stubService = sinon.stub(SchoolsService, 'getOne').callsFake((objID, projection) => {
+      console.log(`\nSchoolsService.getOne called ${JSON.stringify({ objID, projection }, null, 2)}\n`);
+      chai.expect(objID).to.equal(testSchool.id);
+      chai.expect(projection).to.deep.equal({ id: 1, name: 1, _id: 0 });
+      return {
+        status: 200,
+        value: testSchool,
+      };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${SchoolsConstants.ApiPath}/${testSchool.id}?projection=id,name`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal({
+      ...testSchool,
+    });
+  }).timeout(10000);
+
+  /**
+   * getOne fail buildFilterFromReq
    */
   it('should getOne fail', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+    const testSchool = testSchools[0];
+
+    // stub
+    let stubBuildFilter = sinon.stub(RestApiUtils, 'buildFilterFromReq').callsFake(() => {
+      console.log(`\nRestApiUtils.buildFilterFromReq\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}/${testSchool.id}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubBuildFilter.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * getOne fail getOne
+   */
+  it('should getOne fail getOne', async () => {
     const testSchools = _.cloneDeep(TestConstants.Schools);
     const testSchool = testSchools[0];
 
