@@ -173,7 +173,7 @@ const Public = {
 
   /**
    * post
-   * */
+   */
   post: async (objInfo, _ctx) => {
     objInfo.type = UsersAuthConstants.Type;
 
