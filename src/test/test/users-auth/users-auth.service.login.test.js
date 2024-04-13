@@ -29,16 +29,21 @@ describe('Users Auth Service', function () {
    */
   it('should login with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
-    const testUser = testUsers[0];
+    const testUser = testUsers[1];
+
+    const testData = testUser._test_data;
+    delete testUser._test_data;
 
     // stub
-    let stubBase = sinon.stub(DbOpsUtils, 'getOne').callsFake(() => {
-      console.log(`\nDbOpsUtils.getOne called\n`);
+    let stubBase = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.getOne called for ${JSON.stringify(objID, null, 2)}\n`);
       return { status: 200, value: { ...testUser } };
     });
 
+    let stub;
+
     // call
-    let res = await UsersAuthService.login(testUser.id, { id: 1 }, _ctx);
+    let res = await UsersAuthService.login({ id: testUser.id, password: testData.origPassword }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

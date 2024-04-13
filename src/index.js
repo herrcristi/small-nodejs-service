@@ -51,11 +51,12 @@ const Public = {
         await TranslationsUtils.initLanguage(lang, path.resolve(__dirname, `translations/${lang}.json`));
       }
 
+      const port = process.env.PORT;
       // init services
-      await ConfigServices.init();
+      await ConfigServices.init(port);
 
       // init web server
-      await WebServer.init();
+      await WebServer.init(port);
 
       // emit that service was inited
       console.log('Service inited');

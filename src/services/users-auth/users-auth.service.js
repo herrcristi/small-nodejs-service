@@ -63,7 +63,9 @@ const Validators = {
 };
 
 const Private = {
-  Action: BaseServiceUtils.Constants.Action,
+  Action: {
+    Login: 'login',
+  },
   Notification: NotificationsUtils.Constants.Notification,
 
   // will be initialized on init
@@ -108,8 +110,13 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
+    _ctx.userID = objInfo.id;
+    _ctx.username = objInfo.id;
+
     // { serviceName }
     const config = await Private.getConfig(_ctx);
+
+    const eventO = { id: objInfo.id, name: objInfo.id, type: UsersAuthConstants.Type };
 
     // generic error
     const errorLogin = 'Invalid username/password';
@@ -124,25 +131,29 @@ const Public = {
     }
 
     if (r.error) {
-      // TODO impl
       // raise event for invalid login
-      // await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, r.value, r.value, _ctx);
+      const srvName = UsersAuthConstants.ServiceName;
+      const failedAction = `${Private.Action.Login}.failed`;
+      const severity = EventsRest.Constants.Severity.Warning;
+      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventO, _ctx, severity);
       return rError;
     }
 
     // get user details
-    const userProjection = { id: 1, email: 1, schools: 1 };
+    const userProjection = { id: 1, status: 1, email: 1, schools: 1 };
     const userID = r.value.userID; // TODO objInfo.email
     const rUserDetails = await UsersRest.getOne(userID, userProjection, _ctx); // TODO get one by email
     if (rUserDetails.error) {
       return rError;
     }
 
+    // TODO if user disabled stop
+
     // TODO if user pending make active
     // if school pending make active
 
-    // TODO raise event for login
-    // await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, r.value, r.value, _ctx);
+    // raise event for succesful login
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Login, eventO, eventO, _ctx);
 
     // success
     return BaseServiceUtils.getProjectedResponse(rUserDetails, userProjection, _ctx);

@@ -69,7 +69,7 @@ const Public = {
   /**
    * init all services
    */
-  init: async () => {
+  init: async (port) => {
     // init databases
     for (const database of [
       SchoolsDatabase,
@@ -148,7 +148,6 @@ const Public = {
     }
 
     // init the communication
-    const port = process.env.PORT;
     const config = {
       local: {
         [SchoolsConstants.ServiceName]: SchoolsService,
