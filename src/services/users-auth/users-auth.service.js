@@ -11,6 +11,7 @@ const NotificationsUtils = require('../../core/utils/base-service.notifications.
 const UsersAuthRest = require('../rest/users-auth.rest.js');
 const UsersRest = require('../rest/users.rest.js');
 const EventsRest = require('../rest/events.rest.js');
+const SchoolsRest = require('../rest/schools.rest.js');
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthServiceLocal = require('./users-local-auth.service.js'); // use local auth service
 const UsersAuthServiceFirebase = require('./users-firebase-auth.service.js'); // use firebase auth service
@@ -136,8 +137,8 @@ const Public = {
 
     if (r.error) {
       // raise event for invalid login
-      const argsEvent = { ...eventO, reason: 'Login failed' };
-      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, argsEvent, _ctx, failedSeverity);
+      const eventArgs = { ...eventO, reason: 'Login failed' };
+      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventArgs, _ctx, failedSeverity);
       return rError; // return generic error
     }
 
@@ -146,8 +147,8 @@ const Public = {
     const rUserDetails = await UsersRest.getOneByEmail(objInfo.id, userProjection, _ctx);
     if (rUserDetails.error) {
       // raise event
-      const argsEvent = { ...eventO, reason: 'No user' };
-      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, argsEvent, _ctx, failedSeverity);
+      const eventArgs = { ...eventO, reason: 'No user' };
+      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventArgs, _ctx, failedSeverity);
       return rError; // return generic error
     }
 
@@ -155,8 +156,8 @@ const Public = {
     const user = rUserDetails.value;
     if (user.status === UsersRest.Constants.Status.Disabled) {
       // raise event
-      const argsEvent = { ...eventO, reason: 'User is disabled' };
-      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, argsEvent, _ctx, failedSeverity);
+      const eventArgs = { ...eventO, reason: 'User is disabled' };
+      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventArgs, _ctx, failedSeverity);
       return rError; // return generic error
     }
 
@@ -165,11 +166,22 @@ const Public = {
       user.status = UsersRest.Constants.Status.Active;
       const rP = await UsersRest.put(user.id, { status: UsersRest.Constants.Status.Active }, _ctx);
       if (rP.error) {
-        const errorLogin = 'Failed to make user active';
-        return { status: 500, error: { message: errorLogin, error: new Error(errorLogin) } };
+        const msg = 'Failed to make user active';
+        return { status: 500, error: { message: msg, error: new Error(msg) } };
       }
     }
+
     // if school pending make active
+    for (const school of user.schools) {
+      if (school.status === SchoolsRest.Constants.Status.Pending) {
+        school.status = SchoolsRest.Constants.Status.Active;
+        const rS = await SchoolsRest.put(school.id, { status: SchoolsRest.Constants.Status.Active }, _ctx);
+        if (rS.error) {
+          const msg = 'Failed to make school active';
+          return { status: 500, error: { message: msg, error: new Error(msg) } };
+        }
+      }
+    }
 
     // raise event for succesful login
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Login, eventO, eventO, _ctx);
@@ -198,6 +210,8 @@ const Public = {
     if (r.error) {
       return r;
     }
+
+    // TODO validate also route or add separate function
 
     // success
     return {};
