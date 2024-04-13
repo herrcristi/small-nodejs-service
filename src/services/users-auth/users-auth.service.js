@@ -113,10 +113,14 @@ const Public = {
     _ctx.userID = objInfo.id;
     _ctx.username = objInfo.id;
 
-    // { serviceName }
+    // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
+    // events
     const eventO = { id: objInfo.id, name: objInfo.id, type: UsersAuthConstants.Type };
+    const srvName = UsersAuthConstants.ServiceName;
+    const failedAction = `${Private.Action.Login}.failed`;
+    const failedSeverity = EventsRest.Constants.Severity.Warning;
 
     // generic error
     const errorLogin = 'Invalid username/password';
@@ -132,22 +136,29 @@ const Public = {
 
     if (r.error) {
       // raise event for invalid login
-      const srvName = UsersAuthConstants.ServiceName;
-      const failedAction = `${Private.Action.Login}.failed`;
-      const severity = EventsRest.Constants.Severity.Warning;
-      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventO, _ctx, severity);
-      return rError;
+      const argsEvent = { ...eventO, reason: 'Login failed' };
+      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, argsEvent, _ctx, failedSeverity);
+      return rError; // return generic error
     }
 
-    // get user details
+    // get user details (by email)
     const userProjection = { id: 1, status: 1, email: 1, schools: 1 };
-    const userID = r.value.userID; // TODO objInfo.email
-    const rUserDetails = await UsersRest.getOne(userID, userProjection, _ctx); // TODO get one by email
+    const rUserDetails = await UsersRest.getOneByEmail(objInfo.id, userProjection, _ctx);
     if (rUserDetails.error) {
-      return rError;
+      // raise event
+      const argsEvent = { ...eventO, reason: 'No user' };
+      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, argsEvent, _ctx, failedSeverity);
+      return rError; // return generic error
     }
 
-    // TODO if user disabled stop
+    // fail login if user is disabled
+    const user = rUserDetails.value;
+    if (user.status === UsersRest.Constants.Status.Disabled) {
+      // raise event
+      const argsEvent = { ...eventO, reason: 'User is disabled' };
+      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, argsEvent, _ctx, failedSeverity);
+      return rError; // return generic error
+    }
 
     // TODO if user pending make active
     // if school pending make active
@@ -155,6 +166,7 @@ const Public = {
     // raise event for succesful login
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Login, eventO, eventO, _ctx);
 
+    // TODO return jwt token and set cookie
     // success
     return BaseServiceUtils.getProjectedResponse(rUserDetails, userProjection, _ctx);
   },

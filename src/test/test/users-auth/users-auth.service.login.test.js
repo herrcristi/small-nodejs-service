@@ -65,10 +65,10 @@ describe('Users Auth Service', function () {
         return { status: 200, value: {} };
       });
 
-    let stubUsers = sinon.stub(UsersRest, 'getOne').callsFake((objID) => {
-      console.log(`\nUsersRest.getOne called for ${JSON.stringify(objID, null, 2)}\n`);
+    let stubUsers = sinon.stub(UsersRest, 'getOneByEmail').callsFake((email) => {
+      console.log(`\nUsersRest.getOne called for ${JSON.stringify(email, null, 2)}\n`);
 
-      chai.expect(objID).to.equal(testAuthUser.userID);
+      chai.expect(email).to.equal(testAuthUser.id);
       return { status: 200, value: testInfoUser };
     });
 
@@ -78,8 +78,8 @@ describe('Users Auth Service', function () {
 
     // check
     chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubEvents.callCount).to.equal(1);
     chai.expect(stubUsers.callCount).to.equal(1);
+    chai.expect(stubEvents.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
@@ -87,6 +87,40 @@ describe('Users Auth Service', function () {
         status: testInfoUser.status,
         email: testInfoUser.email,
         schools: testInfoUser.schools,
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * login fail validation
+   */
+  it('should login fail validation', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
+
+    const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    const testInfoUser = testInfoUsers[0];
+
+    const testAuthData = testAuthUser._test_data;
+    delete testAuthUser._test_data;
+
+    // stub
+    let stubBase = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.getOne called for ${JSON.stringify(objID, null, 2)}\n`);
+      return { status: 200, value: { ...testAuthUser } };
+    });
+
+    // call
+    let res = await UsersAuthService.login({ id: testAuthUser.id }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubBase.callCount).to.equal(0);
+    chai.expect(res).to.deep.equal({
+      status: 400,
+      error: {
+        message: 'Failed to validate schema. Error: "password" is required',
+        error: new Error('Failed to validate schema. Error: "password" is required'),
       },
     });
   }).timeout(10000);
@@ -124,18 +158,16 @@ describe('Users Auth Service', function () {
           serviceName: UsersAuthService.Constants.ServiceName,
           action: 'login.failed',
           objTarget: { id: testAuthUser.id, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
-          objArg: { id: testAuthUser.id, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
+          objArg: {
+            id: testAuthUser.id,
+            name: testAuthUser.id,
+            type: UsersAuthService.Constants.Type,
+            reason: 'Login failed',
+          },
           severity: EventsRest.Constants.Severity.Warning,
         });
         return { status: 200, value: {} };
       });
-
-    let stubUsers = sinon.stub(UsersRest, 'getOne').callsFake((objID) => {
-      console.log(`\nUsersRest.getOne called for ${JSON.stringify(objID, null, 2)}\n`);
-
-      chai.expect(objID).to.equal(testAuthUser.userID);
-      return { status: 200, value: testInfoUser };
-    });
 
     // call
     let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
@@ -144,7 +176,7 @@ describe('Users Auth Service', function () {
     // check
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(stubEvents.callCount).to.equal(1);
-    chai.expect(stubUsers.callCount).to.equal(0);
+
     chai.expect(res).to.deep.equal({
       status: 401,
       error: {
@@ -187,18 +219,16 @@ describe('Users Auth Service', function () {
           serviceName: UsersAuthService.Constants.ServiceName,
           action: 'login.failed',
           objTarget: { id: testAuthUser.id, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
-          objArg: { id: testAuthUser.id, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
+          objArg: {
+            id: testAuthUser.id,
+            name: testAuthUser.id,
+            type: UsersAuthService.Constants.Type,
+            reason: 'Login failed',
+          },
           severity: EventsRest.Constants.Severity.Warning,
         });
         return { status: 200, value: {} };
       });
-
-    let stubUsers = sinon.stub(UsersRest, 'getOne').callsFake((objID) => {
-      console.log(`\nUsersRest.getOne called for ${JSON.stringify(objID, null, 2)}\n`);
-
-      chai.expect(objID).to.equal(testAuthUser.userID);
-      return { status: 200, value: testInfoUser };
-    });
 
     // call
     let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
@@ -207,7 +237,145 @@ describe('Users Auth Service', function () {
     // check
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(stubEvents.callCount).to.equal(1);
-    chai.expect(stubUsers.callCount).to.equal(0);
+
+    chai.expect(res).to.deep.equal({
+      status: 401,
+      error: {
+        message: 'Invalid username/password',
+        error: new Error('Invalid username/password'),
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * login fail to get user by email
+   */
+  it('should login fail to get user by email', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
+
+    const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    const testInfoUser = testInfoUsers[0];
+
+    const testAuthData = testAuthUser._test_data;
+    delete testAuthUser._test_data;
+
+    // stub
+    let stubBase = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.getOne called for ${JSON.stringify(objID, null, 2)}\n`);
+      return { status: 200, value: { ...testAuthUser } };
+    });
+
+    let stubEvents = sinon
+      .stub(EventsRest, 'raiseEventForObject')
+      .callsFake((serviceName, action, objTarget, objArg, ctx, severity) => {
+        console.log(
+          `\nEventsRest.raiseEventForObject called for ${JSON.stringify(
+            { serviceName, action, objTarget, objArg, severity },
+            null,
+            2
+          )}\n`
+        );
+        chai.expect({ serviceName, action, objTarget, objArg, severity }).to.deep.equal({
+          serviceName: UsersAuthService.Constants.ServiceName,
+          action: 'login.failed',
+          objTarget: { id: testAuthUser.id, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
+          objArg: {
+            id: testAuthUser.id,
+            name: testAuthUser.id,
+            type: UsersAuthService.Constants.Type,
+            reason: 'No user',
+          },
+          severity: 'warning',
+        });
+        return { status: 200, value: {} };
+      });
+
+    let stubUsers = sinon.stub(UsersRest, 'getOneByEmail').callsFake((email) => {
+      console.log(`\nUsersRest.getOne called for ${JSON.stringify(email, null, 2)}\n`);
+
+      chai.expect(email).to.equal(testAuthUser.id);
+      return { status: 404, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubBase.callCount).to.equal(1);
+    chai.expect(stubUsers.callCount).to.equal(1);
+    chai.expect(stubEvents.callCount).to.equal(1);
+
+    chai.expect(res).to.deep.equal({
+      status: 401,
+      error: {
+        message: 'Invalid username/password',
+        error: new Error('Invalid username/password'),
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * login fail user has status disabled
+   */
+  it('should login fail user has status disabled', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
+
+    const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    const testInfoUser = testInfoUsers[0];
+
+    const testAuthData = testAuthUser._test_data;
+    delete testAuthUser._test_data;
+
+    // stub
+    let stubBase = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.getOne called for ${JSON.stringify(objID, null, 2)}\n`);
+      return { status: 200, value: { ...testAuthUser } };
+    });
+
+    let stubEvents = sinon
+      .stub(EventsRest, 'raiseEventForObject')
+      .callsFake((serviceName, action, objTarget, objArg, ctx, severity) => {
+        console.log(
+          `\nEventsRest.raiseEventForObject called for ${JSON.stringify(
+            { serviceName, action, objTarget, objArg, severity },
+            null,
+            2
+          )}\n`
+        );
+        chai.expect({ serviceName, action, objTarget, objArg, severity }).to.deep.equal({
+          serviceName: UsersAuthService.Constants.ServiceName,
+          action: 'login.failed',
+          objTarget: { id: testAuthUser.id, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
+          objArg: {
+            id: testAuthUser.id,
+            name: testAuthUser.id,
+            type: UsersAuthService.Constants.Type,
+            reason: 'User is disabled',
+          },
+          severity: 'warning',
+        });
+        return { status: 200, value: {} };
+      });
+
+    let stubUsers = sinon.stub(UsersRest, 'getOneByEmail').callsFake((email) => {
+      console.log(`\nUsersRest.getOne called for ${JSON.stringify(email, null, 2)}\n`);
+
+      chai.expect(email).to.equal(testAuthUser.id);
+      return { status: 200, value: { ...testInfoUser, status: UsersRest.Constants.Status.Disabled } };
+    });
+
+    // call
+    let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubBase.callCount).to.equal(1);
+    chai.expect(stubUsers.callCount).to.equal(1);
+    chai.expect(stubEvents.callCount).to.equal(1);
+
     chai.expect(res).to.deep.equal({
       status: 401,
       error: {

@@ -47,7 +47,7 @@ const Private = {
 
     config.method = config.method?.toUpperCase();
     if (config.method === 'GET' && config.query) {
-      srvUri += `${config.query}`; // should contain `?`
+      srvUri += `?${config.query}`;
     }
 
     console.log(`Current url to call: ${config.method} ${srvUri}`);
@@ -130,7 +130,7 @@ const Public = {
 
   /**
    * get all
-   * queryParams should contain `?`
+   * queryParams
    */
   getAll: async (serviceName, queryParams, _ctx) => {
     const localService = Private.Config.local[serviceName];
