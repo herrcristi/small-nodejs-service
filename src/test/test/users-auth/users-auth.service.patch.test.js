@@ -37,11 +37,10 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const patchReq = {
-      set: _.cloneDeep(testUser),
+      set: {
+        password: testUser._test_data.origPassword,
+      },
     };
-    delete patchReq.set.id;
-    delete patchReq.set.userID;
-    delete patchReq.set.type;
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'patch').callsFake((config, objID, patchObj) => {
@@ -72,8 +71,8 @@ describe('Users Auth Service', function () {
       status: 200,
       value: {
         id: testUser.id,
+        name: testUser.id,
         type: testUser.type,
-        userID: testUser.userID,
       },
     });
   }).timeout(10000);
@@ -87,7 +86,8 @@ describe('Users Auth Service', function () {
 
     const patchReq = {
       set: {
-        ...testUser,
+        id: testUser.id,
+        password: testUser._test_data.origPassword,
       },
     };
 
@@ -109,12 +109,9 @@ describe('Users Auth Service', function () {
 
     const patchReq = {
       set: {
-        ...testUser,
+        password: testUser._test_data.origPassword,
       },
     };
-    delete patchReq.set.id;
-    delete patchReq.set.userID;
-    delete patchReq.set.type;
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'patch').callsFake((config, objID, patchObj) => {

@@ -35,9 +35,10 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const postReq = {
-      ...testUser,
+      id: testUser.id,
+      password: testUser._test_data.origPassword,
+      userID: testUser.userID,
     };
-    delete postReq.type;
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
@@ -65,6 +66,7 @@ describe('Users Auth Service', function () {
       status: 201,
       value: {
         id: testUser.id,
+        name: testUser.id,
         type: testUser.type,
         userID: testUser.userID,
       },
@@ -79,7 +81,9 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const postReq = {
-      ...testUser,
+      id: testUser.id,
+      password: testUser._test_data.origPassword,
+      userID: testUser.userID,
       something: 1,
     };
 
@@ -100,9 +104,10 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const postReq = {
-      ...testUser,
+      id: testUser.id,
+      password: testUser._test_data.origPassword,
+      userID: testUser.userID,
     };
-    delete postReq.type;
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {

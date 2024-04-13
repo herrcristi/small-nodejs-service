@@ -217,7 +217,7 @@ const Public = {
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Added, [newObj], _ctx);
 
     // success
-    return { status: 200, value: newObj };
+    return { status: 201, value: newObj };
   },
 
   /**

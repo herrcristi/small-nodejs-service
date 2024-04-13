@@ -90,4 +90,130 @@ describe('Users Auth Service', function () {
       },
     });
   }).timeout(10000);
+
+  /**
+   * login fail get user
+   */
+  it('should login fail get user', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
+
+    const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    const testInfoUser = testInfoUsers[0];
+
+    const testAuthData = testAuthUser._test_data;
+    delete testAuthUser._test_data;
+
+    // stub
+    let stubBase = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.getOne called for ${JSON.stringify(objID, null, 2)}\n`);
+      return { status: 404, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    let stubEvents = sinon
+      .stub(EventsRest, 'raiseEventForObject')
+      .callsFake((serviceName, action, objTarget, objArg, ctx, severity) => {
+        console.log(
+          `\nEventsRest.raiseEventForObject called for ${JSON.stringify(
+            { serviceName, action, objTarget, objArg, severity },
+            null,
+            2
+          )}\n`
+        );
+        chai.expect({ serviceName, action, objTarget, objArg, severity }).to.deep.equal({
+          serviceName: UsersAuthService.Constants.ServiceName,
+          action: 'login.failed',
+          objTarget: { id: testAuthUser.id, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
+          objArg: { id: testAuthUser.id, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
+          severity: EventsRest.Constants.Severity.Warning,
+        });
+        return { status: 200, value: {} };
+      });
+
+    let stubUsers = sinon.stub(UsersRest, 'getOne').callsFake((objID) => {
+      console.log(`\nUsersRest.getOne called for ${JSON.stringify(objID, null, 2)}\n`);
+
+      chai.expect(objID).to.equal(testAuthUser.userID);
+      return { status: 200, value: testInfoUser };
+    });
+
+    // call
+    let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubBase.callCount).to.equal(1);
+    chai.expect(stubEvents.callCount).to.equal(1);
+    chai.expect(stubUsers.callCount).to.equal(0);
+    chai.expect(res).to.deep.equal({
+      status: 401,
+      error: {
+        message: 'Invalid username/password',
+        error: new Error('Invalid username/password'),
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * login fail different password
+   */
+  it('should login fail different password', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
+
+    const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    const testInfoUser = testInfoUsers[0];
+
+    const testAuthData = testAuthUser._test_data;
+    delete testAuthUser._test_data;
+
+    // stub
+    let stubBase = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.getOne called for ${JSON.stringify(objID, null, 2)}\n`);
+      return { status: 200, value: { ...testAuthUser, password: 'otherpass' } };
+    });
+
+    let stubEvents = sinon
+      .stub(EventsRest, 'raiseEventForObject')
+      .callsFake((serviceName, action, objTarget, objArg, ctx, severity) => {
+        console.log(
+          `\nEventsRest.raiseEventForObject called for ${JSON.stringify(
+            { serviceName, action, objTarget, objArg, severity },
+            null,
+            2
+          )}\n`
+        );
+        chai.expect({ serviceName, action, objTarget, objArg, severity }).to.deep.equal({
+          serviceName: UsersAuthService.Constants.ServiceName,
+          action: 'login.failed',
+          objTarget: { id: testAuthUser.id, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
+          objArg: { id: testAuthUser.id, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
+          severity: EventsRest.Constants.Severity.Warning,
+        });
+        return { status: 200, value: {} };
+      });
+
+    let stubUsers = sinon.stub(UsersRest, 'getOne').callsFake((objID) => {
+      console.log(`\nUsersRest.getOne called for ${JSON.stringify(objID, null, 2)}\n`);
+
+      chai.expect(objID).to.equal(testAuthUser.userID);
+      return { status: 200, value: testInfoUser };
+    });
+
+    // call
+    let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubBase.callCount).to.equal(1);
+    chai.expect(stubEvents.callCount).to.equal(1);
+    chai.expect(stubUsers.callCount).to.equal(0);
+    chai.expect(res).to.deep.equal({
+      status: 401,
+      error: {
+        message: 'Invalid username/password',
+        error: new Error('Invalid username/password'),
+      },
+    });
+  }).timeout(10000);
 });

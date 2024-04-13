@@ -61,8 +61,8 @@ describe('Users Auth Service', function () {
       status: 200,
       value: {
         id: testUser.id,
+        name: testUser.id,
         type: testUser.type,
-        userID: testUser.userID,
       },
     });
   }).timeout(10000);

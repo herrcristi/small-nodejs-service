@@ -36,11 +36,8 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const putReq = {
-      ...testUser,
+      password: testUser._test_data.origPassword,
     };
-    delete putReq.id;
-    delete putReq.userID;
-    delete putReq.type;
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'put').callsFake((config, objID, putObj) => {
@@ -64,8 +61,8 @@ describe('Users Auth Service', function () {
       chai.expect(objs).to.deep.equal([
         {
           id: testUser.id,
+          name: testUser.id,
           type: UsersAuthConstants.Type,
-          userID: testUser.userID,
         },
       ]);
     });
@@ -82,8 +79,8 @@ describe('Users Auth Service', function () {
       status: 200,
       value: {
         id: testUser.id,
+        name: testUser.id,
         type: testUser.type,
-        userID: testUser.userID,
       },
     });
   }).timeout(10000);
@@ -96,7 +93,8 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const putReq = {
-      ...testUser,
+      id: testUser.id,
+      password: testUser._test_data.origPassword,
     };
 
     // call
@@ -116,11 +114,8 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const putReq = {
-      ...testUser,
+      password: testUser._test_data.origPassword,
     };
-    delete putReq.id;
-    delete putReq.type;
-    delete putReq.userID;
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'put').callsFake((config, objID, putObj) => {

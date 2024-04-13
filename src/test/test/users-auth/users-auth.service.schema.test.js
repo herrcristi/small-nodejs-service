@@ -23,8 +23,11 @@ describe('Users Auth Service', function () {
     // valid post req
     postReq = {
       ...testUser,
+      password: testUser._test_data.origPassword,
     };
     delete postReq.type;
+    delete postReq.salt;
+    delete postReq._test_data;
   });
 
   afterEach(async function () {
