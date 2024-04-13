@@ -62,7 +62,7 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
-    _ctx.userid = objInfo.email;
+    _ctx.userID = objInfo.email;
     _ctx.username = objInfo.email;
 
     // signup has 3 steps
@@ -78,7 +78,8 @@ const Public = {
     const rSchool = await SchoolsRest.post(objInfo.school, _ctx);
     if (rSchool.error) {
       // raise event for invalid signup
-      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, errorO, errorO, _ctx);
+      const failedAction = `${Private.Action.Post}.failed`;
+      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
       return rSchool;
     }
 
@@ -106,20 +107,21 @@ const Public = {
       await SchoolsRest.delete(schoolID, _ctx);
 
       // raise event for invalid signup
-      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, errorO, errorO, _ctx);
+      const failedAction = `${Private.Action.Post}.failed`;
+      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
       return rUser;
     }
 
     const userID = rUser.value.id;
     errorO.id = userID;
-    _ctx.userid = userID;
+    _ctx.userID = userID;
 
     // create user auth
     const rAuth = await UsersAuthRest.post(
       {
-        id: userID,
-        email: objInfo.email,
+        id: objInfo.email,
         password: objInfo.password,
+        userID: userID,
       },
       _ctx
     );
@@ -129,7 +131,8 @@ const Public = {
       await UsersRest.delete(userID, _ctx);
 
       // raise event for invalid signup
-      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, errorO, errorO, _ctx);
+      const failedAction = `${Private.Action.Post}.failed`;
+      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
       return rAuth;
     }
 

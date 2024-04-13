@@ -1,7 +1,6 @@
 /**
  * Users service
  */
-const crypto = require('node:crypto');
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
@@ -10,6 +9,7 @@ const CommonUtils = require('../../core/utils/common.utils.js');
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 
 const UsersAuthRest = require('../rest/users-auth.rest.js');
+const UsersRest = require('../rest/users.rest.js');
 const EventsRest = require('../rest/events.rest.js');
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthServiceLocal = require('./users-local-auth.service.js'); // use local auth service
@@ -19,13 +19,23 @@ const UsersAuthServiceFirebase = require('./users-firebase-auth.service.js'); //
  * validation
  */
 const Schema = {
-  User: Joi.object().keys({
-    id: Joi.string().min(1).max(64),
-    email: Joi.string()
+  Login: Joi.object().keys({
+    id: Joi.string()
       .email({ tlds: { allow: false } })
       .min(1)
-      .max(128),
-    password: Joi.string().min(1).max(64),
+      .max(128)
+      .required(),
+    password: Joi.string().min(1).max(64).required(),
+  }),
+
+  User: Joi.object().keys({
+    id: Joi.string()
+      .email({ tlds: { allow: false } })
+      .min(1)
+      .max(128)
+      .required(),
+    password: Joi.string().min(1).max(64).required(),
+    userID: Joi.string().min(1).max(64).required(),
   }),
 
   UserPass: Joi.object().keys({
@@ -34,13 +44,13 @@ const Schema = {
 };
 
 const Validators = {
-  Login: Schema.User.fork(['email', 'password'], (x) => x.required() /*make required */),
+  Login: Schema.Login,
 
   Token: Joi.object().keys({
     token: Joi.string().min(1).required(),
   }),
 
-  Post: Schema.User.fork(['email', 'password'], (x) => x.required() /*make required */).keys({
+  Post: Schema.User.keys({
     type: Joi.string().valid(UsersAuthConstants.Type),
   }),
 
@@ -53,44 +63,26 @@ const Validators = {
 };
 
 const Private = {
-  Action: BaseServiceUtils.Constants.Action,
+  Action: {
+    Login: 'login',
+  },
   Notification: NotificationsUtils.Constants.Notification,
-  SiteSalt: null, // will be initialized on init
+
+  // will be initialized on init
+  UsersAuthProviderType: null,
 
   /**
    * config
-   * returns { serviceName, collection, schema, references, fillReferences, events }
+   * returns { serviceName, references, fillReferences, events }
    */
   getConfig: async (_ctx) => {
     const config = {
       serviceName: UsersAuthConstants.ServiceName,
       //collection: ... // will be added only for local auth
       references: [],
-      notifications: {
-        projection: { id: 1, email: 1, type: 1 } /* for sync+async */,
-      },
-      isFirebaseAuth: false, // TODO is firebase auth or local auth
+      isFirebaseAuth: Private.UsersAuthProviderType === 'firebase',
     };
     return config;
-  },
-
-  /**
-   * generate salt
-   */
-  genSalt: (_ctx) => {
-    return crypto.randomBytes(32).toString('hex');
-  },
-
-  /**
-   * hash a password
-   */
-  hashPassword: (password, salt, _ctx) => {
-    let hash = crypto.scryptSync(password, salt, 64);
-    hash = hash.toString('hex');
-
-    hash = crypto.scryptSync(hash, Private.SiteSalt, 64);
-    hash = hash.toString('hex');
-    return hash;
   },
 };
 
@@ -99,24 +91,17 @@ const Public = {
    * init
    */
   init: async () => {
-    Private.SiteSalt = process.env.SALT;
-  },
-
-  /**
-   * get one
-   * returns { status, value } or { status, error }
-   */
-  getOne: async (objID, projection, _ctx) => {
-    const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    if (config.isFirebaseAuth) {
-      return await UsersAuthServiceFirebase.getOne(config, objID, projection, _ctx);
+    Private.UsersAuthProviderType = process.env.USERS_AUTH_PROVIDER;
+    if (Private.UsersAuthProviderType === 'firebase') {
+      await UsersAuthServiceFirebase.init();
     } else {
-      return await UsersAuthServiceLocal.getOne(config, objID, projection, _ctx);
+      await UsersAuthServiceLocal.init();
     }
   },
 
   /**
    * login
+   * objInfo: { id, password }
    */
   login: async (objInfo, _ctx) => {
     // validate
@@ -125,25 +110,53 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
-    // { serviceName, collection, references, notifications.projection }
+    _ctx.userID = objInfo.id;
+    _ctx.username = objInfo.id;
+
+    // { serviceName }
     const config = await Private.getConfig(_ctx);
 
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+    const eventO = { id: objInfo.id, name: objInfo.id, type: UsersAuthConstants.Type };
+
+    // generic error
+    const errorLogin = 'Invalid username/password';
+    const rError = { status: 401, error: { message: errorLogin, error: new Error(errorLogin) } };
 
     // login
-    // TODO impl
-    const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
-    if (r.error) {
-      // raise event for invalid login
-      // await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, r.value, r.value, _ctx);
-      return r;
+    let r;
+    if (config.isFirebaseAuth) {
+      r = await UsersAuthServiceFirebase.login(config, objInfo, _ctx);
+    } else {
+      r = await UsersAuthServiceLocal.login(config, objInfo, _ctx);
     }
 
-    // raise event for login
-    // await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, r.value, r.value, _ctx);
+    if (r.error) {
+      // raise event for invalid login
+      const srvName = UsersAuthConstants.ServiceName;
+      const failedAction = `${Private.Action.Login}.failed`;
+      const severity = EventsRest.Constants.Severity.Warning;
+      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventO, _ctx, severity);
+      return rError;
+    }
+
+    // get user details
+    const userProjection = { id: 1, status: 1, email: 1, schools: 1 };
+    const userID = r.value.userID; // TODO objInfo.email
+    const rUserDetails = await UsersRest.getOne(userID, userProjection, _ctx); // TODO get one by email
+    if (rUserDetails.error) {
+      return rError;
+    }
+
+    // TODO if user disabled stop
+
+    // TODO if user pending make active
+    // if school pending make active
+
+    // raise event for succesful login
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Login, eventO, eventO, _ctx);
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+    return BaseServiceUtils.getProjectedResponse(rUserDetails, userProjection, _ctx);
   },
 
   /**
@@ -156,10 +169,8 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
-    // { serviceName, collection, references, notifications.projection }
+    // { serviceName }
     const config = await Private.getConfig(_ctx);
-
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // token
     // TODO impl
@@ -169,7 +180,7 @@ const Public = {
     }
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+    return {};
   },
 
   /**
@@ -184,14 +195,8 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
-    // hash password
-    objInfo.salt = Private.genSalt(_ctx);
-    objInfo.password = Private.hashPassword(objInfo.password, objInfo.salt, _ctx);
-
-    // { serviceName, collection, references, notifications.projection }
+    // { serviceName }
     const config = await Private.getConfig(_ctx);
-
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // post
     let r;
@@ -205,46 +210,42 @@ const Public = {
     }
 
     // raise event
-    const eventObj = { id: objInfo.id, name: objInfo.email, type: objInfo.type };
-    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, eventObj, eventObj, _ctx);
+    const newObj = { id: objInfo.id, name: objInfo.id, type: objInfo.type, userID: objInfo.userID };
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, newObj, newObj, _ctx);
 
     // raise a notification for new obj
-    let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Added, [rnp.value], _ctx);
+    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Added, [newObj], _ctx);
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+    return { status: 201, value: newObj };
   },
 
   /**
    * delete
    */
   delete: async (objID, _ctx) => {
-    // { serviceName, collection, references, notifications.projection }
+    // { serviceName }
     const config = await Private.getConfig(_ctx);
-
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     let r;
     if (config.isFirebaseAuth) {
-      r = await UsersAuthServiceFirebase.delete(config, objID, projection, _ctx);
+      r = await UsersAuthServiceFirebase.delete(config, objID, _ctx);
     } else {
-      r = await UsersAuthServiceLocal.delete(config, objID, projection, _ctx);
+      r = await UsersAuthServiceLocal.delete(config, objID, _ctx);
     }
     if (r.error) {
       return r;
     }
 
     // raise event
-    const eventO = { id: objID, name: objID, type: UsersAuthConstants.Type };
-    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Delete, eventO, eventO, _ctx);
+    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Delete, newObj, newObj, _ctx);
 
     // raise a notification for removed obj
-    let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Removed, [rnp.value], _ctx);
+    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Removed, [newObj], _ctx);
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+    return { status: 200, value: newObj };
   },
 
   /**
@@ -257,36 +258,29 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
-    // hash password with new salt
-    objInfo.salt = Private.genSalt(_ctx);
-    objInfo.password = Private.hashPassword(objInfo.password, objInfo.salt, _ctx);
-
-    // { serviceName, collection, references, notifications.projection }
+    // { serviceName }
     const config = await Private.getConfig(_ctx);
-
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // put
     let r;
     if (config.isFirebaseAuth) {
-      r = await UsersAuthServiceFirebase.put(config, objID, objInfo, projection, _ctx);
+      r = await UsersAuthServiceFirebase.put(config, objID, objInfo, _ctx);
     } else {
-      r = await UsersAuthServiceLocal.put(config, objID, objInfo, projection, _ctx);
+      r = await UsersAuthServiceLocal.put(config, objID, objInfo, _ctx);
     }
     if (r.error) {
       return r;
     }
 
     // raise event for put (changed password)
-    const eventO = { id: objID, name: objID, type: UsersAuthConstants.Type };
-    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Put, eventO, eventO, _ctx);
+    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Put, newObj, newObj, _ctx);
 
     // raise a notification for modified obj
-    let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+    return { status: 200, value: newObj };
   },
 
   /**
@@ -299,35 +293,29 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
-    // hash password with new salt
-    patchInfo.set.salt = Private.genSalt(_ctx);
-    patchInfo.set.password = Private.hashPassword(patchInfo.set.password, patchInfo.set.salt, _ctx);
-
-    // { serviceName, collection, references, notifications.projection }
+    // { serviceName }
     const config = await Private.getConfig(_ctx);
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // patch
     let r;
     if (config.isFirebaseAuth) {
-      r = await UsersAuthServiceFirebase.patch(config, objID, patchInfo, projection, _ctx);
+      r = await UsersAuthServiceFirebase.patch(config, objID, patchInfo, _ctx);
     } else {
-      r = await UsersAuthServiceLocal.patch(config, objID, patchInfo, projection, _ctx);
+      r = await UsersAuthServiceLocal.patch(config, objID, patchInfo, _ctx);
     }
     if (r.error) {
       return r;
     }
 
     // raise event for patch (changed password)
-    const eventO = { id: objID, name: objID, type: UsersAuthConstants.Type };
-    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Patch, eventO, eventO, _ctx);
+    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Patch, newObj, newObj, _ctx);
 
     // raise a notification for modified obj
-    let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
+    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+    return { status: 200, value: newObj };
   },
 
   /**
@@ -340,11 +328,11 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, notification, _ctx);
     }
 
-    // { serviceName, collection, references, fillReferences }
+    // { serviceName }
     const config = await Private.getConfig(_ctx);
 
     // TODO delete on delete users notification
-    // TODO change email on modified users notification
+    // TODO change id on modified email users notification
 
     // notification (process references)
     return await NotificationsUtils.notification({ ...config, fillReferences: true }, notification, _ctx);

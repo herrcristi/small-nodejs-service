@@ -30,8 +30,8 @@ const Public = {
   /**
    * get one
    */
-  getOne: async (objID, _ctx) => {
-    return await RestCommsUtils.getOne(SchoolsConstants.ServiceName, objID, _ctx);
+  getOne: async (objID, projection, _ctx) => {
+    return await RestCommsUtils.getOne(SchoolsConstants.ServiceName, objID, projection, _ctx);
   },
 
   /**

@@ -53,16 +53,26 @@ const Public = {
    */
   UsersAuth: [
     {
-      id: 'user1',
-      email: 'big.ben@testdomain.test',
-      password: 'hashedpassword1',
+      id: 'big.ben@testdomain.test',
+      password:
+        '13f4888656e370d5ad7e1fd64e8249e840ffdbf2535ae59cc3790447a519e1c2139b0fc7eaf4d0d643ac17e031b519ecb854d9af47da86a12c72d3629d92e9de',
+      salt: 'salt1',
+      userID: 'user1',
       type: 'user-auth',
+      _test_data: {
+        origPassword: 'password1',
+      },
     },
     {
-      id: 'user2',
-      email: 'john.bravo@testdomain.test',
-      password: 'hashedpassword2',
+      id: 'john.bravo@testdomain.test',
+      password:
+        '112c5f06e4bba1d2cddee9552091e598d098e8a1c9ce184363e9f2ca7ef3daed936d01ab634c26ce458a46c502f4a126ebb0bab179cd39e2a0ba938f12447bb7',
+      salt: 'salt2',
+      userID: 'user2',
       type: 'user-auth',
+      _test_data: {
+        origPassword: 'password2',
+      },
     },
   ],
 

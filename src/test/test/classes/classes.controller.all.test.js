@@ -9,6 +9,7 @@ chai.use(chaiHttp);
 const TestConstants = require('../../test-constants.js');
 const ClassesConstants = require('../../../services/classes/classes.constants.js');
 const ClassesService = require('../../../services/classes/classes.service.js');
+const RestApiUtils = require('../../../core/utils/rest-api.utils.js');
 
 describe('Classes Controller', function () {
   const _ctx = { tenantID: 'school-univ1', reqID: 'testReq', lang: 'en', service: 'Service' };
@@ -120,8 +121,10 @@ describe('Classes Controller', function () {
     const testClass = testClasses[0];
 
     // stub
-    let stubService = sinon.stub(ClassesService, 'getOne').callsFake(() => {
-      console.log(`\nClassesService.getOne called\n`);
+    let stubService = sinon.stub(ClassesService, 'getOne').callsFake((objID, projection) => {
+      console.log(`\nClassesService.getOne called ${JSON.stringify({ objID, projection }, null, 2)}\n`);
+      chai.expect(objID).to.equal(testClass.id);
+      chai.expect(projection).to.deep.equal({ _id: 0 });
       return {
         status: 200,
         value: testClass,
@@ -144,9 +147,68 @@ describe('Classes Controller', function () {
   }).timeout(10000);
 
   /**
-   * getOne fail
+   * getOne with success and projection
    */
-  it('should getOne fail', async () => {
+  it('should getOne with success and projection', async () => {
+    const testClasses = _.cloneDeep(TestConstants.Classes);
+    const testClass = testClasses[0];
+
+    // stub
+    let stubService = sinon.stub(ClassesService, 'getOne').callsFake((objID, projection) => {
+      console.log(`\nClassesService.getOne called ${JSON.stringify({ objID, projection }, null, 2)}\n`);
+      chai.expect(objID).to.equal(testClass.id);
+      chai.expect(projection).to.deep.equal({ id: 1, name: 1, _id: 0 });
+      return {
+        status: 200,
+        value: testClass,
+      };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${ClassesConstants.ApiPath}/${testClass.id}?projection=id,name`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal({
+      ...testClass,
+    });
+  }).timeout(10000);
+
+  /**
+   * getOne fail buildFilterFromReq
+   */
+  it('should getOne fail buildFilterFromReq', async () => {
+    const testClasses = _.cloneDeep(TestConstants.Classes);
+    const testClass = testClasses[0];
+
+    // stub
+    let stubBuildFilter = sinon.stub(RestApiUtils, 'buildFilterFromReq').callsFake(() => {
+      console.log(`\nRestApiUtils.buildFilterFromReq\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${ClassesConstants.ApiPath}/${testClass.id}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubBuildFilter.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * getOne fail getOne
+   */
+  it('should getOne fail getOne', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
     const testClass = testClasses[0];
 

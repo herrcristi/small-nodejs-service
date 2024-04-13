@@ -35,14 +35,14 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const postReq = {
-      ...testUser,
+      id: testUser.id,
+      password: testUser._test_data.origPassword,
+      userID: testUser.userID,
     };
-    delete postReq.id;
-    delete postReq.type;
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`DbOpsUtils.post called with ${JSON.stringify(postObj, null, 2)}`);
       return {
         status: 201,
         value: { ...postObj, id: testUser.id },
@@ -52,6 +52,8 @@ describe('Users Auth Service', function () {
     let stubUsersAuthRest = sinon.stub(UsersAuthRest, 'raiseNotification').callsFake(() => {
       console.log(`UsersAuthRest raiseNotification called`);
     });
+
+    let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject');
 
     // call
     let res = await UsersAuthService.post(postReq, _ctx);
@@ -64,8 +66,9 @@ describe('Users Auth Service', function () {
       status: 201,
       value: {
         id: testUser.id,
-        email: testUser.email,
+        name: testUser.id,
         type: testUser.type,
+        userID: testUser.userID,
       },
     });
   }).timeout(10000);
@@ -78,7 +81,9 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const postReq = {
-      ...testUser,
+      id: testUser.id,
+      password: testUser._test_data.origPassword,
+      userID: testUser.userID,
       something: 1,
     };
 
@@ -99,10 +104,10 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const postReq = {
-      ...testUser,
+      id: testUser.id,
+      password: testUser._test_data.origPassword,
+      userID: testUser.userID,
     };
-    delete postReq.id;
-    delete postReq.type;
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {

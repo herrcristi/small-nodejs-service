@@ -14,7 +14,7 @@ const Public = {
       reqID: req.headers['x-request-id'] || CommonUtils.uuidc(),
       lang: req.headers['x-lang'] || 'en',
       ipAddress: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
-      userid: req.headers['x-user-id'],
+      userID: req.headers['x-user-id'],
       username: req.headers['x-user-name'],
       reqMethod: req.method?.toUpperCase(),
       reqUrl: req.originalUrl,

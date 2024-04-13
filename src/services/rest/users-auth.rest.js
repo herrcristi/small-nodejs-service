@@ -36,13 +36,6 @@ const Public = {
   },
 
   /**
-   * get one (internal)
-   */
-  getOne: async (objID, _ctx) => {
-    return await RestCommsUtils.getOne(UsersAuthConstants.ServiceNameInternal, objID, _ctx);
-  },
-
-  /**
    * post (internal)
    */
   post: async (objInfo, _ctx) => {

@@ -24,10 +24,11 @@ const Public = {
 
   /**
    * get one
-   * config: { serviceName, collection }
+   * config: { serviceName }
+   * objInfo: { id, password }
    * returns { status, value } or { status, error }
    */
-  getOne: async (config, objID, projection, _ctx) => {
+  login: async (config, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
 
     return { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
@@ -35,12 +36,11 @@ const Public = {
 
   /**
    * post
-   * config: { serviceName, collection, notifications.projection }
+   * config: { serviceName }
+   * objInfo: { id, password }
    */
   post: async (config, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
-
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // post
     const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
@@ -49,17 +49,15 @@ const Public = {
     }
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+    return { id: objInfo.id };
   },
 
   /**
    * delete
-   * config: { serviceName, collection, notifications.projection }
+   * config: { serviceName }
    */
   delete: async (config, objID, _ctx) => {
     await Private.setupConfig(config, _ctx);
-
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
     if (r.error) {
@@ -67,17 +65,16 @@ const Public = {
     }
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+    return { id: objID };
   },
 
   /**
    * put
-   * config: { serviceName, collection, notifications.projection }
+   * config: { serviceName }
+   * objInfo: { password }
    */
   put: async (config, objID, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
-
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // put
     const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
@@ -86,17 +83,16 @@ const Public = {
     }
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+    return { id: objID };
   },
 
   /**
    * patch
-   * config: { serviceName, collection, notifications.projection }
+   * config: { serviceName }
+   * patchInfo: { set: { password } }
    */
   patch: async (config, objID, patchInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
-
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // patch
     const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
@@ -105,7 +101,7 @@ const Public = {
     }
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+    return { id: objID };
   },
 };
 

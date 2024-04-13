@@ -48,6 +48,8 @@ describe('Users Auth Service', function () {
       console.log(`UsersAuthRest raiseNotification called`);
     });
 
+    let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject');
+
     // call
     let res = await UsersAuthService.delete(testUser.id, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -59,7 +61,7 @@ describe('Users Auth Service', function () {
       status: 200,
       value: {
         id: testUser.id,
-        email: testUser.email,
+        name: testUser.id,
         type: testUser.type,
       },
     });

@@ -72,7 +72,7 @@ describe('Locations Rest', function () {
     });
 
     // call
-    let res = await LocationsRest.getOne('id1', _ctx);
+    let res = await LocationsRest.getOne('id1', {}, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
