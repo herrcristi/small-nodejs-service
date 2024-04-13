@@ -163,7 +163,7 @@ const Public = {
       return await localService.getAllByIDs(ids, projection, _ctx);
     }
 
-    let query = `?`;
+    let query = ``;
     if (projection) {
       query += `projection=${Object.keys(projection).join(',')}&`;
     }

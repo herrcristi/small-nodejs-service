@@ -73,7 +73,7 @@ describe('DB-Ops Utils', function () {
     });
 
     // call
-    let res = await DbOpsUtils.put({ ...config, collection }, 'id1', projection, _ctx);
+    let res = await DbOpsUtils.put({ ...config, collection, returnDocument: 'before' }, 'id1', projection, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     delete res.time;
 

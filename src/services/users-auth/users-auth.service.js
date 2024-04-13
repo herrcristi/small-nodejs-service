@@ -160,7 +160,15 @@ const Public = {
       return rError; // return generic error
     }
 
-    // TODO if user pending make active
+    // if user pending make active
+    if (user.status === UsersRest.Constants.Status.Pending) {
+      user.status = UsersRest.Constants.Status.Active;
+      const rP = await UsersRest.put(user.id, { status: UsersRest.Constants.Status.Active }, _ctx);
+      if (rP.error) {
+        const errorLogin = 'Failed to make user active';
+        return { status: 500, error: { message: errorLogin, error: new Error(errorLogin) } };
+      }
+    }
     // if school pending make active
 
     // raise event for succesful login

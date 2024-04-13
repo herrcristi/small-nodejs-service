@@ -211,28 +211,32 @@ const Public = {
 
   /**
    * put
-   * config: { serviceName, collection }
+   * config: { serviceName, collection, returnDocument? }
    * return: { status, value } or { status, error: { message, error } }
    */
   put: async (config, objID, objInfo, projection, _ctx) => {
     const time = new Date();
 
     try {
+      const returnDocument = config.returnDocument || 'after';
+
       const r = await config.collection.findOneAndUpdate(
         { id: objID },
         {
           $set: { ...objInfo, lastModifiedTimestamp: new Date().toISOString() },
           $inc: { modifiedCount: 1 },
         },
-        { returnDocument: 'after', includeResultMetadata: true, projection }
+        { returnDocument, includeResultMetadata: true, projection }
       );
 
       console.log(
         `DB Calling: ${config.serviceName} put for ${objID} with ${JSON.stringify(
           CommonUtils.protectData(objInfo)
-        )} returned ${JSON.stringify({ ...r, value: CommonUtils.protectData(r.value) }, null, 2)}. Finished in ${
-          new Date() - time
-        } ms`
+        )} returned document ${returnDocument} ${JSON.stringify(
+          { ...r, value: CommonUtils.protectData(r.value) },
+          null,
+          2
+        )}. Finished in ${new Date() - time} ms`
       );
 
       // not found
@@ -296,36 +300,47 @@ const Public = {
         });
       }
 
-      // add last operation for metadata (modified info)
-      bulkOperations.push({
-        updateOne: {
-          filter,
-          update: {
-            $set: { lastModifiedTimestamp: new Date().toISOString() },
-            $inc: { modifiedCount: 1 },
-          },
-        },
+      if (bulkOperations.length) {
+        // do a bulk write operation followed by a get
+        let r = await config.collection.bulkWrite(bulkOperations, { ordered: true });
+        console.log(
+          `DB Calling: ${config.serviceName} patch for ${objID} with ops: ${JSON.stringify(
+            bulkOperations
+          )} returned ${JSON.stringify(r, null, 2)}`
+        );
+
+        if (!r?.matchedCount) {
+          return Utils.error(404, `Not found: patch ${objID}`, time, _ctx);
+        }
+      }
+
+      // since get may not return latest object use findOneAndUpdate and add last operation for metadata (modified info)
+      const changesUpdate = {
+        $set: { lastModifiedTimestamp: new Date().toISOString() },
+        $inc: { modifiedCount: 1 },
+      };
+      const r = await config.collection.findOneAndUpdate(filter, changesUpdate, {
+        returnDocument: 'after',
+        includeResultMetadata: true,
+        projection,
       });
 
-      // do a bulk write operation followed by a get
-      let r = await config.collection.bulkWrite(bulkOperations, { ordered: true });
       console.log(
-        `DB Calling: ${config.serviceName} patch for ${objID} with ops: ${JSON.stringify(
-          bulkOperations
-        )} returned ${JSON.stringify(r, null, 2)}. Finished in ${new Date() - time} ms`
+        `DB Calling: ${config.serviceName} patch for ${objID} with ${JSON.stringify(
+          CommonUtils.protectData(changesUpdate)
+        )} returned document after ${JSON.stringify(
+          { ...r, value: CommonUtils.protectData(r.value) },
+          null,
+          2
+        )}. Finished in ${new Date() - time} ms`
       );
 
-      if (!r?.matchedCount) {
-        return Utils.error(404, `Not found: patch ${objID}`, time, _ctx);
+      // not found
+      if (r.lastErrorObject?.n === 0) {
+        return Utils.error(404, `Not found: ${objID}`, time, _ctx);
       }
 
-      // get
-      let value = await config.collection.findOne(filter, { projection });
-      if (!value) {
-        return Utils.error(404, `Not found: get ${objID}`, time, _ctx);
-      }
-
-      return { status: 200, value, time: new Date() - time };
+      return { status: 200, value: r.value, time: new Date() - time };
     } catch (e) {
       console.log(
         `DB Calling Failed: ${config.serviceName} patch for ${objID} with operation ${JSON.stringify(
