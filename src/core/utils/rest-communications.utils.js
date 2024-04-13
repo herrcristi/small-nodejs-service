@@ -69,7 +69,7 @@ const Private = {
           'x-user-name': _ctx.username,
           'content-type': 'application/json',
         },
-        body: config.body,
+        data: config.body,
         timeout: config.timeout || Constants.Timeout,
         validateStatus: (status) => config.validateStatus /*for testing*/ ?? true /* dont throw exception*/,
       });
