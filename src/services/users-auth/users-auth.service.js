@@ -69,7 +69,7 @@ const Private = {
   Notification: NotificationsUtils.Constants.Notification,
 
   // will be initialized on init
-  UsersAuthProvider: null,
+  UsersAuthProviderType: null,
 
   /**
    * config
@@ -80,7 +80,7 @@ const Private = {
       serviceName: UsersAuthConstants.ServiceName,
       //collection: ... // will be added only for local auth
       references: [],
-      isFirebaseAuth: Private.UsersAuthProvider === 'firebase',
+      isFirebaseAuth: Private.UsersAuthProviderType === 'firebase',
     };
     return config;
   },
@@ -91,8 +91,8 @@ const Public = {
    * init
    */
   init: async () => {
-    Private.UsersAuthProvider = process.env.USERS_AUTH_PROVIDER;
-    if (Private.UsersAuthProvider === 'firebase') {
+    Private.UsersAuthProviderType = process.env.USERS_AUTH_PROVIDER;
+    if (Private.UsersAuthProviderType === 'firebase') {
       await UsersAuthServiceFirebase.init();
     } else {
       await UsersAuthServiceLocal.init();
