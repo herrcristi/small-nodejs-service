@@ -207,6 +207,7 @@ const Public = {
 
   /**
    * validate token
+   * objInfo: { token }
    */
   validate: async (objInfo, _ctx) => {
     // validate
@@ -215,20 +216,58 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
-    // { serviceName }
+    // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
     // token
-    // TODO impl
-    const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
-    if (r.error) {
-      return r;
+    let rT;
+    if (config.isFirebaseAuth) {
+      rT = await UsersAuthServiceFirebase.validateToken(config, objInfo, _ctx);
+    } else {
+      rT = await UsersAuthServiceLocal.validateToken(config, objInfo, _ctx);
+    }
+    if (rT.error) {
+      const msg = 'Failed to validate token';
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
     }
 
+    _ctx.userID = rT.value.id;
+    _ctx.username = rT.value.id;
+
+    // get user details (by email)
+    const email = rT.value.id;
+    const userProjection = { id: 1, status: 1, email: 1, schools: 1 };
+    const rUserDetails = await UsersRest.getOneByEmail(email, userProjection, _ctx);
+    if (rUserDetails.error) {
+      return rUserDetails;
+    }
+
+    // fail if user is disabled
+    const user = rUserDetails.value;
+    if (user.status === UsersRest.Constants.Status.Disabled) {
+      const msg = 'User is disabled';
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
+
+    // validate school
+    const validSchool = user.schools.find((item) => item.id === _ctx.tenantID);
+    if (!validSchool) {
+      const msg = 'Failed to validate school';
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
+
+    // validate school is not disabled
+    if (validSchool.status === SchoolsRest.Constants.Status.Disabled) {
+      const msg = 'School is disabled';
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
     // TODO validate also route or add separate function
+    validSchool.roles;
 
     // success
-    return {};
+    _ctx.userID = user.id;
+    _ctx.username = user.email;
+    return { status: 200, value: { userID: user.id, username: user.email } };
   },
 
   /**
@@ -243,7 +282,7 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
-    // { serviceName }
+    // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
     // post
@@ -272,7 +311,7 @@ const Public = {
    * delete
    */
   delete: async (objID, _ctx) => {
-    // { serviceName }
+    // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
     let r;
@@ -306,7 +345,7 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
-    // { serviceName }
+    // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
     // put
@@ -341,7 +380,7 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
-    // { serviceName }
+    // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
     // patch
@@ -376,7 +415,7 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, notification, _ctx);
     }
 
-    // { serviceName }
+    // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
     // TODO delete on delete users notification

@@ -116,6 +116,33 @@ const Public = {
   },
 
   /**
+   * validate the token
+   * config: { serviceName }
+   * objInfo: { token }
+   */
+  validateToken: async (config, objInfo, _ctx) => {
+    const passwords = [...Private.JwtPasswords].reverse();
+
+    for (const pass of passwords) {
+      try {
+        const decodedToken = jwt.verify(objInfo.token, Private.JwtPasswords.at(-1), {
+          algorithms: 'HS512',
+          issuer: 'SmallApp',
+        });
+
+        // decoded token: { user: { id, userID }, iat, exp, iss }
+
+        return { status: 200, value: decodedToken.user };
+      } catch (e) {
+        console.log(`Failed to verify token: ${e.stack}`);
+      }
+    }
+
+    const msg = 'Invalid token';
+    return { status: 401, error: { message: msg, error: new Error(msg) } };
+  },
+
+  /**
    * post
    * config: { serviceName }
    * objInfo: { id, password }
