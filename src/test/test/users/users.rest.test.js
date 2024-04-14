@@ -80,6 +80,78 @@ describe('Users Rest', function () {
   }).timeout(10000);
 
   /**
+   * rest getOneByEmail
+   */
+  it('should call getOneByEmail via rest', async () => {
+    // stub
+    let stub = sinon.stub(RestCommsUtils, 'getAll').callsFake((serviceName, queryParams) => {
+      console.log(
+        `\nRestCommUtils.getAll called for ${serviceName} with query ${JSON.stringify(queryParams, null, 2)}\n`
+      );
+      chai.expect(queryParams).to.equal('email=email&limit=1&projection=id');
+      return { status: 200, value: ['dummy'] };
+    });
+
+    // call
+    let res = await UsersRest.getOneByEmail('email', { id: 1 }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stub.callCount).to.equal(1);
+    chai.expect(res?.value).to.equal('dummy');
+  }).timeout(10000);
+
+  /**
+   * rest getOneByEmail failed get and no projection
+   */
+  it('should call getOneByEmail failed get and no projection', async () => {
+    // stub
+    let stub = sinon.stub(RestCommsUtils, 'getAll').callsFake((serviceName, queryParams) => {
+      console.log(
+        `\nRestCommUtils.getAll called for ${serviceName} with query ${JSON.stringify(queryParams, null, 2)}\n`
+      );
+      chai.expect(queryParams).to.equal('email=email&limit=1');
+      return { status: 500, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    let res = await UsersRest.getOneByEmail('email', null, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stub.callCount).to.equal(1);
+    chai
+      .expect(res)
+      .to.deep.equal({ status: 500, error: { message: 'Test error message', error: new Error('Test error') } });
+  }).timeout(10000);
+
+  /**
+   * rest getOneByEmail failed not found
+   */
+  it('should call getOneByEmail failed not found', async () => {
+    // stub
+    let stub = sinon.stub(RestCommsUtils, 'getAll').callsFake((serviceName, queryParams) => {
+      console.log(
+        `\nRestCommUtils.getAll called for ${serviceName} with query ${JSON.stringify(queryParams, null, 2)}\n`
+      );
+      chai.expect(queryParams).to.equal('email=email&limit=1');
+      return { status: 200, value: [], time: 0 };
+    });
+
+    // call
+    let res = await UsersRest.getOneByEmail('email', null, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stub.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 404,
+      error: { message: 'Not found email', error: new Error('Not found email') },
+      time: 0,
+    });
+  }).timeout(10000);
+
+  /**
    * rest post
    */
   it('should post a call via rest', async () => {

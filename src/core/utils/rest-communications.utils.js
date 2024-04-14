@@ -47,7 +47,7 @@ const Private = {
 
     config.method = config.method?.toUpperCase();
     if (config.method === 'GET' && config.query) {
-      srvUri += `${config.query}`; // should contain `?`
+      srvUri += `?${config.query}`;
     }
 
     console.log(`Current url to call: ${config.method} ${srvUri}`);
@@ -69,7 +69,7 @@ const Private = {
           'x-user-name': _ctx.username,
           'content-type': 'application/json',
         },
-        body: config.body,
+        data: config.body,
         timeout: config.timeout || Constants.Timeout,
         validateStatus: (status) => config.validateStatus /*for testing*/ ?? true /* dont throw exception*/,
       });
@@ -130,7 +130,7 @@ const Public = {
 
   /**
    * get all
-   * queryParams should contain `?`
+   * queryParams
    */
   getAll: async (serviceName, queryParams, _ctx) => {
     const localService = Private.Config.local[serviceName];
@@ -163,7 +163,7 @@ const Public = {
       return await localService.getAllByIDs(ids, projection, _ctx);
     }
 
-    let query = `?`;
+    let query = ``;
     if (projection) {
       query += `projection=${Object.keys(projection).join(',')}&`;
     }

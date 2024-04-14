@@ -11,6 +11,7 @@ const NotificationsUtils = require('../../core/utils/base-service.notifications.
 const UsersAuthRest = require('../rest/users-auth.rest.js');
 const UsersRest = require('../rest/users.rest.js');
 const EventsRest = require('../rest/events.rest.js');
+const SchoolsRest = require('../rest/schools.rest.js');
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthServiceLocal = require('./users-local-auth.service.js'); // use local auth service
 const UsersAuthServiceFirebase = require('./users-firebase-auth.service.js'); // use firebase auth service
@@ -113,10 +114,14 @@ const Public = {
     _ctx.userID = objInfo.id;
     _ctx.username = objInfo.id;
 
-    // { serviceName }
+    // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
+    // events
     const eventO = { id: objInfo.id, name: objInfo.id, type: UsersAuthConstants.Type };
+    const srvName = UsersAuthConstants.ServiceName;
+    const failedAction = `${Private.Action.Login}.failed`;
+    const failedSeverity = EventsRest.Constants.Severity.Warning;
 
     // generic error
     const errorLogin = 'Invalid username/password';
@@ -132,29 +137,56 @@ const Public = {
 
     if (r.error) {
       // raise event for invalid login
-      const srvName = UsersAuthConstants.ServiceName;
-      const failedAction = `${Private.Action.Login}.failed`;
-      const severity = EventsRest.Constants.Severity.Warning;
-      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventO, _ctx, severity);
-      return rError;
+      const eventArgs = { ...eventO, reason: 'Login failed' };
+      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventArgs, _ctx, failedSeverity);
+      return rError; // return generic error
     }
 
-    // get user details
+    // get user details (by email)
     const userProjection = { id: 1, status: 1, email: 1, schools: 1 };
-    const userID = r.value.userID; // TODO objInfo.email
-    const rUserDetails = await UsersRest.getOne(userID, userProjection, _ctx); // TODO get one by email
+    const rUserDetails = await UsersRest.getOneByEmail(objInfo.id, userProjection, _ctx);
     if (rUserDetails.error) {
-      return rError;
+      // raise event
+      const eventArgs = { ...eventO, reason: 'No user' };
+      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventArgs, _ctx, failedSeverity);
+      return rError; // return generic error
     }
 
-    // TODO if user disabled stop
+    // fail login if user is disabled
+    const user = rUserDetails.value;
+    if (user.status === UsersRest.Constants.Status.Disabled) {
+      // raise event
+      const eventArgs = { ...eventO, reason: 'User is disabled' };
+      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventArgs, _ctx, failedSeverity);
+      return rError; // return generic error
+    }
 
-    // TODO if user pending make active
+    // if user pending make active
+    if (user.status === UsersRest.Constants.Status.Pending) {
+      user.status = UsersRest.Constants.Status.Active;
+      const rP = await UsersRest.put(user.id, { status: UsersRest.Constants.Status.Active }, _ctx);
+      if (rP.error) {
+        const msg = 'Failed to make user active';
+        return { status: 500, error: { message: msg, error: new Error(msg) } };
+      }
+    }
+
     // if school pending make active
+    for (const school of user.schools) {
+      if (school.status === SchoolsRest.Constants.Status.Pending) {
+        school.status = SchoolsRest.Constants.Status.Active;
+        const rS = await SchoolsRest.put(school.id, { status: SchoolsRest.Constants.Status.Active }, _ctx);
+        if (rS.error) {
+          const msg = 'Failed to make school active';
+          return { status: 500, error: { message: msg, error: new Error(msg) } };
+        }
+      }
+    }
 
     // raise event for succesful login
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Login, eventO, eventO, _ctx);
 
+    // TODO return jwt token and set cookie
     // success
     return BaseServiceUtils.getProjectedResponse(rUserDetails, userProjection, _ctx);
   },
@@ -178,6 +210,8 @@ const Public = {
     if (r.error) {
       return r;
     }
+
+    // TODO validate also route or add separate function
 
     // success
     return {};

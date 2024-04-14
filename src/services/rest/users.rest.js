@@ -16,7 +16,7 @@ const Private = {
 const Public = {
   /**
    * get all
-   * queryParams should contain `?`
+   * queryParams
    */
   getAll: async (queryParams, _ctx) => {
     return await RestCommsUtils.getAll(UsersConstants.ServiceName, queryParams, _ctx);
@@ -31,6 +31,23 @@ const Public = {
    */
   getOne: async (objID, projection, _ctx) => {
     return await RestCommsUtils.getOne(UsersConstants.ServiceName, objID, projection, _ctx);
+  },
+
+  getOneByEmail: async (email, projection, _ctx) => {
+    let queryParams = `email=${email}&limit=1`;
+    if (projection) {
+      queryParams += `&projection=${Object.keys(projection).join(',')}`;
+    }
+    const r = await Public.getAll(queryParams, _ctx);
+    if (r.error) {
+      return r;
+    }
+    if (!r.value.length) {
+      const msg = `Not found ${email}`;
+      return { status: 404, error: { message: msg, error: new Error(msg) }, time: r.time };
+    }
+    r.value = r.value[0];
+    return r;
   },
 
   /**

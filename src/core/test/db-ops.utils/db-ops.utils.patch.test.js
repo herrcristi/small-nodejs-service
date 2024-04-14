@@ -46,17 +46,19 @@ describe('DB-Ops Utils', function () {
     let collection = {};
     collection.bulkWrite = sinon.stub().callsFake((ops) => {
       console.log(`Current ops ${JSON.stringify(ops, null, 2)}`);
-      chai.expect(ops.length).to.equal(3);
+      chai.expect(ops.length).to.equal(2);
 
       return {
         matchedCount: 1,
       };
     });
-    collection.findOne = sinon.stub().returns({
-      id: 'id1',
-      name: 'name',
-      status: 'active',
-      prop: 'prop1',
+    collection.findOneAndUpdate = sinon.stub().returns({
+      value: {
+        id: 'id1',
+        name: 'name',
+        status: 'active',
+        prop: 'prop1',
+      },
     });
 
     sinon.stub(DbOpsArrayUtils, 'getPushBulkOpsFromArray').returns([]);
@@ -69,7 +71,7 @@ describe('DB-Ops Utils', function () {
 
     // check
     chai.expect(collection.bulkWrite.callCount).to.equal(1);
-    chai.expect(collection.findOne.callCount).to.equal(1);
+    chai.expect(collection.findOneAndUpdate.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
@@ -87,7 +89,11 @@ describe('DB-Ops Utils', function () {
   it('should patch not found bulk', async () => {
     let projection = { _id: 0 };
 
-    let patchInfo = {};
+    let patchInfo = {
+      set: {
+        name: 'name',
+      },
+    };
 
     let collection = {};
     collection.bulkWrite = sinon.stub().callsFake((ops) => {
@@ -98,7 +104,7 @@ describe('DB-Ops Utils', function () {
         matchedCount: 0,
       };
     });
-    collection.findOne = sinon.stub().returns({
+    collection.findOneAndUpdate = sinon.stub().returns({
       id: 'id1',
       name: 'name',
       status: 'active',
@@ -115,7 +121,7 @@ describe('DB-Ops Utils', function () {
 
     // check
     chai.expect(collection.bulkWrite.callCount).to.equal(1);
-    chai.expect(collection.findOne.callCount).to.equal(0);
+    chai.expect(collection.findOneAndUpdate.callCount).to.equal(0);
     chai.expect(res.status).to.equal(404);
     chai.expect(res.error.message.toString()).to.include('Not found: patch');
   }).timeout(10000);
@@ -126,18 +132,7 @@ describe('DB-Ops Utils', function () {
   it('should patch not found get', async () => {
     let projection = { _id: 0 };
 
-    let patchInfo = {
-      set: {
-        name: 'name',
-      },
-      unset: ['description'],
-      add: {
-        ids: ['id1'],
-      },
-      remove: {
-        ids: ['id2'],
-      },
-    };
+    let patchInfo = {};
 
     let collection = {};
     collection.bulkWrite = sinon.stub().callsFake((ops) => {
@@ -148,7 +143,9 @@ describe('DB-Ops Utils', function () {
         matchedCount: 1,
       };
     });
-    collection.findOne = sinon.stub().returns(null);
+    collection.findOneAndUpdate = sinon.stub().returns({
+      lastErrorObject: { n: 0 },
+    });
 
     sinon.stub(DbOpsArrayUtils, 'getPushBulkOpsFromArray').returns([]);
     sinon.stub(DbOpsArrayUtils, 'getPullBulkOpsFromArray').returns([]);
@@ -159,10 +156,10 @@ describe('DB-Ops Utils', function () {
     delete res.time;
 
     // check
-    chai.expect(collection.bulkWrite.callCount).to.equal(1);
-    chai.expect(collection.findOne.callCount).to.equal(1);
+    chai.expect(collection.bulkWrite.callCount).to.equal(0); // no patch
+    chai.expect(collection.findOneAndUpdate.callCount).to.equal(1);
     chai.expect(res.status).to.equal(404);
-    chai.expect(res.error.message.toString()).to.include('Not found: get');
+    chai.expect(res.error.message.toString()).to.include('Not found: id1');
   }).timeout(10000);
 
   /**
@@ -171,7 +168,11 @@ describe('DB-Ops Utils', function () {
   it('should patch exception', async () => {
     let projection = { _id: 0 };
 
-    let patchInfo = {};
+    let patchInfo = {
+      set: {
+        name: 'name',
+      },
+    };
 
     let collection = {};
     collection.bulkWrite = sinon.stub().throws('Test exception');

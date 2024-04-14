@@ -17,7 +17,7 @@ const Private = {
 const Public = {
   /**
    * get all
-   * queryParams should contain `?`
+   * queryParams
    */
   getAll: async (queryParams, _ctx) => {
     return await RestCommsUtils.getAll(SchoolsConstants.ServiceName, queryParams, _ctx);

@@ -174,7 +174,7 @@ describe('Rest Communications Utils', function () {
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.getAll(serviceName, `?id=id1&sort=id&limit=10`, _ctx);
+    let res = await RestCommsUtils.getAll(serviceName, `id=id1&sort=id&limit=10`, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai
