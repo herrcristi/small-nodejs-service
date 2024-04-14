@@ -35,6 +35,29 @@ const Public = {
   },
 
   /**
+   * get the token
+   * config: { serviceName }
+   * userInfo: { token }
+   */
+  getToken: async (config, userInfo, _ctx) => {
+    return { status: 200, value: userInfo.token };
+  },
+
+  /**
+   * validate the token
+   * config: { serviceName }
+   * objInfo: { token }
+   */
+  validateToken: async (config, objInfo, _ctx) => {
+    const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
+    if (r.error) {
+      return r;
+    }
+
+    return { status: 200, value: { id: 'email' } };
+  },
+
+  /**
    * post
    * config: { serviceName }
    * objInfo: { id, password }

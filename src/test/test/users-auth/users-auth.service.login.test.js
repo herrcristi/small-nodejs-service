@@ -1,4 +1,5 @@
 const _ = require('lodash');
+const jwt = require('jsonwebtoken');
 const mocha = require('mocha');
 const assert = require('assert');
 const sinon = require('sinon');
@@ -13,6 +14,7 @@ const UsersAuthService = require('../../../services/users-auth/users-auth.servic
 const EventsRest = require('../../../services/rest/events.rest.js');
 const UsersRest = require('../../../services/rest/users.rest.js');
 const SchoolsRest = require('../../../services/rest/schools.rest.js');
+const UsersLocalAuthService = require('../../../services/users-auth/users-local-auth.service.js');
 
 describe('Users Auth Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
@@ -92,6 +94,14 @@ describe('Users Auth Service', function () {
       return { status: 200, value: { id: objID } };
     });
 
+    let stubToken = sinon.stub(jwt, 'sign').callsFake((payload, secret, options) => {
+      console.log(`\njwt.sign called for ${JSON.stringify({ payload, options }, null, 2)}\n`);
+
+      chai.expect(payload).to.deep.equal({ user: { id: testAuthUser.id, userID: testInfoUser.id } });
+      chai.expect(options).to.deep.equal({ algorithm: 'HS512', expiresIn: '1d', issuer: 'SmallApp' });
+      return 'token';
+    });
+
     // call
     let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -102,6 +112,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubUsersActive.callCount).to.equal(0);
     chai.expect(stubSchoolsActive.callCount).to.equal(0);
     chai.expect(stubEvents.callCount).to.equal(1);
+    chai.expect(stubToken.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
@@ -110,6 +121,7 @@ describe('Users Auth Service', function () {
         email: testInfoUser.email,
         schools: testInfoUser.schools,
       },
+      token: 'token',
     });
   }).timeout(10000);
 
@@ -179,6 +191,14 @@ describe('Users Auth Service', function () {
       return { status: 200, value: { id: objID } };
     });
 
+    let stubToken = sinon.stub(jwt, 'sign').callsFake((payload, secret, options) => {
+      console.log(`\njwt.sign called for ${JSON.stringify({ payload, options }, null, 2)}\n`);
+
+      chai.expect(payload).to.deep.equal({ user: { id: testAuthUser.id, userID: testInfoUser.id } });
+      chai.expect(options).to.deep.equal({ algorithm: 'HS512', expiresIn: '1d', issuer: 'SmallApp' });
+      return 'token';
+    });
+
     // call
     let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -189,6 +209,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubUsersActive.callCount).to.equal(1);
     chai.expect(stubSchoolsActive.callCount).to.equal(2);
     chai.expect(stubEvents.callCount).to.equal(1);
+    chai.expect(stubToken.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
@@ -197,6 +218,7 @@ describe('Users Auth Service', function () {
         email: testInfoUser.email,
         schools: testInfoUser.schools,
       },
+      token: 'token',
     });
   }).timeout(10000);
 
@@ -606,6 +628,62 @@ describe('Users Auth Service', function () {
       error: {
         message: 'Failed to make school active',
         error: new Error('Failed to make school active'),
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * login fail to get token
+   */
+  it('should login fail to get token', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
+
+    const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    const testInfoUser = testInfoUsers[0];
+    for (const school of testInfoUser.schools) {
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+
+    const testAuthData = testAuthUser._test_data;
+    delete testAuthUser._test_data;
+
+    // stub
+    let stubBase = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.getOne called for ${JSON.stringify(objID, null, 2)}\n`);
+      return { status: 200, value: { ...testAuthUser } };
+    });
+
+    let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject');
+
+    let stubUsersGet = sinon.stub(UsersRest, 'getOneByEmail').callsFake((email) => {
+      console.log(`\nUsersRest.getOne called for ${JSON.stringify(email, null, 2)}\n`);
+
+      chai.expect(email).to.equal(testAuthUser.id);
+      return { status: 200, value: testInfoUser };
+    });
+
+    let stubToken = sinon.stub(UsersLocalAuthService, 'getToken').callsFake((config, userInfo) => {
+      console.log(`\njwt.sign called for ${JSON.stringify(userInfo, null, 2)}\n`);
+
+      chai.expect(userInfo).to.deep.equal({ id: testAuthUser.id, userID: testInfoUser.id });
+      return { status: 500, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubBase.callCount).to.equal(1);
+    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubEvents.callCount).to.equal(0);
+    chai.expect(stubToken.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 500,
+      error: {
+        message: 'Failed to get token',
+        error: new Error('Failed to get token'),
       },
     });
   }).timeout(10000);
