@@ -128,14 +128,14 @@ const Public = {
     const rError = { status: 401, error: { message: errorLogin, error: new Error(errorLogin) } };
 
     // login
-    let r;
+    let rL;
     if (config.isFirebaseAuth) {
-      r = await UsersAuthServiceFirebase.login(config, objInfo, _ctx);
+      rL = await UsersAuthServiceFirebase.login(config, objInfo, _ctx);
     } else {
-      r = await UsersAuthServiceLocal.login(config, objInfo, _ctx);
+      rL = await UsersAuthServiceLocal.login(config, objInfo, _ctx);
     }
 
-    if (r.error) {
+    if (rL.error) {
       // raise event for invalid login
       const eventArgs = { ...eventO, reason: 'Login failed' };
       await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventArgs, _ctx, failedSeverity);
@@ -183,12 +183,26 @@ const Public = {
       }
     }
 
+    // token
+    let rT;
+    if (config.isFirebaseAuth) {
+      rT = await UsersAuthServiceFirebase.getToken(config, { token: rL.value, id: objInfo.id, userID: user.id }, _ctx);
+    } else {
+      rT = await UsersAuthServiceLocal.getToken(config, { id: objInfo.id, userID: user.id }, _ctx);
+    }
+    if (rT.error) {
+      const msg = 'Failed to get token';
+      return { status: 500, error: { message: msg, error: new Error(msg) } };
+    }
+
     // raise event for succesful login
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Login, eventO, eventO, _ctx);
 
-    // TODO return jwt token and set cookie
     // success
-    return BaseServiceUtils.getProjectedResponse(rUserDetails, userProjection, _ctx);
+    return {
+      ...BaseServiceUtils.getProjectedResponse(rUserDetails, userProjection, _ctx),
+      token: rT.value,
+    };
   },
 
   /**

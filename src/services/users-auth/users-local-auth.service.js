@@ -2,6 +2,7 @@
  * Users service
  */
 const crypto = require('node:crypto');
+const jwt = require('jsonwebtoken');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
@@ -12,6 +13,7 @@ const UsersAuthDatabase = require('./users-local-auth.database.js');
 const Private = {
   // will be initialized on init
   SiteSalt: null,
+  JwtPasswords: [], // passwords to sign the jwt, (keep last 2 due to rotation)
 
   /**
    * set config for local auth
@@ -28,7 +30,7 @@ const Private = {
   /**
    * generate salt
    */
-  genSalt: (_ctx) => {
+  genSalt: () => {
     return crypto.randomBytes(32).toString('hex');
   },
 
@@ -43,6 +45,14 @@ const Private = {
     hash = hash.toString('hex');
     return hash;
   },
+
+  /**
+   * rotate jwt passwords
+   */
+  rotateJwtPassords: () => {
+    Private.JwtPasswords.push(Private.genSalt()); // add a random password
+    Private.JwtPasswords = Private.JwtPasswords.slice(-2); // keep only last 2
+  },
 };
 
 const Public = {
@@ -51,6 +61,7 @@ const Public = {
    */
   init: async () => {
     Private.SiteSalt = process.env.SALT;
+    Private.rotateJwtPassords();
   },
 
   /**
@@ -84,6 +95,23 @@ const Public = {
   },
 
   /**
+   * get the jwt token
+   * config: { serviceName }
+   * userInfo: { id, userID } // id is the username/email
+   */
+  getToken: async (config, userInfo, _ctx) => {
+    const token = jwt.sign(
+      {
+        user: userInfo,
+      },
+      Private.JwtPasswords.at(-1),
+      { algorithm: 'HS512', expiresIn: '1d', issuer: 'SmallApp' }
+    );
+
+    return { status: 200, value: token };
+  },
+
+  /**
    * post
    * config: { serviceName }
    * objInfo: { id, password }
@@ -95,7 +123,7 @@ const Public = {
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // hash password
-    objInfo.salt = Private.genSalt(_ctx);
+    objInfo.salt = Private.genSalt();
     objInfo.password = Private.hashPassword(objInfo.password, objInfo.salt, _ctx);
 
     // post
@@ -137,7 +165,7 @@ const Public = {
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // hash password with new salt
-    objInfo.salt = Private.genSalt(_ctx);
+    objInfo.salt = Private.genSalt();
     objInfo.password = Private.hashPassword(objInfo.password, objInfo.salt, _ctx);
 
     // put
@@ -162,7 +190,7 @@ const Public = {
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // hash password with new salt
-    patchInfo.set.salt = Private.genSalt(_ctx);
+    patchInfo.set.salt = Private.genSalt();
     patchInfo.set.password = Private.hashPassword(patchInfo.set.password, patchInfo.set.salt, _ctx);
 
     // patch

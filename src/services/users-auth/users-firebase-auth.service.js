@@ -35,6 +35,15 @@ const Public = {
   },
 
   /**
+   * get the token
+   * config: { serviceName }
+   * userInfo: { token, id, userID } // id is the username/email
+   */
+  getToken: async (config, userInfo, _ctx) => {
+    return { status: 200, value: userInfo.token };
+  },
+
+  /**
    * post
    * config: { serviceName }
    * objInfo: { id, password }
