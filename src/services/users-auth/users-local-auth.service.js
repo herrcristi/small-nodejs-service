@@ -50,6 +50,8 @@ const Private = {
    * rotate jwt passwords
    */
   rotateJwtPassords: () => {
+    console.log(`Generating a new jwt password`);
+
     Private.JwtPasswords.push(Private.genSalt()); // add a random password
     Private.JwtPasswords = Private.JwtPasswords.slice(-2); // keep only last 2
   },
