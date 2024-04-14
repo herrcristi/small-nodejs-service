@@ -62,6 +62,10 @@ const Public = {
   init: async () => {
     Private.SiteSalt = process.env.SALT;
     Private.rotateJwtPassords();
+
+    setInterval(() => {
+      Private.rotateJwtPassords(); // rotate passwords every day, interval must be greater than or equal to jwt expiration
+    }, 24 * 60 * 60 * 1000);
   },
 
   /**
