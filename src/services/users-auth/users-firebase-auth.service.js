@@ -54,7 +54,7 @@ const Public = {
       return r;
     }
 
-    return { status: 200, value: true };
+    return { status: 200, value: { id: 'email' } };
   },
 
   /**
