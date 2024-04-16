@@ -6,6 +6,7 @@ const jwt = require('jsonwebtoken');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
+const CommonUtils = require('../../core/utils/common.utils.js');
 
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthDatabase = require('./users-local-auth.database.js');
@@ -31,18 +32,19 @@ const Private = {
    * generate salt
    */
   genSalt: () => {
-    return crypto.randomBytes(32).toString('hex');
+    return CommonUtils.getRandomBytes(32);
   },
 
   /**
    * hash a password
    */
   hashPassword: (password, salt, _ctx) => {
-    let hash = crypto.scryptSync(password, salt, 64);
-    hash = hash.toString('hex');
+    // hash password using user salt
+    let hash = CommonUtils.getHash(password, salt);
 
-    hash = crypto.scryptSync(hash, Private.SiteSalt, 64);
-    hash = hash.toString('hex');
+    // hash password again using site salt
+    hash = CommonUtils.getHash(hash, Private.SiteSalt);
+
     return hash;
   },
 
@@ -52,7 +54,7 @@ const Private = {
   rotateJwtPassords: () => {
     console.log(`Generating a new jwt password`);
 
-    Private.JwtPasswords.push(Private.genSalt()); // add a random password
+    Private.JwtPasswords.push(CommonUtils.getRandomBytes(32)); // add a random password
     Private.JwtPasswords = Private.JwtPasswords.slice(-2); // keep only last 2
   },
 };
