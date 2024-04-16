@@ -6,6 +6,7 @@ const Joi = require('joi');
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const CommonUtils = require('../../core/utils/common.utils.js');
+const JwtUtils = require('../../core/utils/jwt.utils.js');
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 
 const UsersAuthRest = require('../rest/users-auth.rest.js');
@@ -69,6 +70,8 @@ const Private = {
   },
   Notification: NotificationsUtils.Constants.Notification,
 
+  Issuer: UsersAuthConstants.ServiceName,
+
   // will be initialized on init
   UsersAuthProviderType: null,
 
@@ -92,6 +95,8 @@ const Public = {
    * init
    */
   init: async () => {
+    await JwtUtils.init(Private.Issuer);
+
     Private.UsersAuthProviderType = process.env.USERS_AUTH_PROVIDER;
     if (Private.UsersAuthProviderType === 'firebase') {
       await UsersAuthServiceFirebase.init();

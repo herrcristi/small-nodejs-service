@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const jwt = require('jsonwebtoken');
 const mocha = require('mocha');
 const assert = require('assert');
 const sinon = require('sinon');
@@ -8,6 +7,7 @@ const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
+const JwtUtils = require('../../../core/utils/jwt.utils.js');
 
 const TestConstants = require('../../test-constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
@@ -94,12 +94,12 @@ describe('Users Auth Service', function () {
       return { status: 200, value: { id: objID } };
     });
 
-    let stubToken = sinon.stub(jwt, 'sign').callsFake((payload, secret, options) => {
-      console.log(`\njwt.sign called for ${JSON.stringify({ payload, options }, null, 2)}\n`);
+    let stubToken = sinon.stub(JwtUtils, 'getJwt').callsFake((data) => {
+      console.log(`\nJwtUtils.getJwt called for ${JSON.stringify(data, null, 2)}\n`);
 
-      chai.expect(payload).to.deep.equal({ user: { id: testAuthUser.id, userID: testInfoUser.id } });
-      chai.expect(options).to.deep.equal({ algorithm: 'HS512', expiresIn: '1d', issuer: 'SmallApp' });
-      return 'token';
+      chai.expect(data.creatingTimestamp).to.exists;
+      chai.expect(_.omit(data, 'creatingTimestamp')).to.deep.equal({ id: testAuthUser.id, userID: testInfoUser.id });
+      return { status: 200, value: 'token' };
     });
 
     // call
@@ -191,12 +191,12 @@ describe('Users Auth Service', function () {
       return { status: 200, value: { id: objID } };
     });
 
-    let stubToken = sinon.stub(jwt, 'sign').callsFake((payload, secret, options) => {
-      console.log(`\njwt.sign called for ${JSON.stringify({ payload, options }, null, 2)}\n`);
+    let stubToken = sinon.stub(JwtUtils, 'getJwt').callsFake((data) => {
+      console.log(`\nJwtUtils.getJwt called for ${JSON.stringify(data, null, 2)}\n`);
 
-      chai.expect(payload).to.deep.equal({ user: { id: testAuthUser.id, userID: testInfoUser.id } });
-      chai.expect(options).to.deep.equal({ algorithm: 'HS512', expiresIn: '1d', issuer: 'SmallApp' });
-      return 'token';
+      chai.expect(data.creatingTimestamp).to.exists;
+      chai.expect(_.omit(data, 'creatingTimestamp')).to.deep.equal({ id: testAuthUser.id, userID: testInfoUser.id });
+      return { status: 200, value: 'token' };
     });
 
     // call
@@ -663,10 +663,11 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
-    let stubToken = sinon.stub(UsersLocalAuthService, 'getToken').callsFake((config, userInfo) => {
-      console.log(`\njwt.sign called for ${JSON.stringify(userInfo, null, 2)}\n`);
+    let stubToken = sinon.stub(JwtUtils, 'getJwt').callsFake((data) => {
+      console.log(`\nJwtUtils.getJwt called for ${JSON.stringify(data, null, 2)}\n`);
 
-      chai.expect(userInfo).to.deep.equal({ id: testAuthUser.id, userID: testInfoUser.id });
+      chai.expect(data.creatingTimestamp).to.exists;
+      chai.expect(_.omit(data, 'creatingTimestamp')).to.deep.equal({ id: testAuthUser.id, userID: testInfoUser.id });
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
