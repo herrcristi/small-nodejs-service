@@ -43,9 +43,9 @@ describe('Jwt Utils', function () {
   }).timeout(10000);
 
   /**
-   * validateJwt test fail due to issuer
+   * validateJwt test fail
    */
-  it('should validateJwt with success', async () => {
+  it('should validateJwt fail', async () => {
     const token =
       'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9.eyJkYXRhIjp7InRlc3QiOiJ0ZXN0In0sImlhdCI6MTcxMzI5NzU0MywiZXhwIjoxNzEzMzgzOTQzLCJpc3MiOiJ2YWxpZGF0ZUp3dCJ9.RM5szWtdt9lekksxTahe5SdGv3DcjWN98WpXo0lFoaYx7NwNTp41PQ5VZNzmgoo35TE7QVpitb7LWXXOYEjBmg';
 
