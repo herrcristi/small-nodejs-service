@@ -31,6 +31,20 @@ const Public = {
   },
 
   /**
+   * random bytes
+   */
+  getRandomBytes: (bytes = 32) => {
+    return crypto.randomBytes(bytes).toString('hex');
+  },
+
+  /**
+   * hash string using a salt
+   */
+  getHash: (string, salt) => {
+    return crypto.scryptSync(string, salt, 64).toString('hex');
+  },
+
+  /**
    * stringify a regexp
    */
   stringifyFilter: (key, value) => {
@@ -105,6 +119,7 @@ const Public = {
     let objProjected = {};
 
     for (const field in projection) {
+      // TODO split obj[field] by .
       if (projection[field] && obj[field] !== undefined) {
         objProjected[field] = obj[field];
       }

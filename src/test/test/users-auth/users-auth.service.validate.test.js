@@ -1,5 +1,4 @@
 const _ = require('lodash');
-const jwt = require('jsonwebtoken');
 const mocha = require('mocha');
 const assert = require('assert');
 const sinon = require('sinon');
@@ -8,6 +7,7 @@ const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
+const JwtUtils = require('../../../core/utils/jwt.utils.js');
 
 const TestConstants = require('../../test-constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
@@ -53,18 +53,20 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
-    // generate a valid token
-    const config = { serviceName: 'test' };
-    const rT = await UsersLocalAuthService.getToken(config, { id: testAuthUser.id, userID: testInfoUser.id }, _ctx);
-    console.log(`\nGenerate token: ${JSON.stringify(rT)}\n`);
+    let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
+      console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
+
+      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+    });
 
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
-    let res = await UsersAuthService.validate({ token: rT.value }, _ctx);
+    let res = await UsersAuthService.validate({ token: 'token' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
       status: 200,
@@ -118,12 +120,19 @@ describe('Users Auth Service', function () {
     const testAuthData = testAuthUser._test_data;
     delete testAuthUser._test_data;
 
+    let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
+      console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
+
+      return { status: 500, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
     let res = await UsersAuthService.validate({ token: 'token' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stubToken.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 401,
       error: {
@@ -157,18 +166,20 @@ describe('Users Auth Service', function () {
       return { status: 404, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
-    // generate a valid token
-    const config = { serviceName: 'test' };
-    const rT = await UsersLocalAuthService.getToken(config, { id: testAuthUser.id, userID: testInfoUser.id }, _ctx);
-    console.log(`\nGenerate token: ${JSON.stringify(rT)}\n`);
+    let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
+      console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
+
+      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+    });
 
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
-    let res = await UsersAuthService.validate({ token: rT.value }, _ctx);
+    let res = await UsersAuthService.validate({ token: 'token' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
       status: 404,
@@ -204,18 +215,20 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
-    // generate a valid token
-    const config = { serviceName: 'test' };
-    const rT = await UsersLocalAuthService.getToken(config, { id: testAuthUser.id, userID: testInfoUser.id }, _ctx);
-    console.log(`\nGenerate token: ${JSON.stringify(rT)}\n`);
+    let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
+      console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
+
+      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+    });
 
     // call
     _ctx.tenantID = 'schoolID';
-    let res = await UsersAuthService.validate({ token: rT.value }, _ctx);
+    let res = await UsersAuthService.validate({ token: 'token' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
       status: 401,
@@ -250,18 +263,20 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
-    // generate a valid token
-    const config = { serviceName: 'test' };
-    const rT = await UsersLocalAuthService.getToken(config, { id: testAuthUser.id, userID: testInfoUser.id }, _ctx);
-    console.log(`\nGenerate token: ${JSON.stringify(rT)}\n`);
+    let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
+      console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
+
+      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+    });
 
     // call
     _ctx.tenantID = 'schoolID';
-    let res = await UsersAuthService.validate({ token: rT.value }, _ctx);
+    let res = await UsersAuthService.validate({ token: 'token' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
       status: 401,
@@ -296,18 +311,20 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
-    // generate a valid token
-    const config = { serviceName: 'test' };
-    const rT = await UsersLocalAuthService.getToken(config, { id: testAuthUser.id, userID: testInfoUser.id }, _ctx);
-    console.log(`\nGenerate token: ${JSON.stringify(rT)}\n`);
+    let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
+      console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
+
+      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+    });
 
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
-    let res = await UsersAuthService.validate({ token: rT.value }, _ctx);
+    let res = await UsersAuthService.validate({ token: 'token' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
       status: 401,

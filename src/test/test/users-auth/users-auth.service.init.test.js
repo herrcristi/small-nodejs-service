@@ -7,7 +7,7 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
-const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
+const JwtUtils = require('../../../core/utils/jwt.utils.js');
 
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
@@ -33,25 +33,11 @@ describe('Users Auth Service', function () {
    */
   it('should init with success', async () => {
     // stub
-    const clock = sinon.useFakeTimers();
-
-    const time = new Date();
-
-    const one_day = 24 * 60 * 60 * 1000;
-
-    // stub
-    let stubPass = sinon.stub(crypto, 'randomBytes').callThrough();
+    let stubJwt = sinon.stub(JwtUtils, 'init');
 
     // call
     let res = await UsersAuthService.init();
 
-    clock.tick(one_day + 10);
-
-    // check
-    const endTime = new Date();
-    console.log(`Elapsed time: ${endTime - time}`);
-
-    chai.expect(stubPass.callCount).to.equal(2);
-    chai.expect(endTime - time).to.be.greaterThanOrEqual(one_day); // 1 day
+    chai.expect(stubJwt.callCount).to.equal(2);
   }).timeout(10000);
 });
