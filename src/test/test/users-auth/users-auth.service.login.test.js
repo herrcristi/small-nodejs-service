@@ -102,6 +102,12 @@ describe('Users Auth Service', function () {
       return { status: 200, value: 'token' };
     });
 
+    let stubEncrypt = sinon.stub(JwtUtils, 'encrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.encrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 200, value: data };
+    });
+
     // call
     let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -113,6 +119,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubSchoolsActive.callCount).to.equal(0);
     chai.expect(stubEvents.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
+    chai.expect(stubEncrypt.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
@@ -199,6 +206,12 @@ describe('Users Auth Service', function () {
       return { status: 200, value: 'token' };
     });
 
+    let stubEncrypt = sinon.stub(JwtUtils, 'encrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.encrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 200, value: data };
+    });
+
     // call
     let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -210,6 +223,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubSchoolsActive.callCount).to.equal(2);
     chai.expect(stubEvents.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
+    chai.expect(stubEncrypt.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
