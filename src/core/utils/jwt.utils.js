@@ -34,6 +34,49 @@ const Public = {
   },
 
   /**
+   * encrypt
+   */
+  encrypt: (data, issuer, _ctx) => {
+    const dataText = JSON.stringify({ data, issuer });
+    return {
+      status: 200,
+      value: CommonUtils.encrypt(dataText, Private.JwtPasswords[issuer].at(-1)),
+    };
+  },
+
+  /**
+   * decrypt
+   */
+  decrypt: (encrypted, issuer, _ctx) => {
+    // return CommonUtils.decrypt(JSON.stringify({ data, issuer }), Private.JwtPasswords[issuer].at(-1));
+    const passwords = [...Private.JwtPasswords[issuer]].reverse();
+
+    for (const pass of passwords) {
+      try {
+        let decoded = CommonUtils.decrypt(encrypted, pass);
+        if (decoded.error) {
+          continue;
+        }
+
+        decoded = JSON.parse(decoded);
+        // decoded: { data, issuer }
+
+        // validate issuer
+        if (decoded.issuer !== issuer) {
+          throw new Error('Invalid issuer');
+        }
+
+        return { status: 200, value: decoded.data };
+      } catch (e) {
+        console.log(`Failed to decrypt: ${e.stack}`);
+      }
+    }
+
+    const msg = 'Cannot decrypt data';
+    return { status: 401, error: { message: msg, error: new Error(msg) } };
+  },
+
+  /**
    * get the jwt
    */
   getJwt: (data, issuer, _ctx) => {
