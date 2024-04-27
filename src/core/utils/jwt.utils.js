@@ -48,7 +48,6 @@ const Public = {
    * decrypt
    */
   decrypt: (encrypted, issuer, _ctx) => {
-    // return CommonUtils.decrypt(JSON.stringify({ data, issuer }), Private.JwtPasswords[issuer].at(-1));
     const passwords = [...Private.JwtPasswords[issuer]].reverse();
 
     for (const pass of passwords) {
