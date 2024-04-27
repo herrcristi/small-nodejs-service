@@ -200,6 +200,9 @@ const Public = {
       return { status: 500, error: { message: msg, error: new Error(msg) } };
     }
 
+    // encrypt token again
+    rT.value = JwtUtils.encrypt(rT.value, Private.Issuer, _ctx).value;
+
     // raise event for succesful login
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Login, eventO, eventO, _ctx);
 
@@ -223,6 +226,13 @@ const Public = {
 
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
+
+    // decrypt token
+    const decodedToken = JwtUtils.decrypt(objInfo.token, Private.Issuer, _ctx);
+    if (decodedToken.error) {
+      return decodedToken;
+    }
+    objInfo.token = decodedToken.value;
 
     // token
     let rT;
