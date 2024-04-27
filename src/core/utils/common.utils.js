@@ -45,6 +45,40 @@ const Public = {
   },
 
   /**
+   * encrypt
+   * pasword must be 256 bits (32 characters)
+   * iv For AES, this is always 16
+   */
+  encrypt: (data, password, iv = crypto.randomBytes(16)) => {
+    let cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(password), iv, { authTagLength: 16 });
+    let encrypted = cipher.update(data);
+    encrypted = Buffer.concat([encrypted, cipher.final()]);
+    return Buffer.concat([iv, encrypted, cipher.getAuthTag()]).toString('hex');
+  },
+
+  /**
+   * decrypt
+   * pasword must be 256 bits (32 characters)
+   */
+  decrypt: (encryptedHex, password) => {
+    try {
+      let encrypted = Buffer.from(encryptedHex, 'hex');
+
+      const iv = Uint8Array.prototype.slice.call(encrypted, 0, 16);
+      const encryptedMessage = Uint8Array.prototype.slice.call(encrypted, 16, -16);
+      const authTag = Uint8Array.prototype.slice.call(encrypted, -16);
+
+      const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(password), iv, { authTagLength: 16 });
+      decipher.setAuthTag(authTag);
+      let data = decipher.update(encryptedMessage);
+      data = Buffer.concat([data, decipher.final()]);
+      return data.toString();
+    } catch (e) {
+      return { error: { message: e.message, error: e } };
+    }
+  },
+
+  /**
    * stringify a regexp
    */
   stringifyFilter: (key, value) => {

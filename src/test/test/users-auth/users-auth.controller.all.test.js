@@ -124,8 +124,8 @@ describe('Users Auth Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPathInternal}/validate`)
-      .send({ ...testUser });
+      .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
+      .set('cookie', `SmallApp-token=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -152,8 +152,8 @@ describe('Users Auth Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPathInternal}/validate`)
-      .send({ ...testUser });
+      .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
+      .set('cookie', `SmallApp-token=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -178,8 +178,8 @@ describe('Users Auth Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPathInternal}/validate`)
-      .send({ ...testUser });
+      .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
+      .set('cookie', `SmallApp-token=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check

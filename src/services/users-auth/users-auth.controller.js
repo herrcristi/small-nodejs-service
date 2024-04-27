@@ -30,6 +30,11 @@ const Public = {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
 
+      // set token as cookie
+      res.cookie('SmallApp-token', r.token, {
+        expires: new Date(Date.now() + 24 * 60 * 60 * 1000 /*1d*/),
+        httpOnly: true,
+      });
       res.status(r.status).json(r.value);
     } catch (e) {
       return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
@@ -50,8 +55,11 @@ const Public = {
         `${_ctx.serviceName}: Validate called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
 
+      // get token from cookie
+      const token = req.cookies['SmallApp-token'];
+
       // validate
-      const r = await UsersAuthService.validate(req.body, _ctx);
+      const r = await UsersAuthService.validate({ token }, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }

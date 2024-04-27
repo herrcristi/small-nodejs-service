@@ -59,6 +59,12 @@ describe('Users Auth Service', function () {
       return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
     });
 
+    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 200, value: data };
+    });
+
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
     let res = await UsersAuthService.validate({ token: 'token' }, _ctx);
@@ -67,6 +73,7 @@ describe('Users Auth Service', function () {
     // check
     chai.expect(stubUsersGet.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
+    chai.expect(stubDecrypt.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
       status: 200,
@@ -105,6 +112,44 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
+   * validate fail decrypt token
+   */
+  it('should validate fail decrypt token', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
+
+    const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    const testInfoUser = testInfoUsers[0];
+    for (const school of testInfoUser.schools) {
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+
+    const testAuthData = testAuthUser._test_data;
+    delete testAuthUser._test_data;
+
+    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 401, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    _ctx.tenantID = testInfoUser.schools[0].id;
+    let res = await UsersAuthService.validate({ token: 'token' }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubDecrypt.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 401,
+      error: {
+        message: 'Test error message',
+        error: new Error('Test error'),
+      },
+    });
+  }).timeout(10000);
+
+  /**
    * validate fail validate token
    */
   it('should validate fail validate token', async () => {
@@ -120,6 +165,12 @@ describe('Users Auth Service', function () {
     const testAuthData = testAuthUser._test_data;
     delete testAuthUser._test_data;
 
+    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 200, value: data };
+    });
+
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
@@ -132,6 +183,7 @@ describe('Users Auth Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stubDecrypt.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 401,
@@ -166,6 +218,12 @@ describe('Users Auth Service', function () {
       return { status: 404, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
+    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 200, value: data };
+    });
+
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
@@ -179,6 +237,7 @@ describe('Users Auth Service', function () {
 
     // check
     chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubDecrypt.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
@@ -215,6 +274,12 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
+    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 200, value: data };
+    });
+
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
@@ -228,6 +293,7 @@ describe('Users Auth Service', function () {
 
     // check
     chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubDecrypt.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
@@ -263,6 +329,12 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
+    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 200, value: data };
+    });
+
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
@@ -276,6 +348,7 @@ describe('Users Auth Service', function () {
 
     // check
     chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubDecrypt.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
@@ -311,6 +384,12 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
+    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 200, value: data };
+    });
+
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
@@ -324,6 +403,7 @@ describe('Users Auth Service', function () {
 
     // check
     chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubDecrypt.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
