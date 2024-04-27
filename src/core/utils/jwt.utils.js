@@ -40,7 +40,7 @@ const Public = {
     const dataText = JSON.stringify({ data, issuer });
     return {
       status: 200,
-      value: CommonUtils.encrypt(dataText, Private.JwtPasswords[issuer].at(-1)),
+      value: CommonUtils.encrypt(dataText, Buffer.from(Private.JwtPasswords[issuer].at(-1), 'hex')),
     };
   },
 
@@ -52,7 +52,7 @@ const Public = {
 
     for (const pass of passwords) {
       try {
-        let decoded = CommonUtils.decrypt(encrypted, pass);
+        let decoded = CommonUtils.decrypt(encrypted, Buffer.from(pass, 'hex'));
         if (decoded.error) {
           continue;
         }
