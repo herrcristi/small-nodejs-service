@@ -1,6 +1,8 @@
 /**
  * Users service
  */
+const path = require('path');
+const fs = require('fs');
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
@@ -50,6 +52,8 @@ const Validators = {
 
   Token: Joi.object().keys({
     token: Joi.string().min(1).required(),
+    method: Joi.string().min(1).required(),
+    route: Joi.string().min(1).required(),
   }),
 
   Post: Schema.User.keys({
@@ -75,6 +79,8 @@ const Private = {
   // will be initialized on init
   UsersAuthProviderType: null,
 
+  RolesApiAccess: {},
+
   /**
    * config
    * returns { serviceName, references, fillReferences, events }
@@ -88,6 +94,29 @@ const Private = {
     };
     return config;
   },
+
+  /**
+   * init roles access
+   */
+  initRolesAccess: () => {
+    const rolesPath = path.join(__dirname, '../config.roles.json');
+    const roles = JSON.parse(fs.readFileSync(rolesPath));
+    for (const role in roles.roles) {
+      const roleAccess = roles.roles[role];
+      Private.RolesApiAccess[role] = {};
+
+      for (const service in roleAccess) {
+        const serviceRoles = roleAccess[service];
+        for (const method in serviceRoles) {
+          Private.RolesApiAccess[role][method] ??= {};
+
+          for (const api of serviceRoles[method]) {
+            Private.RolesApiAccess[role][method.toUpperCase()][api] = true;
+          }
+        }
+      }
+    }
+  },
 };
 
 const Public = {
@@ -95,14 +124,19 @@ const Public = {
    * init
    */
   init: async () => {
+    // init token encryption
     await JwtUtils.init(Private.Issuer);
 
+    // init auth provider
     Private.UsersAuthProviderType = process.env.USERS_AUTH_PROVIDER;
     if (Private.UsersAuthProviderType === 'firebase') {
       await UsersAuthServiceFirebase.init();
     } else {
       await UsersAuthServiceLocal.init();
     }
+
+    // init roles
+    Private.initRolesAccess();
   },
 
   /**
@@ -215,7 +249,7 @@ const Public = {
 
   /**
    * validate token
-   * objInfo: { token }
+   * objInfo: { token, method, route }
    */
   validate: async (objInfo, _ctx) => {
     // validate
@@ -276,8 +310,14 @@ const Public = {
       const msg = 'School is disabled';
       return { status: 401, error: { message: msg, error: new Error(msg) } };
     }
-    // TODO validate also route or add separate function
-    validSchool.roles;
+    // validate also route
+    const validRole = validSchool.roles?.some(
+      (role) => Private.RolesApiAccess[role]?.[objInfo.method?.toUpperCase()]?.[objInfo.route]
+    );
+    if (!validRole) {
+      const msg = `Route is not accesible: ${objInfo.method} ${objInfo.route}`;
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
 
     // success
     _ctx.userID = user.id;

@@ -57,9 +57,11 @@ const Public = {
 
       // get token from cookie
       const token = req.cookies['SmallApp-token'];
+      const method = req.query['method'];
+      const route = req.query['route'];
 
       // validate
-      const r = await UsersAuthService.validate({ token }, _ctx);
+      const r = await UsersAuthService.validate({ token, method, route }, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
