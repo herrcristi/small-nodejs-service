@@ -22,7 +22,7 @@ const Public = {
 
     try {
       console.log(
-        `${_ctx.serviceName}: Get all called, query ${JSON.stringify(
+        `\n${_ctx.serviceName}: Get all called, query ${JSON.stringify(
           CommonUtils.protectData(req.query),
           CommonUtils.stringifyFilter,
           2
@@ -52,7 +52,7 @@ const Public = {
 
     try {
       console.log(
-        `${_ctx.serviceName}: Get one called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
+        `\n${_ctx.serviceName}: Get one called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
       );
       const objID = req.params.id;
       // projection
@@ -84,7 +84,7 @@ const Public = {
 
     try {
       console.log(
-        `${_ctx.serviceName}: Post called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+        `\n${_ctx.serviceName}: Post called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
 
       // post
@@ -110,7 +110,7 @@ const Public = {
 
     try {
       console.log(
-        `${_ctx.serviceName}: Delete called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
+        `\n${_ctx.serviceName}: Delete called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
       );
       const objID = req.params.id;
 
@@ -137,7 +137,7 @@ const Public = {
 
     try {
       console.log(
-        `${_ctx.serviceName}: Put called, param ${JSON.stringify(
+        `\n${_ctx.serviceName}: Put called, param ${JSON.stringify(
           CommonUtils.protectData(req.params),
           null,
           2
@@ -168,7 +168,7 @@ const Public = {
 
     try {
       console.log(
-        `${_ctx.serviceName}: Patch called, param ${JSON.stringify(
+        `\n${_ctx.serviceName}: Patch called, param ${JSON.stringify(
           CommonUtils.protectData(req.params),
           null,
           2
@@ -199,7 +199,7 @@ const Public = {
 
     try {
       console.log(
-        `${_ctx.serviceName}: Notification called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+        `\n${_ctx.serviceName}: Notification called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
 
       // post

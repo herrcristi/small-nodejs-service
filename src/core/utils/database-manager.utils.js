@@ -18,24 +18,24 @@ const Private = {
    */
   addConnectionHandlers: async (database, dbName, _ctx) => {
     database.once('connected', () => {
-      console.log(`Database Connected to ${dbName}`);
+      console.log(`\nDatabase Connected to ${dbName}`);
     });
 
     database.on('close', (error) => {
-      console.log(`Mongo connection for ${dbName} has closed with error ${JSON.stringify(error)}. Reconnecting...`);
+      console.log(`\nMongo connection for ${dbName} has closed with error ${JSON.stringify(error)}. Reconnecting...`);
     });
 
     database.on('error', (error) => {
-      console.log(`Mongo connection for ${dbName} has error ${JSON.stringify(error)}`);
+      console.log(`\nMongo connection for ${dbName} has error ${JSON.stringify(error)}`);
     });
 
     database.on('reconnect', () => {
-      console.log(`Mongo reconnected succesfully for ${dbName}`);
+      console.log(`\nMongo reconnected succesfully for ${dbName}`);
     });
 
     database.topology.on('reconnectFailed', (error) => {
-      console.log(`Mongo failed to reconnect to ${dbName} with error ${JSON.stringify(error)}`);
-      console.log(`Exit process`);
+      console.log(`\nMongo failed to reconnect to ${dbName} with error ${JSON.stringify(error)}`);
+      console.log(`\nExit process`);
       process.exit(1);
     });
   },
@@ -63,12 +63,12 @@ const Public = {
 
       // Send a ping to confirm a successful connection
       await client.db(dbName).command({ ping: 1 });
-      console.log(`Ping successfully db ${dbName}`);
+      console.log(`\nPing successfully db ${dbName}`);
 
       return client.db(dbName);
     } catch (e) {
-      console.log(`Failed to connect to mongo for ${dbName}. Error: ${CommonUtils.getLogError(e)}`);
-      console.log(`Exit process`);
+      console.log(`\nFailed to connect to mongo for ${dbName}. Error: ${CommonUtils.getLogError(e)}`);
+      console.log(`\nExit process`);
       process.exit(1);
     }
   },
@@ -90,7 +90,7 @@ const Public = {
 
     // add it
     Private.DBIndexes[db][collectionName] = 1;
-    console.log(`Add indexes for ${collectionName}`);
+    console.log(`\nAdd indexes for ${collectionName}`);
     return true;
   },
 };

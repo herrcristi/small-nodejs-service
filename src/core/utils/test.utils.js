@@ -10,8 +10,8 @@ const Public = {
     process.env.NODE_ENV = 'test';
     process.env.PORT = 8080;
 
-    console.log('process.env.NODE_ENV:', process.env.NODE_ENV);
-    console.log('process.env.PORT:', process.env.PORT);
+    console.log('\nprocess.env.NODE_ENV:', process.env.NODE_ENV);
+    console.log('\nprocess.env.PORT:', process.env.PORT);
   },
 
   /**

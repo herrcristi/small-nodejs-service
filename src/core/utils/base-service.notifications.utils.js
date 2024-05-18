@@ -63,7 +63,7 @@ const Public = {
         [notificationType]: notifyObjs,
       };
 
-      console.log(`${config.serviceName}: Raise notification ${JSON.stringify(notification, null, 2)}`);
+      console.log(`\n${config.serviceName}: Raise notification ${JSON.stringify(notification, null, 2)}`);
 
       // do a sync notification
       try {
@@ -72,7 +72,9 @@ const Public = {
         }
       } catch (e) {
         console.log(
-          `Error processing notification ${JSON.stringify(notification, null, 2)}. Error: ${CommonUtils.getLogError(e)}`
+          `\nError processing notification ${JSON.stringify(notification, null, 2)}. Error: ${CommonUtils.getLogError(
+            e
+          )}`
         );
       }
     }

@@ -24,7 +24,7 @@ exports.mochaHooks = {
     },
 
     function (done) {
-      console.log('current env TEST_DB', process.env.TEST_DB);
+      console.log('\ncurrent env TEST_DB', process.env.TEST_DB);
 
       // init service
       const service = require('../index.js');
@@ -32,7 +32,7 @@ exports.mochaHooks = {
 
       if (!process.env.TEST_DB) {
         sinon.stub(DBMgr, 'connect').callsFake((dbUrl, dbName) => {
-          console.log(`Mock db connection to ${dbUrl} ${dbName}`);
+          console.log(`\nMock db connection to ${dbUrl} ${dbName}`);
           return { collection: () => null };
         });
       }
@@ -59,7 +59,7 @@ exports.mochaHooks = {
    */
   afterEach: [
     async function () {
-      console.log('---------------------\n');
+      console.log('\n---------------------\n');
     },
   ],
 

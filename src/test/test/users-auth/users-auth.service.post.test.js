@@ -42,7 +42,7 @@ describe('Users Auth Service', function () {
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called with ${JSON.stringify(postObj, null, 2)}`);
+      console.log(`\nDbOpsUtils.post called with ${JSON.stringify(postObj, null, 2)}`);
       return {
         status: 201,
         value: { ...postObj, id: testUser.id },
@@ -50,7 +50,7 @@ describe('Users Auth Service', function () {
     });
 
     let stubUsersAuthRest = sinon.stub(UsersAuthRest, 'raiseNotification').callsFake(() => {
-      console.log(`UsersAuthRest raiseNotification called`);
+      console.log(`\nUsersAuthRest raiseNotification called`);
     });
 
     let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject');
@@ -111,7 +111,7 @@ describe('Users Auth Service', function () {
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 

@@ -55,7 +55,7 @@ describe('Students Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'patch').callsFake((config, objID, patchObj) => {
-      console.log(`DbOpsUtils.patch called`);
+      console.log(`\nDbOpsUtils.patch called`);
       return {
         status: 200,
         value: { ...testStudent },
@@ -63,11 +63,11 @@ describe('Students Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubStudentsRest = sinon.stub(StudentsRest, 'raiseNotification').callsFake(() => {
-      console.log(`StudentsRest raiseNotification called`);
+      console.log(`\nStudentsRest raiseNotification called`);
     });
 
     // call
@@ -191,7 +191,7 @@ describe('Students Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'patch').callsFake((config, objID, patchObj) => {
-      console.log(`DbOpsUtils.patch called`);
+      console.log(`\nDbOpsUtils.patch called`);
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 

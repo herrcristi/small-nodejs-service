@@ -15,7 +15,7 @@ const Public = {
    */
   init: async (_ctx) => {
     Private.DB = await DBMgr.connect(process.env.DATABASE_URL, process.env.DATABASE_STUDENTS, _ctx);
-    console.log('Students database inited');
+    console.log('\nStudents database inited');
   },
 
   /**
@@ -23,7 +23,7 @@ const Public = {
    */
   collection: async (_ctx) => {
     if (!_ctx.tenantID) {
-      console.log(`No tenant for getting students collection. Stack: ${new Error().stack}`);
+      console.log(`\nNo tenant for getting students collection. Stack: ${new Error().stack}`);
       return null;
     }
     // students collections are per tenant
@@ -45,7 +45,7 @@ const Public = {
     let coll = Private.DB?.collection(collName);
     await coll?.createIndex({ id: 1 }, { unique: true });
 
-    console.log(`Indexes added for ${collName}`);
+    console.log(`\nIndexes added for ${collName}`);
   },
 };
 

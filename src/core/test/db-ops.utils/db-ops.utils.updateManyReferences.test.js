@@ -39,8 +39,8 @@ describe('DB-Ops Utils', function () {
 
     let collection = {};
     collection.updateMany = sinon.stub().callsFake((filter, op) => {
-      console.log(`Current filter ${JSON.stringify(filter, null, 2)}`);
-      console.log(`Current op ${JSON.stringify(op, null, 2)}`);
+      console.log(`\nCurrent filter ${JSON.stringify(filter, null, 2)}`);
+      console.log(`\nCurrent op ${JSON.stringify(op, null, 2)}`);
 
       chai.expect(filter).to.deep.equal({
         'schools.id': 'id1',
@@ -90,8 +90,8 @@ describe('DB-Ops Utils', function () {
 
     let collection = {};
     collection.updateMany = sinon.stub().callsFake((filter, op) => {
-      console.log(`Current filter ${JSON.stringify(filter, null, 2)}`);
-      console.log(`Current op ${JSON.stringify(op, null, 2)}`);
+      console.log(`\nCurrent filter ${JSON.stringify(filter, null, 2)}`);
+      console.log(`\nCurrent op ${JSON.stringify(op, null, 2)}`);
 
       chai.expect(filter).to.deep.equal({
         'user.id': 'id1',

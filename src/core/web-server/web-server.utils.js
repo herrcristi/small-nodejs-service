@@ -12,7 +12,7 @@ const Public = {
    * init a webserver
    */
   init: async (port, routers /*: [] */, middlewares /* :[] */ = null) => {
-    console.log(`Init web server on port ${port}`);
+    console.log(`\nInit web server on port ${port}`);
 
     let app = express();
     let bodyParser = require('body-parser');
@@ -41,7 +41,7 @@ const Public = {
     // listen
     const server = app.listen(port);
 
-    console.log('Web server Listening on port ' + port);
+    console.log('\nWeb server Listening on port ' + port);
 
     return { app, server };
   },

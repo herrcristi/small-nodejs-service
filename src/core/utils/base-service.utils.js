@@ -80,7 +80,7 @@ const Public = {
   getSchemaValidationError: (v, objInfo, _ctx) => {
     const error = `Failed to validate schema. Error: ${_.get(v, 'error.details[0].message')}`;
     console.log(
-      `Failed to validate schema: ${JSON.stringify(CommonUtils.protectData(objInfo), null, 2)}. Error: ${error}`
+      `\nFailed to validate schema: ${JSON.stringify(CommonUtils.protectData(objInfo), null, 2)}. Error: ${error}`
     );
     return { status: 400, error: { message: error, error: new Error(error) } };
   },
@@ -132,7 +132,7 @@ const Public = {
   getAll: async (config, filter, _ctx) => {
     let r = await DbOpsUtils.getAll(config, filter, _ctx);
     if (r.error) {
-      console.log(`${config.serviceName}: Failed to getAll. Error: ${JSON.stringify(r.error, null, 2)}`);
+      console.log(`\n${config.serviceName}: Failed to getAll. Error: ${JSON.stringify(r.error, null, 2)}`);
       return r;
     }
 
@@ -140,7 +140,11 @@ const Public = {
     let rf = await ReferencesUtils.populateReferences(config, r.value, _ctx);
     if (rf.error) {
       console.log(
-        `${config.serviceName}: Failed to getAll due to populateReferences. Error: ${JSON.stringify(rf.error, null, 2)}`
+        `\n${config.serviceName}: Failed to getAll due to populateReferences. Error: ${JSON.stringify(
+          rf.error,
+          null,
+          2
+        )}`
       );
       return rf;
     }
@@ -151,7 +155,7 @@ const Public = {
   getAllCount: async (config, filter, _ctx) => {
     let r = await DbOpsUtils.getAllCount(config, filter, _ctx);
     if (r.error) {
-      console.log(`${config.serviceName}: Failed to getAllCount. Error: ${JSON.stringify(r.error, null, 2)}`);
+      console.log(`\n${config.serviceName}: Failed to getAllCount. Error: ${JSON.stringify(r.error, null, 2)}`);
       return r;
     }
     return r;
@@ -160,7 +164,7 @@ const Public = {
   getAllByIDs: async (config, ids, projection, _ctx) => {
     let r = await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx);
     if (r.error) {
-      console.log(`${config.serviceName}: Failed to getAllByIDs. Error: ${JSON.stringify(r.error, null, 2)}`);
+      console.log(`\n${config.serviceName}: Failed to getAllByIDs. Error: ${JSON.stringify(r.error, null, 2)}`);
       return r;
     }
 
@@ -168,7 +172,7 @@ const Public = {
     let rf = await ReferencesUtils.populateReferences(config, r.value, _ctx);
     if (rf.error) {
       console.log(
-        `${config.serviceName}: Failed to getAllByIDs due to populateReferences. Error: ${JSON.stringify(
+        `\n${config.serviceName}: Failed to getAllByIDs due to populateReferences. Error: ${JSON.stringify(
           rf.error,
           null,
           2
@@ -188,7 +192,7 @@ const Public = {
   getOne: async (config, objID, projection, _ctx) => {
     let r = await DbOpsUtils.getOne(config, objID, projection, _ctx);
     if (r.error) {
-      console.log(`${config.serviceName}: Failed to getOne for ${objID}. Error: ${JSON.stringify(r.error, null, 2)}`);
+      console.log(`\n${config.serviceName}: Failed to getOne for ${objID}. Error: ${JSON.stringify(r.error, null, 2)}`);
       return r;
     }
 
@@ -196,7 +200,7 @@ const Public = {
     let rf = await ReferencesUtils.populateReferences(config, r.value, _ctx);
     if (rf.error) {
       console.log(
-        `${config.serviceName}: Failed to getOne for ${objID} due to populateReferences. Error: ${JSON.stringify(
+        `\n${config.serviceName}: Failed to getOne for ${objID} due to populateReferences. Error: ${JSON.stringify(
           rf.error,
           null,
           2
@@ -206,7 +210,11 @@ const Public = {
     }
 
     console.log(
-      `${config.serviceName}: Succesfully get one object: ${JSON.stringify(CommonUtils.protectData(r.value), null, 2)}`
+      `\n${config.serviceName}: Succesfully get one object: ${JSON.stringify(
+        CommonUtils.protectData(r.value),
+        null,
+        2
+      )}`
     );
 
     return r;
@@ -268,7 +276,7 @@ const Public = {
     const r = await DbOpsUtils.delete(config, objID, projection, _ctx);
     if (r.error) {
       console.log(
-        `${config.serviceName}: Failed to delete object ${objID}. Error: ${JSON.stringify(r.error, null, 2)}`
+        `\n${config.serviceName}: Failed to delete object ${objID}. Error: ${JSON.stringify(r.error, null, 2)}`
       );
       return r;
     }

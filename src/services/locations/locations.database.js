@@ -15,7 +15,7 @@ const Public = {
    */
   init: async (_ctx) => {
     Private.DB = await DBMgr.connect(process.env.DATABASE_URL, process.env.DATABASE_LOCATIONS, _ctx);
-    console.log('Locations database inited');
+    console.log('\nLocations database inited');
   },
 
   /**
@@ -23,7 +23,7 @@ const Public = {
    */
   collection: async (_ctx) => {
     if (!_ctx.tenantID) {
-      console.log(`No tenant for getting locations collection. Stack: ${new Error().stack}`);
+      console.log(`\nNo tenant for getting locations collection. Stack: ${new Error().stack}`);
       return null;
     }
     // locationes collections are per tenant
@@ -46,7 +46,7 @@ const Public = {
     await coll?.createIndex({ id: 1 }, { unique: true });
     await coll?.createIndex({ name: 1 }, { unique: true });
 
-    console.log(`Indexes added for ${collName}`);
+    console.log(`\nIndexes added for ${collName}`);
   },
 };
 

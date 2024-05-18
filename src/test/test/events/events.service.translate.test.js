@@ -39,14 +39,14 @@ describe('Events Service', function () {
     let stubString = sinon.stub(TranslationsUtils, 'string');
     stubString.onCall(0).callsFake((string, ctx, args) => {
       console.log(`\nTranslationsUtils.string called`);
-      console.log(`args=${JSON.stringify(args, null, 2)}\n`);
+      console.log(`\nargs=${JSON.stringify(args, null, 2)}\n`);
 
       chai.expect(args).to.equal(undefined);
       return {};
     });
     stubString.onCall(1).callsFake((string, ctx, args) => {
       console.log(`\nTranslationsUtils.string called`);
-      console.log(`args=${JSON.stringify(args, null, 2)}\n`);
+      console.log(`\nargs=${JSON.stringify(args, null, 2)}\n`);
 
       chai.expect(args).to.deep.equal(['GitHub University', 'big.ben@testdomain.test', 'other']);
       return {};
@@ -78,14 +78,14 @@ describe('Events Service', function () {
     let stubString = sinon.stub(TranslationsUtils, 'string');
     stubString.onCall(0).callsFake((string, ctx, args) => {
       console.log(`\nTranslationsUtils.string called`);
-      console.log(`args=${JSON.stringify(args, null, 2)}\n`);
+      console.log(`\nargs=${JSON.stringify(args, null, 2)}\n`);
 
       chai.expect(args).to.equal(undefined);
       return {};
     });
     stubString.onCall(1).callsFake((string, ctx, args) => {
       console.log(`\nTranslationsUtils.string called`);
-      console.log(`args=${JSON.stringify(args, null, 2)}\n`);
+      console.log(`\nargs=${JSON.stringify(args, null, 2)}\n`);
 
       chai.expect(args).to.deep.equal(['GitHub University', 'big.ben@testdomain.test']);
       return {};

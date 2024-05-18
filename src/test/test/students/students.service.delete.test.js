@@ -40,7 +40,7 @@ describe('Students Service', function () {
     const testStudent = testStudents[0];
 
     let stubBase = sinon.stub(DbOpsUtils, 'delete').callsFake((config, objID) => {
-      console.log(`DbOpsUtils.delete called`);
+      console.log(`\nDbOpsUtils.delete called`);
       return {
         status: 200,
         value: { ...testStudent },
@@ -48,11 +48,11 @@ describe('Students Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubStudentsRest = sinon.stub(StudentsRest, 'raiseNotification').callsFake(() => {
-      console.log(`StudentsRest raiseNotification called`);
+      console.log(`\nStudentsRest raiseNotification called`);
     });
 
     // call
@@ -95,7 +95,7 @@ describe('Students Service', function () {
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'delete').callsFake((config, objID) => {
-      console.log(`DbOpsUtils.delete called`);
+      console.log(`\nDbOpsUtils.delete called`);
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 

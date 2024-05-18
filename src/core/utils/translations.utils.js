@@ -33,10 +33,10 @@ const Public = {
     try {
       Private.Languages[language] = JSON.parse(fs.readFileSync(file));
 
-      console.log(`Language added ${language} from file ${file}`);
+      console.log(`\nLanguage added ${language} from file ${file}`);
       return Private.Languages;
     } catch (e) {
-      console.log(`Failed to add language ${language} from file ${file}. Error: ${CommonUtils.getLogError(e)}`);
+      console.log(`\nFailed to add language ${language} from file ${file}. Error: ${CommonUtils.getLogError(e)}`);
       return null;
     }
   },

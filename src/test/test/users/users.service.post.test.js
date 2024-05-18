@@ -48,7 +48,7 @@ describe('Users Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return {
         status: 201,
         value: { ...postObj, id: testUser.id },
@@ -56,11 +56,11 @@ describe('Users Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubUsersRest = sinon.stub(UsersRest, 'raiseNotification').callsFake(() => {
-      console.log(`UsersRest raiseNotification called`);
+      console.log(`\nUsersRest raiseNotification called`);
     });
 
     // call
@@ -104,7 +104,7 @@ describe('Users Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return {
         status: 201,
         value: { ...postObj, id: testUser.id },
@@ -112,11 +112,11 @@ describe('Users Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubUsersRest = sinon.stub(UsersRest, 'raiseNotification').callsFake(() => {
-      console.log(`UsersRest raiseNotification called`);
+      console.log(`\nUsersRest raiseNotification called`);
     });
 
     // call
@@ -213,7 +213,7 @@ describe('Users Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 

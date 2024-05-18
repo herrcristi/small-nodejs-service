@@ -13,7 +13,7 @@ const Private = {
    * rotate jwt passwords
    */
   rotateJwtPassords: (issuer) => {
-    console.log(`Generating a new jwt password for ${issuer}`);
+    console.log(`\nGenerating a new jwt password for ${issuer}`);
 
     Private.JwtPasswords[issuer] ??= [];
     Private.JwtPasswords[issuer].push(CommonUtils.getRandomBytes(32)); // add a random password
@@ -67,7 +67,7 @@ const Public = {
 
         return { status: 200, value: decoded.data };
       } catch (e) {
-        console.log(`Failed to decrypt: ${e.stack}`);
+        console.log(`\nFailed to decrypt: ${e.stack}`);
       }
     }
 
@@ -105,7 +105,7 @@ const Public = {
 
         return { status: 200, value: decodedJwtToken.data };
       } catch (e) {
-        console.log(`Failed to verify jwt: ${e.stack}`);
+        console.log(`\nFailed to verify jwt: ${e.stack}`);
       }
     }
 

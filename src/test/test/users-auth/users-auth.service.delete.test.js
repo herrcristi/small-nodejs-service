@@ -37,7 +37,7 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     let stubBase = sinon.stub(DbOpsUtils, 'delete').callsFake((config, objID) => {
-      console.log(`DbOpsUtils.delete called`);
+      console.log(`\nDbOpsUtils.delete called`);
       return {
         status: 200,
         value: { ...testUser },
@@ -45,7 +45,7 @@ describe('Users Auth Service', function () {
     });
 
     let stubUsersAuthRest = sinon.stub(UsersAuthRest, 'raiseNotification').callsFake(() => {
-      console.log(`UsersAuthRest raiseNotification called`);
+      console.log(`\nUsersAuthRest raiseNotification called`);
     });
 
     let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject');
@@ -76,7 +76,7 @@ describe('Users Auth Service', function () {
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'delete').callsFake((config, objID) => {
-      console.log(`DbOpsUtils.delete called`);
+      console.log(`\nDbOpsUtils.delete called`);
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 

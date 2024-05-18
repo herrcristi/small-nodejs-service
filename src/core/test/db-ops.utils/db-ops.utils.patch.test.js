@@ -45,7 +45,7 @@ describe('DB-Ops Utils', function () {
 
     let collection = {};
     collection.bulkWrite = sinon.stub().callsFake((ops) => {
-      console.log(`Current ops ${JSON.stringify(ops, null, 2)}`);
+      console.log(`\nCurrent ops ${JSON.stringify(ops, null, 2)}`);
       chai.expect(ops.length).to.equal(2);
 
       return {
@@ -97,7 +97,7 @@ describe('DB-Ops Utils', function () {
 
     let collection = {};
     collection.bulkWrite = sinon.stub().callsFake((ops) => {
-      console.log(`Current ops ${JSON.stringify(ops, null, 2)}`);
+      console.log(`\nCurrent ops ${JSON.stringify(ops, null, 2)}`);
       chai.expect(ops.length).to.equal(1);
 
       return {
@@ -136,7 +136,7 @@ describe('DB-Ops Utils', function () {
 
     let collection = {};
     collection.bulkWrite = sinon.stub().callsFake((ops) => {
-      console.log(`Current ops ${JSON.stringify(ops, null, 2)}`);
+      console.log(`\nCurrent ops ${JSON.stringify(ops, null, 2)}`);
       chai.expect(ops.length).to.equal(3);
 
       return {
