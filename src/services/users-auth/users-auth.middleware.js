@@ -21,7 +21,7 @@ const Public = {
     ];
 
     if (whitelistRoutes.includes(route)) {
-      console.log(`Route whitelisted: ${route}`);
+      console.log(`\nRoute whitelisted: ${route}`);
       return next();
     }
 
@@ -42,13 +42,13 @@ const Public = {
         return res.end();
       }
     } catch (e) {
-      console.log(`Failed to authenticate request. Error: ${e.stack}`, _ctx);
+      console.log(`\nFailed to authenticate request. Error: ${e.stack}`, _ctx);
       res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
       return res.end();
     }
 
     // valid
-    console.log(`Request authenticated ${route}`);
+    console.log(`\nRequest authenticated ${route}`);
     next();
   },
 };
