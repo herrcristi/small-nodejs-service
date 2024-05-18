@@ -280,7 +280,7 @@ const Public = {
   validate: async (serviceName, objInfo, _ctx) => {
     const localService = Private.Config.local[serviceName];
     if (localService) {
-      return await localService.validate(objInfo, _ctx);
+      return await localService.validate({ method: objInfo.method, route: objInfo.route, token: objInfo.token }, _ctx);
     }
 
     const cookie = objInfo.cookie;

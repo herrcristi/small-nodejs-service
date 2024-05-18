@@ -71,6 +71,10 @@ const Validators = {
 const Private = {
   Action: {
     Login: 'login',
+    Post: 'post',
+    Delete: 'delete',
+    Put: 'put',
+    Patch: 'patch',
   },
   Notification: NotificationsUtils.Constants.Notification,
 
@@ -298,25 +302,33 @@ const Public = {
       return { status: 401, error: { message: msg, error: new Error(msg) } };
     }
 
-    // validate school
-    const validSchool = user.schools.find((item) => item.id === _ctx.tenantID);
-    if (!validSchool) {
-      const msg = 'Failed to validate school';
-      return { status: 401, error: { message: msg, error: new Error(msg) } };
-    }
+    // validate global (non-tenant) route
+    const isValidRouteForRoles = (roles) => {
+      return roles?.some((role) => Private.RolesApiAccess[role]?.[objInfo.method?.toUpperCase()]?.[objInfo.route]);
+    };
 
-    // validate school is not disabled
-    if (validSchool.status === SchoolsRest.Constants.Status.Disabled) {
-      const msg = 'School is disabled';
-      return { status: 401, error: { message: msg, error: new Error(msg) } };
-    }
-    // validate also route
-    const validRole = validSchool.roles?.some(
-      (role) => Private.RolesApiAccess[role]?.[objInfo.method?.toUpperCase()]?.[objInfo.route]
-    );
-    if (!validRole) {
-      const msg = `Route is not accesible: ${objInfo.method} ${objInfo.route}`;
-      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    const validGlobalRole = isValidRouteForRoles(['all']);
+    if (!validGlobalRole) {
+      // validate per tenant
+      // validate school
+      const validSchool = user.schools.find((item) => item.id === _ctx.tenantID);
+      if (!validSchool) {
+        const msg = 'Failed to validate school';
+        return { status: 401, error: { message: msg, error: new Error(msg) } };
+      }
+
+      // validate school is not disabled
+      if (validSchool.status === SchoolsRest.Constants.Status.Disabled) {
+        const msg = 'School is disabled';
+        return { status: 401, error: { message: msg, error: new Error(msg) } };
+      }
+
+      // validate also route
+      const validRole = isValidRouteForRoles(validSchool.roles);
+      if (!validRole) {
+        const msg = `Route is not accesible: ${objInfo.method} ${objInfo.route}`;
+        return { status: 401, error: { message: msg, error: new Error(msg) } };
+      }
     }
 
     // success
@@ -416,6 +428,7 @@ const Public = {
 
     // raise event for put (changed password)
     const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    console.log('new obj', newObj);
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Put, newObj, newObj, _ctx);
 
     // raise a notification for modified obj

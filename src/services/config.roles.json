@@ -1,19 +1,24 @@
 {
   "roles": {
+    "all": {
+      "users-auth": {
+        "PUT": ["/api/v1/users-auth/:id"],
+        "PATCH": ["/api/v1/users-auth/:id"]
+      },
+      "users": {
+        "GET": ["/api/v1/users", "/api/v1/users/:id"],
+        "DELETE": ["/api/v1/users/:id"],
+        "PUT": ["/api/v1/users/:id"],
+        "PATCH": ["/api/v1/users/:id"]
+      }
+    },
+
     "admin": {
       "schools": {
         "GET": ["/api/v1/schols/:id"]
       },
-      "users-auth": {
-        "PUT": ["/api/v1/users-auth/login"],
-        "PATCH": ["/api/v1/users-auth/login"]
-      },
       "users": {
-        "GET": ["/api/v1/users", "/api/v1/users/:id"],
-        "POST": ["/api/v1/users"],
-        "DELETE": ["/api/v1/users/:id"],
-        "PUT": ["/api/v1/users/:id"],
-        "PATCH": ["/api/v1/users/:id"]
+        "POST": ["/api/v1/users"]
       },
       "events": {
         "GET": ["/api/v1/events", "/api/v1/events/:id"]
@@ -66,17 +71,6 @@
       "schools": {
         "GET": ["/api/v1/schols/:id"]
       },
-      "users-auth": {
-        "PUT": ["/api/v1/users-auth/login"],
-        "PATCH": ["/api/v1/users-auth/login"]
-      },
-      "users": {
-        "GET": ["/api/v1/users", "/api/v1/users/:id"],
-        "POST": ["/api/v1/users"],
-        "DELETE": ["/api/v1/users/:id"],
-        "PUT": ["/api/v1/users/:id"],
-        "PATCH": ["/api/v1/users/:id"]
-      },
       "classes": {
         "GET": ["/api/v1/classes", "/api/v1/classes/:id"]
       },
@@ -104,16 +98,6 @@
     "student": {
       "schools": {
         "GET": ["/api/v1/schols/:id"]
-      },
-      "users-auth": {
-        "PUT": ["/api/v1/users-auth/login"],
-        "PATCH": ["/api/v1/users-auth/login"]
-      },
-      "users": {
-        "GET": ["/api/v1/users", "/api/v1/users/:id"],
-        "DELETE": ["/api/v1/users/:id"],
-        "PUT": ["/api/v1/users/:id"],
-        "PATCH": ["/api/v1/users/:id"]
       },
       "classes": {
         "GET": ["/api/v1/classes", "/api/v1/classes/:id"]
