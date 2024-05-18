@@ -24,7 +24,7 @@ router.route(`${UsersAuthConstants.ApiPath}/:id`).patch(UsersAuthController.patc
  */
 router.route(`${UsersAuthConstants.ApiPathInternal}/validate`).get(UsersAuthController.validate);
 
-router.route(`${UsersAuthConstants.ApiPathInternal}`).post(UsersAuthController.post);
+router.route(`${UsersAuthConstants.ApiPathInternal}`).post(UsersAuthController.post); // users post should not be made public (because of the signup)
 router.route(`${UsersAuthConstants.ApiPathInternal}/:id`).delete(UsersAuthController.delete);
 
 router.route(`${UsersAuthConstants.ApiPathInternal}/notifications`).post(UsersAuthController.notification);

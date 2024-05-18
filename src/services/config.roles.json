@@ -15,7 +15,10 @@
 
     "admin": {
       "schools": {
-        "GET": ["/api/v1/schols/:id"]
+        "GET": ["/api/v1/schols/:id"],
+        "DELETE": ["/api/v1/schols/:id"],
+        "PUT": ["/api/v1/schols/:id"],
+        "PATCH": ["/api/v1/schols/:id"]
       },
       "users": {
         "POST": ["/api/v1/users"]

@@ -21,7 +21,7 @@ const Public = {
       filter.projection ??= {};
       filter.projection['_id'] = 0;
 
-      // TODO set limit to some value like 1000 (if not set)
+      // TODO set limit to some value like 10000 (if not set)
       filter.limit = filter.limit || 0;
       filter.skip = filter.skip || 0;
 
