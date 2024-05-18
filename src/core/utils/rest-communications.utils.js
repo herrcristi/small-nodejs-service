@@ -29,7 +29,7 @@ const Private = {
 
   /**
    * rest call
-   * config: { serviceName, method, path, query?, body? }
+   * config: { serviceName, method, path, query?, body?, headers? }
    */
   restCall: async (config, _ctx) => {
     console.log(`\nRest api call: ${JSON.stringify(config, null, 2)}`);
@@ -61,6 +61,7 @@ const Private = {
         method: config.method,
         url: srvUri,
         headers: {
+          ...headers,
           'x-tenant-id': _ctx.tenantID,
           'x-request-id': _ctx.reqID,
           'x-lang': _ctx.lang,
@@ -122,7 +123,7 @@ const Public = {
 
   /**
    * rest call
-   * config: { serviceName, method, path, query?, body? }
+   * config: { serviceName, method, path, query?, body?, headers? }
    */
   restCall: async (config, _ctx) => {
     return await Private.restCall(config, _ctx);
@@ -191,8 +192,8 @@ const Public = {
     if (localService) {
       return await localService.getOne(objID, projection, _ctx);
     }
-    const queryParams = projection ? `?projection=${Object.keys(projection).join(',')}` : '';
-    return await Private.restCall({ serviceName, method: 'GET', path: `/${objID}${queryParams}` }, _ctx);
+    const queryParams = projection ? `projection=${Object.keys(projection).join(',')}` : '';
+    return await Private.restCall({ serviceName, method: 'GET', path: `/${objID}`, query: queryParams }, _ctx);
   },
 
   /**
@@ -274,13 +275,21 @@ const Public = {
 
   /**
    * validate
+   * objInfo: { method, route, token, cookie }
    */
   validate: async (serviceName, objInfo, _ctx) => {
     const localService = Private.Config.local[serviceName];
     if (localService) {
       return await localService.validate(objInfo, _ctx);
     }
-    return await Private.restCall({ serviceName, method: 'POST', path: '/validate', body: objInfo }, _ctx);
+
+    const cookie = objInfo.cookie;
+    const queryParams = `method=${objInfo.method}&route=${encodeURIComponent(objInfo.route)}`;
+
+    return await Private.restCall(
+      { serviceName, method: 'GET', path: '/validate', query: queryParams, headers: { cookie } },
+      _ctx
+    );
   },
 };
 

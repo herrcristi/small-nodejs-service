@@ -125,7 +125,7 @@ describe('Users Auth Controller', function () {
     let res = await chai
       .request(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
-      .set('cookie', `SmallApp-token=${testUser.token}`);
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -153,7 +153,7 @@ describe('Users Auth Controller', function () {
     let res = await chai
       .request(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
-      .set('cookie', `SmallApp-token=${testUser.token}`);
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -179,7 +179,7 @@ describe('Users Auth Controller', function () {
     let res = await chai
       .request(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
-      .set('cookie', `SmallApp-token=${testUser.token}`);
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check

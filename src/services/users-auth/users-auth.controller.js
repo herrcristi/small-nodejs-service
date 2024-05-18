@@ -31,7 +31,7 @@ const Public = {
       }
 
       // set token as cookie
-      res.cookie('SmallApp-token', r.token, {
+      res.cookie(UsersAuthConstants.AuthToken, r.token, {
         expires: new Date(Date.now() + 24 * 60 * 60 * 1000 /*1d*/),
         httpOnly: true,
       });
@@ -56,7 +56,7 @@ const Public = {
       );
 
       // get token from cookie
-      const token = req.cookies['SmallApp-token'];
+      const token = req.cookies[UsersAuthConstants.AuthToken];
       const method = req.query['method'];
       const route = req.query['route'];
 

@@ -14,6 +14,9 @@ const Public = {
 
   // type
   Type: 'user-auth',
+
+  // token
+  AuthToken: 'SmallApp-token',
 };
 
 module.exports = { ...Public };
