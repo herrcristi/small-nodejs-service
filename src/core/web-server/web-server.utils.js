@@ -41,7 +41,7 @@ const Public = {
       if (Array.isArray(usersAuthMiddleware)) {
         route.stack.forEach((layer) => {
           Object.keys(layer.route.methods).forEach((method) => {
-            // add middleware to routes here with route.all to have access to req.route.path
+            // add middleware to routes here to have access to req.route.path
             usersAuthMiddleware.forEach((middleware) => {
               app[method](layer.route.path, middleware?.middleware || middleware);
             });
