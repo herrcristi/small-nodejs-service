@@ -48,7 +48,7 @@ describe('Schools Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return {
         status: 201,
         value: { ...postObj, id: testSchool.id },
@@ -56,11 +56,11 @@ describe('Schools Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubSchoolsRest = sinon.stub(SchoolsRest, 'raiseNotification').callsFake(() => {
-      console.log(`SchoolsRest raiseNotification called`);
+      console.log(`\nSchoolsRest raiseNotification called`);
     });
 
     // call
@@ -104,7 +104,7 @@ describe('Schools Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return {
         status: 201,
         value: { ...postObj, id: testSchool.id },
@@ -112,11 +112,11 @@ describe('Schools Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubSchoolsRest = sinon.stub(SchoolsRest, 'raiseNotification').callsFake(() => {
-      console.log(`SchoolsRest raiseNotification called`);
+      console.log(`\nSchoolsRest raiseNotification called`);
     });
 
     // call
@@ -213,7 +213,7 @@ describe('Schools Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 

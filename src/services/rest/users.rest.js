@@ -150,7 +150,7 @@ const Public = {
       }
     }
 
-    console.log(`Notification filtered only to ${role} notifications: ${JSON.stringify(newNotification, null, 2)}`);
+    console.log(`\nNotification filtered only to ${role} notifications: ${JSON.stringify(newNotification, null, 2)}`);
     return newNotification;
   },
 
@@ -184,7 +184,7 @@ const Public = {
       }
     }
 
-    console.log(`Notifications splitted by tenant: ${JSON.stringify(tenantNotifications, null, 2)}`);
+    console.log(`\nNotifications splitted by tenant: ${JSON.stringify(tenantNotifications, null, 2)}`);
     return tenantNotifications;
   },
 };

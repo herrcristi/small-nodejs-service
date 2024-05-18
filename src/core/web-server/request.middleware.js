@@ -26,16 +26,16 @@ const Public = {
     let call = `${req.method.toUpperCase()} ${req.path}`;
 
     res.on('finish', () => {
-      console.log(`Request finished: ${call} -> Response: ${res.statusCode}. Time: ${new Date() - time} ms`);
+      console.log(`\nRequest finished: ${call} -> Response: ${res.statusCode}. Time: ${new Date() - time} ms`);
     });
 
     res.on('close', () => {
       req._ctx.duration = new Date() - time;
       req._ctx.statusCode = res.statusCode;
-      console.log(`Request closed  : ${call} -> Response: ${res.statusCode}. Time: ${req._ctx.duration} ms`);
+      console.log(`\nRequest closed  : ${call} -> Response: ${res.statusCode}. Time: ${req._ctx.duration} ms`);
     });
 
-    console.log('Received call', call, req._ctx);
+    console.log('\nReceived call', call, req._ctx);
     next();
   },
 };

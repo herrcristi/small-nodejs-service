@@ -25,7 +25,7 @@ const Public = {
    * init env
    */
   initEnv: async () => {
-    console.log(`Current env: ${process.env.NODE_ENV}`);
+    console.log(`\nCurrent env: ${process.env.NODE_ENV}`);
 
     const envFile = path.resolve(__dirname, `./.${process.env.NODE_ENV}.env`);
     if (fs.existsSync(envFile)) {
@@ -41,7 +41,7 @@ const Public = {
    */
   init: async () => {
     try {
-      console.log('Init service');
+      console.log('\nInit service');
 
       // init env
       await Public.initEnv();
@@ -59,12 +59,12 @@ const Public = {
       await WebServer.init(port);
 
       // emit that service was inited
-      console.log('Service inited');
+      console.log('\nService inited');
       Constants.event.emit('inited');
 
       return true;
     } catch (e) {
-      console.log(`Failed to init service. Error: ${CommonUtils.getLogError(e)}`);
+      console.log(`\nFailed to init service. Error: ${CommonUtils.getLogError(e)}`);
       process.exit(1);
     }
   },

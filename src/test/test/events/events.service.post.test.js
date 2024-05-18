@@ -48,7 +48,7 @@ describe('Events Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return {
         status: 201,
         value: { ...postObj, id: testEvent.id },
@@ -56,7 +56,7 @@ describe('Events Service', function () {
     });
 
     let stubEventsRest = sinon.stub(EventsRest, 'raiseNotification').callsFake(() => {
-      console.log(`EventsRest raiseNotification called`);
+      console.log(`\nEventsRest raiseNotification called`);
     });
 
     // call
@@ -99,7 +99,7 @@ describe('Events Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return {
         status: 201,
         value: { ...postObj, id: testEvent.id },
@@ -107,7 +107,7 @@ describe('Events Service', function () {
     });
 
     let stubEventsRest = sinon.stub(EventsRest, 'raiseNotification').callsFake(() => {
-      console.log(`EventsRest raiseNotification called`);
+      console.log(`\nEventsRest raiseNotification called`);
     });
 
     // call
@@ -204,7 +204,7 @@ describe('Events Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 

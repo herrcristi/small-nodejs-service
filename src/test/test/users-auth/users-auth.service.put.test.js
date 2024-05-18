@@ -41,7 +41,7 @@ describe('Users Auth Service', function () {
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'put').callsFake((config, objID, putObj) => {
-      console.log(`DbOpsUtils.put called`);
+      console.log(`\nDbOpsUtils.put called`);
       return {
         status: 200,
         value: { ...testUser },
@@ -49,13 +49,13 @@ describe('Users Auth Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubUsersAuthRest = sinon.stub(UsersAuthRest, 'raiseNotification').callsFake((notificationType, objs) => {
-      console.log(`UsersAuthRest raiseNotification called`);
-      console.log(`NotificationType: ${JSON.stringify(notificationType, null, 2)}`);
-      console.log(`Notifications: ${JSON.stringify(objs, null, 2)}`);
+      console.log(`\nUsersAuthRest raiseNotification called`);
+      console.log(`\nNotificationType: ${JSON.stringify(notificationType, null, 2)}`);
+      console.log(`\nNotifications: ${JSON.stringify(objs, null, 2)}`);
 
       chai.expect(notificationType).to.equal(NotificationsUtils.Constants.Notification.Modified);
       chai.expect(objs).to.deep.equal([
@@ -119,7 +119,7 @@ describe('Users Auth Service', function () {
 
     // stub
     let stubBase = sinon.stub(DbOpsUtils, 'put').callsFake((config, objID, putObj) => {
-      console.log(`DbOpsUtils.put called`);
+      console.log(`\nDbOpsUtils.put called`);
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 

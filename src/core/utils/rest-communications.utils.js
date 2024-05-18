@@ -32,7 +32,7 @@ const Private = {
    * config: { serviceName, method, path, query?, body? }
    */
   restCall: async (config, _ctx) => {
-    console.log(`Rest api call: ${JSON.stringify(config, null, 2)}`);
+    console.log(`\nRest api call: ${JSON.stringify(config, null, 2)}`);
 
     let srvConfigUri = Private.Config.rest[config.serviceName];
     if (!srvConfigUri) {
@@ -50,7 +50,7 @@ const Private = {
       srvUri += `?${config.query}`;
     }
 
-    console.log(`Current url to call: ${config.method} ${srvUri}`);
+    console.log(`\nCurrent url to call: ${config.method} ${srvUri}`);
 
     // TODO service2service auth
 
@@ -75,7 +75,7 @@ const Private = {
       });
 
       console.log(
-        `Calling ${config.method} ${srvUri} returned status: ${r.status}, body: ${
+        `\nCalling ${config.method} ${srvUri} returned status: ${r.status}, body: ${
           CommonUtils.isDebug() ? JSON.stringify(r.data).slice(0, 2000) : '***'
         }. Finished in ${new Date() - time} ms`
       );
@@ -94,7 +94,7 @@ const Private = {
       // success
       return { status: r.status, value: r.data };
     } catch (e) {
-      console.log(`Calling ${config.method} ${srvUri} failed: ${e?.message}. Finished in ${new Date() - time} ms`);
+      console.log(`\nCalling ${config.method} ${srvUri} failed: ${e?.message}. Finished in ${new Date() - time} ms`);
 
       return { status: 500, error: { message: e?.message, error: e?.message } };
     }
@@ -112,8 +112,8 @@ const Public = {
     Private.Config.local = Private.Config.local || {};
     Private.Config.rest = Private.Config.rest || {};
 
-    console.log(`Current communication config, local service: ${JSON.stringify(Object.keys(config.local), null, 2)}`);
-    console.log(`Current communication config, remote service: ${JSON.stringify(config.rest, null, 2)}`);
+    console.log(`\nCurrent communication config, local service: ${JSON.stringify(Object.keys(config.local), null, 2)}`);
+    console.log(`\nCurrent communication config, remote service: ${JSON.stringify(config.rest, null, 2)}`);
   },
 
   getConfig: async () => {

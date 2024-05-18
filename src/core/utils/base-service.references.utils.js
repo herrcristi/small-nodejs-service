@@ -136,7 +136,7 @@ const Public = {
 
     targetsMap = {};
     if (!targetsIDs.length) {
-      console.log(`Skipping calling targets to populate info for field '${configRef.fieldName}'`);
+      console.log(`\nSkipping calling targets to populate info for field '${configRef.fieldName}'`);
     } else {
       // get all targets
       const projection = configRef.projection || { id: 1, name: 1, type: 1, status: 1 };
@@ -146,7 +146,7 @@ const Public = {
       }
 
       if (targetsIDs.length != rs.value.length) {
-        console.log(`Not all targets were found for field '${configRef.fieldName}'`);
+        console.log(`\nNot all targets were found for field '${configRef.fieldName}'`);
       }
 
       for (const obj of rs.value) {
@@ -159,7 +159,7 @@ const Public = {
       Utils.populate(targetsMap, objs[i], fieldsPath, 0);
     }
 
-    console.log(`Targets expanded for field '${configRef.fieldName}'`);
+    console.log(`\nTargets expanded for field '${configRef.fieldName}'`);
 
     return { status: 200, value: objs };
   },
@@ -183,7 +183,7 @@ const Public = {
       let r = await Public.populate(configRef, objs, _ctx);
       if (r.error) {
         console.log(
-          `${config.serviceName}: Failed to populate references for: ${JSON.stringify(
+          `\n${config.serviceName}: Failed to populate references for: ${JSON.stringify(
             objs.map((item) => CommonUtils.protectData(item)),
             null,
             2
@@ -226,7 +226,7 @@ const Public = {
           let targets = refObj[config.serviceName];
           if (targets == null) {
             console.log(
-              `${config.serviceName}: For '${configRef.fieldName}' skip apply added changes from notification`
+              `\n${config.serviceName}: For '${configRef.fieldName}' skip apply added changes from notification`
             );
             continue;
           }
@@ -248,7 +248,7 @@ const Public = {
       // modified
       if (notification.modified) {
         console.log(
-          `${config.serviceName}: For '${
+          `\n${config.serviceName}: For '${
             configRef.fieldName
           }' apply modified changes from notification ${JSON.stringify(notification)}`
         );
@@ -267,7 +267,7 @@ const Public = {
       // removed
       if (notification.removed) {
         console.log(
-          `${config.serviceName}: For '${configRef.fieldName}' apply deletion from notification ${JSON.stringify(
+          `\n${config.serviceName}: For '${configRef.fieldName}' apply deletion from notification ${JSON.stringify(
             notification
           )}`
         );
@@ -285,7 +285,7 @@ const Public = {
     }
 
     console.log(
-      `${config.serviceName}: Notification for references processed succesfully: ${JSON.stringify(notification)}`
+      `\n${config.serviceName}: Notification for references processed succesfully: ${JSON.stringify(notification)}`
     );
 
     // success

@@ -66,7 +66,7 @@ describe('Professors Service', function () {
     });
 
     let stubPost = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called: ${JSON.stringify(postObj, null, 2)}`);
+      console.log(`\nDbOpsUtils.post called: ${JSON.stringify(postObj, null, 2)}`);
       return {
         status: 201,
         value: { ...postObj, id: userID },
@@ -74,11 +74,11 @@ describe('Professors Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubProfessorsRest = sinon.stub(ProfessorsRest, 'raiseNotification').callsFake(() => {
-      console.log(`ProfessorsRest raiseNotification called`);
+      console.log(`\nProfessorsRest raiseNotification called`);
     });
 
     let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
@@ -145,7 +145,7 @@ describe('Professors Service', function () {
     });
 
     let stubPost = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called: ${JSON.stringify(postObj, null, 2)}`);
+      console.log(`\nDbOpsUtils.post called: ${JSON.stringify(postObj, null, 2)}`);
       return {
         status: 201,
         value: { ...postObj, id: userID },
@@ -153,11 +153,11 @@ describe('Professors Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubProfessorsRest = sinon.stub(ProfessorsRest, 'raiseNotification').callsFake(() => {
-      console.log(`ProfessorsRest raiseNotification called`);
+      console.log(`\nProfessorsRest raiseNotification called`);
     });
 
     let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {

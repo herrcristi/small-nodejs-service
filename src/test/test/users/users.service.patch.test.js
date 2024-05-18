@@ -45,7 +45,7 @@ describe('Users Service', function () {
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
-      console.log(`DbOpsUtils.get called`);
+      console.log(`\nDbOpsUtils.get called`);
       return {
         status: 200,
         value: { ...testUser },
@@ -57,7 +57,7 @@ describe('Users Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'patch').callsFake((config, objID, patchObj) => {
-      console.log(`DbOpsUtils.patch called`);
+      console.log(`\nDbOpsUtils.patch called`);
       return {
         status: 200,
         value: { ...testUser },
@@ -65,11 +65,11 @@ describe('Users Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubUsersRest = sinon.stub(UsersRest, 'raiseNotification').callsFake(() => {
-      console.log(`UsersRest raiseNotification called`);
+      console.log(`\nUsersRest raiseNotification called`);
     });
 
     // call
@@ -111,7 +111,7 @@ describe('Users Service', function () {
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
-      console.log(`DbOpsUtils.get called`);
+      console.log(`\nDbOpsUtils.get called`);
       return {
         status: 200,
         value: { ...testUser },
@@ -123,7 +123,7 @@ describe('Users Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'patch').callsFake((config, objID, patchObj) => {
-      console.log(`DbOpsUtils.patch called`);
+      console.log(`\nDbOpsUtils.patch called`);
       return {
         status: 200,
         value: { ...testUser, schools: patchObj.set.schools },
@@ -131,14 +131,14 @@ describe('Users Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubUsersRest = sinon.stub(UsersRest, 'raiseNotification');
     stubUsersRest.onCall(0).callsFake((notificationType, objs) => {
-      console.log(`UsersRest raiseNotification called`);
-      console.log(`NotificationType: ${JSON.stringify(notificationType, null, 2)}`);
-      console.log(`Notifications: ${JSON.stringify(objs, null, 2)}`);
+      console.log(`\nUsersRest raiseNotification called`);
+      console.log(`\nNotificationType: ${JSON.stringify(notificationType, null, 2)}`);
+      console.log(`\nNotifications: ${JSON.stringify(objs, null, 2)}`);
 
       chai.expect(notificationType).to.equal(NotificationsUtils.Constants.Notification.Modified);
       chai.expect(objs).to.deep.equal([
@@ -153,9 +153,9 @@ describe('Users Service', function () {
       ]);
     });
     stubUsersRest.onCall(1).callsFake((notificationType, objs) => {
-      console.log(`UsersRest raiseNotification called`);
-      console.log(`NotificationType: ${JSON.stringify(notificationType, null, 2)}`);
-      console.log(`Notifications: ${JSON.stringify(objs, null, 2)}`);
+      console.log(`\nUsersRest raiseNotification called`);
+      console.log(`\nNotificationType: ${JSON.stringify(notificationType, null, 2)}`);
+      console.log(`\nNotifications: ${JSON.stringify(objs, null, 2)}`);
 
       chai.expect(notificationType).to.equal(NotificationsUtils.Constants.Notification.Removed);
       chai.expect(objs).to.deep.equal([
@@ -237,7 +237,7 @@ describe('Users Service', function () {
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
-      console.log(`DbOpsUtils.get called`);
+      console.log(`\nDbOpsUtils.get called`);
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 
@@ -274,7 +274,7 @@ describe('Users Service', function () {
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
-      console.log(`DbOpsUtils.get called`);
+      console.log(`\nDbOpsUtils.get called`);
       return {
         status: 200,
         value: { ...testUser },
@@ -319,7 +319,7 @@ describe('Users Service', function () {
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
-      console.log(`DbOpsUtils.get called`);
+      console.log(`\nDbOpsUtils.get called`);
       return {
         status: 200,
         value: { ...testUser },
@@ -331,7 +331,7 @@ describe('Users Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'patch').callsFake((config, objID, patchObj) => {
-      console.log(`DbOpsUtils.patch called`);
+      console.log(`\nDbOpsUtils.patch called`);
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 

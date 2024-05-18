@@ -40,7 +40,7 @@ describe('Index', function () {
   it('should init not found', async () => {
     // stub
     let stubFs = sinon.stub(fs, 'existsSync').callsFake(() => {
-      console.log(`fs.existsSync will return false`);
+      console.log(`\nfs.existsSync will return false`);
       return false;
     });
 

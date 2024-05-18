@@ -49,7 +49,7 @@ describe('Classes Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return {
         status: 201,
         value: { ...postObj, id: testClass.id },
@@ -57,11 +57,11 @@ describe('Classes Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubClassesRest = sinon.stub(ClassesRest, 'raiseNotification').callsFake(() => {
-      console.log(`ClassesRest raiseNotification called`);
+      console.log(`\nClassesRest raiseNotification called`);
     });
 
     // call
@@ -107,7 +107,7 @@ describe('Classes Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return {
         status: 201,
         value: { ...postObj, id: testClass.id },
@@ -115,11 +115,11 @@ describe('Classes Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubClassesRest = sinon.stub(ClassesRest, 'raiseNotification').callsFake(() => {
-      console.log(`ClassesRest raiseNotification called`);
+      console.log(`\nClassesRest raiseNotification called`);
     });
 
     // call
@@ -229,7 +229,7 @@ describe('Classes Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 

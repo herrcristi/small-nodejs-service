@@ -105,7 +105,7 @@ const Private = {
    */
   errorNoTenant: (_ctx) => {
     const msg = 'Missing tenant';
-    console.log(`Error: ${msg}`);
+    console.log(`\nError: ${msg}`);
     return {
       status: 400,
       error: { message: msg, error: new Error(msg) },
@@ -280,7 +280,7 @@ const Public = {
     let newUsers = [];
     for (const user of users) {
       if (existingStudentsMap[user.id]) {
-        console.log(`Skipping create student ${user.id}`);
+        console.log(`\nSkipping create student ${user.id}`);
         continue;
       }
 

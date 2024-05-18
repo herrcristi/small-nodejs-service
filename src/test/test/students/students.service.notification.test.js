@@ -66,7 +66,7 @@ describe('Students Service', function () {
     });
 
     let stubPost = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called: ${JSON.stringify(postObj, null, 2)}`);
+      console.log(`\nDbOpsUtils.post called: ${JSON.stringify(postObj, null, 2)}`);
       return {
         status: 201,
         value: { ...postObj, id: userID },
@@ -74,11 +74,11 @@ describe('Students Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubStudentsRest = sinon.stub(StudentsRest, 'raiseNotification').callsFake(() => {
-      console.log(`StudentsRest raiseNotification called`);
+      console.log(`\nStudentsRest raiseNotification called`);
     });
 
     let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
@@ -145,7 +145,7 @@ describe('Students Service', function () {
     });
 
     let stubPost = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called: ${JSON.stringify(postObj, null, 2)}`);
+      console.log(`\nDbOpsUtils.post called: ${JSON.stringify(postObj, null, 2)}`);
       return {
         status: 201,
         value: { ...postObj, id: userID },
@@ -153,13 +153,13 @@ describe('Students Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubStudentsRest = sinon.stub(StudentsRest, 'raiseNotification').callsFake((notificationType, objs) => {
-      console.log(`StudentsRest raiseNotification called`);
-      console.log(`NotificationType: ${JSON.stringify(notificationType, null, 2)}`);
-      console.log(`Objs: ${JSON.stringify(objs, null, 2)}`);
+      console.log(`\nStudentsRest raiseNotification called`);
+      console.log(`\nNotificationType: ${JSON.stringify(notificationType, null, 2)}`);
+      console.log(`\nObjs: ${JSON.stringify(objs, null, 2)}`);
     });
 
     let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {

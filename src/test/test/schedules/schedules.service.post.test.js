@@ -56,7 +56,7 @@ describe('Schedules Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return {
         status: 201,
         value: { ...postObj, id: testSchedule.id, class: testSchedule.class },
@@ -64,11 +64,11 @@ describe('Schedules Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubSchedulesRest = sinon.stub(SchedulesRest, 'raiseNotification').callsFake(() => {
-      console.log(`SchedulesRest raiseNotification called`);
+      console.log(`\nSchedulesRest raiseNotification called`);
     });
 
     // call
@@ -105,7 +105,7 @@ describe('Schedules Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return {
         status: 201,
         value: { ...postObj, id: testSchedule.id, class: testSchedule.class },
@@ -113,11 +113,11 @@ describe('Schedules Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubSchedulesRest = sinon.stub(SchedulesRest, 'raiseNotification').callsFake(() => {
-      console.log(`SchedulesRest raiseNotification called`);
+      console.log(`\nSchedulesRest raiseNotification called`);
     });
 
     // call
@@ -208,7 +208,7 @@ describe('Schedules Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 

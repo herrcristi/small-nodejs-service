@@ -51,7 +51,7 @@ describe('Groups Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return {
         status: 201,
         value: { ...postObj, id: testGroup.id },
@@ -59,11 +59,11 @@ describe('Groups Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubGroupsRest = sinon.stub(GroupsRest, 'raiseNotification').callsFake(() => {
-      console.log(`GroupsRest raiseNotification called`);
+      console.log(`\nGroupsRest raiseNotification called`);
     });
 
     // call
@@ -109,7 +109,7 @@ describe('Groups Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return {
         status: 201,
         value: { ...postObj, id: testGroup.id },
@@ -117,11 +117,11 @@ describe('Groups Service', function () {
     });
 
     let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     let stubGroupsRest = sinon.stub(GroupsRest, 'raiseNotification').callsFake(() => {
-      console.log(`GroupsRest raiseNotification called`);
+      console.log(`\nGroupsRest raiseNotification called`);
     });
 
     // call
@@ -236,7 +236,7 @@ describe('Groups Service', function () {
     });
 
     let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`DbOpsUtils.post called`);
+      console.log(`\nDbOpsUtils.post called`);
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
 

@@ -11,7 +11,7 @@ const Public = {
    * init
    */
   init: async (port) => {
-    console.log('Init webserver');
+    console.log('\nInit webserver');
 
     return await WebServerUtils.init(port, ConfigServices.getRoutes());
   },

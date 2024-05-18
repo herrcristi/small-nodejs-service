@@ -15,7 +15,7 @@ const Public = {
    */
   init: async (_ctx) => {
     Private.DB = await DBMgr.connect(process.env.DATABASE_URL, process.env.DATABASE_EVENTS, _ctx);
-    console.log('Events database inited');
+    console.log('\nEvents database inited');
   },
 
   /**
@@ -46,7 +46,7 @@ const Public = {
     await coll?.createIndex({ 'target.id': 1 });
     await coll?.createIndex({ 'target.name': 1 });
 
-    console.log(`Indexes added for ${collName}`);
+    console.log(`\nIndexes added for ${collName}`);
   },
 };
 

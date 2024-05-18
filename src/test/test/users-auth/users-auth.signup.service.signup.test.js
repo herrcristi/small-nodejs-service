@@ -47,7 +47,7 @@ describe('Users Auth Service', function () {
 
     // stub schools
     let stubSchoolsPost = sinon.stub(SchoolsRest, 'post').callsFake((schoolReq) => {
-      console.log(`SchoolsRest.post called with ${JSON.stringify(schoolReq, null, 2)}`);
+      console.log(`\nSchoolsRest.post called with ${JSON.stringify(schoolReq, null, 2)}`);
       chai.expect(schoolReq).to.deep.equal({
         name: 'GitHub University',
         description: 'GitHub University. The place to code.',
@@ -59,7 +59,7 @@ describe('Users Auth Service', function () {
       };
     });
     let stubSchoolsDelete = sinon.stub(SchoolsRest, 'delete').callsFake((schoolID) => {
-      console.log(`SchoolsRest.delete called with ${JSON.stringify(schoolID, null, 2)}`);
+      console.log(`\nSchoolsRest.delete called with ${JSON.stringify(schoolID, null, 2)}`);
       chai.expect(schoolID).to.equal(testSchoolID);
 
       return {
@@ -70,7 +70,7 @@ describe('Users Auth Service', function () {
 
     // stub users
     let stubUsersPost = sinon.stub(UsersRest, 'post').callsFake((userReq) => {
-      console.log(`UsersRest.post called with ${JSON.stringify(userReq, null, 2)}`);
+      console.log(`\nUsersRest.post called with ${JSON.stringify(userReq, null, 2)}`);
       chai.expect(userReq).to.deep.equal({
         email: testUser.email,
         name: testUser.name,
@@ -92,7 +92,7 @@ describe('Users Auth Service', function () {
     });
 
     let stubUsersDelete = sinon.stub(UsersRest, 'delete').callsFake((userID) => {
-      console.log(`UsersRest.delete called with ${JSON.stringify(userID, null, 2)}`);
+      console.log(`\nUsersRest.delete called with ${JSON.stringify(userID, null, 2)}`);
       chai.expect(userID).to.equal(testUserID);
 
       return {
@@ -103,7 +103,7 @@ describe('Users Auth Service', function () {
 
     // stub users auth
     let stubUsersAuthPost = sinon.stub(UsersAuthService, 'post').callsFake((userAuthReq) => {
-      console.log(`UsersAuthRest.post called with ${JSON.stringify(userAuthReq, null, 2)}`);
+      console.log(`\nUsersAuthRest.post called with ${JSON.stringify(userAuthReq, null, 2)}`);
       chai.expect(userAuthReq).to.deep.equal({
         id: testUser.email,
         password: testUser.password,
@@ -117,7 +117,7 @@ describe('Users Auth Service', function () {
     });
 
     let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     // call
@@ -182,7 +182,7 @@ describe('Users Auth Service', function () {
 
     // stub schools
     let stubSchoolsPost = sinon.stub(SchoolsRest, 'post').callsFake((schoolReq) => {
-      console.log(`SchoolsRest.post called with ${JSON.stringify(schoolReq, null, 2)}`);
+      console.log(`\nSchoolsRest.post called with ${JSON.stringify(schoolReq, null, 2)}`);
       chai.expect(schoolReq).to.deep.equal({
         name: 'GitHub University',
         description: 'GitHub University. The place to code.',
@@ -192,7 +192,7 @@ describe('Users Auth Service', function () {
     });
 
     let stubSchoolsDelete = sinon.stub(SchoolsRest, 'delete').callsFake((schoolID) => {
-      console.log(`SchoolsRest.delete called with ${JSON.stringify(schoolID, null, 2)}`);
+      console.log(`\nSchoolsRest.delete called with ${JSON.stringify(schoolID, null, 2)}`);
       chai.expect(schoolID).to.equal(testSchoolID);
 
       return {
@@ -203,7 +203,7 @@ describe('Users Auth Service', function () {
 
     // stub users
     let stubUsersPost = sinon.stub(UsersRest, 'post').callsFake((userReq) => {
-      console.log(`UsersRest.post called with ${JSON.stringify(userReq, null, 2)}`);
+      console.log(`\nUsersRest.post called with ${JSON.stringify(userReq, null, 2)}`);
       chai.expect(userReq).to.deep.equal({
         email: testUser.email,
         name: testUser.name,
@@ -225,7 +225,7 @@ describe('Users Auth Service', function () {
     });
 
     let stubUsersDelete = sinon.stub(UsersRest, 'delete').callsFake((userID) => {
-      console.log(`UsersRest.delete called with ${JSON.stringify(userID, null, 2)}`);
+      console.log(`\nUsersRest.delete called with ${JSON.stringify(userID, null, 2)}`);
       chai.expect(userID).to.equal(testUserID);
 
       return {
@@ -236,7 +236,7 @@ describe('Users Auth Service', function () {
 
     // stub users auth
     let stubUsersAuthPost = sinon.stub(UsersAuthService, 'post').callsFake((userAuthReq) => {
-      console.log(`UsersAuthRest.post called with ${JSON.stringify(userAuthReq, null, 2)}`);
+      console.log(`\nUsersAuthRest.post called with ${JSON.stringify(userAuthReq, null, 2)}`);
       chai.expect(userAuthReq).to.deep.equal({
         id: testUser.email,
         password: testUser.password,
@@ -250,7 +250,7 @@ describe('Users Auth Service', function () {
     });
 
     let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     // call
@@ -293,7 +293,7 @@ describe('Users Auth Service', function () {
 
     // stub schools
     let stubSchoolsPost = sinon.stub(SchoolsRest, 'post').callsFake((schoolReq) => {
-      console.log(`SchoolsRest.post called with ${JSON.stringify(schoolReq, null, 2)}`);
+      console.log(`\nSchoolsRest.post called with ${JSON.stringify(schoolReq, null, 2)}`);
       chai.expect(schoolReq).to.deep.equal({
         name: 'GitHub University',
         description: 'GitHub University. The place to code.',
@@ -306,7 +306,7 @@ describe('Users Auth Service', function () {
     });
 
     let stubSchoolsDelete = sinon.stub(SchoolsRest, 'delete').callsFake((schoolID) => {
-      console.log(`SchoolsRest.delete called with ${JSON.stringify(schoolID, null, 2)}`);
+      console.log(`\nSchoolsRest.delete called with ${JSON.stringify(schoolID, null, 2)}`);
       chai.expect(schoolID).to.equal(testSchoolID);
 
       return {
@@ -317,7 +317,7 @@ describe('Users Auth Service', function () {
 
     // stub users
     let stubUsersPost = sinon.stub(UsersRest, 'post').callsFake((userReq) => {
-      console.log(`UsersRest.post called with ${JSON.stringify(userReq, null, 2)}`);
+      console.log(`\nUsersRest.post called with ${JSON.stringify(userReq, null, 2)}`);
       chai.expect(userReq).to.deep.equal({
         email: testUser.email,
         name: testUser.name,
@@ -336,7 +336,7 @@ describe('Users Auth Service', function () {
     });
 
     let stubUsersDelete = sinon.stub(UsersRest, 'delete').callsFake((userID) => {
-      console.log(`UsersRest.delete called with ${JSON.stringify(userID, null, 2)}`);
+      console.log(`\nUsersRest.delete called with ${JSON.stringify(userID, null, 2)}`);
       chai.expect(userID).to.equal(testUserID);
 
       return {
@@ -347,7 +347,7 @@ describe('Users Auth Service', function () {
 
     // stub users auth
     let stubUsersAuthPost = sinon.stub(UsersAuthService, 'post').callsFake((userAuthReq) => {
-      console.log(`UsersAuthRest.post called with ${JSON.stringify(userAuthReq, null, 2)}`);
+      console.log(`\nUsersAuthRest.post called with ${JSON.stringify(userAuthReq, null, 2)}`);
       chai.expect(userAuthReq).to.deep.equal({
         id: testUser.email,
         password: testUser.password,
@@ -361,7 +361,7 @@ describe('Users Auth Service', function () {
     });
 
     let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     // call
@@ -404,7 +404,7 @@ describe('Users Auth Service', function () {
 
     // stub schools
     let stubSchoolsPost = sinon.stub(SchoolsRest, 'post').callsFake((schoolReq) => {
-      console.log(`SchoolsRest.post called with ${JSON.stringify(schoolReq, null, 2)}`);
+      console.log(`\nSchoolsRest.post called with ${JSON.stringify(schoolReq, null, 2)}`);
       chai.expect(schoolReq).to.deep.equal({
         name: 'GitHub University',
         description: 'GitHub University. The place to code.',
@@ -417,7 +417,7 @@ describe('Users Auth Service', function () {
     });
 
     let stubSchoolsDelete = sinon.stub(SchoolsRest, 'delete').callsFake((schoolID) => {
-      console.log(`SchoolsRest.delete called with ${JSON.stringify(schoolID, null, 2)}`);
+      console.log(`\nSchoolsRest.delete called with ${JSON.stringify(schoolID, null, 2)}`);
       chai.expect(schoolID).to.equal(testSchoolID);
 
       return {
@@ -428,7 +428,7 @@ describe('Users Auth Service', function () {
 
     // stub users
     let stubUsersPost = sinon.stub(UsersRest, 'post').callsFake((userReq) => {
-      console.log(`UsersRest.post called with ${JSON.stringify(userReq, null, 2)}`);
+      console.log(`\nUsersRest.post called with ${JSON.stringify(userReq, null, 2)}`);
       chai.expect(userReq).to.deep.equal({
         email: testUser.email,
         name: testUser.name,
@@ -450,7 +450,7 @@ describe('Users Auth Service', function () {
     });
 
     let stubUsersDelete = sinon.stub(UsersRest, 'delete').callsFake((userID) => {
-      console.log(`UsersRest.delete called with ${JSON.stringify(userID, null, 2)}`);
+      console.log(`\nUsersRest.delete called with ${JSON.stringify(userID, null, 2)}`);
       chai.expect(userID).to.equal(testUserID);
 
       return {
@@ -461,7 +461,7 @@ describe('Users Auth Service', function () {
 
     // stub users auth
     let stubUsersAuthPost = sinon.stub(UsersAuthService, 'post').callsFake((userAuthReq) => {
-      console.log(`UsersAuthRest.post called with ${JSON.stringify(userAuthReq, null, 2)}`);
+      console.log(`\nUsersAuthRest.post called with ${JSON.stringify(userAuthReq, null, 2)}`);
       chai.expect(userAuthReq).to.deep.equal({
         id: testUser.email,
         password: testUser.password,
@@ -472,7 +472,7 @@ describe('Users Auth Service', function () {
     });
 
     let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`EventsRest.raiseEventForObject called`);
+      console.log(`\nEventsRest.raiseEventForObject called`);
     });
 
     // call

@@ -34,7 +34,7 @@ const Public = {
       return { status: 200, value: filter };
     } catch (e) {
       console.log(
-        `Failed to build mongo filter from ${JSON.stringify(
+        `\nFailed to build mongo filter from ${JSON.stringify(
           req?.quey,
           CommonUtils.stringifyFilter,
           2

@@ -18,7 +18,7 @@ const Public = {
       msg.error = CommonUtils.getLogError(error);
     }
 
-    console.log(`Status message: ${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
+    console.log(`\nStatus message: ${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
 
     return msg;
   },
@@ -36,7 +36,7 @@ const Public = {
       msg.error = CommonUtils.getLogError(error);
     }
 
-    console.log(`Status message: ${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
+    console.log(`\nStatus message: ${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
 
     return msg;
   },
@@ -54,7 +54,7 @@ const Public = {
       msg.error = CommonUtils.getLogError(error);
     }
 
-    console.log(`Status message: ${msg.message}. Error: ${msg.error}. Request: ${JSON.stringify(_ctx)}`);
+    console.log(`\nStatus message: ${msg.message}. Error: ${msg.error}. Request: ${JSON.stringify(_ctx)}`);
 
     return msg;
   },

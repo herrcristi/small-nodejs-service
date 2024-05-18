@@ -21,7 +21,7 @@ const Public = {
 
     try {
       console.log(
-        `${_ctx.serviceName}: Signup called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+        `\n${_ctx.serviceName}: Signup called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
 
       // signup (is a separate service)

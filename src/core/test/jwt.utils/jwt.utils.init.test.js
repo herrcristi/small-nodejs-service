@@ -42,7 +42,7 @@ describe('Jwt Utils', function () {
 
     // check
     const endTime = new Date();
-    console.log(`Elapsed time: ${endTime - time}`);
+    console.log(`\nElapsed time: ${endTime - time}`);
 
     chai.expect(stubPass.callCount).to.equal(2);
     chai.expect(endTime - time).to.be.greaterThanOrEqual(one_day); // 1 day
