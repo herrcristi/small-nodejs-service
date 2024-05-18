@@ -29,7 +29,7 @@ const Public = {
       const token = req.cookies[UsersAuthRest.Constants.AuthToken];
 
       const objValidation = {
-        method: req.method.toUpperCase(),
+        method: req.method,
         route,
         token,
         cookie: `${UsersAuthRest.Constants.AuthToken}=${token}`,

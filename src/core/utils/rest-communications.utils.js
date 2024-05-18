@@ -61,7 +61,7 @@ const Private = {
         method: config.method,
         url: srvUri,
         headers: {
-          ...headers,
+          ...config.headers,
           'x-tenant-id': _ctx.tenantID,
           'x-request-id': _ctx.reqID,
           'x-lang': _ctx.lang,
