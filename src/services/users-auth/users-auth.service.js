@@ -428,7 +428,6 @@ const Public = {
 
     // raise event for put (changed password)
     const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
-    console.log('new obj', newObj);
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Put, newObj, newObj, _ctx);
 
     // raise a notification for modified obj
