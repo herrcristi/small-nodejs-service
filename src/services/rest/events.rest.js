@@ -59,6 +59,7 @@ const Public = {
 
   /**
    * notification (is internal)
+   * notification: { serviceName, added?, modified?, removed? }
    */
   notification: async (notification, _ctx) => {
     return await RestCommsUtils.notification(EventsConstants.ServiceNameInternal, notification, _ctx);
@@ -66,7 +67,7 @@ const Public = {
 
   /**
    * subscribe to receive sync notifications (this is called in the same service as the implementation)
-   * subscriber: {callback, projection }
+   * subscriber: { callback, projection }
    */
   subscribe: async (subscriber, _ctx) => {
     Private.Subscribers.push(subscriber);
@@ -75,7 +76,7 @@ const Public = {
 
   /**
    * subscribe to receive async notifications (via a queue)
-   * subscriber: {callback, projection }
+   * subscriber: { callback, projection }
    */
   consume: async (subscriber, _ctx) => {
     return await NotificationsUtils.consume(subscriber, _ctx);

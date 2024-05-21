@@ -474,6 +474,7 @@ const Public = {
 
   /**
    * notification
+   * notification: { serviceName, added?, modified?, removed? }
    */
   notification: async (notification, _ctx) => {
     // validate

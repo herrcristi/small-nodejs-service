@@ -20,6 +20,9 @@
         "PUT": ["/api/v1/schols/:id"],
         "PATCH": ["/api/v1/schols/:id"]
       },
+      "users-auth": {
+        "POST": ["/api/v1/users-auth"]
+      },
       "users": {
         "POST": ["/api/v1/users"]
       },

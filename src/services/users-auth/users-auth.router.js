@@ -19,13 +19,11 @@ router.route(`${UsersAuthConstants.ApiPath}/signup`).post(UsersAuthSignupControl
 router.route(`${UsersAuthConstants.ApiPath}/:id`).put(UsersAuthController.put); // requires authentication to change password
 router.route(`${UsersAuthConstants.ApiPath}/:id`).patch(UsersAuthController.patch); // requires authentication to change password
 
+router.route(`${UsersAuthConstants.ApiPath}`).post(UsersAuthController.post); //  requires authentication to signup + invite user
 /**
  * Internal
  */
 router.route(`${UsersAuthConstants.ApiPathInternal}/validate`).get(UsersAuthController.validate);
-
-router.route(`${UsersAuthConstants.ApiPathInternal}`).post(UsersAuthController.post); // users post should not be made public (because of the signup)
-router.route(`${UsersAuthConstants.ApiPathInternal}/:id`).delete(UsersAuthController.delete);
 
 router.route(`${UsersAuthConstants.ApiPathInternal}/notifications`).post(UsersAuthController.notification);
 

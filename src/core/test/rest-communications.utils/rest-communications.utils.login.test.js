@@ -50,7 +50,7 @@ describe('Rest Communications Utils', function () {
 
     // call
     await RestCommsUtils.init(localConfig);
-    let res = await RestCommsUtils.login(serviceName, { serviceName, added: [{ id: 'id', name: 'name' }] }, _ctx);
+    let res = await RestCommsUtils.login(serviceName, { id: 'email@test.com', password: 'password' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -80,7 +80,7 @@ describe('Rest Communications Utils', function () {
 
     // call
     await RestCommsUtils.init(localConfig);
-    let res = await RestCommsUtils.login(serviceName, { serviceName, added: [{ id: 'id', name: 'name' }] }, _ctx);
+    let res = await RestCommsUtils.login(serviceName, { id: 'email@test.com', password: 'password' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -117,7 +117,7 @@ describe('Rest Communications Utils', function () {
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.login(serviceName, { serviceName, added: [{ id: 'id', name: 'name' }] }, _ctx);
+    let res = await RestCommsUtils.login(serviceName, { id: 'email@test.com', password: 'password' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai.expect(res).to.deep.equal({
@@ -149,7 +149,7 @@ describe('Rest Communications Utils', function () {
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.login(serviceName, { serviceName, added: [{ id: 'id', name: 'name' }] }, _ctx);
+    let res = await RestCommsUtils.login(serviceName, { id: 'email@test.com', password: 'password' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai

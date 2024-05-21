@@ -77,7 +77,7 @@ const Private = {
 
       console.log(
         `\nCalling ${config.method} ${srvUri} returned status: ${r.status}, body: ${
-          CommonUtils.isDebug() ? JSON.stringify(r.data).slice(0, 2000) : '***'
+          CommonUtils.isDebug() ? JSON.stringify(r.data || '').slice(0, 2000) : '***'
         }. Finished in ${new Date() - time} ms`
       );
 
@@ -242,6 +242,7 @@ const Public = {
 
   /**
    * notification
+   * notification: { serviceName, added?, modified?, removed? }
    */
   notification: async (serviceName, notification, _ctx) => {
     const localService = Private.Config.local[serviceName];
@@ -253,6 +254,7 @@ const Public = {
 
   /**
    * login
+   * objInfo: { id, password }
    */
   login: async (serviceName, objInfo, _ctx) => {
     const localService = Private.Config.local[serviceName];
@@ -264,6 +266,7 @@ const Public = {
 
   /**
    * signup
+   * objInfo: { email, password, name, birthday, phoneNumber?, address, school: { name, description } },
    */
   signup: async (serviceName, objInfo, _ctx) => {
     const localService = Private.Config.local[serviceName];
@@ -275,15 +278,15 @@ const Public = {
 
   /**
    * validate
-   * objInfo: { method, route, token, cookie }
+   * objInfo: { method, route, token }
    */
-  validate: async (serviceName, objInfo, _ctx) => {
+  validate: async (serviceName, objInfo, cookieTokenName, _ctx) => {
     const localService = Private.Config.local[serviceName];
     if (localService) {
-      return await localService.validate({ method: objInfo.method, route: objInfo.route, token: objInfo.token }, _ctx);
+      return await localService.validate(objInfo, _ctx);
     }
 
-    const cookie = objInfo.cookie;
+    const cookie = `${cookieTokenName}=${objInfo.token}`;
     const queryParams = `method=${objInfo.method}&route=${encodeURIComponent(objInfo.route)}`;
 
     return await Private.restCall(

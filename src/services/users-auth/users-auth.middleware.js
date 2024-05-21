@@ -28,12 +28,7 @@ const Public = {
     try {
       const token = req.cookies[UsersAuthRest.Constants.AuthToken];
 
-      const objValidation = {
-        method: req.method,
-        route,
-        token,
-        cookie: `${UsersAuthRest.Constants.AuthToken}=${token}`,
-      };
+      const objValidation = { method: req.method, route, token };
 
       // _ctx: _userID, username;
       const r = await UsersAuthRest.validate(objValidation, _ctx);
