@@ -169,7 +169,7 @@ describe('Rest Communications Utils', function () {
     };
 
     // stub
-    mockAxios.onGet().reply(500, {});
+    mockAxios.onGet().reply(500, null);
 
     // call
     await RestCommsUtils.init(restConfig);
