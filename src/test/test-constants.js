@@ -91,6 +91,12 @@ const Public = {
     },
   ],
 
+  UsersInvite: [
+    {
+      email: 'big.ben1@testdomain.test',
+    },
+  ],
+
   UsersToken: [
     {
       token: 'token1',

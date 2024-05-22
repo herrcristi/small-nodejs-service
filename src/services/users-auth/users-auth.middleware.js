@@ -17,7 +17,7 @@ const Public = {
     // is whitelisted
     const whitelistRoutes = [
       `${UsersAuthRest.Constants.ApiPath}/login`,
-      `${UsersAuthRest.Constants.ApiPathInternal}/validate`,
+      `${UsersAuthRest.Constants.ApiPathInternal}/validate`, // TODO see below internal routes
     ];
 
     if (whitelistRoutes.includes(route)) {
@@ -25,7 +25,8 @@ const Public = {
       return next();
     }
 
-    // TODO routes with /api/internal_v1/ should be validated via service2service validation
+    // TODO signup can be done only by portal admin
+    // TODO routes with /api/internal_v1/ or s2s token should be validated via service2service validation
 
     try {
       const token = req.cookies[UsersAuthRest.Constants.AuthToken];

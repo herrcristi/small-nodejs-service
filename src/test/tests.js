@@ -9,8 +9,8 @@ require('../core/test/core.all.tests.js');
 require('./test/index/index.all.tests.js');
 require('./test/web-server/web-server.all.tests.js');
 
-require('./test/schools/schools.all.tests.js');
 require('./test/users-auth/users-auth.all.tests.js');
+require('./test/schools/schools.all.tests.js');
 require('./test/users/users.all.tests.js');
 require('./test/events/events.all.tests.js');
 

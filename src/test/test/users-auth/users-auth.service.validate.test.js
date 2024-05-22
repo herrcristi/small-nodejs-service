@@ -67,7 +67,7 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
-    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users' }, _ctx);
+    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -135,7 +135,7 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
-    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users' }, _ctx);
+    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -179,7 +179,7 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
-    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users' }, _ctx);
+    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -232,7 +232,7 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
-    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users' }, _ctx);
+    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -288,7 +288,7 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = 'schoolID';
-    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users' }, _ctx);
+    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -343,7 +343,7 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = 'schoolID';
-    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users' }, _ctx);
+    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/schools/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -398,7 +398,7 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
-    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users' }, _ctx);
+    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/schools/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -450,7 +450,7 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
-    let res = await UsersAuthService.validate({ token: 'token', method: 'invalid', route: '/api/v1/users' }, _ctx);
+    let res = await UsersAuthService.validate({ token: 'token', method: 'invalid', route: '/api/v1/users/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -461,8 +461,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 401,
       error: {
-        message: 'Route is not accesible: invalid /api/v1/users',
-        error: new Error('Route is not accesible: invalid /api/v1/users'),
+        message: 'Route is not accesible: invalid /api/v1/users/:id',
+        error: new Error('Route is not accesible: invalid /api/v1/users/:id'),
       },
     });
   }).timeout(10000);
