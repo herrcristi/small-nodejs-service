@@ -10,13 +10,19 @@ const TestConstants = require('../../test-constants.js');
 const LocationsConstants = require('../../../services/locations/locations.constants.js');
 const LocationsService = require('../../../services/locations/locations.service.js');
 const RestApiUtils = require('../../../core/utils/rest-api.utils.js');
+const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 
 describe('Locations Controller', function () {
   const _ctx = { tenantID: 'school-univ1', reqID: 'testReq', lang: 'en', service: 'Service' };
 
   before(async function () {});
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
+      console.log(`\nUsersAuthRest.validate called`);
+      return { success: true, value: { userID: 'user.id', username: 'user.email' } };
+    });
+  });
 
   afterEach(async function () {
     sinon.restore();
@@ -60,6 +66,38 @@ describe('Locations Controller', function () {
         skip: 0,
       },
     });
+  }).timeout(10000);
+
+  /**
+   * getAll validation fail
+   */
+  it('should getAll validation fail', async () => {
+    const testLocations = _.cloneDeep(TestConstants.Locations);
+
+    // stub
+    sinon.restore();
+    let stubValidate = sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
+      console.log(`\nUsersAuthRest.validate called`);
+      return { status: 401, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    let stubService = sinon.stub(LocationsService, 'getAllForReq').callsFake(() => {
+      console.log(`\nLocationsService.getAllForReq called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${LocationsConstants.ApiPath}`)
+      .set('x-tenant-id', _ctx.tenantID);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(401);
+    chai.expect(stubValidate.callCount).to.equal(1);
+    chai.expect(stubService.callCount).to.equal(0);
+    chai.expect(res.body.error).to.include('Test error');
   }).timeout(10000);
 
   /**

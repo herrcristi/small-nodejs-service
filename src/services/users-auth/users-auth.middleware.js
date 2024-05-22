@@ -25,6 +25,8 @@ const Public = {
       return next();
     }
 
+    // TODO routes with /api/internal_v1/ should be validated via service2service validation
+
     try {
       const token = req.cookies[UsersAuthRest.Constants.AuthToken];
 
@@ -33,7 +35,7 @@ const Public = {
       // _ctx: _userID, username;
       const r = await UsersAuthRest.validate(objValidation, _ctx);
       if (r.error) {
-        res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error.error, _ctx));
         return res.end();
       }
     } catch (e) {
