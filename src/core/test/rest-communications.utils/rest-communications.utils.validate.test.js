@@ -50,7 +50,12 @@ describe('Rest Communications Utils', function () {
 
     // call
     await RestCommsUtils.init(localConfig);
-    let res = await RestCommsUtils.validate(serviceName, { serviceName, added: [{ id: 'id', name: 'name' }] }, _ctx);
+    let res = await RestCommsUtils.validate(
+      serviceName,
+      { token: 'token', method: 'get', route: '/api/v1/schools' },
+      'cookieTokenName',
+      _ctx
+    );
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -80,7 +85,12 @@ describe('Rest Communications Utils', function () {
 
     // call
     await RestCommsUtils.init(localConfig);
-    let res = await RestCommsUtils.validate(serviceName, { serviceName, added: [{ id: 'id', name: 'name' }] }, _ctx);
+    let res = await RestCommsUtils.validate(
+      serviceName,
+      { token: 'token', method: 'get', route: '/api/v1/schools' },
+      'cookieTokenName',
+      _ctx
+    );
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -112,12 +122,27 @@ describe('Rest Communications Utils', function () {
     };
 
     // stub
-    mockAxios.onPost().reply(200, true);
+    mockAxios.onGet().reply((config) => {
+      chai.expect(config.method).to.equal('get');
+      chai
+        .expect(config.url)
+        .to.equal(
+          'http://localhost:8080/api/internal_v1/service/validate/validate?method=get&route=%2Fapi%2Fv1%2Fschools'
+        );
+      chai.expect(config.headers.cookie).to.equal('cookieTokenName=token');
+
+      return [200, true];
+    });
 
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.validate(serviceName, { serviceName, added: [{ id: 'id', name: 'name' }] }, _ctx);
+    let res = await RestCommsUtils.validate(
+      serviceName,
+      { token: 'token', method: 'get', route: '/api/v1/schools' },
+      'cookieTokenName',
+      _ctx
+    );
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai.expect(res).to.deep.equal({
@@ -144,16 +169,20 @@ describe('Rest Communications Utils', function () {
     };
 
     // stub
-    mockAxios.onPost().reply(500, {});
+    mockAxios.onGet().reply(500, null);
 
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.validate(serviceName, { serviceName, added: [{ id: 'id', name: 'name' }] }, _ctx);
+    let res = await RestCommsUtils.validate(
+      serviceName,
+      { token: 'token', method: 'get', route: '/api/v1/schools' },
+      'cookieTokenName',
+      _ctx
+    );
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    chai
-      .expect(res.error.message)
-      .to.include('Calling POST http://localhost:8080/api/internal_v1/service/validate failed with status 500');
+    chai.expect(res.error.message).to.include('Calling GET http://localhost:8080/api/internal_v1/service/validate');
+    chai.expect(res.error.message).to.include('failed with status 500');
   }).timeout(10000);
 });

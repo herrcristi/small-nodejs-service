@@ -16,6 +16,7 @@ const Private = {
 const Public = {
   /**
    * login
+   * objInfo: { id, password }
    */
   login: async (objInfo, _ctx) => {
     return await RestCommsUtils.login(UsersAuthConstants.ServiceName, objInfo, _ctx);
@@ -23,6 +24,7 @@ const Public = {
 
   /**
    * signup
+   * objInfo: { email, password, name, birthday, phoneNumber?, address, school: { name, description } },
    */
   signup: async (objInfo, _ctx) => {
     return await RestCommsUtils.signup(UsersAuthConstants.ServiceName, objInfo, _ctx);
@@ -32,7 +34,12 @@ const Public = {
    * validate (internal)
    */
   validate: async (objInfo, _ctx) => {
-    return await RestCommsUtils.validate(UsersAuthConstants.ServiceNameInternal, objInfo, _ctx);
+    return await RestCommsUtils.validate(
+      UsersAuthConstants.ServiceNameInternal,
+      objInfo,
+      UsersAuthConstants.AuthToken,
+      _ctx
+    );
   },
 
   /**
@@ -65,6 +72,7 @@ const Public = {
 
   /**
    * notification (internal)
+   * notification: { serviceName, added?, modified?, removed? }
    */
   notification: async (notification, _ctx) => {
     return await RestCommsUtils.notification(UsersAuthConstants.ServiceNameInternal, notification, _ctx);
@@ -72,7 +80,7 @@ const Public = {
 
   /**
    * subscribe to receive sync notifications (this is called in the same service as the implementation)
-   * subscriber: {callback, projection }
+   * subscriber: { callback, projection }
    */
   subscribe: async (subscriber, _ctx) => {
     Private.Subscribers.push(subscriber);
@@ -81,7 +89,7 @@ const Public = {
 
   /**
    * subscribe to receive async notifications (via a queue)
-   * subscriber: {callback, projection }
+   * subscriber: { callback, projection }
    */
   consume: async (subscriber, _ctx) => {
     return await NotificationsUtils.consume(subscriber, _ctx);

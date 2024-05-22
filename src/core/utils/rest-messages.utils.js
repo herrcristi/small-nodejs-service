@@ -24,6 +24,24 @@ const Public = {
   },
 
   /**
+   * request is not authorized
+   */
+  notAuthorized: async (error, _ctx) => {
+    let msg = {
+      message: 'Request is not authorized',
+    };
+
+    // detailed error in debug
+    if (CommonUtils.isDebug()) {
+      msg.error = CommonUtils.getLogError(error);
+    }
+
+    console.log(`\nStatus message: ${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
+
+    return msg;
+  },
+
+  /**
    * not found
    */
   notFound: async (error, _ctx) => {
@@ -66,6 +84,9 @@ const Public = {
     switch (status) {
       case 400:
         return await Public.notValid(error, _ctx);
+
+      case 401:
+        return await Public.notAuthorized(error, _ctx);
 
       case 404:
         return await Public.notFound(error, _ctx);

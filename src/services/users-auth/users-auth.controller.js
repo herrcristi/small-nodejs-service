@@ -31,7 +31,7 @@ const Public = {
       }
 
       // set token as cookie
-      res.cookie('SmallApp-token', r.token, {
+      res.cookie(UsersAuthConstants.AuthToken, r.token, {
         expires: new Date(Date.now() + 24 * 60 * 60 * 1000 /*1d*/),
         httpOnly: true,
       });
@@ -56,7 +56,7 @@ const Public = {
       );
 
       // get token from cookie
-      const token = req.cookies['SmallApp-token'];
+      const token = req.cookies[UsersAuthConstants.AuthToken];
       const method = req.query['method'];
       const route = req.query['route'];
 
@@ -88,33 +88,6 @@ const Public = {
 
       // post
       const r = await UsersAuthService.post(req.body, _ctx);
-      if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
-      }
-
-      res.status(r.status).json(r.value);
-    } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
-    } finally {
-      res.end();
-    }
-  },
-
-  /**
-   * delete
-   */
-  delete: async (req, res, next) => {
-    let _ctx = req._ctx;
-    _ctx.serviceName = UsersAuthConstants.ServiceName;
-
-    try {
-      console.log(
-        `\n${_ctx.serviceName}: Delete called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
-      );
-      const objID = req.params.id;
-
-      // delete
-      const r = await UsersAuthService.delete(objID, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }

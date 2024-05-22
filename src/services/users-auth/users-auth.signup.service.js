@@ -38,6 +38,13 @@ const Schema = {
       description: Joi.string().min(0).max(1024).allow(null),
     }),
   }),
+
+  Invite: Joi.object().keys({
+    email: Joi.string()
+      .email({ tlds: { allow: false } })
+      .min(1)
+      .max(128),
+  }),
 };
 
 const Validators = {
@@ -45,10 +52,15 @@ const Validators = {
     ['email', 'password', 'name', 'birthday', 'address'],
     (x) => x.required() /*make required */
   ),
+
+  Invite: Schema.Invite.fork(['email'], (x) => x.required() /*make required */),
 };
 
 const Private = {
-  Action: BaseServiceUtils.Constants.Action,
+  Action: {
+    Signup: 'signup',
+    Invite: 'invite',
+  },
 };
 
 const Public = {
@@ -78,7 +90,7 @@ const Public = {
     const rSchool = await SchoolsRest.post(objInfo.school, _ctx);
     if (rSchool.error) {
       // raise event for invalid signup
-      const failedAction = `${Private.Action.Post}.failed`;
+      const failedAction = `${Private.Action.Signup}.failed`;
       await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
       return rSchool;
     }
@@ -107,7 +119,7 @@ const Public = {
       await SchoolsRest.delete(schoolID, _ctx);
 
       // raise event for invalid signup
-      const failedAction = `${Private.Action.Post}.failed`;
+      const failedAction = `${Private.Action.Signup}.failed`;
       await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
       return rUser;
     }
@@ -131,7 +143,82 @@ const Public = {
       await UsersRest.delete(userID, _ctx);
 
       // raise event for invalid signup
-      const failedAction = `${Private.Action.Post}.failed`;
+      const failedAction = `${Private.Action.Signup}.failed`;
+      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
+      return rAuth;
+    }
+
+    // success
+    return rAuth;
+  },
+
+  /**
+   * invite
+   */
+  invite: async (objInfo, _ctx) => {
+    // validate
+    const v = Validators.Signup.validate(objInfo);
+    if (v.error) {
+      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+
+    _ctx.userID = objInfo.email;
+    _ctx.username = objInfo.email;
+
+    // invite has 2 steps
+    const errorO = {
+      id: objInfo.email,
+      email: objInfo.email,
+      name: objInfo.name,
+      type: UsersAuthConstants.Type,
+    };
+
+    // TODO
+    const schoolID = _ctx.tenantID;
+
+    // create first user details (with default status pending) and get the id
+    const rUser = await UsersRest.post(
+      {
+        email: objInfo.email,
+        name: objInfo.name,
+        birthday: objInfo.birthday,
+        phoneNumber: objInfo.phoneNumber,
+        address: objInfo.address,
+        schools: [
+          {
+            id: schoolID,
+            roles: [UsersRest.Constants.Roles.Admin],
+          },
+        ],
+      },
+      _ctx
+    );
+    if (rUser.error) {
+      // raise event for invalid invite
+      const failedAction = `${Private.Action.Invite}.failed`;
+      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
+      return rUser;
+    }
+
+    const userID = rUser.value.id;
+    errorO.id = userID;
+    _ctx.userID = userID;
+
+    // create user auth
+    const rAuth = await UsersAuthRest.post(
+      {
+        id: objInfo.email,
+        password: objInfo.password,
+        userID: userID,
+      },
+      _ctx
+    );
+    if (rAuth.error) {
+      // delete previous
+      await UsersRest.delete(userID, _ctx);
+
+      // raise event for invalid invite
+      const failedAction = `${Private.Action.Invite}.failed`;
       await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
       return rAuth;
     }

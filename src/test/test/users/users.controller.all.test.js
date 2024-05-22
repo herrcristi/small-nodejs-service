@@ -10,11 +10,17 @@ const TestConstants = require('../../test-constants.js');
 const UsersConstants = require('../../../services/users/users.constants.js');
 const UsersService = require('../../../services/users/users.service.js');
 const RestApiUtils = require('../../../core/utils/rest-api.utils.js');
+const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 
 describe('Users Controller', function () {
   before(async function () {});
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
+      console.log(`\nUsersAuthRest.validate called`);
+      return { success: true, value: { userID: 'user.id', username: 'user.email' } };
+    });
+  });
 
   afterEach(async function () {
     sinon.restore();
@@ -41,7 +47,7 @@ describe('Users Controller', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}`);
+    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPathInternal}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -58,6 +64,35 @@ describe('Users Controller', function () {
   }).timeout(10000);
 
   /**
+   * getAll validation fail
+   */
+  it('should getAll validation fail', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+
+    // stub
+    sinon.restore();
+    let stubValidate = sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
+      console.log(`\nUsersAuthRest.validate called`);
+      return { status: 401, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    let stubService = sinon.stub(UsersService, 'getAllForReq').callsFake(() => {
+      console.log(`\nUsersService.getAllForReq called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPathInternal}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(401);
+    chai.expect(stubValidate.callCount).to.equal(1);
+    chai.expect(stubService.callCount).to.equal(0);
+    chai.expect(res.body.error).to.include('Test error');
+  }).timeout(10000);
+
+  /**
    * getAll fail
    */
   it('should getAll fail', async () => {
@@ -70,7 +105,7 @@ describe('Users Controller', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}`);
+    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPathInternal}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -92,7 +127,7 @@ describe('Users Controller', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}`);
+    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPathInternal}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check

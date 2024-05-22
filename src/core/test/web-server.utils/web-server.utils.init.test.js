@@ -43,19 +43,40 @@ describe('Web Server Utils', function () {
 
     let middlewares = [
       {
-        middleware: (req, res, next) => {
-          console.log(`\nMiddleware1 called\n`);
+        middleware: sinon.stub().callsFake((req, res, next) => {
+          console.log(`\nMiddleware0 called route ${JSON.stringify(req.route, null, 2)}\n`);
+
+          chai.expect(req.route).to.equal(undefined);
           next();
-        },
+        }),
       },
-      (req, res, next) => {
-        console.log(`\nMiddleware2 called\n`);
+      sinon.stub().callsFake((req, res, next) => {
+        console.log(`\nMiddleware1 called route ${JSON.stringify(req.route, null, 2)}\n`);
+
+        chai.expect(req.route).to.equal(undefined);
         next();
+      }),
+    ];
+
+    let authMiddlewares = [
+      {
+        middleware: sinon.stub().callsFake((req, res, next) => {
+          console.log(`\nAuth Middleware0 called route ${JSON.stringify(req.route, null, 2)}\n`);
+
+          chai.expect(req.route.path).to.equal('/test/webserver');
+          next();
+        }),
       },
+      sinon.stub().callsFake((req, res, next) => {
+        console.log(`\nAuth Middleware1 called route ${JSON.stringify(req.route, null, 2)}\n`);
+
+        chai.expect(req.route.path).to.equal('/test/webserver');
+        next();
+      }),
     ];
 
     // call
-    let web = await WebServer.init(port, [router], middlewares, _ctx);
+    let web = await WebServer.init(port, [router], middlewares, authMiddlewares);
     server = web?.server;
 
     // check
@@ -66,6 +87,10 @@ describe('Web Server Utils', function () {
 
     chai.expect(res.status).to.equal(200);
     chai.expect(res.body).to.deep.equal({ success: true });
+    chai.expect(middlewares[0].middleware.callCount).to.equal(1);
+    chai.expect(middlewares[1].callCount).to.equal(1);
+    chai.expect(authMiddlewares[0].middleware.callCount).to.equal(1);
+    chai.expect(authMiddlewares[1].callCount).to.equal(1);
   }).timeout(10000);
 
   /**
@@ -83,9 +108,10 @@ describe('Web Server Utils', function () {
     });
 
     let middlewares;
+    let usersAuthMiddleware;
 
     // call
-    let web = await WebServer.init(port, router, middlewares, _ctx);
+    let web = await WebServer.init(port, router, middlewares, usersAuthMiddleware);
     server = web?.server;
 
     // check
@@ -115,7 +141,7 @@ describe('Web Server Utils', function () {
     let middlewares;
 
     // call
-    let web = await WebServer.init(port, router, middlewares, _ctx);
+    let web = await WebServer.init(port, router, middlewares);
     server = web?.server;
 
     // check

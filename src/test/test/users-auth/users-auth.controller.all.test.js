@@ -9,11 +9,17 @@ chai.use(chaiHttp);
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
+const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 
 describe('Users Auth Controller', function () {
   before(async function () {});
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
+      console.log(`\nUsersAuthRest.validate called`);
+      return { success: true, value: { userID: 'user.id', username: 'user.email' } };
+    });
+  });
 
   afterEach(async function () {
     sinon.restore();
@@ -125,7 +131,7 @@ describe('Users Auth Controller', function () {
     let res = await chai
       .request(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
-      .set('cookie', `SmallApp-token=${testUser.token}`);
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -153,7 +159,7 @@ describe('Users Auth Controller', function () {
     let res = await chai
       .request(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
-      .set('cookie', `SmallApp-token=${testUser.token}`);
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -179,7 +185,7 @@ describe('Users Auth Controller', function () {
     let res = await chai
       .request(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
-      .set('cookie', `SmallApp-token=${testUser.token}`);
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -264,87 +270,6 @@ describe('Users Auth Controller', function () {
       .request(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPathInternal}`)
       .send({ ...testUser });
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(500);
-    chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.message).to.include('An unknown error has occured');
-    chai.expect(res.body.error).to.include('Test error message');
-  }).timeout(10000);
-
-  /**
-   * delete with success
-   */
-  it('should delete with success', async () => {
-    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
-    const testUser = testUsers[0];
-
-    // stub
-    let stubService = sinon.stub(UsersAuthService, 'delete').callsFake(() => {
-      console.log(`\nUsersAuthService.delete called\n`);
-      return {
-        status: 200,
-        value: testUser,
-      };
-    });
-
-    // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .delete(`${UsersAuthConstants.ApiPathInternal}/${testUser.id}`);
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(200);
-    chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body).to.deep.equal({
-      ...testUser,
-    });
-  }).timeout(10000);
-
-  /**
-   * delete fail
-   */
-  it('should delete fail', async () => {
-    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
-    const testUser = testUsers[0];
-
-    // stub
-    let stubService = sinon.stub(UsersAuthService, 'delete').callsFake(() => {
-      console.log(`\nUsersAuthService.delete called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
-    });
-
-    // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .delete(`${UsersAuthConstants.ApiPathInternal}/${testUser.id}`);
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(400);
-    chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error).to.include('Test error message');
-  }).timeout(10000);
-
-  /**
-   * delete fail exception
-   */
-  it('should delete fail exception', async () => {
-    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
-    const testUser = testUsers[0];
-
-    // stub
-    let stubService = sinon.stub(UsersAuthService, 'delete').callsFake(() => {
-      console.log(`\nUsersAuthService.delete called\n`);
-      throw new Error('Test error message');
-    });
-
-    // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .delete(`${UsersAuthConstants.ApiPathInternal}/${testUser.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check

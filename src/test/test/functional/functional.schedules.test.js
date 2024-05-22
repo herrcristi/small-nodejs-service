@@ -18,6 +18,7 @@ const EventsDatabase = require('../../../services/events/events.database.js');
 
 const SchedulesConstants = require('../../../services/schedules/schedules.constants.js');
 const TestsUtils = require('../../tests.utils.js');
+const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 
 describe('Schedules Functional', function () {
   let _ctx = { reqID: 'Test-Schedules', tenantID: TestConstants.Schools[0].id, lang: 'en' };
@@ -25,6 +26,10 @@ describe('Schedules Functional', function () {
   before(async function () {});
 
   beforeEach(async function () {
+    sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
+      console.log(`\nUsersAuthRest.validate called`);
+      return { success: true, value: { userID: 'user.id', username: 'user.email' } };
+    });
     await TestsUtils.initDatabase(_ctx);
   });
 
