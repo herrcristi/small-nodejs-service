@@ -17,6 +17,7 @@ const EventsDatabase = require('../../../services/events/events.database.js');
 const UsersRest = require('../../../services/rest/users.rest.js');
 const UsersConstants = require('../../../services/users/users.constants.js');
 const TestsUtils = require('../../tests.utils.js');
+const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 
 describe('Users Functional', function () {
   let _ctx = { reqID: 'Test-Users', lang: 'en' };
@@ -24,6 +25,10 @@ describe('Users Functional', function () {
   before(async function () {});
 
   beforeEach(async function () {
+    sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
+      console.log(`\nUsersAuthRest.validate called`);
+      return { success: true, value: { userID: 'user.id', username: 'user.email' } };
+    });
     await TestsUtils.initDatabase(_ctx);
   });
 
@@ -131,7 +136,7 @@ describe('Users Functional', function () {
     const testUsers = _.cloneDeep(TestConstants.Users);
 
     // call
-    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}`);
+    let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPathInternal}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check

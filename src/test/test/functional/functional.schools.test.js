@@ -14,6 +14,7 @@ const EventsDatabase = require('../../../services/events/events.database.js');
 
 const SchoolsConstants = require('../../../services/schools/schools.constants.js');
 const TestsUtils = require('../../tests.utils.js');
+const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 
 describe('Schools Functional', function () {
   let _ctx = { reqID: 'Test-Schools', lang: 'en' };
@@ -21,6 +22,10 @@ describe('Schools Functional', function () {
   before(async function () {});
 
   beforeEach(async function () {
+    sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
+      console.log(`\nUsersAuthRest.validate called`);
+      return { success: true, value: { userID: 'user.id', username: 'user.email' } };
+    });
     await TestsUtils.initDatabase(_ctx);
   });
 
@@ -85,7 +90,7 @@ describe('Schools Functional', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${SchoolsConstants.ApiPath}`)
+      .post(`${SchoolsConstants.ApiPathInternal}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .send({ ...testSchool });
@@ -117,7 +122,7 @@ describe('Schools Functional', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${SchoolsConstants.ApiPath}`)
+      .post(`${SchoolsConstants.ApiPathInternal}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .send({ ...testSchool });
