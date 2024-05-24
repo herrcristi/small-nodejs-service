@@ -115,40 +115,29 @@ describe('Users Auth Controller', function () {
    * logout with success
    */
   it('should logout with success', async () => {
-    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
-    const testUser = testUsers[0];
-
     // stub
     let stubService = sinon.stub(UsersAuthService, 'logout').callsFake(() => {
       console.log(`\nUsersAuthService.logout called\n`);
       return {
         status: 200,
-        value: { ...testUser },
+        value: true,
       };
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/logout`)
-      .send({ ...testUser });
+    let res = await chai.request(TestConstants.WebServer).post(`${UsersAuthConstants.ApiPath}/logout`).send({});
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body).to.deep.equal({
-      ...testUser,
-    });
+    chai.expect(res.body).to.equal(true);
   }).timeout(10000);
 
   /**
    * logout fail
    */
   it('should logout fail', async () => {
-    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
-    const testUser = testUsers[0];
-
     // stub
     let stubService = sinon.stub(UsersAuthService, 'logout').callsFake(() => {
       console.log(`\nUsersAuthService.logout called\n`);
@@ -156,10 +145,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/logout`)
-      .send({ ...testUser });
+    let res = await chai.request(TestConstants.WebServer).post(`${UsersAuthConstants.ApiPath}/logout`).send({});
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -172,9 +158,6 @@ describe('Users Auth Controller', function () {
    * logout fail exception
    */
   it('should logout fail exception', async () => {
-    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
-    const testUser = testUsers[0];
-
     // stub
     let stubService = sinon.stub(UsersAuthService, 'logout').callsFake(() => {
       console.log(`\nUsersAuthService.logout called\n`);
@@ -182,10 +165,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/logout`)
-      .send({ ...testUser });
+    let res = await chai.request(TestConstants.WebServer).post(`${UsersAuthConstants.ApiPath}/logout`).send({});
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
