@@ -130,6 +130,8 @@ const Public = {
 
     let newObj = { ...obj };
     delete newObj.password;
+    delete newObj.newPassword;
+    delete newObj.oldPassword;
     delete newObj.salt;
 
     if (newObj.set) {

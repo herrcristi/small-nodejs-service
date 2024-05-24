@@ -36,10 +36,19 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const putReq = {
-      password: testUser._test_data.origPassword,
+      oldPassword: testUser._test_data.origPassword,
+      newPassword: testUser._test_data.origPassword + '1',
     };
 
     // stub
+    let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.getOne called`);
+      return {
+        status: 200,
+        value: { ...testUser },
+      };
+    });
+
     let stubBase = sinon.stub(DbOpsUtils, 'put').callsFake((config, objID, putObj) => {
       console.log(`\nDbOpsUtils.put called`);
       return {
@@ -72,6 +81,7 @@ describe('Users Auth Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stubGet.callCount).to.equal(1);
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(stubEvent.callCount).to.equal(1);
     chai.expect(stubUsersAuthRest.callCount).to.equal(1);
@@ -94,7 +104,8 @@ describe('Users Auth Service', function () {
 
     const putReq = {
       id: testUser.id,
-      password: testUser._test_data.origPassword,
+      oldPassword: testUser._test_data.origPassword,
+      newPassword: testUser._test_data.origPassword + '1',
     };
 
     // call
@@ -107,20 +118,24 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * put fail put
+   * put fail same password
    */
-  it('should put fail put', async () => {
+  it('should put fail same password', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
     const putReq = {
-      password: testUser._test_data.origPassword,
+      oldPassword: testUser._test_data.origPassword,
+      newPassword: testUser._test_data.origPassword,
     };
 
     // stub
-    let stubBase = sinon.stub(DbOpsUtils, 'put').callsFake((config, objID, putObj) => {
-      console.log(`\nDbOpsUtils.put called`);
-      return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.getOne called`);
+      return {
+        status: 200,
+        value: { ...testUser },
+      };
     });
 
     // call
@@ -128,13 +143,115 @@ describe('Users Auth Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stubGet.callCount).to.equal(0);
+    chai.expect(res).to.deep.equal({
+      status: 400,
+      error: {
+        message: 'New password is the same as old password',
+        error: new Error('New password is the same as old password'),
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * put fail get
+   */
+  it('should put fail get', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    const putReq = {
+      oldPassword: testUser._test_data.origPassword,
+      newPassword: testUser._test_data.origPassword + '1',
+    };
+
+    // stub
+    let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.getOne called`);
+      return { status: 500, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    let res = await UsersAuthService.put(testUser.id, putReq, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubGet.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 500,
+      error: { message: 'Test error message', error: new Error('Test error') },
+    });
+  }).timeout(10000);
+
+  /**
+   * put fail wrong old password
+   */
+  it('should put fail wrong old password', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    const putReq = {
+      oldPassword: testUser._test_data.origPassword + '0',
+      newPassword: testUser._test_data.origPassword + '1',
+    };
+
+    // stub
+    let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.getOne called`);
+      return {
+        status: 200,
+        value: { ...testUser },
+      };
+    });
+
+    // call
+    let res = await UsersAuthService.put(testUser.id, putReq, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubGet.callCount).to.equal(1);
+    return {
+      status: 500,
+      error: { message: 'Invalid old password', error: new Error('Invalid old password') },
+    };
+  }).timeout(10000);
+
+  /**
+   * put fail put
+   */
+  it('should put fail put', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    const putReq = {
+      oldPassword: testUser._test_data.origPassword,
+      newPassword: testUser._test_data.origPassword + '1',
+    };
+
+    // stub
+    let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.getOne called`);
+      return {
+        status: 200,
+        value: { ...testUser },
+      };
+    });
+
+    let stubBase = sinon.stub(DbOpsUtils, 'put').callsFake((config, objID, putObj) => {
+      console.log(`\nDbOpsUtils.put called`);
+      return { status: 500, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    let res = await UsersAuthService.put(testUser.id, putReq, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubGet.callCount).to.equal(1);
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 500,
-      error: {
-        message: 'Test error message',
-        error: 'Error: Test error',
-      },
+      error: { message: 'Test error message', error: new Error('Test error') },
     });
   }).timeout(10000);
 });

@@ -132,11 +132,12 @@ describe('Users Auth Service', function () {
     let putReq = {};
     let res = UsersAuthService.Validators.Put.validate(putReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"password" is required');
+    chai.expect(res.error.details[0].message).to.include('"oldPassword" is required');
 
     // other params
     putReq = {
-      password: 'pass',
+      oldPassword: 'pass',
+      newPassword: 'pass1',
       extra: 1,
     };
     res = UsersAuthService.Validators.Put.validate(putReq);
@@ -177,12 +178,13 @@ describe('Users Auth Service', function () {
     };
     res = UsersAuthService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"set.password" is required');
+    chai.expect(res.error.details[0].message).to.include('"set.oldPassword" is required');
 
     // set extra is not allowed
     patchReq = {
       set: {
-        password: 'pass',
+        oldPassword: 'pass',
+        newPassword: 'pass1',
         extra: 1,
       },
     };
