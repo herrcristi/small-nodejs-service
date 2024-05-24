@@ -2,6 +2,7 @@
   "roles": {
     "all": {
       "users-auth": {
+        "POST": ["/api/v1/users-auth/logout"],
         "PUT": ["/api/v1/users-auth/:id"],
         "PATCH": ["/api/v1/users-auth/:id"]
       },

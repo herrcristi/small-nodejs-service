@@ -265,6 +265,17 @@ const Public = {
   },
 
   /**
+   * logout
+   */
+  logout: async (serviceName, _ctx) => {
+    const localService = Private.Config.local[serviceName];
+    if (localService) {
+      return await localService.logout(_ctx);
+    }
+    return await Private.restCall({ serviceName, method: 'POST', path: '/logout', body: {} }, _ctx);
+  },
+
+  /**
    * signup
    * objInfo: { email, password, name, birthday, phoneNumber?, address, school: { name, description } },
    */
@@ -274,6 +285,18 @@ const Public = {
       return await localService.signup(objInfo, _ctx);
     }
     return await Private.restCall({ serviceName, method: 'POST', path: '/signup', body: objInfo }, _ctx);
+  },
+
+  /**
+   * invite
+   * objInfo: { email, school: { role } },
+   */
+  invite: async (serviceName, objInfo, _ctx) => {
+    const localService = Private.Config.local[serviceName];
+    if (localService) {
+      return await localService.invite(objInfo, _ctx);
+    }
+    return await Private.restCall({ serviceName, method: 'POST', path: '/invite', body: objInfo }, _ctx);
   },
 
   /**
