@@ -45,7 +45,6 @@ const Schema = {
       .min(1)
       .max(128),
     school: Joi.object().keys({
-      id: Joi.string().min(1).max(64).required(),
       role: Joi.string()
         .min(1)
         .max(64)
