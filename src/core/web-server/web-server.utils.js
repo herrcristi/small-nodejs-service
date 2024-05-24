@@ -6,6 +6,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 
 const RequestMiddleware = require('./request.middleware.js');
+const ErrorMiddleware = require('./error.middleware.js');
 
 const Public = {
   /**
@@ -51,6 +52,7 @@ const Public = {
 
       app.use(route);
     });
+    app.use(ErrorMiddleware.middleware);
 
     // listen
     const server = app.listen(port);
