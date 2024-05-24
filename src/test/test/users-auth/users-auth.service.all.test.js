@@ -12,4 +12,5 @@ require('./users-auth.service.patch.test.js');
 require('./users-auth.service.notification.test.js');
 
 require('./users-auth.service.login.test.js');
+require('./users-auth.service.logout.test.js');
 require('./users-auth.service.validate.test.js');

@@ -44,6 +44,14 @@ const Schema = {
       .email({ tlds: { allow: false } })
       .min(1)
       .max(128),
+    school: Joi.object().keys({
+      id: Joi.string().min(1).max(64).required(),
+      role: Joi.string()
+        .min(1)
+        .max(64)
+        .valid(...Object.values(UsersRest.Constants.Roles))
+        .required(),
+    }),
   }),
 };
 
@@ -154,10 +162,11 @@ const Public = {
 
   /**
    * invite
+   * objInfo: { email, school: { role } } - schoolID is _ctx.tenantID
    */
   invite: async (objInfo, _ctx) => {
     // validate
-    const v = Validators.Signup.validate(objInfo);
+    const v = Validators.Invite.validate(objInfo);
     if (v.error) {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
@@ -173,58 +182,59 @@ const Public = {
       type: UsersAuthConstants.Type,
     };
 
-    // TODO
     const schoolID = _ctx.tenantID;
 
-    // create first user details (with default status pending) and get the id
-    const rUser = await UsersRest.post(
-      {
-        email: objInfo.email,
-        name: objInfo.name,
-        birthday: objInfo.birthday,
-        phoneNumber: objInfo.phoneNumber,
-        address: objInfo.address,
-        schools: [
-          {
-            id: schoolID,
-            roles: [UsersRest.Constants.Roles.Admin],
-          },
-        ],
-      },
-      _ctx
-    );
-    if (rUser.error) {
-      // raise event for invalid invite
-      const failedAction = `${Private.Action.Invite}.failed`;
-      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
-      return rUser;
-    }
+    // TODO
+    return { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
+    // // create first user details (with default status pending) and get the id
+    // const rUser = await UsersRest.post(
+    //   {
+    //     email: objInfo.email,
+    //     name: objInfo.name,
+    //     birthday: objInfo.birthday,
+    //     phoneNumber: objInfo.phoneNumber,
+    //     address: objInfo.address,
+    //     schools: [
+    //       {
+    //         id: schoolID,
+    //         roles: [UsersRest.Constants.Roles.Admin],
+    //       },
+    //     ],
+    //   },
+    //   _ctx
+    // );
+    // if (rUser.error) {
+    //   // raise event for invalid invite
+    //   const failedAction = `${Private.Action.Invite}.failed`;
+    //   await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
+    //   return rUser;
+    // }
 
-    const userID = rUser.value.id;
-    errorO.id = userID;
-    _ctx.userID = userID;
+    // const userID = rUser.value.id;
+    // errorO.id = userID;
+    // _ctx.userID = userID;
 
-    // create user auth
-    const rAuth = await UsersAuthRest.post(
-      {
-        id: objInfo.email,
-        password: objInfo.password,
-        userID: userID,
-      },
-      _ctx
-    );
-    if (rAuth.error) {
-      // delete previous
-      await UsersRest.delete(userID, _ctx);
+    // // create user auth
+    // const rAuth = await UsersAuthRest.post(
+    //   {
+    //     id: objInfo.email,
+    //     password: objInfo.password,
+    //     userID: userID,
+    //   },
+    //   _ctx
+    // );
+    // if (rAuth.error) {
+    //   // delete previous
+    //   await UsersRest.delete(userID, _ctx);
 
-      // raise event for invalid invite
-      const failedAction = `${Private.Action.Invite}.failed`;
-      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
-      return rAuth;
-    }
+    //   // raise event for invalid invite
+    //   const failedAction = `${Private.Action.Invite}.failed`;
+    //   await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
+    //   return rAuth;
+    // }
 
-    // success
-    return rAuth;
+    // // success
+    // return rAuth;
   },
 };
 

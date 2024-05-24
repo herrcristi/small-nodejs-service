@@ -44,6 +44,37 @@ const Public = {
   },
 
   /**
+   * logout
+   */
+  logout: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersAuthConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Logout called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+      );
+
+      // post
+      const r = await UsersAuthService.logout(_ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      // set token as cookie
+      res.cookie(UsersAuthConstants.AuthToken, r.token, {
+        expires: new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/),
+        httpOnly: true,
+      });
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
    * validate
    */
   validate: async (req, res, next) => {

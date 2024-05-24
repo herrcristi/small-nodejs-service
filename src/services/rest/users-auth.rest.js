@@ -23,11 +23,26 @@ const Public = {
   },
 
   /**
+   * logout
+   */
+  logout: async (_ctx) => {
+    return await RestCommsUtils.logout(UsersAuthConstants.ServiceName, _ctx);
+  },
+
+  /**
    * signup
    * objInfo: { email, password, name, birthday, phoneNumber?, address, school: { name, description } },
    */
   signup: async (objInfo, _ctx) => {
     return await RestCommsUtils.signup(UsersAuthConstants.ServiceName, objInfo, _ctx);
+  },
+
+  /**
+   * invite
+   * objInfo: { email, school: { role } } - schoolID is _ctx.tenantID
+   */
+  invite: async (objInfo, _ctx) => {
+    return await RestCommsUtils.invite(UsersAuthConstants.ServiceName, objInfo, _ctx);
   },
 
   /**

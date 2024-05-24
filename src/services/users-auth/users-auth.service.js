@@ -252,6 +252,34 @@ const Public = {
   },
 
   /**
+   * logout
+   */
+  logout: async (_ctx) => {
+    // _ctx: { userID, username }
+    // config: { serviceName }
+    const config = await Private.getConfig(_ctx);
+
+    // generic error
+    const errorLogout = 'Failed to logout';
+    const rError = { status: 401, error: { message: errorLogout, error: new Error(errorLogout) } };
+
+    // logout
+    let rL;
+    if (config.isFirebaseAuth) {
+      rL = await UsersAuthServiceFirebase.logout(config, _ctx);
+    } else {
+      rL = await UsersAuthServiceLocal.logout(config, _ctx);
+    }
+
+    // success empty token
+    return {
+      status: 200,
+      value: true,
+      token: 'token',
+    };
+  },
+
+  /**
    * validate token
    * objInfo: { token, method, route }
    */

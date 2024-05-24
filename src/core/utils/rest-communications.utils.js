@@ -289,7 +289,7 @@ const Public = {
 
   /**
    * invite
-   * objInfo: { email, school: { role } },
+   * objInfo: { email, school: { role } } - schoolID is _ctx.tenantID
    */
   invite: async (serviceName, objInfo, _ctx) => {
     const localService = Private.Config.local[serviceName];

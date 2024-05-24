@@ -94,6 +94,9 @@ const Public = {
   UsersInvite: [
     {
       email: 'big.ben1@testdomain.test',
+      school: {
+        role: 'admin',
+      },
     },
   ],
 
