@@ -104,7 +104,7 @@ const Public = {
   /**
    * put
    * config: { serviceName }
-   * objInfo: { password }
+   * objInfo: { oldPassword, newPassword }
    */
   put: async (config, objID, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);

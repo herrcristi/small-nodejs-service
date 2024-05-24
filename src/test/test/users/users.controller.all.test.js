@@ -18,7 +18,7 @@ describe('Users Controller', function () {
   beforeEach(async function () {
     sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
-      return { success: true, value: { userID: 'user.id', username: 'user.email' } };
+      return { status: 200, value: { userID: 'user.id', username: 'user.email' } };
     });
   });
 

@@ -43,7 +43,8 @@ const Schema = {
   }),
 
   UserPass: Joi.object().keys({
-    password: Joi.string().min(1).max(64).required(),
+    oldPassword: Joi.string().min(1).max(64).required(),
+    newPassword: Joi.string().min(1).max(64).required(),
   }),
 };
 

@@ -36,7 +36,8 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const putReq = {
-      password: testUser._test_data.origPassword,
+      oldPassword: testUser._test_data.origPassword,
+      newPassword: testUser._test_data.origPassword + '1',
     };
 
     // stub
@@ -94,7 +95,8 @@ describe('Users Auth Service', function () {
 
     const putReq = {
       id: testUser.id,
-      password: testUser._test_data.origPassword,
+      oldPassword: testUser._test_data.origPassword,
+      newPassword: testUser._test_data.origPassword + '1',
     };
 
     // call
@@ -114,7 +116,8 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const putReq = {
-      password: testUser._test_data.origPassword,
+      oldPassword: testUser._test_data.origPassword,
+      newPassword: testUser._test_data.origPassword + '1',
     };
 
     // stub

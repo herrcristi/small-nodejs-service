@@ -38,7 +38,8 @@ describe('Users Auth Service', function () {
 
     const patchReq = {
       set: {
-        password: testUser._test_data.origPassword,
+        oldPassword: testUser._test_data.origPassword,
+        newPassword: testUser._test_data.origPassword + '1',
       },
     };
 
@@ -87,7 +88,8 @@ describe('Users Auth Service', function () {
     const patchReq = {
       set: {
         id: testUser.id,
-        password: testUser._test_data.origPassword,
+        oldPassword: testUser._test_data.origPassword,
+        newPassword: testUser._test_data.origPassword + '1',
       },
     };
 
@@ -109,7 +111,8 @@ describe('Users Auth Service', function () {
 
     const patchReq = {
       set: {
-        password: testUser._test_data.origPassword,
+        oldPassword: testUser._test_data.origPassword,
+        newPassword: testUser._test_data.origPassword + '1',
       },
     };
 

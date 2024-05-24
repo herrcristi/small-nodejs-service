@@ -92,7 +92,7 @@ const Public = {
    * config: { serviceName }
    */
   logout: async (config, _ctx) => {
-    return { success: true, value: true };
+    return { status: 200, success: true, value: true };
   },
 
   /**
@@ -159,12 +159,30 @@ const Public = {
   /**
    * put
    * config: { serviceName }
-   * objInfo: { password }
+   * objInfo: { oldPassword, newPassword }
    */
   put: async (config, objID, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
 
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+
+    // check if equal
+    if (objInfo.oldPassword === objInfo.newPassword) {
+      const msg = 'New password is the same as old password';
+      return { status: 400, error: { message: msg, error: new Error(msg) } };
+    }
+
+    // check old password
+    const rG = await DbOpsUtils.getOne(config, objID, { password: 1, salt: 1 }, _ctx);
+    if (rG.error) {
+      return rG;
+    }
+
+    const oldPasswordHash = Private.hashPassword(rG.value.password, rG.value.salt, _ctx);
+    if (oldPasswordHash !== objInfo.oldPassword) {
+      const msg = 'Invalid old password';
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
 
     // hash password with new salt
     objInfo.salt = Private.genSalt();
