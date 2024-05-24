@@ -35,6 +35,16 @@ const Public = {
   },
 
   /**
+   * logout
+   * config: { serviceName }
+   */
+  logout: async (config, _ctx) => {
+    await Private.setupConfig(config, _ctx);
+
+    return { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
+  },
+
+  /**
    * get the token
    * config: { serviceName }
    * userInfo: { token }

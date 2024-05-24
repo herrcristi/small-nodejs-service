@@ -88,6 +88,14 @@ const Public = {
   },
 
   /**
+   * logout
+   * config: { serviceName }
+   */
+  logout: async (config, _ctx) => {
+    return { success: true, value: true };
+  },
+
+  /**
    * get the jwt token
    * config: { serviceName }
    * userInfo: { id, userID } // id is the username/email

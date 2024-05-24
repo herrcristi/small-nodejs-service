@@ -14,6 +14,7 @@ const router = express.Router();
  * Users Auth
  */
 router.route(`${UsersAuthConstants.ApiPath}/login`).post(UsersAuthController.login);
+router.route(`${UsersAuthConstants.ApiPath}/logout`).post(UsersAuthController.logout); //  requires authentication to logout
 router.route(`${UsersAuthConstants.ApiPath}/signup`).post(UsersAuthSignupController.signup); //  requires authentication to signup
 router.route(`${UsersAuthConstants.ApiPath}/invite`).post(UsersAuthSignupController.invite); //  requires authentication to invite
 

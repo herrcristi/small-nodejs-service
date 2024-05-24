@@ -14,5 +14,7 @@ require('./rest-communications.utils.put.test.js');
 require('./rest-communications.utils.patch.test.js');
 require('./rest-communications.utils.notification.test.js');
 require('./rest-communications.utils.login.test.js');
+require('./rest-communications.utils.logout.test.js');
 require('./rest-communications.utils.signup.test.js');
+require('./rest-communications.utils.invite.test.js');
 require('./rest-communications.utils.validate.test.js');

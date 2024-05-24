@@ -112,6 +112,70 @@ describe('Users Auth Controller', function () {
   }).timeout(10000);
 
   /**
+   * logout with success
+   */
+  it('should logout with success', async () => {
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'logout').callsFake(() => {
+      console.log(`\nUsersAuthService.logout called\n`);
+      return {
+        status: 200,
+        value: {},
+      };
+    });
+
+    // call
+    let res = await chai.request(TestConstants.WebServer).post(`${UsersAuthConstants.ApiPath}/logout`).send({});
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal({});
+  }).timeout(10000);
+
+  /**
+   * logout fail
+   */
+  it('should logout fail', async () => {
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'logout').callsFake(() => {
+      console.log(`\nUsersAuthService.logout called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await chai.request(TestConstants.WebServer).post(`${UsersAuthConstants.ApiPath}/logout`).send({});
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * logout fail exception
+   */
+  it('should logout fail exception', async () => {
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'logout').callsFake(() => {
+      console.log(`\nUsersAuthService.logout called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai.request(TestConstants.WebServer).post(`${UsersAuthConstants.ApiPath}/logout`).send({});
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
    * token validate with success
    */
   it('should token validate with success', async () => {

@@ -15,4 +15,4 @@ require('./functional.locations.test.js');
 require('./functional.groups.test.js');
 require('./functional.schedules.test.js');
 
-// TODO add tests for signup and login+validate (and routes)
+// TODO add tests for signup+invite and login+validate + logout (and routes)
