@@ -178,15 +178,15 @@ const Public = {
       return rG;
     }
 
-    const oldPasswordHash = Private.hashPassword(rG.value.password, rG.value.salt, _ctx);
-    if (oldPasswordHash !== objInfo.oldPassword) {
+    const oldPasswordHash = Private.hashPassword(objInfo.oldPassword, rG.value.salt, _ctx);
+    if (oldPasswordHash !== rG.value.password) {
       const msg = 'Invalid old password';
       return { status: 401, error: { message: msg, error: new Error(msg) } };
     }
 
     // hash password with new salt
     objInfo.salt = Private.genSalt();
-    objInfo.password = Private.hashPassword(objInfo.password, objInfo.salt, _ctx);
+    objInfo.password = Private.hashPassword(objInfo.newPassword, objInfo.salt, _ctx);
 
     // put
     const r = await DbOpsUtils.put(config, objID, objInfo, projection, _ctx);
@@ -201,7 +201,7 @@ const Public = {
   /**
    * patch
    * config: { serviceName }
-   * patchInfo: { set: { salt, password } }
+   * patchInfo: { set: { newPassword, oldPassword } }
    */
   patch: async (config, objID, patchInfo, _ctx) => {
     // { serviceName, collection, notifications.projection }
@@ -209,9 +209,27 @@ const Public = {
 
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
+    // check if equal
+    if (patchInfo.set.oldPassword === patchInfo.set.newPassword) {
+      const msg = 'New password is the same as old password';
+      return { status: 400, error: { message: msg, error: new Error(msg) } };
+    }
+
+    // check old password
+    const rG = await DbOpsUtils.getOne(config, objID, { password: 1, salt: 1 }, _ctx);
+    if (rG.error) {
+      return rG;
+    }
+
+    const oldPasswordHash = Private.hashPassword(patchInfo.set.oldPassword, rG.value.salt, _ctx);
+    if (oldPasswordHash !== rG.value.password) {
+      const msg = 'Invalid old password';
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
+
     // hash password with new salt
     patchInfo.set.salt = Private.genSalt();
-    patchInfo.set.password = Private.hashPassword(patchInfo.set.password, patchInfo.set.salt, _ctx);
+    patchInfo.set.password = Private.hashPassword(patchInfo.set.newPassword, patchInfo.set.salt, _ctx);
 
     // patch
     const r = await DbOpsUtils.patch(config, objID, patchInfo, projection, _ctx);
