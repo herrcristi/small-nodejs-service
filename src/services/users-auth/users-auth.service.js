@@ -259,10 +259,6 @@ const Public = {
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
-    // generic error
-    const errorLogout = 'Failed to logout';
-    const rError = { status: 401, error: { message: errorLogout, error: new Error(errorLogout) } };
-
     // logout
     let rL;
     if (config.isFirebaseAuth) {
@@ -274,7 +270,7 @@ const Public = {
     // success empty token
     return {
       status: 200,
-      value: true,
+      value: {},
       token: 'token',
     };
   },

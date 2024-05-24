@@ -41,7 +41,7 @@ describe('Rest Communications Utils', function () {
           logout: sinon.stub().callsFake(() => {
             return {
               status: 200,
-              value: true,
+              value: {},
             };
           }),
         },
@@ -58,7 +58,7 @@ describe('Rest Communications Utils', function () {
 
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: true,
+      value: {},
     });
   }).timeout(10000);
 
@@ -112,7 +112,7 @@ describe('Rest Communications Utils', function () {
     };
 
     // stub
-    mockAxios.onPost().reply(200, true);
+    mockAxios.onPost().reply(200, {});
 
     // call
     await RestCommsUtils.init(restConfig);
@@ -122,7 +122,7 @@ describe('Rest Communications Utils', function () {
 
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: true,
+      value: {},
     });
   }).timeout(10000);
 

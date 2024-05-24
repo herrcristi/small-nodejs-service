@@ -120,7 +120,7 @@ describe('Users Auth Controller', function () {
       console.log(`\nUsersAuthService.logout called\n`);
       return {
         status: 200,
-        value: true,
+        value: {},
       };
     });
 
@@ -131,7 +131,7 @@ describe('Users Auth Controller', function () {
     // check
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body).to.equal(true);
+    chai.expect(res.body).to.deep.equal({});
   }).timeout(10000);
 
   /**

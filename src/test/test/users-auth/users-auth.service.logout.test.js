@@ -40,7 +40,7 @@ describe('Users Auth Service', function () {
     // check
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: true,
+      value: {},
       token: 'token',
     });
   }).timeout(10000);
