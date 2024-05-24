@@ -8,6 +8,7 @@ chai.use(chaiHttp);
 const express = require('express');
 
 const WebServer = require('../../web-server/web-server.utils.js');
+const CommonUtils = require('../../utils/common.utils.js');
 
 describe('Web Server Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
@@ -125,9 +126,9 @@ describe('Web Server Utils', function () {
   }).timeout(10000);
 
   /**
-   * init fail server closed
+   * web error
    */
-  it('should init fail server closed', async () => {
+  it('should web error', async () => {
     const port = 8081;
     const path = '/test/webserver';
 
@@ -139,25 +140,74 @@ describe('Web Server Utils', function () {
     });
 
     let middlewares;
+    let authMiddlewares = [
+      {
+        middleware: sinon.stub().callsFake((req, res, next) => {
+          console.log(`\nAuth Middleware0 called route ${JSON.stringify(req.route, null, 2)}\n`);
+          throw new Error('Test error');
+        }),
+      },
+    ];
 
     // call
-    let web = await WebServer.init(port, router, middlewares);
+    let web = await WebServer.init(port, router, middlewares, authMiddlewares);
     server = web?.server;
 
     // check
     chai.expect(web.app.mountpath).to.equal('/');
-    server.close();
 
-    let hasException = false;
-    try {
-      let res = await chai.request(`http://localhost:${port}`).get(`${path}`);
-      console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-    } catch (e) {
-      console.log(`\nTest exception: ${e.stack ? e.stack : e}\n`);
-      chai.expect(e.message).to.include('ECONNREFUSED');
-      hasException = true;
-    }
+    let res = await chai.request(`http://localhost:${port}`).get(`${path}`);
+    console.log(
+      `\nTest returned: status=${JSON.stringify(res?.status, null, 2)}, ${JSON.stringify(res?.body, null, 2)}\n`
+    );
 
-    chai.expect(hasException).to.equal(true);
+    chai.expect(authMiddlewares[0].middleware.callCount).to.equal(1);
+    chai.expect(res.body.error.message).to.include('Test error');
+    chai.expect(res.body.error.error).to.exist;
+  }).timeout(10000);
+
+  /**
+   * web error prod
+   */
+  it('should web error prod', async () => {
+    const port = 8081;
+    const path = '/test/webserver';
+
+    // stub
+    let stubDebug = sinon.stub(CommonUtils, 'isDebug').returns(false);
+
+    const router = express.Router();
+    router.route(path).get(async (req, res) => {
+      console.log(`\nRoute path ${path} called\n`);
+      res.status(200).json({ success: true });
+      res.end();
+    });
+
+    let middlewares;
+    let authMiddlewares = [
+      {
+        middleware: sinon.stub().callsFake((req, res, next) => {
+          console.log(`\nAuth Middleware0 called route ${JSON.stringify(req.route, null, 2)}\n`);
+          throw 'Test error';
+        }),
+      },
+    ];
+
+    // call
+    let web = await WebServer.init(port, router, middlewares, authMiddlewares);
+    server = web?.server;
+
+    // check
+    chai.expect(web.app.mountpath).to.equal('/');
+
+    let res = await chai.request(`http://localhost:${port}`).get(`${path}`);
+    console.log(
+      `\nTest returned: status=${JSON.stringify(res?.status, null, 2)}, ${JSON.stringify(res?.body, null, 2)}\n`
+    );
+
+    chai.expect(authMiddlewares[0].middleware.callCount).to.equal(1);
+    chai.expect(stubDebug.callCount).to.equal(1);
+    chai.expect(res.body.error.message).to.include('Test error');
+    chai.expect(res.body.error.error).to.not.exist;
   }).timeout(10000);
 });
