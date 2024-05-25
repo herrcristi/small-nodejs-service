@@ -89,7 +89,7 @@ describe('Users Controller', function () {
     chai.expect(res.status).to.equal(401);
     chai.expect(stubValidate.callCount).to.equal(1);
     chai.expect(stubService.callCount).to.equal(0);
-    chai.expect(res.body.error.message).to.include('Test error');
+    chai.expect(res.body.error).to.include('Test error');
   }).timeout(10000);
 
   /**
@@ -111,7 +111,7 @@ describe('Users Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error.message).to.include('Test error message');
+    chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
 
   /**
@@ -219,7 +219,7 @@ describe('Users Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubBuildFilter.callCount).to.equal(1);
-    chai.expect(res.body.error.message).to.include('Test error message');
+    chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
 
   /**
@@ -242,7 +242,7 @@ describe('Users Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error.message).to.include('Test error message');
+    chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
 
   /**
@@ -288,7 +288,7 @@ describe('Users Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${UsersConstants.ApiPath}`)
+      .post(`${UsersConstants.ApiPathInternal}`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -316,14 +316,14 @@ describe('Users Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${UsersConstants.ApiPath}`)
+      .post(`${UsersConstants.ApiPathInternal}`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error.message).to.include('Test error message');
+    chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
 
   /**
@@ -342,7 +342,7 @@ describe('Users Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${UsersConstants.ApiPath}`)
+      .post(`${UsersConstants.ApiPathInternal}`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -401,7 +401,7 @@ describe('Users Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error.message).to.include('Test error message');
+    chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
 
   /**
@@ -482,7 +482,7 @@ describe('Users Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error.message).to.include('Test error message');
+    chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
 
   /**
@@ -566,7 +566,7 @@ describe('Users Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error.message).to.include('Test error message');
+    chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
 
   /**
@@ -648,7 +648,7 @@ describe('Users Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error.message).to.include('Test error message');
+    chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
 
   /**
