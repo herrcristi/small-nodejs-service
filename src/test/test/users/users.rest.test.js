@@ -206,6 +206,24 @@ describe('Users Rest', function () {
   }).timeout(10000);
 
   /**
+   * rest putEmail
+   */
+  it('should put email call via rest', async () => {
+    // stub
+    let stub = sinon.stub(RestCommsUtils, 'put').callsFake(() => {
+      console.log(`\nRestCommUtils.put called\n`);
+      return { status: 200, value: 'dummy' };
+    });
+
+    // call
+    let res = await UsersRest.putEmail('id1', {}, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res?.value).to.equal('dummy');
+  }).timeout(10000);
+
+  /**
    * rest patch
    */
   it('should patch a call via rest', async () => {
@@ -217,6 +235,24 @@ describe('Users Rest', function () {
 
     // call
     let res = await UsersRest.patch('id1', {}, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res?.value).to.equal('dummy');
+  }).timeout(10000);
+
+  /**
+   * rest patch school
+   */
+  it('should patch school call via rest', async () => {
+    // stub
+    let stub = sinon.stub(RestCommsUtils, 'patch').callsFake(() => {
+      console.log(`\nRestCommUtils.patch called\n`);
+      return { status: 200, value: 'dummy' };
+    });
+
+    // call
+    let res = await UsersRest.patchSchool('id1', {}, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
