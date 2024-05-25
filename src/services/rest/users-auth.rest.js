@@ -19,14 +19,16 @@ const Public = {
    * objInfo: { id, password }
    */
   login: async (objInfo, _ctx) => {
-    return await RestCommsUtils.path(UsersAuthConstants.ServiceName, 'login', objInfo, _ctx);
+    const config = { serviceName: UsersAuthConstants.ServiceName, method: 'POST', path: '/login', body: objInfo };
+    return await RestCommsUtils.call(config, _ctx);
   },
 
   /**
    * logout
    */
   logout: async (_ctx) => {
-    return await RestCommsUtils.path(UsersAuthConstants.ServiceName, 'logout', {}, _ctx);
+    const config = { serviceName: UsersAuthConstants.ServiceName, method: 'POST', path: '/logout', body: {} };
+    return await RestCommsUtils.call(config, _ctx);
   },
 
   /**
@@ -34,7 +36,8 @@ const Public = {
    * objInfo: { email, password, name, birthday, phoneNumber?, address, school: { name, description } },
    */
   signup: async (objInfo, _ctx) => {
-    return await RestCommsUtils.path(UsersAuthConstants.ServiceName, 'signup', objInfo, _ctx);
+    const config = { serviceName: UsersAuthConstants.ServiceName, method: 'POST', path: '/signup', body: objInfo };
+    return await RestCommsUtils.call(config, _ctx);
   },
 
   /**
@@ -42,7 +45,8 @@ const Public = {
    * objInfo: { email, school: { role } } - schoolID is _ctx.tenantID
    */
   invite: async (objInfo, _ctx) => {
-    return await RestCommsUtils.path(UsersAuthConstants.ServiceName, 'invite', objInfo, _ctx);
+    const config = { serviceName: UsersAuthConstants.ServiceName, method: 'POST', path: '/invite', body: objInfo };
+    return await RestCommsUtils.call(config, _ctx);
   },
 
   /**

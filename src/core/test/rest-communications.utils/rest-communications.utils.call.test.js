@@ -30,18 +30,18 @@ describe('Rest Communications Utils', function () {
   after(async function () {});
 
   /**
-   * logout local with success
+   * call local post with success
    */
-  it('should call logout local with success', async () => {
+  it('should call local post with success', async () => {
     // local config
     let serviceName = 'Service';
     let localConfig = {
       local: {
         [serviceName]: {
-          logout: sinon.stub().callsFake(() => {
+          login: sinon.stub().callsFake((loginInfo) => {
             return {
               status: 200,
-              value: {},
+              value: true,
             };
           }),
         },
@@ -50,28 +50,75 @@ describe('Rest Communications Utils', function () {
 
     // call
     await RestCommsUtils.init(localConfig);
-    let res = await RestCommsUtils.logout(serviceName, _ctx);
+    const config = {
+      serviceName,
+      method: 'POST',
+      path: '/login',
+      body: { id: 'email@test.com', password: 'password' },
+    };
+    let res = await RestCommsUtils.call(config, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(localConfig.local[serviceName].logout.callCount).to.equal(1);
+    chai.expect(localConfig.local[serviceName].login.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: {},
+      value: true,
     });
   }).timeout(10000);
 
   /**
-   * logout local fail
+   * call local get with success
    */
-  it('should call logout local and fail', async () => {
+  it('should call local get with success', async () => {
     // local config
     let serviceName = 'Service';
     let localConfig = {
       local: {
         [serviceName]: {
-          logout: sinon.stub().callsFake(() => {
+          login: sinon.stub().callsFake((ids) => {
+            chai.expect(ids).to.deep.equal(['id1']);
+            return {
+              status: 200,
+              value: true,
+            };
+          }),
+        },
+      },
+    };
+
+    // call
+    await RestCommsUtils.init(localConfig);
+    const config = {
+      serviceName,
+      method: 'GET',
+      path: '/login',
+      query: { ids: ['id1'] },
+      body: { id: 'email@test.com', password: 'password' },
+    };
+    let res = await RestCommsUtils.call(config, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(localConfig.local[serviceName].login.callCount).to.equal(1);
+
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: true,
+    });
+  }).timeout(10000);
+
+  /**
+   * call local fail
+   */
+  it('should call local and fail', async () => {
+    // local config
+    let serviceName = 'Service';
+    let localConfig = {
+      local: {
+        [serviceName]: {
+          login: sinon.stub().callsFake((loginInfo) => {
             return { error: { message: 'Test error message', error: new Error('Test error').toString() } };
           }),
         },
@@ -80,11 +127,17 @@ describe('Rest Communications Utils', function () {
 
     // call
     await RestCommsUtils.init(localConfig);
-    let res = await RestCommsUtils.logout(serviceName, _ctx);
+    const config = {
+      serviceName,
+      method: 'POST',
+      path: '/login',
+      body: { id: 'email@test.com', password: 'password' },
+    };
+    let res = await RestCommsUtils.call(config, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(localConfig.local[serviceName].logout.callCount).to.equal(1);
+    chai.expect(localConfig.local[serviceName].login.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
       error: {
@@ -95,9 +148,9 @@ describe('Rest Communications Utils', function () {
   }).timeout(10000);
 
   /**
-   * logout remote with success
+   * call remote with success
    */
-  it('should call logout remote with success', async () => {
+  it('should call remote with success', async () => {
     // local config
     let serviceName = 'Service';
     let restConfig = {
@@ -106,30 +159,36 @@ describe('Rest Communications Utils', function () {
           protocol: 'http',
           host: 'localhost',
           port: process.env.PORT, // see test.utils.js
-          path: '/api/internal_v1/service/logout',
+          path: '/api/internal_v1/service',
         },
       },
     };
 
     // stub
-    mockAxios.onPost().reply(200, {});
+    mockAxios.onPost().reply(200, true);
 
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.logout(serviceName, _ctx);
+    const config = {
+      serviceName,
+      method: 'POST',
+      path: '/login',
+      body: { id: 'email@test.com', password: 'password' },
+    };
+    let res = await RestCommsUtils.call(config, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: {},
+      value: true,
     });
   }).timeout(10000);
 
   /**
-   * logout remote with failure
+   * call remote with failure
    */
-  it('should call logout remote with failure', async () => {
+  it('should call remote with failure', async () => {
     // local config
     let serviceName = 'Service';
     let restConfig = {
@@ -149,11 +208,17 @@ describe('Rest Communications Utils', function () {
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.logout(serviceName, _ctx);
+    const config = {
+      serviceName,
+      method: 'POST',
+      path: '/login',
+      body: { id: 'email@test.com', password: 'password' },
+    };
+    let res = await RestCommsUtils.call(config, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai
       .expect(res.error.message)
-      .to.include('Calling POST http://localhost:8080/api/internal_v1/service/logout failed with status 500');
+      .to.include('Calling POST http://localhost:8080/api/internal_v1/service/login failed with status 500');
   }).timeout(10000);
 });
