@@ -368,6 +368,7 @@ const Public = {
 
     // TODO signup can be done only by portal admin
     // TODO validate /api/v1/users/:id and /api/v1/users-auth/:id only for the login user (_ctx.userID)
+    // TODO /api/v1/schools/:id validate that _ctx.tenantID e acelasi cu cel de aici din param
 
     const validGlobalRole = isValidRouteForRoles(['all']);
     if (!validGlobalRole) {

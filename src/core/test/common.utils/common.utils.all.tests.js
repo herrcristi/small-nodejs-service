@@ -7,6 +7,7 @@ require('./common.utils.sleep.test.js');
 require('./common.utils.isDebug.test.js');
 require('./common.utils.uuid.test.js');
 require('./common.utils.uuidc.test.js');
+require('./common.utils.capitalize.test.js');
 require('./common.utils.getRandomBytes.test.js');
 require('./common.utils.getHash.test.js');
 require('./common.utils.encrypt.test.js');

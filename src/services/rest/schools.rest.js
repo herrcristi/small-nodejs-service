@@ -35,10 +35,10 @@ const Public = {
   },
 
   /**
-   * post
+   * post (internal) called only from signup
    */
   post: async (objInfo, _ctx) => {
-    return await RestCommsUtils.post(SchoolsConstants.ServiceName, objInfo, _ctx);
+    return await RestCommsUtils.post(SchoolsConstants.ServiceNameInternal, objInfo, _ctx);
   },
 
   /**
