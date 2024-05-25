@@ -25,7 +25,6 @@ const Public = {
       return next();
     }
 
-    // TODO signup can be done only by portal admin
     // TODO routes with /api/internal_v1/ or s2s token should be validated via service2service validation
 
     try {

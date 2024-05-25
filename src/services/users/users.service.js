@@ -39,10 +39,6 @@ const SchemaSchools = Joi.array().items(
 
 const Schema = {
   User: Joi.object().keys({
-    email: Joi.string()
-      .email({ tlds: { allow: false } })
-      .min(1)
-      .max(128),
     status: Joi.string()
       .min(1)
       .max(64)
@@ -54,24 +50,37 @@ const Schema = {
       .max(32)
       .regex(/^(\d|\+|\-|\.|' ')*$/), // allow 0-9 + - . in any order
     address: Joi.string().min(1).max(256),
-    schools: SchemaSchools,
+  }),
+
+  UserEmail: Joi.object().keys({
+    email: Joi.string()
+      .email({ tlds: { allow: false } })
+      .min(1)
+      .max(128),
   }),
 };
 
 const Validators = {
-  Post: Schema.User.fork(
-    ['email', 'name', 'birthday', 'address', 'schools'],
-    (x) => x.required() /*make required */
-  ).keys({
+  Post: Schema.User.keys({
+    email: Joi.string()
+      .email({ tlds: { allow: false } })
+      .min(1)
+      .max(128),
     type: Joi.string().valid(UsersConstants.Type),
-  }),
+    schools: SchemaSchools,
+  }).fork(['email', 'name', 'birthday', 'address', 'schools'], (x) => x.required() /*make required */),
 
   Put: Schema.User,
+  PutEmail: Schema.UserEmail,
 
   Patch: Joi.object().keys({
-    // for patch allowed operations are add, remove, set, unset
+    // for patch allowed operations are set, unset
     set: Schema.User,
     unset: Joi.array().items(Joi.string().min(1).max(128).valid('phoneNumber')),
+  }),
+
+  PatchSchool: Joi.object().keys({
+    // for patch school allowed operations are add, remove
     add: Joi.object().keys({
       schools: SchemaSchools,
     }),
@@ -82,7 +91,11 @@ const Validators = {
 };
 
 const Private = {
-  Action: BaseServiceUtils.Constants.Action,
+  Action: {
+    ...BaseServiceUtils.Constants.Action,
+    PutEmail: 'putEmail',
+    PatchSchool: 'patchSchool',
+  },
   Notification: NotificationsUtils.Constants.Notification,
 
   /**
@@ -302,9 +315,9 @@ const Public = {
   /**
    * put
    */
-  put: async (objID, objInfo, _ctx) => {
-    // validate
-    const v = Validators.Put.validate(objInfo);
+  putInternal: async (objID, objInfo, validator, action, _ctx) => {
+    // validation is done in caller functions
+    const v = validator.validate(objInfo);
     if (v.error) {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
@@ -335,7 +348,7 @@ const Public = {
     }
 
     // raise event for put
-    await EventsRest.raiseEventForObject(UsersConstants.ServiceName, Private.Action.Put, r.value, objInfo, _ctx);
+    await EventsRest.raiseEventForObject(UsersConstants.ServiceName, action, r.value, objInfo, _ctx);
 
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
@@ -352,12 +365,21 @@ const Public = {
     return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
   },
 
+  put: async (objID, objInfo, _ctx) => {
+    return await Public.putInternal(objID, objInfo, Validators.Put, Private.Action.Put, _ctx);
+  },
+
+  putEmail: async (objID, objInfo, _ctx) => {
+    // called from users-auth
+    return await Public.putInternal(objID, objInfo, Validators.PutEmail, Private.Action.PutEmail, _ctx);
+  },
+
   /**
    * patch
    */
-  patch: async (objID, patchInfo, _ctx) => {
+  patchInternal: async (objID, patchInfo, validator, action, _ctx) => {
     // validate
-    const v = Validators.Patch.validate(patchInfo);
+    const v = validator.validate(patchInfo);
     if (v.error) {
       return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
@@ -389,7 +411,7 @@ const Public = {
     }
 
     // raise event for patch
-    await EventsRest.raiseEventForObject(UsersConstants.ServiceName, Private.Action.Patch, r.value, patchInfo, _ctx);
+    await EventsRest.raiseEventForObject(UsersConstants.ServiceName, action, r.value, patchInfo, _ctx);
 
     // raise a notification for modified obj
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
@@ -404,6 +426,15 @@ const Public = {
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
+  },
+
+  patch: async (objID, patchInfo, _ctx) => {
+    return await Public.patchInternal(objID, patchInfo, Validators.Patch, Private.Action.Patch, _ctx);
+  },
+
+  patchSchool: async (objID, patchInfo, _ctx) => {
+    // called from users-auth by school admin
+    return await Public.patchInternal(objID, patchInfo, Validators.PatchSchool, Private.Action.PatchSchool, _ctx);
   },
 
   /**

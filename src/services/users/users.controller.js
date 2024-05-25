@@ -160,6 +160,37 @@ const Public = {
   },
 
   /**
+   * putEmail (internal) called from users-auth
+   */
+  putEmail: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Put email called, param ${JSON.stringify(
+          CommonUtils.protectData(req.params),
+          null,
+          2
+        )}, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+      );
+      const objID = req.params.id;
+
+      // put
+      const r = await UsersService.putEmail(objID, req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
    * patch
    */
   patch: async (req, res, next) => {
@@ -178,6 +209,37 @@ const Public = {
 
       // patch
       const r = await UsersService.patch(objID, req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * patch school (by school admin) called from users-auth
+   */
+  patchSchool: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Patch school called, param ${JSON.stringify(
+          CommonUtils.protectData(req.params),
+          null,
+          2
+        )} body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+      );
+      const objID = req.params.id;
+
+      // patch
+      const r = await UsersService.patchSchool(objID, req.body, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }

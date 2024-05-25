@@ -73,12 +73,12 @@ describe('Users Controller', function () {
     sinon.restore();
     let stubValidate = sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
-      return { status: 401, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+      return { status: 401, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     let stubService = sinon.stub(UsersService, 'getAllForReq').callsFake(() => {
       console.log(`\nUsersService.getAllForReq called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
@@ -89,7 +89,7 @@ describe('Users Controller', function () {
     chai.expect(res.status).to.equal(401);
     chai.expect(stubValidate.callCount).to.equal(1);
     chai.expect(stubService.callCount).to.equal(0);
-    chai.expect(res.body.error).to.include('Test error');
+    chai.expect(res.body.error.message).to.include('Test error');
   }).timeout(10000);
 
   /**
@@ -101,7 +101,7 @@ describe('Users Controller', function () {
     // stub
     let stubService = sinon.stub(UsersService, 'getAllForReq').callsFake(() => {
       console.log(`\nUsersService.getAllForReq called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
@@ -111,7 +111,7 @@ describe('Users Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error).to.include('Test error message');
+    chai.expect(res.body.error.message).to.include('Test error message');
   }).timeout(10000);
 
   /**
@@ -209,7 +209,7 @@ describe('Users Controller', function () {
     // stub
     let stubBuildFilter = sinon.stub(RestApiUtils, 'buildFilterFromReq').callsFake(() => {
       console.log(`\nRestApiUtils.buildFilterFromReq\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
@@ -219,7 +219,7 @@ describe('Users Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubBuildFilter.callCount).to.equal(1);
-    chai.expect(res.body.error).to.include('Test error message');
+    chai.expect(res.body.error.message).to.include('Test error message');
   }).timeout(10000);
 
   /**
@@ -232,7 +232,7 @@ describe('Users Controller', function () {
     // stub
     let stubService = sinon.stub(UsersService, 'getOne').callsFake(() => {
       console.log(`\nUsersService.getOne called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
@@ -242,7 +242,7 @@ describe('Users Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error).to.include('Test error message');
+    chai.expect(res.body.error.message).to.include('Test error message');
   }).timeout(10000);
 
   /**
@@ -310,7 +310,7 @@ describe('Users Controller', function () {
     // stub
     let stubService = sinon.stub(UsersService, 'post').callsFake(() => {
       console.log(`\nUsersService.post called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
@@ -323,7 +323,7 @@ describe('Users Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error).to.include('Test error message');
+    chai.expect(res.body.error.message).to.include('Test error message');
   }).timeout(10000);
 
   /**
@@ -370,7 +370,7 @@ describe('Users Controller', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).delete(`${UsersConstants.ApiPath}/${testUser.id}`);
+    let res = await chai.request(TestConstants.WebServer).delete(`${UsersConstants.ApiPathInternal}/${testUser.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -391,17 +391,17 @@ describe('Users Controller', function () {
     // stub
     let stubService = sinon.stub(UsersService, 'delete').callsFake(() => {
       console.log(`\nUsersService.delete called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).delete(`${UsersConstants.ApiPath}/${testUser.id}`);
+    let res = await chai.request(TestConstants.WebServer).delete(`${UsersConstants.ApiPathInternal}/${testUser.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error).to.include('Test error message');
+    chai.expect(res.body.error.message).to.include('Test error message');
   }).timeout(10000);
 
   /**
@@ -418,7 +418,7 @@ describe('Users Controller', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).delete(`${UsersConstants.ApiPath}/${testUser.id}`);
+    let res = await chai.request(TestConstants.WebServer).delete(`${UsersConstants.ApiPathInternal}/${testUser.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -469,7 +469,7 @@ describe('Users Controller', function () {
     // stub
     let stubService = sinon.stub(UsersService, 'put').callsFake(() => {
       console.log(`\nUsersService.put called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
@@ -482,7 +482,7 @@ describe('Users Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error).to.include('Test error message');
+    chai.expect(res.body.error.message).to.include('Test error message');
   }).timeout(10000);
 
   /**
@@ -553,7 +553,7 @@ describe('Users Controller', function () {
     // stub
     let stubService = sinon.stub(UsersService, 'patch').callsFake(() => {
       console.log(`\nUsersService.patch called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
@@ -566,7 +566,7 @@ describe('Users Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error).to.include('Test error message');
+    chai.expect(res.body.error.message).to.include('Test error message');
   }).timeout(10000);
 
   /**
@@ -635,7 +635,7 @@ describe('Users Controller', function () {
     // stub
     let stubService = sinon.stub(UsersService, 'notification').callsFake(() => {
       console.log(`\nUsersService.notification called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
@@ -648,7 +648,7 @@ describe('Users Controller', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error).to.include('Test error message');
+    chai.expect(res.body.error.message).to.include('Test error message');
   }).timeout(10000);
 
   /**

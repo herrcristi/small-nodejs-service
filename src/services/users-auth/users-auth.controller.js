@@ -132,24 +132,20 @@ const Public = {
   },
 
   /**
-   * put
+   * delete
    */
-  put: async (req, res, next) => {
+  delete: async (req, res, next) => {
     let _ctx = req._ctx;
     _ctx.serviceName = UsersAuthConstants.ServiceName;
 
     try {
       console.log(
-        `\n${_ctx.serviceName}: Put called, param ${JSON.stringify(
-          CommonUtils.protectData(req.params),
-          null,
-          2
-        )}, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+        `${_ctx.serviceName}: Delete called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
       );
       const objID = req.params.id;
 
-      // put
-      const r = await UsersAuthService.put(objID, req.body, _ctx);
+      // delete
+      const r = await UsersAuthService.delete(objID, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
@@ -163,9 +159,133 @@ const Public = {
   },
 
   /**
-   * patch
+   * put password
    */
-  patch: async (req, res, next) => {
+  putPassword: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersAuthConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Put password called, param ${JSON.stringify(
+          CommonUtils.protectData(req.params),
+          null,
+          2
+        )}`
+      );
+      const objID = req.params.id;
+
+      // put
+      const r = await UsersAuthService.putPassword(objID, req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * put id (email)
+   */
+  putID: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersAuthConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Put id (email) called, param ${JSON.stringify(
+          CommonUtils.protectData(req.params),
+          null,
+          2
+        )}, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+      );
+      const objID = req.params.id;
+
+      // put
+      const r = await UsersAuthService.putID(objID, req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * patch password
+   */
+  patchPassword: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersAuthConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Patch password called, param ${JSON.stringify(
+          CommonUtils.protectData(req.params),
+          null,
+          2
+        )}`
+      );
+      const objID = req.params.id;
+
+      // patch
+      const r = await UsersAuthService.patchPassword(objID, req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * patch id (email)
+   */
+  patchID: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersAuthConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Patch id (email) called, param ${JSON.stringify(
+          CommonUtils.protectData(req.params),
+          null,
+          2
+        )} body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+      );
+      const objID = req.params.id;
+
+      // patch
+      const r = await UsersAuthService.patchID(objID, req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * patch called by admin to add/remove user to school (_ctx.tenantID)
+   */
+  patchUserSchool: async (req, res, next) => {
     let _ctx = req._ctx;
     _ctx.serviceName = UsersAuthConstants.ServiceName;
 
@@ -177,10 +297,11 @@ const Public = {
           2
         )} body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
-      const objID = req.params.id;
+      const adminID = req.params.id;
+      const userID = req.params.uid;
 
       // patch
-      const r = await UsersAuthService.patch(objID, req.body, _ctx);
+      const r = await UsersAuthService.patchUserSchool(adminID, userID, req.body, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }

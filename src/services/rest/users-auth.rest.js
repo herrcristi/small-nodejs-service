@@ -15,18 +15,18 @@ const Private = {
 
 const Public = {
   /**
-   * login
+   * login (public)
    * objInfo: { id, password }
    */
   login: async (objInfo, _ctx) => {
-    return await RestCommsUtils.login(UsersAuthConstants.ServiceName, objInfo, _ctx);
+    return await RestCommsUtils.path(UsersAuthConstants.ServiceName, 'login', objInfo, _ctx);
   },
 
   /**
    * logout
    */
   logout: async (_ctx) => {
-    return await RestCommsUtils.logout(UsersAuthConstants.ServiceName, _ctx);
+    return await RestCommsUtils.path(UsersAuthConstants.ServiceName, 'logout', {}, _ctx);
   },
 
   /**
@@ -34,7 +34,7 @@ const Public = {
    * objInfo: { email, password, name, birthday, phoneNumber?, address, school: { name, description } },
    */
   signup: async (objInfo, _ctx) => {
-    return await RestCommsUtils.signup(UsersAuthConstants.ServiceName, objInfo, _ctx);
+    return await RestCommsUtils.path(UsersAuthConstants.ServiceName, 'signup', objInfo, _ctx);
   },
 
   /**
@@ -42,11 +42,11 @@ const Public = {
    * objInfo: { email, school: { role } } - schoolID is _ctx.tenantID
    */
   invite: async (objInfo, _ctx) => {
-    return await RestCommsUtils.invite(UsersAuthConstants.ServiceName, objInfo, _ctx);
+    return await RestCommsUtils.path(UsersAuthConstants.ServiceName, 'invite', objInfo, _ctx);
   },
 
   /**
-   * validate (internal)
+   * validate (internal) called from middleware
    */
   validate: async (objInfo, _ctx) => {
     return await RestCommsUtils.validate(
@@ -58,31 +58,47 @@ const Public = {
   },
 
   /**
-   * post (internal)
+   * post (internal) called from signup + invite user
    */
   post: async (objInfo, _ctx) => {
     return await RestCommsUtils.post(UsersAuthConstants.ServiceNameInternal, objInfo, _ctx);
   },
 
   /**
-   * delete (internal)
+   * delete
    */
   delete: async (objID, _ctx) => {
-    return await RestCommsUtils.delete(UsersAuthConstants.ServiceNameInternal, objID, _ctx);
+    return await RestCommsUtils.delete(UsersAuthConstants.ServiceName, objID, _ctx);
   },
 
   /**
    * put
    */
-  put: async (objID, objInfo, _ctx) => {
-    return await RestCommsUtils.put(UsersAuthConstants.ServiceName, objID, objInfo, _ctx);
+  putPassword: async (objID, objInfo, _ctx) => {
+    return await RestCommsUtils.put(UsersAuthConstants.ServiceName, objID, objInfo, _ctx, 'password');
+  },
+
+  putID: async (objID, objInfo, _ctx) => {
+    return await RestCommsUtils.put(UsersAuthConstants.ServiceName, objID, objInfo, _ctx, 'id');
   },
 
   /**
    * patch
    */
-  patch: async (objID, patchInfo, _ctx) => {
-    return await RestCommsUtils.patch(UsersAuthConstants.ServiceName, objID, patchInfo, _ctx);
+  patchPassword: async (objID, patchInfo, _ctx) => {
+    return await RestCommsUtils.patch(UsersAuthConstants.ServiceName, objID, patchInfo, _ctx, 'password');
+  },
+
+  patchID: async (objID, patchInfo, _ctx) => {
+    return await RestCommsUtils.patch(UsersAuthConstants.ServiceName, objID, patchInfo, _ctx, 'id');
+  },
+
+  /**
+   * patch called by admin to add/remove user to school (_ctx.tenantID)
+   * patchInfo: { roles }
+   */
+  patchUserSchool: async (adminID, userID, patchInfo, _ctx) => {
+    return await RestCommsUtils.patchUserSchool(UsersAuthConstants.ServiceName, adminID, userID, patchInfo, _ctx);
   },
 
   /**

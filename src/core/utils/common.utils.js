@@ -31,6 +31,13 @@ const Public = {
   },
 
   /**
+   * capitalize
+   */
+  capitalize: (string) => {
+    return string.charAt(0).toUpperCase() + string.slice(1);
+  },
+
+  /**
    * random bytes
    */
   getRandomBytes: (bytes = 32) => {

@@ -1,6 +1,7 @@
 /**
  * Users service
  */
+const _ = require('lodash');
 const path = require('path');
 const fs = require('fs');
 const Joi = require('joi');
@@ -46,6 +47,26 @@ const Schema = {
     oldPassword: Joi.string().min(1).max(64).required(),
     newPassword: Joi.string().min(1).max(64).required(),
   }),
+
+  UserID: Joi.object().keys({
+    id: Joi.string()
+      .email({ tlds: { allow: false } })
+      .required(),
+    password: Joi.string().min(1).max(64).required(),
+  }),
+
+  SchoolRoles: Joi.object().keys({
+    roles: Joi.array()
+      .items(
+        Joi.string()
+          .min(1)
+          .max(32)
+          .required()
+          .valid(...Object.values(UsersRest.Constants.Roles))
+      )
+      .min(1)
+      .required(),
+  }),
 };
 
 const Validators = {
@@ -61,11 +82,22 @@ const Validators = {
     type: Joi.string().valid(UsersAuthConstants.Type),
   }),
 
-  Put: Schema.UserPass,
+  PutPassword: Schema.UserPass,
+  PutID: Schema.UserID,
 
-  Patch: Joi.object().keys({
+  PatchPassword: Joi.object().keys({
     // for patch allowed operations are: set
     set: Schema.UserPass,
+  }),
+  PatchID: Joi.object().keys({
+    // for patch allowed operations are: set
+    set: Schema.UserID,
+  }),
+
+  PatchUserSchool: Joi.object().keys({
+    // for patch school roles allowed operations are add, remove
+    add: Schema.SchoolRoles,
+    remove: Schema.SchoolRoles,
   }),
 };
 
@@ -74,8 +106,10 @@ const Private = {
     Login: 'login',
     Post: 'post',
     Delete: 'delete',
-    Put: 'put',
-    Patch: 'patch',
+    PutPassword: 'putPassword',
+    PutID: 'putID',
+    PatchPassword: 'patchPassword',
+    PatchID: 'patchID',
   },
   Notification: NotificationsUtils.Constants.Notification,
 
@@ -332,6 +366,9 @@ const Public = {
       return roles?.some((role) => Private.RolesApiAccess[role]?.[objInfo.method?.toUpperCase()]?.[objInfo.route]);
     };
 
+    // TODO signup can be done only by portal admin
+    // TODO validate /api/v1/users/:id and /api/v1/users-auth/:id only for the login user (_ctx.userID)
+
     const validGlobalRole = isValidRouteForRoles(['all']);
     if (!validGlobalRole) {
       // validate per tenant
@@ -400,7 +437,8 @@ const Public = {
   },
 
   /**
-   * delete
+   * delete the user can be done only by login user (_ctx.userID), objID is the email
+   * (admins can delete users from tenants using deleteSchool)
    */
   delete: async (objID, _ctx) => {
     // config: { serviceName }
@@ -414,6 +452,12 @@ const Public = {
     }
     if (r.error) {
       return r;
+    }
+
+    // delete user details
+    const rUserDetails = await UsersRest.delete(_ctx.userID, _ctx);
+    if (rUserDetails.error) {
+      return rUserDetails;
     }
 
     // raise event
@@ -430,9 +474,9 @@ const Public = {
   /**
    * put (only password)
    */
-  put: async (objID, objInfo, _ctx) => {
+  putPassword: async (objID, objInfo, _ctx) => {
     // validate
-    const v = Validators.Put.validate(objInfo);
+    const v = Validators.PutPassword.validate(objInfo);
     if (v.error) {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
@@ -443,17 +487,69 @@ const Public = {
     // put
     let r;
     if (config.isFirebaseAuth) {
-      r = await UsersAuthServiceFirebase.put(config, objID, objInfo, _ctx);
+      r = await UsersAuthServiceFirebase.putPassword(config, objID, objInfo, _ctx);
     } else {
-      r = await UsersAuthServiceLocal.put(config, objID, objInfo, _ctx);
+      r = await UsersAuthServiceLocal.putPassword(config, objID, objInfo, _ctx);
     }
     if (r.error) {
       return r;
     }
 
     // raise event for put (changed password)
+    const action = Private.Action.PutPassword;
     const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
-    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Put, newObj, newObj, _ctx);
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, newObj, _ctx);
+
+    // raise a notification for modified obj
+    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
+
+    // success
+    return { status: 200, value: newObj };
+  },
+
+  /**
+   * put only id (email)
+   */
+  putID: async (objID, objInfo, _ctx) => {
+    // validate
+    const v = Validators.PutID.validate(objInfo);
+    if (v.error) {
+      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+
+    // config: { serviceName }
+    const config = await Private.getConfig(_ctx);
+
+    // put
+    let r;
+    if (config.isFirebaseAuth) {
+      r = await UsersAuthServiceFirebase.putID(config, objID, objInfo, _ctx);
+    } else {
+      r = await UsersAuthServiceLocal.putID(config, objID, objInfo, _ctx);
+    }
+    if (r.error) {
+      return r;
+    }
+
+    // put user details email
+    const newIDEmail = objInfo.id;
+    const rUserDetails = await UsersRest.putEmail(_ctx.userID, { email: newIDEmail }, _ctx);
+    if (rUserDetails.error) {
+      // restore old id (email)
+      const restorePut = { ...objInfo, id: objID };
+      if (config.isFirebaseAuth) {
+        r = await UsersAuthServiceFirebase.putID(config, newIDEmail, restorePut, _ctx);
+      } else {
+        r = await UsersAuthServiceLocal.putID(config, newIDEmail, restorePut, _ctx);
+      }
+
+      return rUserDetails;
+    }
+
+    // raise event for put (changed password)
+    const action = Private.Action.PutID;
+    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, newObj, _ctx);
 
     // raise a notification for modified obj
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
@@ -465,9 +561,9 @@ const Public = {
   /**
    * patch (only password)
    */
-  patch: async (objID, patchInfo, _ctx) => {
+  patchPassword: async (objID, patchInfo, _ctx) => {
     // validate
-    const v = Validators.Patch.validate(patchInfo);
+    const v = Validators.PatchPassword.validate(patchInfo);
     if (v.error) {
       return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
@@ -478,23 +574,101 @@ const Public = {
     // patch
     let r;
     if (config.isFirebaseAuth) {
-      r = await UsersAuthServiceFirebase.patch(config, objID, patchInfo, _ctx);
+      r = await UsersAuthServiceFirebase.patchPassword(config, objID, patchInfo, _ctx);
     } else {
-      r = await UsersAuthServiceLocal.patch(config, objID, patchInfo, _ctx);
+      r = await UsersAuthServiceLocal.patchPassword(config, objID, patchInfo, _ctx);
     }
     if (r.error) {
       return r;
     }
 
     // raise event for patch (changed password)
+    const action = Private.Action.PatchPassword;
     const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
-    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Patch, newObj, newObj, _ctx);
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, newObj, _ctx);
 
     // raise a notification for modified obj
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
 
     // success
     return { status: 200, value: newObj };
+  },
+
+  /**
+   * patch id (email)
+   */
+  patchID: async (objID, patchInfo, _ctx) => {
+    // validate
+    const v = Validators.PatchID.validate(patchInfo);
+    if (v.error) {
+      return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
+    }
+
+    // config: { serviceName }
+    const config = await Private.getConfig(_ctx);
+
+    // patch
+    let r;
+    if (config.isFirebaseAuth) {
+      r = await UsersAuthServiceFirebase.patchID(config, objID, patchInfo, _ctx);
+    } else {
+      r = await UsersAuthServiceLocal.patchID(config, objID, patchInfo, _ctx);
+    }
+    if (r.error) {
+      return r;
+    }
+
+    // put user details email
+    const newIDEmail = patchInfo.set.id;
+    const rUserDetails = await UsersRest.putEmail(_ctx.userID, { email: newIDEmail }, _ctx);
+    if (rUserDetails.error) {
+      // restore old id (email)
+      const restorePatch = { set: { ...patchInfo.set, id: objID } };
+      if (config.isFirebaseAuth) {
+        r = await UsersAuthServiceFirebase.patchID(config, newIDEmail, restorePatch, _ctx);
+      } else {
+        r = await UsersAuthServiceLocal.patchID(config, newIDEmail, restorePatch, _ctx);
+      }
+
+      return rUserDetails;
+    }
+
+    // raise event for patch (changed password)
+    const action = Private.Action.PatchID;
+    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, newObj, _ctx);
+
+    // raise a notification for modified obj
+    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
+
+    // success
+    return { status: 200, value: newObj };
+  },
+
+  /**
+   * patch called by admin to add/remove user to school (_ctx.tenantID)
+   * patchInfo: { roles }
+   */
+  patchUserSchool: async (adminID, userID, patchInfo, _ctx) => {
+    // validate
+    const v = Validators.PatchUserSchool.validate(patchInfo);
+    if (v.error) {
+      return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
+    }
+
+    // here route is already validated that the current adminID is the admin of the school (_ctx.tenantID)
+
+    // add the school id
+    const patchSchoolInfo = _.cloneDeep(patchInfo);
+    for (const op of ['add', 'remove']) {
+      if (patchSchoolInfo[op]) {
+        patchSchoolInfo[op].id = _ctx.tenantID;
+      }
+    }
+
+    // patch user schools
+    const rUserDetails = await UsersRest.patchSchool(userID, patchSchoolInfo, _ctx);
+    return rUserDetails;
   },
 
   /**
@@ -510,9 +684,6 @@ const Public = {
 
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
-
-    // TODO delete on delete users notification
-    // TODO change id on modified email users notification
 
     // notification (process references)
     return await NotificationsUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
