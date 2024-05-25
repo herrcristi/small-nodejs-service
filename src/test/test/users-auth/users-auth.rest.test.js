@@ -224,6 +224,24 @@ describe('Users Auth Rest', function () {
   }).timeout(10000);
 
   /**
+   * rest patch user school
+   */
+  it('should patch user school call via rest', async () => {
+    // stub
+    let stub = sinon.stub(RestCommsUtils, 'patchUserSchool').callsFake(() => {
+      console.log(`\nRestCommUtils.patchUserSchool called\n`);
+      return { status: 200, value: 'dummy' };
+    });
+
+    // call
+    let res = await UsersAuthRest.patchUserSchool('id1', 'userID', {}, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res?.value).to.equal('dummy');
+  }).timeout(10000);
+
+  /**
    * rest notification
    */
   it('should do notification a call via rest', async () => {
