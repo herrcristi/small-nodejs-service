@@ -130,6 +130,28 @@ const Public = {
   },
 
   /**
+   * call either local or rest
+   * config: { serviceName, method, path, query?, body?, headers? }
+   * examples
+   *  login  objInfo: { id, password }
+   *  logout objInfo: { }
+   *  signup objInfo: { email, password, name, birthday, phoneNumber?, address, school: { name, description } },
+   *  invite objInfo: { email, school: { role } } - schoolID is _ctx.tenantID
+   */
+  call: async (config, _ctx) => {
+    const localService = Private.Config.local[config.serviceName];
+    if (localService) {
+      const callPath = config.path.slice(1); // remove first /
+      if (config.method.toUpperCase() === 'GET') {
+        return await localService[callPath](...Object.values(config.query), _ctx);
+      } else {
+        return await localService[callPath](config.body, _ctx);
+      }
+    }
+    return await Private.restCall(config, _ctx);
+  },
+
+  /**
    * get all
    * queryParams
    */
@@ -221,23 +243,43 @@ const Public = {
   /**
    * put
    */
-  put: async (serviceName, objID, objInfo, _ctx) => {
+  put: async (serviceName, objID, objInfo, _ctx, field = '') => {
+    const method = `put${field === 'id' ? 'ID' : CommonUtils.capitalize(field)}`;
+    const extraPath = field ? `/${field}` : '';
+
     const localService = Private.Config.local[serviceName];
     if (localService) {
-      return await localService.put(objID, objInfo, _ctx);
+      return await localService[method](objID, objInfo, _ctx);
     }
-    return await Private.restCall({ serviceName, method: 'PUT', path: `/${objID}`, body: objInfo }, _ctx);
+    return await Private.restCall({ serviceName, method: 'PUT', path: `/${objID}${extraPath}`, body: objInfo }, _ctx);
   },
 
   /**
    * patch
    */
-  patch: async (serviceName, objID, patchInfo, _ctx) => {
+  patch: async (serviceName, objID, patchInfo, _ctx, field = '') => {
+    const method = `patch${field === 'id' ? 'ID' : CommonUtils.capitalize(field)}`;
+    const extraPath = field ? `/${field}` : '';
+
     const localService = Private.Config.local[serviceName];
     if (localService) {
-      return await localService.patch(objID, patchInfo, _ctx);
+      return await localService[method](objID, patchInfo, _ctx);
     }
-    return await Private.restCall({ serviceName, method: 'PATCH', path: `/${objID}`, body: patchInfo }, _ctx);
+    return await Private.restCall(
+      { serviceName, method: 'PATCH', path: `/${objID}${extraPath}`, body: patchInfo },
+      _ctx
+    );
+  },
+
+  patchUserSchool: async (serviceName, adminID, userID, patchInfo, _ctx) => {
+    const localService = Private.Config.local[serviceName];
+    if (localService) {
+      return await localService.patchUserSchool(adminID, userID, patchInfo, _ctx);
+    }
+    return await Private.restCall(
+      { serviceName, method: 'PATCH', path: `/${adminID}/school/user/${userID}`, body: patchInfo },
+      _ctx
+    );
   },
 
   /**
@@ -250,53 +292,6 @@ const Public = {
       return await localService.notification(notification, _ctx);
     }
     return await Private.restCall({ serviceName, method: 'POST', path: '/notifications', body: notification }, _ctx);
-  },
-
-  /**
-   * login
-   * objInfo: { id, password }
-   */
-  login: async (serviceName, objInfo, _ctx) => {
-    const localService = Private.Config.local[serviceName];
-    if (localService) {
-      return await localService.login(objInfo, _ctx);
-    }
-    return await Private.restCall({ serviceName, method: 'POST', path: '/login', body: objInfo }, _ctx);
-  },
-
-  /**
-   * logout
-   */
-  logout: async (serviceName, _ctx) => {
-    const localService = Private.Config.local[serviceName];
-    if (localService) {
-      return await localService.logout(_ctx);
-    }
-    return await Private.restCall({ serviceName, method: 'POST', path: '/logout', body: {} }, _ctx);
-  },
-
-  /**
-   * signup
-   * objInfo: { email, password, name, birthday, phoneNumber?, address, school: { name, description } },
-   */
-  signup: async (serviceName, objInfo, _ctx) => {
-    const localService = Private.Config.local[serviceName];
-    if (localService) {
-      return await localService.signup(objInfo, _ctx);
-    }
-    return await Private.restCall({ serviceName, method: 'POST', path: '/signup', body: objInfo }, _ctx);
-  },
-
-  /**
-   * invite
-   * objInfo: { email, school: { role } } - schoolID is _ctx.tenantID
-   */
-  invite: async (serviceName, objInfo, _ctx) => {
-    const localService = Private.Config.local[serviceName];
-    if (localService) {
-      return await localService.invite(objInfo, _ctx);
-    }
-    return await Private.restCall({ serviceName, method: 'POST', path: '/invite', body: objInfo }, _ctx);
   },
 
   /**

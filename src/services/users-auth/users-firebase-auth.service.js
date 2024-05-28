@@ -102,14 +102,32 @@ const Public = {
   },
 
   /**
-   * put
+   * put password
    * config: { serviceName }
    * objInfo: { oldPassword, newPassword }
    */
-  put: async (config, objID, objInfo, _ctx) => {
+  putPassword: async (config, objID, objInfo, _ctx) => {
+    return await Public.patchPassword(config, objID, { set: objInfo }, _ctx);
+  },
+
+  /**
+   * put id (email)
+   * config: { serviceName }
+   * objInfo: { id, password }
+   */
+  putID: async (config, objID, objInfo, _ctx) => {
+    return await Public.patchID(config, objID, { set: objInfo }, _ctx);
+  },
+
+  /**
+   * patch password
+   * config: { serviceName }
+   * patchInfo: { set: { oldPassword, newPassword } }
+   */
+  patchPassword: async (config, objID, patchInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
 
-    // put
+    // patch
     const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
     if (r.error) {
       return r;
@@ -120,11 +138,11 @@ const Public = {
   },
 
   /**
-   * patch
+   * patch id (email)
    * config: { serviceName }
-   * patchInfo: { set: { password } }
+   * patchInfo: { set: { id, password } }
    */
-  patch: async (config, objID, patchInfo, _ctx) => {
+  patchID: async (config, objID, patchInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
 
     // patch

@@ -71,6 +71,88 @@ describe('Rest Communications Utils', function () {
   }).timeout(10000);
 
   /**
+   * put local field with success
+   */
+  it('should call put local field with success', async () => {
+    // local config
+    let serviceName = 'Service';
+    let localConfig = {
+      local: {
+        [serviceName]: {
+          putField: sinon.stub().callsFake((objID, objInfo) => {
+            return {
+              status: 200,
+              value: {
+                id: objID,
+                name: 'name',
+                type: 'type',
+              },
+            };
+          }),
+        },
+      },
+    };
+
+    // call
+    await RestCommsUtils.init(localConfig);
+    let res = await RestCommsUtils.put(serviceName, 'id1', { name: 'name' }, _ctx, 'field');
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(localConfig.local[serviceName].putField.callCount).to.equal(1);
+
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        id: 'id1',
+        name: 'name',
+        type: 'type',
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * put local id with success
+   */
+  it('should call put local id with success', async () => {
+    // local config
+    let serviceName = 'Service';
+    let localConfig = {
+      local: {
+        [serviceName]: {
+          putID: sinon.stub().callsFake((objID, objInfo) => {
+            return {
+              status: 200,
+              value: {
+                id: objID,
+                name: 'name',
+                type: 'type',
+              },
+            };
+          }),
+        },
+      },
+    };
+
+    // call
+    await RestCommsUtils.init(localConfig);
+    let res = await RestCommsUtils.put(serviceName, 'id1', { name: 'name' }, _ctx, 'id');
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(localConfig.local[serviceName].putID.callCount).to.equal(1);
+
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        id: 'id1',
+        name: 'name',
+        type: 'type',
+      },
+    });
+  }).timeout(10000);
+
+  /**
    * put local fail
    */
   it('should call put local and fail', async () => {
@@ -130,6 +212,47 @@ describe('Rest Communications Utils', function () {
     await RestCommsUtils.init(restConfig);
 
     let res = await RestCommsUtils.put(serviceName, 'id1', { name: 'name' }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        id: 'id1',
+        name: 'name',
+        type: 'type',
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * put remote field with success
+   */
+  it('should call put remote field with success', async () => {
+    // local config
+    let serviceName = 'Service';
+    let restConfig = {
+      rest: {
+        [serviceName]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: process.env.PORT, // see test.utils.js
+          path: '/api/v1/service',
+        },
+      },
+    };
+
+    // stub
+    mockAxios.onPut().reply((config) => {
+      chai.expect(config.method).to.equal('put');
+      chai.expect(config.url).to.equal('http://localhost:8080/api/v1/service/id1/field');
+
+      return [200, { id: 'id1', name: 'name', type: 'type' }];
+    });
+
+    // call
+    await RestCommsUtils.init(restConfig);
+
+    let res = await RestCommsUtils.put(serviceName, 'id1', { name: 'name' }, _ctx, 'field');
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai.expect(res).to.deep.equal({

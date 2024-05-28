@@ -68,7 +68,7 @@ describe('Users Auth Controller', function () {
     // stub
     let stubService = sinon.stub(UsersAuthService, 'login').callsFake(() => {
       console.log(`\nUsersAuthService.login called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
@@ -141,7 +141,7 @@ describe('Users Auth Controller', function () {
     // stub
     let stubService = sinon.stub(UsersAuthService, 'logout').callsFake(() => {
       console.log(`\nUsersAuthService.logout called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
@@ -216,7 +216,7 @@ describe('Users Auth Controller', function () {
     // stub
     let stubService = sinon.stub(UsersAuthService, 'validate').callsFake(() => {
       console.log(`\nUsersAuthService.validate called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
@@ -300,7 +300,7 @@ describe('Users Auth Controller', function () {
     // stub
     let stubService = sinon.stub(UsersAuthService, 'post').callsFake(() => {
       console.log(`\nUsersAuthService.post called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
@@ -344,15 +344,90 @@ describe('Users Auth Controller', function () {
   }).timeout(10000);
 
   /**
-   * put with success
+   * delete with success
    */
-  it('should put with success', async () => {
+  it('should delete with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersAuthService, 'put').callsFake(() => {
-      console.log(`\nUsersAuthService.put called\n`);
+    let stubService = sinon.stub(UsersAuthService, 'delete').callsFake(() => {
+      console.log(`\nUsersAuthService.delete called\n`);
+      return {
+        status: 200,
+        value: testUser,
+      };
+    });
+
+    // call
+    let res = await chai.request(TestConstants.WebServer).delete(`${UsersAuthConstants.ApiPath}/${testUser.id}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal({
+      ...testUser,
+    });
+  }).timeout(10000);
+
+  /**
+   * delete fail
+   */
+  it('should delete fail', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'delete').callsFake(() => {
+      console.log(`\nUsersAuthService.delete called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    let res = await chai.request(TestConstants.WebServer).delete(`${UsersAuthConstants.ApiPath}/${testUser.id}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * delete fail exception
+   */
+  it('should delete fail exception', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'delete').callsFake(() => {
+      console.log(`\nUsersAuthService.delete called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai.request(TestConstants.WebServer).delete(`${UsersAuthConstants.ApiPath}/${testUser.id}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * put password with success
+   */
+  it('should put password with success', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'putPassword').callsFake(() => {
+      console.log(`\nUsersAuthService.putPassword called\n`);
       return {
         status: 200,
         value: testUser,
@@ -362,7 +437,7 @@ describe('Users Auth Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .put(`${UsersAuthConstants.ApiPath}/${testUser.id}`)
+      .put(`${UsersAuthConstants.ApiPath}/${testUser.id}/password`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -375,22 +450,22 @@ describe('Users Auth Controller', function () {
   }).timeout(10000);
 
   /**
-   * put fail
+   * put password fail
    */
-  it('should put fail', async () => {
+  it('should put password fail', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersAuthService, 'put').callsFake(() => {
-      console.log(`\nUsersAuthService.put called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    let stubService = sinon.stub(UsersAuthService, 'putPassword').callsFake(() => {
+      console.log(`\nUsersAuthService.putPassword called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .put(`${UsersAuthConstants.ApiPath}/${testUser.id}`)
+      .put(`${UsersAuthConstants.ApiPath}/${testUser.id}/password`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -401,22 +476,22 @@ describe('Users Auth Controller', function () {
   }).timeout(10000);
 
   /**
-   * put fail exception
+   * put password fail exception
    */
-  it('should put fail exception', async () => {
+  it('should put password fail exception', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersAuthService, 'put').callsFake(() => {
-      console.log(`\nUsersAuthService.put called\n`);
+    let stubService = sinon.stub(UsersAuthService, 'putPassword').callsFake(() => {
+      console.log(`\nUsersAuthService.putPassword called\n`);
       throw new Error('Test error message');
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .put(`${UsersAuthConstants.ApiPath}/${testUser.id}`)
+      .put(`${UsersAuthConstants.ApiPath}/${testUser.id}/password`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -428,15 +503,15 @@ describe('Users Auth Controller', function () {
   }).timeout(10000);
 
   /**
-   * patch with success
+   * put id (email) with success
    */
-  it('should patch with success', async () => {
+  it('should put id (email) with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersAuthService, 'patch').callsFake(() => {
-      console.log(`\nUsersAuthService.patch called\n`);
+    let stubService = sinon.stub(UsersAuthService, 'putID').callsFake(() => {
+      console.log(`\nUsersAuthService.putID called\n`);
       return {
         status: 200,
         value: testUser,
@@ -446,7 +521,91 @@ describe('Users Auth Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}`)
+      .put(`${UsersAuthConstants.ApiPath}/${testUser.id}/id`)
+      .send({ ...testUser });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal({
+      ...testUser,
+    });
+  }).timeout(10000);
+
+  /**
+   * put id (email)  fail
+   */
+  it('should put id (email) fail', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'putID').callsFake(() => {
+      console.log(`\nUsersAuthService.putID called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${UsersAuthConstants.ApiPath}/${testUser.id}/id`)
+      .send({ ...testUser });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * put id (email) fail exception
+   */
+  it('should put id (email) fail exception', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'putID').callsFake(() => {
+      console.log(`\nUsersAuthService.putID called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${UsersAuthConstants.ApiPath}/${testUser.id}/id`)
+      .send({ ...testUser });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * patch password with success
+   */
+  it('should patch password with success', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'patchPassword').callsFake(() => {
+      console.log(`\nUsersAuthService.patchPassword called\n`);
+      return {
+        status: 200,
+        value: testUser,
+      };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/password`)
       .send({ set: { ...testUser } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -459,22 +618,22 @@ describe('Users Auth Controller', function () {
   }).timeout(10000);
 
   /**
-   * patch fail
+   * patch password fail
    */
-  it('should patch fail', async () => {
+  it('should patch password fail', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersAuthService, 'patch').callsFake(() => {
-      console.log(`\nUsersAuthService.patch called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    let stubService = sinon.stub(UsersAuthService, 'patchPassword').callsFake(() => {
+      console.log(`\nUsersAuthService.patchPassword called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}`)
+      .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/password`)
       .send({ set: { ...testUser } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -485,22 +644,190 @@ describe('Users Auth Controller', function () {
   }).timeout(10000);
 
   /**
-   * patch fail exception
+   * patch password fail exception
    */
-  it('should patch fail exception', async () => {
+  it('should patch password fail exception', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersAuthService, 'patch').callsFake(() => {
-      console.log(`\nUsersAuthService.patch called\n`);
+    let stubService = sinon.stub(UsersAuthService, 'patchPassword').callsFake(() => {
+      console.log(`\nUsersAuthService.patchPassword called\n`);
       throw new Error('Test error message');
     });
 
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}`)
+      .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/password`)
+      .send({ set: { ...testUser } });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * patch id (email) with success
+   */
+  it('should patch id (email) with success', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'patchID').callsFake(() => {
+      console.log(`\nUsersAuthService.patchID called\n`);
+      return {
+        status: 200,
+        value: testUser,
+      };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/id`)
+      .send({ set: { ...testUser } });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal({
+      ...testUser,
+    });
+  }).timeout(10000);
+
+  /**
+   * patch id (email) fail
+   */
+  it('should patch id (email) fail', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'patchID').callsFake(() => {
+      console.log(`\nUsersAuthService.patchID called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/id`)
+      .send({ set: { ...testUser } });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * patch id (email) fail exception
+   */
+  it('should patch id (email) fail exception', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'patchID').callsFake(() => {
+      console.log(`\nUsersAuthService.patchID called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/id`)
+      .send({ set: { ...testUser } });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * patch user school with success
+   */
+  it('should patch user school with success', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'patchUserSchool').callsFake(() => {
+      console.log(`\nUsersAuthService.patchUserSchool called\n`);
+      return {
+        status: 200,
+        value: testUser,
+      };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/school/user/userID`)
+      .send({ set: { ...testUser } });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal({
+      ...testUser,
+    });
+  }).timeout(10000);
+
+  /**
+   * patch user school fail
+   */
+  it('should patch user school fail', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'patchUserSchool').callsFake(() => {
+      console.log(`\nUsersAuthService.patchUserSchool called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/school/user/userID`)
+      .send({ set: { ...testUser } });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * patch user school fail exception
+   */
+  it('should patch user school fail exception', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'patchUserSchool').callsFake(() => {
+      console.log(`\nUsersAuthService.patchUserSchool called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/school/user/userID`)
       .send({ set: { ...testUser } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -550,7 +877,7 @@ describe('Users Auth Controller', function () {
     // stub
     let stubService = sinon.stub(UsersAuthService, 'notification').callsFake(() => {
       console.log(`\nUsersAuthService.notification called\n`);
-      return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call

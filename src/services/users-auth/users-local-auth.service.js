@@ -76,9 +76,9 @@ const Public = {
     }
 
     // check password
-    const currValue = r.value;
-    objInfo.password = Private.hashPassword(objInfo.password, currValue.salt, _ctx);
-    if (objInfo.password !== currValue.password) {
+    const currHashValue = r.value.password;
+    const checkHashValue = Private.hashPassword(objInfo.password, r.value.salt, _ctx);
+    if (checkHashValue !== currHashValue) {
       const errorLogin = 'Invalid username/password';
       return { status: 401, error: { message: errorLogin, error: new Error(errorLogin) } };
     }
@@ -157,53 +157,29 @@ const Public = {
   },
 
   /**
-   * put
+   * put password
    * config: { serviceName }
    * objInfo: { oldPassword, newPassword }
    */
-  put: async (config, objID, objInfo, _ctx) => {
-    await Private.setupConfig(config, _ctx);
-
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
-
-    // check if equal
-    if (objInfo.oldPassword === objInfo.newPassword) {
-      const msg = 'New password is the same as old password';
-      return { status: 400, error: { message: msg, error: new Error(msg) } };
-    }
-
-    // check old password
-    const rG = await DbOpsUtils.getOne(config, objID, { password: 1, salt: 1 }, _ctx);
-    if (rG.error) {
-      return rG;
-    }
-
-    const oldPasswordHash = Private.hashPassword(objInfo.oldPassword, rG.value.salt, _ctx);
-    if (oldPasswordHash !== rG.value.password) {
-      const msg = 'Invalid old password';
-      return { status: 401, error: { message: msg, error: new Error(msg) } };
-    }
-
-    // hash password with new salt
-    objInfo.salt = Private.genSalt();
-    objInfo.password = Private.hashPassword(objInfo.newPassword, objInfo.salt, _ctx);
-
-    // put
-    const r = await DbOpsUtils.put(config, objID, objInfo, projection, _ctx);
-    if (r.error) {
-      return r;
-    }
-
-    // success
-    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+  putPassword: async (config, objID, objInfo, _ctx) => {
+    return await Public.patchPassword(config, objID, { set: objInfo }, _ctx);
   },
 
   /**
-   * patch
+   * put id (email)
+   * config: { serviceName }
+   *  objInfo: { id, password }
+   */
+  putID: async (config, objID, objInfo, _ctx) => {
+    return await Public.patchID(config, objID, { set: objInfo }, _ctx);
+  },
+
+  /**
+   * patch password
    * config: { serviceName }
    * patchInfo: { set: { newPassword, oldPassword } }
    */
-  patch: async (config, objID, patchInfo, _ctx) => {
+  patchPassword: async (config, objID, patchInfo, _ctx) => {
     // { serviceName, collection, notifications.projection }
     await Private.setupConfig(config, _ctx);
 
@@ -216,15 +192,9 @@ const Public = {
     }
 
     // check old password
-    const rG = await DbOpsUtils.getOne(config, objID, { password: 1, salt: 1 }, _ctx);
-    if (rG.error) {
-      return rG;
-    }
-
-    const oldPasswordHash = Private.hashPassword(patchInfo.set.oldPassword, rG.value.salt, _ctx);
-    if (oldPasswordHash !== rG.value.password) {
-      const msg = 'Invalid old password';
-      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    const rCheck = await Public.login(config, { id: objID, password: patchInfo.set.oldPassword }, _ctx);
+    if (rCheck.error) {
+      return rCheck;
     }
 
     // hash password with new salt
@@ -233,6 +203,42 @@ const Public = {
 
     // patch
     const r = await DbOpsUtils.patch(config, objID, patchInfo, projection, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // success
+    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+  },
+
+  /**
+   * patch id (email)
+   * config: { serviceName }
+   * patchInfo: { set: { id, password } }
+   */
+  patchID: async (config, objID, patchInfo, _ctx) => {
+    // { serviceName, collection, notifications.projection }
+    await Private.setupConfig(config, _ctx);
+
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+
+    // check if equal
+    if (_ctx.username === patchInfo.set.id) {
+      const msg = 'New id email is the same as current one';
+      return { status: 400, error: { message: msg, error: new Error(msg) } };
+    }
+
+    // check old password
+    const rCheck = await Public.login(config, { id: objID, password: patchInfo.set.password }, _ctx);
+    if (rCheck.error) {
+      return rCheck;
+    }
+
+    // remove password
+    const idPatchInfo = { set: { id: patchInfo.set.id } };
+
+    // patch
+    const r = await DbOpsUtils.patch(config, objID, idPatchInfo, projection, _ctx);
     if (r.error) {
       return r;
     }

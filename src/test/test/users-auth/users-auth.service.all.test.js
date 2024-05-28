@@ -7,8 +7,11 @@ require('./users-auth.service.init.test.js');
 
 require('./users-auth.service.post.test.js');
 require('./users-auth.service.delete.test.js');
-require('./users-auth.service.put.test.js');
-require('./users-auth.service.patch.test.js');
+require('./users-auth.service.putPassword.test.js');
+require('./users-auth.service.putID.test.js');
+require('./users-auth.service.patchPassword.test.js');
+require('./users-auth.service.patchID.test.js');
+require('./users-auth.service.patchUserSchool.test.js');
 require('./users-auth.service.notification.test.js');
 
 require('./users-auth.service.login.test.js');

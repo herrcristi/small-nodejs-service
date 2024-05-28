@@ -15,15 +15,15 @@ const Private = {
 
 const Public = {
   /**
-   * get all
+   * get all (internal) called from signup / invite by email
    * queryParams
    */
   getAll: async (queryParams, _ctx) => {
-    return await RestCommsUtils.getAll(UsersConstants.ServiceName, queryParams, _ctx);
+    return await RestCommsUtils.getAll(UsersConstants.ServiceNameInternal, queryParams, _ctx);
   },
 
   getAllByIDs: async (ids, projection, _ctx) => {
-    return await RestCommsUtils.getAllByIDs(UsersConstants.ServiceName, ids, projection, _ctx);
+    return await RestCommsUtils.getAllByIDs(UsersConstants.ServiceNameInternal, ids, projection, _ctx);
   },
 
   /**
@@ -33,6 +33,9 @@ const Public = {
     return await RestCommsUtils.getOne(UsersConstants.ServiceName, objID, projection, _ctx);
   },
 
+  /**
+   * get one (internal) called from users-auth
+   */
   getOneByEmail: async (email, projection, _ctx) => {
     let queryParams = `email=${email}&limit=1`;
     if (projection) {
@@ -51,17 +54,17 @@ const Public = {
   },
 
   /**
-   * post
+   * post (internal) called from signup / invite
    */
   post: async (objInfo, _ctx) => {
-    return await RestCommsUtils.post(UsersConstants.ServiceName, objInfo, _ctx);
+    return await RestCommsUtils.post(UsersConstants.ServiceNameInternal, objInfo, _ctx);
   },
 
   /**
-   * delete
+   * delete (internal) called from users-auth
    */
   delete: async (objID, _ctx) => {
-    return await RestCommsUtils.delete(UsersConstants.ServiceName, objID, _ctx);
+    return await RestCommsUtils.delete(UsersConstants.ServiceNameInternal, objID, _ctx);
   },
 
   /**
@@ -72,10 +75,24 @@ const Public = {
   },
 
   /**
+   * put email (internal) called from users-auth
+   */
+  putEmail: async (objID, objInfo, _ctx) => {
+    return await RestCommsUtils.put(UsersConstants.ServiceNameInternal, objID, objInfo, _ctx, 'email');
+  },
+
+  /**
    * patch
    */
   patch: async (objID, patchInfo, _ctx) => {
     return await RestCommsUtils.patch(UsersConstants.ServiceName, objID, patchInfo, _ctx);
+  },
+
+  /**
+   * patch school (internal) called from users-auth
+   */
+  patchSchool: async (objID, patchInfo, _ctx) => {
+    return await RestCommsUtils.patch(UsersConstants.ServiceNameInternal, objID, patchInfo, _ctx, 'school');
   },
 
   /**

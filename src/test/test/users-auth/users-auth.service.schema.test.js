@@ -124,13 +124,12 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * schema put
-   * is the same as post - add only the extra cases
+   * schema putPassword
    */
-  it('should validate put schema', async () => {
+  it('should validate putPassword schema', async () => {
     // password is required
     let putReq = {};
-    let res = UsersAuthService.Validators.Put.validate(putReq);
+    let res = UsersAuthService.Validators.PutPassword.validate(putReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"oldPassword" is required');
 
@@ -140,19 +139,39 @@ describe('Users Auth Service', function () {
       newPassword: 'pass1',
       extra: 1,
     };
-    res = UsersAuthService.Validators.Put.validate(putReq);
+    res = UsersAuthService.Validators.PutPassword.validate(putReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
   }).timeout(10000);
 
   /**
-   * schema patch
-   * is the same as post - add only the extra cases
+   * schema putID
    */
-  it('should validate patch schema set', async () => {
+  it('should validate putID schema', async () => {
+    // password is required
+    let putReq = {};
+    let res = UsersAuthService.Validators.PutID.validate(putReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"id" is required');
+
+    // other params
+    putReq = {
+      id: 'email@test.com',
+      password: 'pass1',
+      extra: 1,
+    };
+    res = UsersAuthService.Validators.PutID.validate(putReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
+  }).timeout(10000);
+
+  /**
+   * schema patchPassword
+   */
+  it('should validate patchPassword schema set', async () => {
     // nothing is required
     let patchReq = {};
-    let res = UsersAuthService.Validators.Patch.validate(patchReq);
+    let res = UsersAuthService.Validators.PatchPassword.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
 
@@ -160,7 +179,7 @@ describe('Users Auth Service', function () {
     patchReq = {
       extra: 1,
     };
-    res = UsersAuthService.Validators.Patch.validate(patchReq);
+    res = UsersAuthService.Validators.PatchPassword.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
 
@@ -168,7 +187,7 @@ describe('Users Auth Service', function () {
     patchReq = {
       set: 1,
     };
-    res = UsersAuthService.Validators.Patch.validate(patchReq);
+    res = UsersAuthService.Validators.PatchPassword.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"set" must be of type object');
 
@@ -176,7 +195,7 @@ describe('Users Auth Service', function () {
     patchReq = {
       set: {},
     };
-    res = UsersAuthService.Validators.Patch.validate(patchReq);
+    res = UsersAuthService.Validators.PatchPassword.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"set.oldPassword" is required');
 
@@ -188,8 +207,111 @@ describe('Users Auth Service', function () {
         extra: 1,
       },
     };
-    res = UsersAuthService.Validators.Patch.validate(patchReq);
+    res = UsersAuthService.Validators.PatchPassword.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"set.extra" is not allowed');
+  }).timeout(10000);
+
+  /**
+   * schema patchID
+   */
+  it('should validate patchID schema set', async () => {
+    // nothing is required
+    let patchReq = {};
+    let res = UsersAuthService.Validators.PatchID.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error).to.not.exist;
+
+    // other params
+    patchReq = {
+      extra: 1,
+    };
+    res = UsersAuthService.Validators.PatchID.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
+
+    // set must be an object
+    patchReq = {
+      set: 1,
+    };
+    res = UsersAuthService.Validators.PatchID.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"set" must be of type object');
+
+    // set password is required
+    patchReq = {
+      set: {},
+    };
+    res = UsersAuthService.Validators.PatchID.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"set.id" is required');
+
+    // set extra is not allowed
+    patchReq = {
+      set: {
+        id: 'email@test.com',
+        password: 'pass1',
+        extra: 1,
+      },
+    };
+    res = UsersAuthService.Validators.PatchID.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"set.extra" is not allowed');
+  }).timeout(10000);
+
+  /**
+   * schema patchUserSchool
+   */
+  it('should validate patchUserSchool schema set', async () => {
+    // nothing is required
+    let patchReq = {};
+    let res = UsersAuthService.Validators.PatchUserSchool.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error).to.not.exist;
+
+    // other params
+    patchReq = {
+      extra: 1,
+    };
+    res = UsersAuthService.Validators.PatchUserSchool.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
+
+    // set must be an object
+    patchReq = {
+      set: 1,
+    };
+    res = UsersAuthService.Validators.PatchUserSchool.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"set" is not allowed');
+
+    // set password is required
+    patchReq = {
+      add: {},
+    };
+    res = UsersAuthService.Validators.PatchUserSchool.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"add.roles" is required');
+
+    // set extra is not allowed
+    patchReq = {
+      add: {
+        extra: 1,
+        roles: ['admin'],
+      },
+    };
+    res = UsersAuthService.Validators.PatchUserSchool.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"add.extra" is not allowed');
+
+    // set role
+    patchReq = {
+      add: {
+        roles: ['admin1'],
+      },
+    };
+    res = UsersAuthService.Validators.PatchUserSchool.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"add.roles[0]" must be one of [admin, professor, student]');
   }).timeout(10000);
 });
