@@ -11,6 +11,8 @@ require('./users.service.getOne.test.js');
 require('./users.service.post.test.js');
 require('./users.service.delete.test.js');
 require('./users.service.put.test.js');
+require('./users.service.putEmail.test.js');
 require('./users.service.patch.test.js');
+require('./users.service.patchSchool.test.js');
 require('./users.service.notification.test.js');
 require('./users.service.translate.test.js');

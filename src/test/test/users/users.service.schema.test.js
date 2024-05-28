@@ -364,6 +364,34 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
+   * schema putEmail
+   */
+  it('should validate putEmail schema', async () => {
+    // nothing is required
+    let putReq = {};
+    let res = UsersService.Validators.PutEmail.validate(putReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"email" is required');
+
+    // other params
+    putReq = {
+      email: 'email@test.com',
+      extra: 1,
+    };
+    res = UsersService.Validators.PutEmail.validate(putReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"extra" is not allowed');
+
+    // other params
+    putReq = {
+      email: 'email',
+    };
+    res = UsersService.Validators.PutEmail.validate(putReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"email" must be a valid email');
+  }).timeout(10000);
+
+  /**
    * schema patch
    * is the same as post - add only the extra cases
    */
@@ -432,11 +460,50 @@ describe('Users Service', function () {
    * schema patch.add
    */
   it('should validate patch schema add', async () => {
-    // add must be an object
+    // no add
     let patchReq = {
       add: 1,
     };
     res = UsersService.Validators.Patch.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"add" is not allowed');
+  }).timeout(10000);
+
+  /**
+   * schema patch.remove
+   */
+  it('should validate patch schema remove', async () => {
+    // no remove
+    let patchReq = {
+      remove: 1,
+    };
+    res = UsersService.Validators.Patch.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"remove" is not allowed');
+  }).timeout(10000);
+
+  /**
+   * schema patchSchool.set
+   */
+  it('should validate patch schema school.set', async () => {
+    // add must be an object
+    let patchReq = {
+      set: 1,
+    };
+    res = UsersService.Validators.PatchSchool.validate(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    chai.expect(res.error.details[0].message).to.include('"set" is not allowed');
+  }).timeout(10000);
+
+  /**
+   * schema patchSchool.add
+   */
+  it('should validate patch schema school.add', async () => {
+    // add must be an object
+    let patchReq = {
+      add: 1,
+    };
+    res = UsersService.Validators.PatchSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"add" must be of type object');
 
@@ -444,7 +511,7 @@ describe('Users Service', function () {
     patchReq = {
       add: {},
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = UsersService.Validators.PatchSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
 
@@ -454,7 +521,7 @@ describe('Users Service', function () {
         extra: 1,
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = UsersService.Validators.PatchSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"add.extra" is not allowed');
 
@@ -464,7 +531,7 @@ describe('Users Service', function () {
         schools: 1,
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = UsersService.Validators.PatchSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"add.schools" must be an array');
 
@@ -474,7 +541,7 @@ describe('Users Service', function () {
         schools: [{}],
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = UsersService.Validators.PatchSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('add.schools[0].id" is required');
 
@@ -488,7 +555,7 @@ describe('Users Service', function () {
         ],
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = UsersService.Validators.PatchSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"add.schools[0].roles" is required');
 
@@ -503,20 +570,20 @@ describe('Users Service', function () {
         ],
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = UsersService.Validators.PatchSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"add.schools[0].roles" does not contain 1 required value(s)');
   }).timeout(10000);
 
   /**
-   * schema patch.remove
+   * schema patchSchool.remove
    */
-  it('should validate patch schema remove', async () => {
+  it('should validate patch schema School.remove', async () => {
     // remove must be an object
     let patchReq = {
       remove: 1,
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = UsersService.Validators.PatchSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"remove" must be of type object');
 
@@ -524,7 +591,7 @@ describe('Users Service', function () {
     patchReq = {
       remove: {},
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = UsersService.Validators.PatchSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error).to.not.exist;
 
@@ -534,7 +601,7 @@ describe('Users Service', function () {
         extra: 1,
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = UsersService.Validators.PatchSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"remove.extra" is not allowed');
 
@@ -544,7 +611,7 @@ describe('Users Service', function () {
         schools: 1,
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = UsersService.Validators.PatchSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"remove.schools" must be an array');
 
@@ -554,7 +621,7 @@ describe('Users Service', function () {
         schools: [{}],
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = UsersService.Validators.PatchSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('remove.schools[0].id" is required');
 
@@ -568,7 +635,7 @@ describe('Users Service', function () {
         ],
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = UsersService.Validators.PatchSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"remove.schools[0].roles" is required');
 
@@ -583,7 +650,7 @@ describe('Users Service', function () {
         ],
       },
     };
-    res = UsersService.Validators.Patch.validate(patchReq);
+    res = UsersService.Validators.PatchSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai
       .expect(res.error.details[0].message)

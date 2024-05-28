@@ -71,7 +71,7 @@ const Validators = {
   }).fork(['email', 'name', 'birthday', 'address', 'schools'], (x) => x.required() /*make required */),
 
   Put: Schema.User,
-  PutEmail: Schema.UserEmail,
+  PutEmail: Schema.UserEmail.fork(['email'], (x) => x.required() /*make required */),
 
   Patch: Joi.object().keys({
     // for patch allowed operations are set, unset
@@ -326,11 +326,7 @@ const Public = {
     const config = await Private.getConfig(_ctx);
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
-    // need to take diff before and after for users and trigger notification for deleted schools roles changes
-    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
-    if (rget.error) {
-      return rget;
-    }
+    // no need to take diff before and after for users and trigger notification for deleted schools roles changes
 
     // populate references
     let rf = await ReferencesUtils.populateReferences({ ...config, fillReferences: true }, objInfo, _ctx);
@@ -354,12 +350,7 @@ const Public = {
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await UsersRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
 
-    // take the difference and notify removed schools roles
-    let rdiff = { status: 200, value: Private.getSchoolsDiff(rget.value, r.value) };
-    if (Object.keys(rdiff.value.schools).length) {
-      let rp = BaseServiceUtils.getProjectedResponse(rdiff, config.notifications.projection /* for sync+async */, _ctx);
-      let rndiff = await UsersRest.raiseNotification(Private.Notification.Removed, [rp.value], _ctx);
-    }
+    // since put will not change schools no need to take differences of schools and roles
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);

@@ -30,20 +30,15 @@ describe('Users Service', function () {
   after(async function () {});
 
   /**
-   * put with success
+   * put email with success
    */
   it('should put with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
     const putReq = {
-      ...testUser,
+      email: testUser.email,
     };
-    delete putReq.id;
-    delete putReq.type;
-    delete putReq.email;
-    delete putReq.schools;
-    delete putReq._lang_en;
 
     // stub
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
@@ -81,7 +76,7 @@ describe('Users Service', function () {
     });
 
     // call
-    let res = await UsersService.put(testUser.id, putReq, _ctx);
+    let res = await UsersService.putEmail(testUser.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -101,9 +96,9 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * put fail validation
+   * putEmail fail validation
    */
-  it('should put fail validation', async () => {
+  it('should putEmail fail validation', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
@@ -112,7 +107,7 @@ describe('Users Service', function () {
     };
 
     // call
-    let res = await UsersService.put(testUser.id, putReq, _ctx);
+    let res = await UsersService.putEmail(testUser.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -121,20 +116,15 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * put fail references
+   * putEmail fail references
    */
-  it('should put fail references', async () => {
+  it('should putEmail fail references', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
     const putReq = {
-      ...testUser,
+      email: testUser.email,
     };
-    delete putReq.id;
-    delete putReq.type;
-    delete putReq.email;
-    delete putReq.schools;
-    delete putReq._lang_en;
 
     // stub
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
@@ -142,7 +132,7 @@ describe('Users Service', function () {
     });
 
     // call
-    let res = await UsersService.put(testUser.id, putReq, _ctx);
+    let res = await UsersService.putEmail(testUser.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -157,20 +147,15 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * put fail put
+   * putEmail fail put
    */
-  it('should put fail put', async () => {
+  it('should putEmail fail put', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
     const putReq = {
-      ...testUser,
+      email: testUser.email,
     };
-    delete putReq.id;
-    delete putReq.type;
-    delete putReq.email;
-    delete putReq.schools;
-    delete putReq._lang_en;
 
     // stub
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
@@ -183,7 +168,7 @@ describe('Users Service', function () {
     });
 
     // call
-    let res = await UsersService.put(testUser.id, putReq, _ctx);
+    let res = await UsersService.putEmail(testUser.id, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
