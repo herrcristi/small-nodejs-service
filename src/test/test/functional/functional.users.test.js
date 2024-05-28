@@ -183,7 +183,7 @@ describe('Users Functional', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${UsersConstants.ApiPath}`)
+      .post(`${UsersConstants.ApiPathInternal}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .send({ ...testUser });
@@ -219,7 +219,7 @@ describe('Users Functional', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${UsersConstants.ApiPath}`)
+      .post(`${UsersConstants.ApiPathInternal}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .send({ ...testUser });
@@ -270,12 +270,16 @@ describe('Users Functional', function () {
     const testUser = _.cloneDeep(testUsers[0]);
     const testUserID = testUser.id;
 
+    const { name, email, schools } = testUser;
+
     delete testUser.id;
     delete testUser.type;
+    delete testUser.email;
+    delete testUser.schools;
     delete testUser._lang_en;
 
     // events/students/professors before (in each school)
-    await checkSchoolsBefore(testUser, _ctx);
+    await checkSchoolsBefore({ schools }, _ctx);
 
     // call put first to update users and create students, professors, etc ...
     let res = await chai
@@ -289,7 +293,7 @@ describe('Users Functional', function () {
     chai.expect(res.status).to.equal(200);
 
     // events/students/professors after put (in each school)
-    await checkSchoolsAfter(testUserID, testUser, testUser.status, _ctx);
+    await checkSchoolsAfter(testUserID, { name, email, schools }, testUser.status, _ctx);
 
     // check global events before
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
@@ -298,7 +302,7 @@ describe('Users Functional', function () {
     // call
     res = await chai
       .request(TestConstants.WebServer)
-      .delete(`${UsersConstants.ApiPath}/${testUserID}`)
+      .delete(`${UsersConstants.ApiPathInternal}/${testUserID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname');
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -313,7 +317,7 @@ describe('Users Functional', function () {
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
     // check events/students/professors after (should remain the same with status disabled even after user is deleted)
-    await checkSchoolsAfter(testUserID, testUser, UsersRest.Constants.Status.Disabled, _ctx);
+    await checkSchoolsAfter(testUserID, { name, email, schools }, UsersRest.Constants.Status.Disabled, _ctx);
 
     // do a get
     testUser.id = res.body.id;
@@ -333,9 +337,13 @@ describe('Users Functional', function () {
     const testUser = _.cloneDeep(testUsers[0]);
     const testUserID = testUser.id;
 
+    const { name, email, schools } = testUser;
+
     testUser.name = 'new name';
     delete testUser.id;
     delete testUser.type;
+    delete testUser.email;
+    delete testUser.schools;
     delete testUser._lang_en;
 
     // global events before
@@ -343,7 +351,7 @@ describe('Users Functional', function () {
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
     // events/students/professors before (in each school)
-    await checkSchoolsBefore(testUser, _ctx);
+    await checkSchoolsBefore({ name, email, schools }, _ctx);
 
     // call
     let res = await chai
@@ -362,7 +370,52 @@ describe('Users Functional', function () {
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
     // events/students/professors after (in each school)
-    await checkSchoolsAfter(testUserID, testUser, testUser.status, _ctx);
+    await checkSchoolsAfter(testUserID, { name: 'new name', email, schools }, testUser.status, _ctx);
+
+    // do a get
+    res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUserID}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    chai.expect(res.body.id).to.equal(testUserID);
+    chai.expect(res.body.name).to.equal(testUser.name);
+  }).timeout(10000);
+
+  /**
+   * putEmail with success
+   */
+  it('should putEmail with success', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = _.cloneDeep(testUsers[0]);
+    const testUserID = testUser.id;
+
+    const { name, email, schools } = testUser;
+    const newEmail = 'newemail@test.com';
+
+    // global events before
+    let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count before: ${eventsCountBefore}\n`);
+
+    // events/students/professors before (in each school)
+    await checkSchoolsBefore({ name, email, schools }, _ctx);
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${UsersConstants.ApiPathInternal}/${testUserID}/email`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .send({ email: newEmail });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    chai.expect(res.status).to.equal(200);
+
+    // global events after
+    let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // events/students/professors after (in each school)
+    await checkSchoolsAfter(testUserID, { name, email: newEmail, schools }, testUser.status, _ctx);
 
     // do a get
     res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUserID}`);
@@ -380,9 +433,13 @@ describe('Users Functional', function () {
     const testUser = _.cloneDeep(testUsers[0]);
     const testUserID = testUser.id;
 
+    const { name, email, schools } = testUser;
+
     testUser.name = 'new name';
     delete testUser.id;
     delete testUser.type;
+    delete testUser.email;
+    delete testUser.schools;
     delete testUser._lang_en;
 
     // global events before
@@ -390,7 +447,7 @@ describe('Users Functional', function () {
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
     // events/students/professors before (in each school)
-    await checkSchoolsBefore(testUser, _ctx);
+    await checkSchoolsBefore({ name, email, schools }, _ctx);
 
     // call
     let res = await chai
@@ -412,7 +469,72 @@ describe('Users Functional', function () {
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
     // events/students/professors after put (in each school)
-    await checkSchoolsAfter(testUserID, testUser, testUser.status, _ctx);
+    await checkSchoolsAfter(testUserID, { name: 'new name', email, schools }, testUser.status, _ctx);
+
+    // do a get
+    res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUserID}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    chai.expect(res.body.id).to.equal(testUserID);
+    chai.expect(res.body.name).to.equal(testUser.name);
+  }).timeout(10000);
+
+  /**
+   * patchSchools with success
+   */
+  it('should patchSchools with success', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = _.cloneDeep(testUsers[0]);
+    const testUserID = testUser.id;
+
+    const { name, email, schools } = testUser;
+    const schoolsAfter = _.cloneDeep(schools);
+    schoolsAfter[0].roles = schoolsAfter[0].roles.slice(1);
+    schoolsAfter[1].roles = schoolsAfter[1].roles.slice(1);
+
+    const patchReq = {
+      remove: {
+        schools: [
+          {
+            id: schools[0].id, // remove first school
+            roles: schools[0].roles.slice(0, 1), // remove first role
+          },
+          {
+            id: schools[1].id,
+            roles: schools[1].roles.slice(0, 1), // remove first role
+          },
+        ],
+      },
+    };
+
+    // global events before
+    let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count before: ${eventsCountBefore}\n`);
+
+    // events/students/professors before (in each school)
+    await checkSchoolsBefore({ name, email, schools }, _ctx);
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .patch(`${UsersConstants.ApiPathInternal}/${testUserID}/school`)
+      .set('x-user-id', 'testid')
+      .set('x-user-name', 'testname')
+      .send(patchReq);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body.id).to.equal(testUserID);
+    chai.expect(res.body.name).to.equal(testUser.name);
+
+    // global events after
+    let eventsCountAfter = await (await EventsDatabase.collection(_ctx)).countDocuments();
+    console.log(`\nEvents count after: ${eventsCountAfter}\n`);
+    chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
+
+    // events/students/professors after put (in each school)
+    await checkSchoolsAfter(testUserID, { name, email, schools: schoolsAfter }, testUser.status, _ctx);
 
     // do a get
     res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUserID}`);
