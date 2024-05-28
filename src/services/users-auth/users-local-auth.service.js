@@ -235,10 +235,10 @@ const Public = {
     }
 
     // remove password
-    delete patchInfo.set.password;
+    const idPatchInfo = { set: { id: patchInfo.set.id } };
 
     // patch
-    const r = await DbOpsUtils.patch(config, objID, patchInfo, projection, _ctx);
+    const r = await DbOpsUtils.patch(config, objID, idPatchInfo, projection, _ctx);
     if (r.error) {
       return r;
     }

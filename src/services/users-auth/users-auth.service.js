@@ -439,7 +439,7 @@ const Public = {
 
   /**
    * delete the user can be done only by login user (_ctx.userID), objID is the email
-   * (admins can delete users from tenants using deleteSchool)
+   * (admins can delete users from tenants using patchUserSchool)
    */
   delete: async (objID, _ctx) => {
     // config: { serviceName }
@@ -538,10 +538,11 @@ const Public = {
     if (rUserDetails.error) {
       // restore old id (email)
       const restorePut = { ...objInfo, id: objID };
+      const restoreCtx = { ..._ctx, username: newIDEmail };
       if (config.isFirebaseAuth) {
-        r = await UsersAuthServiceFirebase.putID(config, newIDEmail, restorePut, _ctx);
+        r = await UsersAuthServiceFirebase.putID(config, newIDEmail, restorePut, restoreCtx);
       } else {
-        r = await UsersAuthServiceLocal.putID(config, newIDEmail, restorePut, _ctx);
+        r = await UsersAuthServiceLocal.putID(config, newIDEmail, restorePut, restoreCtx);
       }
 
       return rUserDetails;

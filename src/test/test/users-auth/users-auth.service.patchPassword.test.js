@@ -30,9 +30,9 @@ describe('Users Auth Service', function () {
   after(async function () {});
 
   /**
-   * patch with success
+   * patchPassword with success
    */
-  it('should patch with success', async () => {
+  it('should patchPassword with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
@@ -45,15 +45,15 @@ describe('Users Auth Service', function () {
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
-      console.log(`\nDbOpsUtils.getOne called`);
+      console.log(`\nDbOpsUtils.getOne called ${JSON.stringify(objID, null, 2)}`);
       return {
         status: 200,
         value: { ...testUser },
       };
     });
 
-    let stubBase = sinon.stub(DbOpsUtils, 'patch').callsFake((config, objID, patchObj) => {
-      console.log(`\nDbOpsUtils.patch called`);
+    let stubBase = sinon.stub(DbOpsUtils, 'patch').callsFake((config, objID, patchInfo) => {
+      console.log(`\nDbOpsUtils.patch called ${JSON.stringify({ objID, patchInfo }, null, 2)}`);
       return {
         status: 200,
         value: { ...testUser },
@@ -69,7 +69,7 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patch(testUser.id, patchReq, _ctx);
+    let res = await UsersAuthService.patchPassword(testUser.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -88,9 +88,9 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * patch fail validation
+   * patchPassword fail validation
    */
-  it('should patch fail validation', async () => {
+  it('should patchPassword fail validation', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
@@ -103,7 +103,7 @@ describe('Users Auth Service', function () {
     };
 
     // call
-    let res = await UsersAuthService.patch(testUser.id, patchReq, _ctx);
+    let res = await UsersAuthService.patchPassword(testUser.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -112,9 +112,9 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * patch fail same password
+   * patchPassword fail same password
    */
-  it('should patch fail same password', async () => {
+  it('should patchPassword fail same password', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
@@ -127,7 +127,7 @@ describe('Users Auth Service', function () {
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
-      console.log(`\nDbOpsUtils.getOne called`);
+      console.log(`\nDbOpsUtils.getOne called ${JSON.stringify(objID, null, 2)}`);
       return {
         status: 200,
         value: { ...testUser },
@@ -135,7 +135,7 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patch(testUser.id, patchReq, _ctx);
+    let res = await UsersAuthService.patchPassword(testUser.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -150,9 +150,9 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * patch fail get
+   * patchPassword fail get
    */
-  it('should patch fail get', async () => {
+  it('should patchPassword fail get', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
@@ -165,7 +165,7 @@ describe('Users Auth Service', function () {
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
-      console.log(`\nDbOpsUtils.getOne called`);
+      console.log(`\nDbOpsUtils.getOne called ${JSON.stringify(objID, null, 2)}`);
       return {
         status: 500,
         error: { message: 'Test error message', error: new Error('Test error') },
@@ -173,7 +173,7 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patch(testUser.id, patchReq, _ctx);
+    let res = await UsersAuthService.patchPassword(testUser.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -185,9 +185,9 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * patch fail wrong old password
+   * patchPassword fail wrong old password
    */
-  it('should patch fail wrong old password', async () => {
+  it('should patchPassword fail wrong old password', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
@@ -200,7 +200,7 @@ describe('Users Auth Service', function () {
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
-      console.log(`\nDbOpsUtils.getOne called`);
+      console.log(`\nDbOpsUtils.getOne called ${JSON.stringify(objID, null, 2)}`);
       return {
         status: 200,
         value: { ...testUser },
@@ -208,21 +208,21 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patch(testUser.id, patchReq, _ctx);
+    let res = await UsersAuthService.patchPassword(testUser.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stubGet.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 401,
-      error: { message: 'Invalid old password', error: new Error('Invalid old password') },
+      error: { message: 'Invalid username/password', error: new Error('Invalid username/password') },
     });
   }).timeout(10000);
 
   /**
-   * patch fail patch
+   * patchPassword fail patch
    */
-  it('should patch fail patch', async () => {
+  it('should patchPassword fail patch', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
@@ -235,15 +235,15 @@ describe('Users Auth Service', function () {
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
-      console.log(`\nDbOpsUtils.getOne called`);
+      console.log(`\nDbOpsUtils.getOne called ${JSON.stringify(objID, null, 2)}`);
       return {
         status: 200,
         value: { ...testUser },
       };
     });
 
-    let stubBase = sinon.stub(DbOpsUtils, 'patch').callsFake((config, objID, patchObj) => {
-      console.log(`\nDbOpsUtils.patch called`);
+    let stubBase = sinon.stub(DbOpsUtils, 'patch').callsFake((config, objID, patchInfo) => {
+      console.log(`\nDbOpsUtils.patch called ${JSON.stringify({ objID, patchInfo }, null, 2)}`);
       return {
         status: 500,
         error: { message: 'Test error message', error: new Error('Test error') },
@@ -251,7 +251,7 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patch(testUser.id, patchReq, _ctx);
+    let res = await UsersAuthService.patchPassword(testUser.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
