@@ -65,9 +65,10 @@ describe('Rest Communications Utils', function () {
       chai.expect(s2sReq).to.deep.equal({
         status: 200,
         value: {
-          ctx: { ..._ctx },
+          _ctx: { ..._ctx },
           method: 'PATCH',
           url: 'http://localhost:8080/api/v1/service/id1',
+          timestamp: s2sReq.value.timestamp,
         },
       });
 

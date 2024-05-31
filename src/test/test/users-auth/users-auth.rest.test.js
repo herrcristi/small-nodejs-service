@@ -90,7 +90,7 @@ describe('Users Auth Rest', function () {
     });
 
     // call
-    let res = await UsersAuthRest.invite({ email: 'email', school: { role: 'admin' } }, _ctx);
+    let res = await UsersAuthRest.invite('id1', { email: 'email', school: { role: 'admin' } }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

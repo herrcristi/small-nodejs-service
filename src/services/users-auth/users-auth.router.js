@@ -14,9 +14,10 @@ const router = express.Router();
  * Users Auth
  */
 router.route(`${UsersAuthConstants.ApiPath}/login`).post(UsersAuthController.login); // public dont require authentication
-router.route(`${UsersAuthConstants.ApiPath}/logout`).post(UsersAuthController.logout);
-router.route(`${UsersAuthConstants.ApiPath}/signup`).post(UsersAuthSignupController.signup);
-router.route(`${UsersAuthConstants.ApiPath}/invite`).post(UsersAuthSignupController.invite);
+router.route(`${UsersAuthConstants.ApiPath}/logout`).post(UsersAuthController.logout); // logout the current login user
+router.route(`${UsersAuthConstants.ApiPath}/signup`).post(UsersAuthSignupController.signup); // may be done by portal admin user or by anonymous user
+
+router.route(`${UsersAuthConstants.ApiPath}/:id/invite`).post(UsersAuthSignupController.invite);
 
 router.route(`${UsersAuthConstants.ApiPath}/:id/password`).put(UsersAuthController.putPassword);
 router.route(`${UsersAuthConstants.ApiPath}/:id/id`).put(UsersAuthController.putID);

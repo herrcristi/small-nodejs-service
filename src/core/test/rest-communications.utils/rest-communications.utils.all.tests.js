@@ -4,6 +4,7 @@
  * include them in order
  */
 require('./rest-communications.utils.restCall.test.js');
+require('./rest-communications.utils.restValidation.test.js');
 require('./rest-communications.utils.call.test.js');
 
 require('./rest-communications.utils.getAll.test.js');

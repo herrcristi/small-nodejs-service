@@ -148,6 +148,8 @@ describe('Users Auth Signup Controller', function () {
    * invite with success
    */
   it('should invite with success', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
     const testUsers = _.cloneDeep(TestConstants.UsersInvite);
     const testUser = testUsers[0];
 
@@ -163,7 +165,7 @@ describe('Users Auth Signup Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/invite`)
+      .post(`${UsersAuthConstants.ApiPath}/${testAuthUser.id}/invite`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -179,6 +181,8 @@ describe('Users Auth Signup Controller', function () {
    * invite validation fail
    */
   it('should invite validation fail', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
     const testUsers = _.cloneDeep(TestConstants.UsersInvite);
     const testUser = testUsers[0];
 
@@ -197,7 +201,7 @@ describe('Users Auth Signup Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/invite`)
+      .post(`${UsersAuthConstants.ApiPath}/${testAuthUser.id}/invite`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -212,6 +216,8 @@ describe('Users Auth Signup Controller', function () {
    * invite fail
    */
   it('should invite fail', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
     const testUsers = _.cloneDeep(TestConstants.UsersInvite);
     const testUser = testUsers[0];
 
@@ -224,7 +230,7 @@ describe('Users Auth Signup Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/invite`)
+      .post(`${UsersAuthConstants.ApiPath}/${testAuthUser.id}/invite`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -238,6 +244,8 @@ describe('Users Auth Signup Controller', function () {
    * invite fail exception
    */
   it('should invite fail exception', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
     const testUsers = _.cloneDeep(TestConstants.UsersInvite);
     const testUser = testUsers[0];
 
@@ -250,7 +258,7 @@ describe('Users Auth Signup Controller', function () {
     // call
     let res = await chai
       .request(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/invite`)
+      .post(`${UsersAuthConstants.ApiPath}/${testAuthUser.id}/invite`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 

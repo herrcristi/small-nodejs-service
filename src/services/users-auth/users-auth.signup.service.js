@@ -81,8 +81,7 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
-    _ctx.userID = objInfo.email;
-    _ctx.username = objInfo.email;
+    // currently signup can be done only by portal admin not by anonymous otherwise // _ctx.userID = objInfo.email; // _ctx.username = objInfo.email;
 
     // signup has 3 steps
     const errorO = {
@@ -163,15 +162,14 @@ const Public = {
    * invite
    * objInfo: { email, school: { role } } - schoolID is _ctx.tenantID
    */
-  invite: async (objInfo, _ctx) => {
+  invite: async (objID, objInfo, _ctx) => {
     // validate
     const v = Validators.Invite.validate(objInfo);
     if (v.error) {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
-    _ctx.userID = objInfo.email;
-    _ctx.username = objInfo.email;
+    // objID is the _ctx.userID
 
     // invite has 2 steps
     const errorO = {
