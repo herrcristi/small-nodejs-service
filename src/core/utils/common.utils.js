@@ -41,7 +41,7 @@ const Public = {
    * random bytes
    */
   getRandomBytes: (bytes = 32) => {
-    return crypto.randomBytes(bytes).toString('hex');
+    return crypto.randomBytes(bytes);
   },
 
   /**
@@ -60,7 +60,7 @@ const Public = {
     let cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(password), iv, { authTagLength: 16 });
     let encrypted = cipher.update(data);
     encrypted = Buffer.concat([encrypted, cipher.final()]);
-    return Buffer.concat([iv, encrypted, cipher.getAuthTag()]).toString('hex');
+    return { status: 200, value: Buffer.concat([iv, encrypted, cipher.getAuthTag()]).toString('hex') };
   },
 
   /**
@@ -79,9 +79,9 @@ const Public = {
       decipher.setAuthTag(authTag);
       let data = decipher.update(encryptedMessage);
       data = Buffer.concat([data, decipher.final()]);
-      return data.toString();
+      return { status: 200, value: data.toString() };
     } catch (e) {
-      return { error: { message: e.message, error: e } };
+      return { status: 401, error: { message: e.message, error: e } };
     }
   },
 

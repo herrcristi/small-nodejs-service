@@ -9,6 +9,7 @@ const axios = require('axios');
 
 const CommonUtils = require('./common.utils.js');
 const RestApiUtils = require('./rest-api.utils.js');
+const JwtUtils = require('./jwt.utils.js');
 
 const Constants = {
   Timeout: 30000 /* 30s */,
@@ -17,7 +18,10 @@ const Constants = {
 const Private = {
   /**
    * services inside local prop will be called directly
-   * { local: {
+   * {
+   *   issuer,
+   *   s2sPass,
+   *   local: {
    *    'service1': service1,
    *    'service2': service2
    * },
@@ -52,7 +56,13 @@ const Private = {
 
     console.log(`\nCurrent url to call: ${config.method} ${srvUri}`);
 
-    // TODO service2service auth
+    // service2service auth
+    const s2sData = {
+      ctx: _ctx, // original ctx
+      method: config.method.toUpperCase(),
+      url: srvUri,
+    };
+    const s2sToken = JwtUtils.encrypt(s2sData, Private.Config.issuer, _ctx, Private.Config.s2sPass);
 
     // call axios
     let time = new Date();
@@ -68,6 +78,7 @@ const Private = {
           'x-forwarded-for': _ctx.ipAddress,
           'x-user-id': _ctx.userID,
           'x-user-name': _ctx.username,
+          'x-s2s-token': s2sToken.value,
           'content-type': 'application/json',
         },
         data: config.body,

@@ -55,7 +55,7 @@ const Public = {
     {
       id: 'big.ben@testdomain.test',
       password:
-        '13f4888656e370d5ad7e1fd64e8249e840ffdbf2535ae59cc3790447a519e1c2139b0fc7eaf4d0d643ac17e031b519ecb854d9af47da86a12c72d3629d92e9de',
+        '6cfd7a4136677895eebbf06adb3bfe6a6ced1535ef7672132ae2ef3bbdee7659e72594265500ffe03d4ba937599843e4c606c2cbcb06397f20d61b1b9b158c4c',
       salt: 'salt1',
       userID: 'user1',
       type: 'user-auth',
@@ -66,7 +66,7 @@ const Public = {
     {
       id: 'john.bravo@testdomain.test',
       password:
-        '112c5f06e4bba1d2cddee9552091e598d098e8a1c9ce184363e9f2ca7ef3daed936d01ab634c26ce458a46c502f4a126ebb0bab179cd39e2a0ba938f12447bb7',
+        'c450880e016094695a54ec38fcf79f98bde8a1760bb575c328204e86219eb419cfe72e651037a1f12252230f8f2e8930a75b87ba095c1522d76d29b498f3562e',
       salt: 'salt2',
       userID: 'user2',
       type: 'user-auth',

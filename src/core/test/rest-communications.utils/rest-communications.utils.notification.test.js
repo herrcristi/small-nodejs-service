@@ -8,6 +8,7 @@ const axios = require('axios');
 const MockAdapter = require('axios-mock-adapter');
 
 const RestCommsUtils = require('../../utils/rest-communications.utils.js');
+const JwtUtils = require('../../utils/jwt.utils.js');
 
 describe('Rest Communications Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
@@ -19,6 +20,7 @@ describe('Rest Communications Utils', function () {
   beforeEach(async function () {
     mockAxios = new MockAdapter(axios);
     currentConfig = await RestCommsUtils.getConfig();
+    sinon.stub(JwtUtils, 'encrypt').returns({ status: 200, value: 's2stoken' });
   });
 
   afterEach(async function () {

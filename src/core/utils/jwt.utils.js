@@ -36,28 +36,30 @@ const Public = {
   /**
    * encrypt
    */
-  encrypt: (data, issuer, _ctx) => {
+  encrypt: (data, issuer, _ctx, password = undefined, iv = undefined) => {
+    if (!password) {
+      password = Private.JwtPasswords[issuer].at(-1);
+    }
     const dataText = JSON.stringify({ data, issuer });
-    return {
-      status: 200,
-      value: CommonUtils.encrypt(dataText, Buffer.from(Private.JwtPasswords[issuer].at(-1), 'hex')),
-    };
+    return CommonUtils.encrypt(dataText, Buffer.from(password), iv);
   },
 
   /**
    * decrypt
    */
-  decrypt: (encrypted, issuer, _ctx) => {
-    const passwords = [...Private.JwtPasswords[issuer]].reverse();
+  decrypt: (encrypted, issuer, _ctx, passwords = undefined) => {
+    if (!passwords) {
+      passwords = [...Private.JwtPasswords[issuer]].reverse();
+    }
 
     for (const pass of passwords) {
       try {
-        let decoded = CommonUtils.decrypt(encrypted, Buffer.from(pass, 'hex'));
-        if (decoded.error) {
+        let rd = CommonUtils.decrypt(encrypted, Buffer.from(pass));
+        if (rd.error) {
           continue;
         }
 
-        decoded = JSON.parse(decoded);
+        const decoded = JSON.parse(rd.value);
         // decoded: { data, issuer }
 
         // validate issuer
