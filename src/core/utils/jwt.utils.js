@@ -36,7 +36,10 @@ const Public = {
   /**
    * encrypt
    */
-  encrypt: (data, issuer, _ctx, password = Private.JwtPasswords[issuer].at(-1), iv = undefined) => {
+  encrypt: (data, issuer, _ctx, password = undefined, iv = undefined) => {
+    if (!password) {
+      password = Private.JwtPasswords[issuer].at(-1);
+    }
     const dataText = JSON.stringify({ data, issuer });
     return CommonUtils.encrypt(dataText, Buffer.from(password), iv);
   },
@@ -44,7 +47,11 @@ const Public = {
   /**
    * decrypt
    */
-  decrypt: (encrypted, issuer, _ctx, passwords = [...Private.JwtPasswords[issuer]].reverse()) => {
+  decrypt: (encrypted, issuer, _ctx, passwords = undefined) => {
+    if (!passwords) {
+      passwords = [...Private.JwtPasswords[issuer]].reverse();
+    }
+
     for (const pass of passwords) {
       try {
         let rd = CommonUtils.decrypt(encrypted, Buffer.from(pass));

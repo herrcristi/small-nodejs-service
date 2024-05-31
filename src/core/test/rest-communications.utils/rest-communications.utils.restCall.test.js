@@ -38,6 +38,9 @@ describe('Rest Communications Utils', function () {
     // local config
     let serviceName = 'Service';
     let restConfig = {
+      issuer: 'test-issuer',
+      s2sPass: process.env.S2SPASS,
+
       rest: {
         [serviceName]: {
           protocol: 'http',
@@ -49,10 +52,33 @@ describe('Rest Communications Utils', function () {
     };
 
     // stub
-    mockAxios.onPatch().reply(200, {
-      id: 'id1',
-      name: 'name',
-      type: 'type',
+    mockAxios.onPatch().reply((config) => {
+      chai.expect(config.method).to.equal('patch');
+      chai.expect(config.url).to.equal('http://localhost:8080/api/v1/service/id1');
+
+      console.log(`\nRequest headers: ${JSON.stringify(config.headers, null, 2)}`);
+      const s2sToken = config.headers['x-s2s-token'];
+      chai.expect(s2sToken).to.exist;
+
+      const s2sReq = JwtUtils.decrypt(s2sToken, restConfig.issuer, {}, [restConfig.s2sPass]);
+      console.log(`\ns2s request: ${JSON.stringify(s2sReq, null, 2)}`);
+      chai.expect(s2sReq).to.deep.equal({
+        status: 200,
+        value: {
+          ctx: { ..._ctx },
+          method: 'PATCH',
+          url: 'http://localhost:8080/api/v1/service/id1',
+        },
+      });
+
+      return [
+        200,
+        {
+          id: 'id1',
+          name: 'name',
+          type: 'type',
+        },
+      ];
     });
 
     // call
@@ -86,6 +112,9 @@ describe('Rest Communications Utils', function () {
     // local config
     let serviceName = 'Service';
     let restConfig = {
+      issuer: 'test-issuer',
+      s2sPass: process.env.S2SPASS,
+
       rest: {
         [serviceName]: {
           host: 'localhost',
@@ -95,6 +124,7 @@ describe('Rest Communications Utils', function () {
     };
 
     // stub
+    sinon.stub(JwtUtils, 'encrypt').returns({ status: 200, value: 's2stoken' });
     mockAxios.onPatch().reply(200, {
       id: 'id1',
       name: 'name',
@@ -134,6 +164,9 @@ describe('Rest Communications Utils', function () {
     // local config
     let serviceName = 'Service';
     let restConfig = {
+      issuer: 'test-issuer',
+      s2sPass: process.env.S2SPASS,
+
       rest: {},
     };
 
@@ -169,6 +202,9 @@ describe('Rest Communications Utils', function () {
     // local config
     let serviceName = 'Service';
     let restConfig = {
+      issuer: 'test-issuer',
+      s2sPass: process.env.S2SPASS,
+
       rest: {
         [serviceName]: {
           protocol: 'http',
@@ -180,6 +216,7 @@ describe('Rest Communications Utils', function () {
     };
 
     // stub
+    sinon.stub(JwtUtils, 'encrypt').returns({ status: 200, value: 's2stoken' });
     mockAxios.onPatch().reply(500, {});
 
     // call
@@ -208,6 +245,9 @@ describe('Rest Communications Utils', function () {
     // local config
     let serviceName = 'Service';
     let restConfig = {
+      issuer: 'test-issuer',
+      s2sPass: process.env.S2SPASS,
+
       rest: {
         [serviceName]: {
           protocol: 'http',
@@ -219,6 +259,7 @@ describe('Rest Communications Utils', function () {
     };
 
     // stub
+    sinon.stub(JwtUtils, 'encrypt').returns({ status: 200, value: 's2stoken' });
     mockAxios.onPatch().reply(500, {});
 
     // call

@@ -62,7 +62,7 @@ const Private = {
       method: config.method.toUpperCase(),
       url: srvUri,
     };
-    const s2sToken = JwtUtils.encrypt(s2sData, Private.Config.Issuer, _ctx, Private.Config.s2sPass);
+    const s2sToken = JwtUtils.encrypt(s2sData, Private.Config.issuer, _ctx, Private.Config.s2sPass);
 
     // call axios
     let time = new Date();
