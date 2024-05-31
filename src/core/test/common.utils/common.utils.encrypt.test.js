@@ -28,15 +28,17 @@ describe('Common Utils', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(res).to.be.a('string');
-    chai.expect(res).to.equal('303132333435363738393031323334354b6e35487ed93880ae81aebeedb5207b4d1abc0c2ecd');
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: '303132333435363738393031323334354b6e35487ed93880ae81aebeedb5207b4d1abc0c2ecd',
+    });
 
     // call again with different iv
     res = CommonUtils.encrypt('string', password);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(res).to.be.a('string');
-    chai.expect(res).to.not.equal('303132333435363738393031323334354b6e35487ed93880ae81aebeedb5207b4d1abc0c2ecd');
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.value).to.not.equal('303132333435363738393031323334354b6e35487ed93880ae81aebeedb5207b4d1abc0c2ecd');
   }).timeout(10000);
 });

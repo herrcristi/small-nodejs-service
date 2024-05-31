@@ -9,6 +9,7 @@ const MockAdapter = require('axios-mock-adapter');
 
 const CommonUtils = require('../../utils/common.utils.js');
 const RestCommsUtils = require('../../utils/rest-communications.utils.js');
+const JwtUtils = require('../../utils/jwt.utils.js');
 
 describe('Rest Communications Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };

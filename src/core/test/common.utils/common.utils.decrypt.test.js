@@ -28,24 +28,31 @@ describe('Common Utils', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(res).to.be.a('string');
-    chai.expect(res).to.equal('303132333435363738393031323334354b6e35487ed93880ae81aebeedb5207b4d1abc0c2ecd');
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: '303132333435363738393031323334354b6e35487ed93880ae81aebeedb5207b4d1abc0c2ecd',
+    });
 
     // decrypt
-    const encrypted = res;
+    const encrypted = res.value;
     res = CommonUtils.decrypt(encrypted, password);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    chai.expect(res).to.be.a('string');
-    chai.expect(res).to.equal('string');
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: 'string',
+    });
 
     // decrypt with alter tag
     res = CommonUtils.decrypt(encrypted + '00', password);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    chai.expect(res.error).to.deep.equal({
-      message: 'Unsupported state or unable to authenticate data',
-      error: new Error('Unsupported state or unable to authenticate data'),
+    chai.expect(res).to.deep.equal({
+      status: 401,
+      error: {
+        message: 'Unsupported state or unable to authenticate data',
+        error: new Error('Unsupported state or unable to authenticate data'),
+      },
     });
 
     // decrypt with alter tag
@@ -53,9 +60,12 @@ describe('Common Utils', function () {
     res = CommonUtils.decrypt(e2, password);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    chai.expect(res.error).to.deep.equal({
-      message: 'Unsupported state or unable to authenticate data',
-      error: new Error('Unsupported state or unable to authenticate data'),
+    chai.expect(res).to.deep.equal({
+      status: 401,
+      error: {
+        message: 'Unsupported state or unable to authenticate data',
+        error: new Error('Unsupported state or unable to authenticate data'),
+      },
     });
 
     // decrypt diff password
@@ -64,9 +74,12 @@ describe('Common Utils', function () {
     res = CommonUtils.decrypt(encrypted, password2);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    chai.expect(res.error).to.deep.equal({
-      message: 'Unsupported state or unable to authenticate data',
-      error: new Error('Unsupported state or unable to authenticate data'),
+    chai.expect(res).to.deep.equal({
+      status: 401,
+      error: {
+        message: 'Unsupported state or unable to authenticate data',
+        error: new Error('Unsupported state or unable to authenticate data'),
+      },
     });
   }).timeout(10000);
 });

@@ -31,7 +31,7 @@ const Private = {
    * generate salt
    */
   genSalt: () => {
-    return CommonUtils.getRandomBytes(32);
+    return CommonUtils.getRandomBytes(32).toString('hex');
   },
 
   /**
