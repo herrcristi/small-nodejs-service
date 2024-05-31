@@ -10,6 +10,7 @@ const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
+const RestCommunicationsUtils = require('../../../core/utils/rest-communications.utils.js');
 
 describe('Users Auth Controller', function () {
   before(async function () {});
@@ -275,6 +276,11 @@ describe('Users Auth Controller', function () {
       };
     });
 
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: true };
+    });
+
     // call
     let res = await chai
       .request(TestConstants.WebServer)
@@ -303,6 +309,11 @@ describe('Users Auth Controller', function () {
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: true };
+    });
+
     // call
     let res = await chai
       .request(TestConstants.WebServer)
@@ -327,6 +338,11 @@ describe('Users Auth Controller', function () {
     let stubService = sinon.stub(UsersAuthService, 'post').callsFake(() => {
       console.log(`\nUsersAuthService.post called\n`);
       throw new Error('Test error message');
+    });
+
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: true };
     });
 
     // call
@@ -854,6 +870,11 @@ describe('Users Auth Controller', function () {
       };
     });
 
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: true };
+    });
+
     // call
     let res = await chai
       .request(TestConstants.WebServer)
@@ -880,6 +901,11 @@ describe('Users Auth Controller', function () {
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: true };
+    });
+
     // call
     let res = await chai
       .request(TestConstants.WebServer)
@@ -904,6 +930,11 @@ describe('Users Auth Controller', function () {
     let stubService = sinon.stub(UsersAuthService, 'notification').callsFake(() => {
       console.log(`\nUsersAuthService.notification called\n`);
       throw new Error('Test error message');
+    });
+
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: true };
     });
 
     // call

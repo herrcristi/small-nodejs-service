@@ -71,7 +71,7 @@ describe('Users Auth Signup Controller', function () {
     const testUser = testUsers[0];
 
     // stub
-    sinon.restore();
+    sinon.restore(); // restore validation
     let stubValidate = sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
       return { status: 401, error: { message: 'Test error message', error: new Error('Test error').toString() } };
@@ -192,7 +192,7 @@ describe('Users Auth Signup Controller', function () {
     const testUser = testUsers[0];
 
     // stub
-    sinon.restore();
+    sinon.restore(); // restore validation
     let stubValidate = sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
       return { status: 401, error: { message: 'Test error message', error: new Error('Test error').toString() } };

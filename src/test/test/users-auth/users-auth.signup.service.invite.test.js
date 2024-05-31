@@ -90,7 +90,7 @@ describe('Users Auth Service', function () {
     // });
 
     // call
-    let res = await UsersAuthSignupService.invite(inviteReq, _ctx);
+    let res = await UsersAuthSignupService.invite(testUserID, inviteReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -111,6 +111,7 @@ describe('Users Auth Service', function () {
     // });
     chai.expect(res).to.deep.equal({
       status: 500,
+      error: { message: 'Not implemented', error: new Error('Not implemented') },
     });
   }).timeout(10000);
 
@@ -127,7 +128,7 @@ describe('Users Auth Service', function () {
     };
 
     // call
-    let res = await UsersAuthSignupService.invite(inviteReq, _ctx);
+    let res = await UsersAuthSignupService.invite('id1', inviteReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

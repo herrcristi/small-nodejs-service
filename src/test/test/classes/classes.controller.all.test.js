@@ -80,7 +80,7 @@ describe('Classes Controller', function () {
     const testClasses = _.cloneDeep(TestConstants.Classes);
 
     // stub
-    sinon.restore();
+    sinon.restore(); // restore validation
     let stubValidate = sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
       return { status: 401, error: { message: 'Test error message', error: new Error('Test error').toString() } };

@@ -75,9 +75,9 @@ describe('Users Controller', function () {
     const testUsers = _.cloneDeep(TestConstants.Users);
 
     // stub
-    sinon.restore();
-    let stubValidate = sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
-      console.log(`\nUsersAuthRest.validate called`);
+    sinon.restore(); // restore validation
+    let stubValidate = sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
       return { status: 401, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
