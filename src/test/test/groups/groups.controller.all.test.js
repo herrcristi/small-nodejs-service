@@ -11,6 +11,7 @@ const GroupsConstants = require('../../../services/groups/groups.constants.js');
 const GroupsService = require('../../../services/groups/groups.service.js');
 const RestApiUtils = require('../../../core/utils/rest-api.utils.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
+const RestCommunicationsUtils = require('../../../core/utils/rest-communications.utils.js');
 
 describe('Groups Controller', function () {
   const _ctx = { tenantID: 'school-univ1', reqID: 'testReq', lang: 'en', service: 'Service' };
@@ -21,6 +22,10 @@ describe('Groups Controller', function () {
     sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
       return { status: 200, value: { userID: 'user.id', username: 'user.email' } };
+    });
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: true };
     });
   });
 

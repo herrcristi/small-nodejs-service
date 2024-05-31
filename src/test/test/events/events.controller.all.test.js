@@ -11,6 +11,7 @@ const EventsConstants = require('../../../services/events/events.constants.js');
 const EventsService = require('../../../services/events/events.service.js');
 const RestApiUtils = require('../../../core/utils/rest-api.utils.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
+const RestCommunicationsUtils = require('../../../core/utils/rest-communications.utils.js');
 
 describe('Events Controller', function () {
   before(async function () {});
@@ -19,6 +20,10 @@ describe('Events Controller', function () {
     sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
       return { status: 200, value: { userID: 'user.id', username: 'user.email' } };
+    });
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: true };
     });
   });
 

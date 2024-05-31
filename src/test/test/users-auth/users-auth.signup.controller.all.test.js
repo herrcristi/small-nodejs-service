@@ -10,6 +10,7 @@ const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthSignupService = require('../../../services/users-auth/users-auth.signup.service.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
+const RestCommunicationsUtils = require('../../../core/utils/rest-communications.utils.js');
 
 describe('Users Auth Signup Controller', function () {
   before(async function () {});
@@ -18,6 +19,10 @@ describe('Users Auth Signup Controller', function () {
     sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
       return { status: 200, value: { userID: 'user.id', username: 'user.email' } };
+    });
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: true };
     });
   });
 

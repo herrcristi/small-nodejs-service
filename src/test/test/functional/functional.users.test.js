@@ -18,6 +18,7 @@ const UsersRest = require('../../../services/rest/users.rest.js');
 const UsersConstants = require('../../../services/users/users.constants.js');
 const TestsUtils = require('../../tests.utils.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
+const RestCommunicationsUtils = require('../../../core/utils/rest-communications.utils.js');
 
 describe('Users Functional', function () {
   let _ctx = { reqID: 'Test-Users', lang: 'en' };
@@ -135,6 +136,11 @@ describe('Users Functional', function () {
   it('should getAll with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
 
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: true };
+    });
+
     // call
     let res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPathInternal}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -180,6 +186,11 @@ describe('Users Functional', function () {
     delete testUser.type;
     delete testUser._lang_en;
 
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: true };
+    });
+
     // call
     let res = await chai
       .request(TestConstants.WebServer)
@@ -215,6 +226,11 @@ describe('Users Functional', function () {
 
     // events/students/professors before (in each school)
     await checkSchoolsBefore(testUser, _ctx);
+
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: true };
+    });
 
     // call
     let res = await chai
@@ -298,6 +314,11 @@ describe('Users Functional', function () {
     // check global events before
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
+
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: true };
+    });
 
     // call
     res = await chai
@@ -397,6 +418,11 @@ describe('Users Functional', function () {
 
     // events/students/professors before (in each school)
     await checkSchoolsBefore({ name, email, schools }, _ctx);
+
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: true };
+    });
 
     // call
     let res = await chai
@@ -513,6 +539,11 @@ describe('Users Functional', function () {
 
     // events/students/professors before (in each school)
     await checkSchoolsBefore({ name, email, schools }, _ctx);
+
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: true };
+    });
 
     // call
     let res = await chai
