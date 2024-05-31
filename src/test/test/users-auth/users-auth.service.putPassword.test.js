@@ -29,7 +29,7 @@ describe('Users Auth Service', function () {
   after(async function () {});
 
   /**
-   * putPassword  with success
+   * putPassword with success
    */
   it('should putPassword with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
@@ -49,8 +49,8 @@ describe('Users Auth Service', function () {
       };
     });
 
-    let stubBase = sinon.stub(DbOpsUtils, 'patch').callsFake((config, objID, patchInfo) => {
-      console.log(`\nDbOpsUtils.patch called ${JSON.stringify({ objID, patchInfo }, null, 2)}`);
+    let stubBase = sinon.stub(DbOpsUtils, 'put').callsFake((config, objID, objInfo) => {
+      console.log(`\nDbOpsUtils.put called ${JSON.stringify({ objID, objInfo }, null, 2)}`);
       return {
         status: 200,
         value: { ...testUser },
@@ -237,8 +237,8 @@ describe('Users Auth Service', function () {
       };
     });
 
-    let stubBase = sinon.stub(DbOpsUtils, 'patch').callsFake((config, objID, patchInfo) => {
-      console.log(`\nDbOpsUtils.patch called ${JSON.stringify({ objID, patchInfo }, null, 2)}`);
+    let stubBase = sinon.stub(DbOpsUtils, 'put').callsFake((config, objID, objInfo) => {
+      console.log(`\nDbOpsUtils.put called ${JSON.stringify({ objID, objInfo }, null, 2)}`);
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 

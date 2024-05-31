@@ -61,8 +61,8 @@ const Public = {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
 
-      // set token as cookie
-      res.cookie(UsersAuthConstants.AuthToken, r.token, {
+      // set expired token as cookie
+      res.cookie(UsersAuthConstants.AuthToken, 'token', {
         expires: new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/),
         httpOnly: true,
       });
@@ -212,6 +212,11 @@ const Public = {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
 
+      // set expired token as cookie
+      res.cookie(UsersAuthConstants.AuthToken, 'token', {
+        expires: new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/),
+        httpOnly: true,
+      });
       res.status(r.status).json(r.value);
     } catch (e) {
       return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
@@ -274,6 +279,11 @@ const Public = {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
 
+      // set expired token as cookie
+      res.cookie(UsersAuthConstants.AuthToken, 'token', {
+        expires: new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/),
+        httpOnly: true,
+      });
       res.status(r.status).json(r.value);
     } catch (e) {
       return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));

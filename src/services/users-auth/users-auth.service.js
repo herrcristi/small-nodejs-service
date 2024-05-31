@@ -475,7 +475,7 @@ const Public = {
   /**
    * put (only password)
    */
-  putPassword: async (objID, objInfo, _ctx) => {
+  putPassword: async (objID, objInfo, _ctx, action = Private.Action.PutPassword) => {
     // validate
     const v = Validators.PutPassword.validate(objInfo);
     if (v.error) {
@@ -497,9 +497,8 @@ const Public = {
     }
 
     // raise event for put (changed password)
-    const action = Private.Action.PutPassword;
     const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
-    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, newObj, _ctx);
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, {} /*args*/, _ctx);
 
     // raise a notification for modified obj
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
@@ -511,7 +510,7 @@ const Public = {
   /**
    * put only id (email)
    */
-  putID: async (objID, objInfo, _ctx) => {
+  putID: async (objID, objInfo, _ctx, action = Private.Action.PutID) => {
     // validate
     const v = Validators.PutID.validate(objInfo);
     if (v.error) {
@@ -548,10 +547,10 @@ const Public = {
       return rUserDetails;
     }
 
-    // raise event for put (changed password)
-    const action = Private.Action.PutID;
-    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
-    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, newObj, _ctx);
+    // raise event for put (changed id)
+    const newObj = { id: newIDEmail, name: newIDEmail, oldID: objID, type: UsersAuthConstants.Type };
+    const args = { id: newIDEmail };
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
     // raise a notification for modified obj
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
@@ -570,30 +569,7 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
-    // config: { serviceName }
-    const config = await Private.getConfig(_ctx);
-
-    // patch
-    let r;
-    if (config.isFirebaseAuth) {
-      r = await UsersAuthServiceFirebase.patchPassword(config, objID, patchInfo, _ctx);
-    } else {
-      r = await UsersAuthServiceLocal.patchPassword(config, objID, patchInfo, _ctx);
-    }
-    if (r.error) {
-      return r;
-    }
-
-    // raise event for patch (changed password)
-    const action = Private.Action.PatchPassword;
-    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
-    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, newObj, _ctx);
-
-    // raise a notification for modified obj
-    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
-
-    // success
-    return { status: 200, value: newObj };
+    return await Public.putPassword(objID, patchInfo.set, _ctx, Private.Action.PatchPassword);
   },
 
   /**
@@ -606,45 +582,7 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
-    // config: { serviceName }
-    const config = await Private.getConfig(_ctx);
-
-    // patch
-    let r;
-    if (config.isFirebaseAuth) {
-      r = await UsersAuthServiceFirebase.patchID(config, objID, patchInfo, _ctx);
-    } else {
-      r = await UsersAuthServiceLocal.patchID(config, objID, patchInfo, _ctx);
-    }
-    if (r.error) {
-      return r;
-    }
-
-    // put user details email
-    const newIDEmail = patchInfo.set.id;
-    const rUserDetails = await UsersRest.putEmail(_ctx.userID, { email: newIDEmail }, _ctx);
-    if (rUserDetails.error) {
-      // restore old id (email)
-      const restorePatch = { set: { ...patchInfo.set, id: objID } };
-      if (config.isFirebaseAuth) {
-        r = await UsersAuthServiceFirebase.patchID(config, newIDEmail, restorePatch, _ctx);
-      } else {
-        r = await UsersAuthServiceLocal.patchID(config, newIDEmail, restorePatch, _ctx);
-      }
-
-      return rUserDetails;
-    }
-
-    // raise event for patch (changed password)
-    const action = Private.Action.PatchID;
-    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
-    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, newObj, _ctx);
-
-    // raise a notification for modified obj
-    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
-
-    // success
-    return { status: 200, value: newObj };
+    return await Public.putID(objID, patchInfo.set, _ctx, Private.Action.PatchID);
   },
 
   /**
@@ -664,7 +602,13 @@ const Public = {
     const patchSchoolInfo = _.cloneDeep(patchInfo);
     for (const op of ['add', 'remove']) {
       if (patchSchoolInfo[op]) {
-        patchSchoolInfo[op].id = _ctx.tenantID;
+        patchSchoolInfo[op].schools = [
+          {
+            id: _ctx.tenantID,
+            roles: patchSchoolInfo[op].roles,
+          },
+        ];
+        delete patchSchoolInfo[op].roles;
       }
     }
 
