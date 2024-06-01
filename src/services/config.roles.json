@@ -14,6 +14,12 @@
       }
     },
 
+    "portal-admin": {
+      "users-auth": {
+        "POST": ["/api/v1/users-auth/signup"]
+      }
+    },
+
     "admin": {
       "schools": {
         "GET": ["/api/v1/schools/:id"],
@@ -22,7 +28,7 @@
         "PATCH": ["/api/v1/schools/:id"]
       },
       "users-auth": {
-        "POST": ["/api/v1/users-auth/signup", "/api/v1/users-auth/:id/invite"],
+        "POST": ["/api/v1/users-auth/:id/invite"],
         "PATCH": ["/api/v1/users-auth/:id/school/user/:uid"]
       },
       "users": {},
