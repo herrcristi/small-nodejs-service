@@ -135,7 +135,7 @@ const Private = {
   },
 
   /**
-   * init roles access
+   * init roles access by role and method
    */
   initRolesAccess: () => {
     const rolesPath = path.join(__dirname, '../config.roles.json');
@@ -155,6 +155,81 @@ const Private = {
         }
       }
     }
+  },
+
+  /**
+   * check route roles
+   */
+  isValidRouteForRoles: (roles, method, route) => {
+    return roles?.some((role) => Private.RolesApiAccess[role]?.[method.toUpperCase()]?.[route]);
+  },
+
+  /**
+   * validate route
+   * _ctx: { userID, username, tenantID }
+   */
+  validateRoute: (user, method, route, _ctx) => {
+    const restrictRouteID = {
+      // validate /api/v1/users-auth/:id/... is called only for loggedin user
+      [`${UsersAuthRest.Constants.ApiPath}/:id`]: _ctx.username,
+      // validate /api/v1/users/:id/... is called only for loggedin user
+      [`${UsersRest.Constants.ApiPath}/:id`]: _ctx.userID,
+      // !! even thou school rest api doesnt require tenantID, tenantID is used to validate the current user role access
+      [`${SchoolsRest.Constants.ApiPath}/:id`]: _ctx.tenantID,
+    };
+
+    for (const checkRoute in restrictRouteID) {
+      if (!new RegExp(`^${checkRoute}`).test(route)) {
+        continue;
+      }
+      const expandRoute = `${checkRoute}`.replace(':id', restrictRouteID[checkRoute]);
+      // either is equal or it starts with expandedRoute/
+      if (new RegExp(`^${expandRoute}([/]|$)`).test(_ctx.reqUrl)) {
+        // valid route
+        continue;
+      }
+
+      const msg = ':id restriction applied';
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
+
+    // validate for all (non-tenant) route
+    const validGlobalRole = Private.isValidRouteForRoles(['all'], method, route);
+    if (validGlobalRole) {
+      return { status: 200, value: true };
+    }
+
+    // validate portal-admin route
+    const isPortalAdmin = false; // TODO signup can be done only by portal admin
+    if (isPortalAdmin) {
+      const validPortalAdminRole = Private.isValidRouteForRoles(['portal-admin'], method, route);
+      if (validPortalAdminRole) {
+        return { status: 200, value: true };
+      }
+    }
+
+    // validate per tenant
+    const validSchool = user.schools.find((item) => item.id === _ctx.tenantID);
+    if (!validSchool) {
+      const msg = 'Failed to validate school';
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
+
+    // validate school is not disabled
+    if (validSchool.status === SchoolsRest.Constants.Status.Disabled) {
+      const msg = 'School is disabled';
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
+
+    // validate also route
+    const validRole = Private.isValidRouteForRoles(validSchool.roles, method, route);
+    if (!validRole) {
+      const msg = `Route is not accesible: ${method} ${route}`;
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
+
+    // valid
+    return { status: 200, value: true };
   },
 };
 
@@ -205,7 +280,9 @@ const Public = {
     const errorLogin = 'Invalid username/password';
     const rError = { status: 401, error: { message: errorLogin, error: new Error(errorLogin) } };
 
+    ///
     // login
+    ///
     let rL;
     if (config.isFirebaseAuth) {
       rL = await UsersAuthServiceFirebase.login(config, objInfo, _ctx);
@@ -220,12 +297,14 @@ const Public = {
       return rError; // return generic error
     }
 
+    ///
     // get user details (by email)
+    ///
     const userProjection = { id: 1, status: 1, email: 1, schools: 1 };
     const rUserDetails = await UsersRest.getOneByEmail(objInfo.id, userProjection, _ctx);
     if (rUserDetails.error) {
       // raise event
-      const eventArgs = { ...eventO, reason: 'No user' };
+      const eventArgs = { ...eventO, reason: 'No user details' };
       await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventArgs, _ctx, failedSeverity);
       return rError; // return generic error
     }
@@ -261,7 +340,9 @@ const Public = {
       }
     }
 
+    ///
     // token
+    ///
     let rT;
     if (config.isFirebaseAuth) {
       rT = await UsersAuthServiceFirebase.getToken(config, { token: rL.value, id: objInfo.id, userID: user.id }, _ctx);
@@ -276,7 +357,9 @@ const Public = {
     // encrypt token again
     rT.value = JwtUtils.encrypt(rT.value, Private.Issuer, _ctx).value;
 
+    ///
     // raise event for succesful login
+    ///
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Login, eventO, eventO, _ctx);
 
     // success
@@ -294,7 +377,9 @@ const Public = {
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
+    ///
     // logout
+    ///
     let rL;
     if (config.isFirebaseAuth) {
       rL = await UsersAuthServiceFirebase.logout(config, _ctx);
@@ -324,7 +409,9 @@ const Public = {
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
+    ///
     // decrypt token
+    ///
     const decodedToken = JwtUtils.decrypt(objInfo.token, Private.Issuer, _ctx);
     if (decodedToken.error) {
       return decodedToken;
@@ -343,10 +430,12 @@ const Public = {
       return { status: 401, error: { message: msg, error: new Error(msg) } };
     }
 
-    _ctx.userID = rT.value.id;
     _ctx.username = rT.value.id;
+    _ctx.userID = rT.value.id;
 
+    ///
     // get user details (by email)
+    ///
     const email = rT.value.id;
     const userProjection = { id: 1, status: 1, email: 1, schools: 1 };
     const rUserDetails = await UsersRest.getOneByEmail(email, userProjection, _ctx);
@@ -356,48 +445,24 @@ const Public = {
 
     // fail if user is disabled
     const user = rUserDetails.value;
+    _ctx.userID = user.id;
     if (user.status === UsersRest.Constants.Status.Disabled) {
       const msg = 'User is disabled';
       return { status: 401, error: { message: msg, error: new Error(msg) } };
     }
 
-    // validate global (non-tenant) route
-    const isValidRouteForRoles = (roles) => {
-      return roles?.some((role) => Private.RolesApiAccess[role]?.[objInfo.method?.toUpperCase()]?.[objInfo.route]);
-    };
-
-    // TODO signup can be done only by portal admin
-    // TODO validate /api/v1/users/:id and /api/v1/users-auth/:id only for the login user (_ctx.userID)
-    // TODO /api/v1/schools/:id validate that _ctx.tenantID e acelasi cu cel de aici din param
-
-    const validGlobalRole = isValidRouteForRoles(['all']);
-    if (!validGlobalRole) {
-      // validate per tenant
-      // validate school
-      const validSchool = user.schools.find((item) => item.id === _ctx.tenantID);
-      if (!validSchool) {
-        const msg = 'Failed to validate school';
-        return { status: 401, error: { message: msg, error: new Error(msg) } };
-      }
-
-      // validate school is not disabled
-      if (validSchool.status === SchoolsRest.Constants.Status.Disabled) {
-        const msg = 'School is disabled';
-        return { status: 401, error: { message: msg, error: new Error(msg) } };
-      }
-
-      // validate also route
-      const validRole = isValidRouteForRoles(validSchool.roles);
-      if (!validRole) {
-        const msg = `Route is not accesible: ${objInfo.method} ${objInfo.route}`;
-        return { status: 401, error: { message: msg, error: new Error(msg) } };
-      }
+    ///
+    // validate routes
+    ///
+    const rr = Private.validateRoute(user, objInfo.method, objInfo.route, _ctx);
+    if (rr.error) {
+      return rr;
     }
 
+    ///
     // success
-    _ctx.userID = user.id;
-    _ctx.username = user.email;
-    return { status: 200, value: { userID: user.id, username: user.email } };
+    ///
+    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username } };
   },
 
   /**

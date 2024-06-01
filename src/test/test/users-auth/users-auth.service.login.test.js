@@ -429,7 +429,7 @@ describe('Users Auth Service', function () {
             id: testAuthUser.id,
             name: testAuthUser.id,
             type: UsersAuthService.Constants.Type,
-            reason: 'No user',
+            reason: 'No user details',
           },
           severity: 'warning',
         });

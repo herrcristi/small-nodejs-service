@@ -67,6 +67,9 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/users/${_ctx.userID}`;
     let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
@@ -122,6 +125,9 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = testInfoUser.schools[1].id; // where is admin
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/schools/${_ctx.tenantID}`;
     let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/schools/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
@@ -153,6 +159,10 @@ describe('Users Auth Service', function () {
     delete testAuthUser._test_data;
 
     // call
+    _ctx.tenantID = testInfoUser.schools[0].id;
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/users/${_ctx.userID}`;
     let res = await UsersAuthService.validate({ id: testAuthUser.id }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
@@ -190,6 +200,9 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/users/${_ctx.userID}`;
     let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
@@ -234,6 +247,9 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/users/${_ctx.userID}`;
     let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
@@ -287,6 +303,9 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/users/${_ctx.userID}`;
     let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
@@ -343,6 +362,9 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = 'schoolID';
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/users/${_ctx.userID}`;
     let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
@@ -356,6 +378,305 @@ describe('Users Auth Service', function () {
       error: {
         message: 'User is disabled',
         error: new Error('User is disabled'),
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * fail validate user auth :id
+   */
+  it('should fail validate user auth :id', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
+
+    const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    const testInfoUser = testInfoUsers[0];
+    for (const school of testInfoUser.schools) {
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+
+    const testAuthData = testAuthUser._test_data;
+    delete testAuthUser._test_data;
+
+    // stub
+    let stubUsersGet = sinon.stub(UsersRest, 'getOneByEmail').callsFake((email) => {
+      console.log(`\nUsersRest.getOne called for ${JSON.stringify(email, null, 2)}\n`);
+
+      chai.expect(email).to.equal(testAuthUser.id);
+      return { status: 200, value: testInfoUser };
+    });
+
+    let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
+      console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
+
+      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+    });
+
+    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 200, value: data };
+    });
+
+    // call
+    _ctx.tenantID = testInfoUser.schools[0].id;
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/users-auth/diffid`;
+    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users-auth/:id' }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubToken.callCount).to.equal(1);
+    chai.expect(stubDecrypt.callCount).to.equal(1);
+
+    chai.expect(res).to.deep.equal({
+      status: 401,
+      error: {
+        message: ':id restriction applied',
+        error: new Error(':id restriction applied'),
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * fail validate user-auth :id prefix
+   */
+  it('should fail validate user-auth :id prefix', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
+
+    const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    const testInfoUser = testInfoUsers[0];
+    for (const school of testInfoUser.schools) {
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+
+    const testAuthData = testAuthUser._test_data;
+    delete testAuthUser._test_data;
+
+    // stub
+    let stubUsersGet = sinon.stub(UsersRest, 'getOneByEmail').callsFake((email) => {
+      console.log(`\nUsersRest.getOne called for ${JSON.stringify(email, null, 2)}\n`);
+
+      chai.expect(email).to.equal(testAuthUser.id);
+      return { status: 200, value: testInfoUser };
+    });
+
+    let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
+      console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
+
+      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+    });
+
+    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 200, value: data };
+    });
+
+    // call
+    _ctx.tenantID = testInfoUser.schools[0].id;
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/users-auth/diffid/something`;
+    let res = await UsersAuthService.validate(
+      { token: 'token', method: 'get', route: '/api/v1/users-auth/:id/something' },
+      _ctx
+    );
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubToken.callCount).to.equal(1);
+    chai.expect(stubDecrypt.callCount).to.equal(1);
+
+    chai.expect(res).to.deep.equal({
+      status: 401,
+      error: {
+        message: ':id restriction applied',
+        error: new Error(':id restriction applied'),
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * fail validate user :id prefix
+   */
+  it('should fail validate user :id prefix', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
+
+    const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    const testInfoUser = testInfoUsers[0];
+    for (const school of testInfoUser.schools) {
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+
+    const testAuthData = testAuthUser._test_data;
+    delete testAuthUser._test_data;
+
+    // stub
+    let stubUsersGet = sinon.stub(UsersRest, 'getOneByEmail').callsFake((email) => {
+      console.log(`\nUsersRest.getOne called for ${JSON.stringify(email, null, 2)}\n`);
+
+      chai.expect(email).to.equal(testAuthUser.id);
+      return { status: 200, value: testInfoUser };
+    });
+
+    let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
+      console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
+
+      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+    });
+
+    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 200, value: data };
+    });
+
+    // call
+    _ctx.tenantID = testInfoUser.schools[0].id;
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/users/diffid/something`;
+    let res = await UsersAuthService.validate(
+      { token: 'token', method: 'get', route: '/api/v1/users/:id/something' },
+      _ctx
+    );
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubToken.callCount).to.equal(1);
+    chai.expect(stubDecrypt.callCount).to.equal(1);
+
+    chai.expect(res).to.deep.equal({
+      status: 401,
+      error: {
+        message: ':id restriction applied',
+        error: new Error(':id restriction applied'),
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * validate fail validate school :id
+   */
+  it('should validate fail validate school :id', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
+
+    const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    const testInfoUser = testInfoUsers[0];
+    for (const school of testInfoUser.schools) {
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+
+    const testAuthData = testAuthUser._test_data;
+    delete testAuthUser._test_data;
+
+    // stub
+    let stubUsersGet = sinon.stub(UsersRest, 'getOneByEmail').callsFake((email) => {
+      console.log(`\nUsersRest.getOne called for ${JSON.stringify(email, null, 2)}\n`);
+
+      chai.expect(email).to.equal(testAuthUser.id);
+      return { status: 200, value: testInfoUser };
+    });
+
+    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 200, value: data };
+    });
+
+    let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
+      console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
+
+      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+    });
+
+    // call
+    _ctx.tenantID = testInfoUser.schools[0].id;
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/schools/diffid`;
+    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/schools/:id' }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubDecrypt.callCount).to.equal(1);
+    chai.expect(stubToken.callCount).to.equal(1);
+
+    chai.expect(res).to.deep.equal({
+      status: 401,
+      error: {
+        message: ':id restriction applied',
+        error: new Error(':id restriction applied'),
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * validate fail validate school :id prefix
+   */
+  it('should validate fail validate school :id prefix', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
+
+    const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    const testInfoUser = testInfoUsers[0];
+    for (const school of testInfoUser.schools) {
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+
+    const testAuthData = testAuthUser._test_data;
+    delete testAuthUser._test_data;
+
+    // stub
+    let stubUsersGet = sinon.stub(UsersRest, 'getOneByEmail').callsFake((email) => {
+      console.log(`\nUsersRest.getOne called for ${JSON.stringify(email, null, 2)}\n`);
+
+      chai.expect(email).to.equal(testAuthUser.id);
+      return { status: 200, value: testInfoUser };
+    });
+
+    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 200, value: data };
+    });
+
+    let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
+      console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
+
+      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+    });
+
+    // call
+    _ctx.tenantID = testInfoUser.schools[0].id;
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/schools/diffid/something`;
+    let res = await UsersAuthService.validate(
+      { token: 'token', method: 'get', route: '/api/v1/schools/:id/something' },
+      _ctx
+    );
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubDecrypt.callCount).to.equal(1);
+    chai.expect(stubToken.callCount).to.equal(1);
+
+    chai.expect(res).to.deep.equal({
+      status: 401,
+      error: {
+        message: ':id restriction applied',
+        error: new Error(':id restriction applied'),
       },
     });
   }).timeout(10000);
@@ -398,6 +719,9 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = 'schoolID';
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/schools/${_ctx.tenantID}`;
     let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/schools/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
@@ -453,6 +777,9 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/schools/${_ctx.tenantID}`;
     let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/schools/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
@@ -505,6 +832,9 @@ describe('Users Auth Service', function () {
 
     // call
     _ctx.tenantID = testInfoUser.schools[0].id;
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/users/${_ctx.userID}`;
     let res = await UsersAuthService.validate({ token: 'token', method: 'invalid', route: '/api/v1/users/:id' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
