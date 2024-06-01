@@ -17,6 +17,7 @@ const UsersAuthDatabase = require('./users-auth/users-local-auth.database.js');
 const UsersAuthRouter = require('./users-auth/users-auth.router.js');
 const UsersAuthRest = require('./rest/users-auth.rest.js');
 const UsersAuthMiddleware = require('./users-auth/users-auth.middleware.js');
+const Service2ServiceAuthMiddleware = require('./users-auth/service2service-auth.middleware.js');
 
 const UsersConstants = require('./users/users.constants.js');
 const UsersService = require('./users/users.service.js');
@@ -335,7 +336,7 @@ const Public = {
    * get users auth middlewares
    */
   getUsersAuthMiddlewares: () => {
-    return [UsersAuthMiddleware];
+    return [Service2ServiceAuthMiddleware, UsersAuthMiddleware]; // in this order
   },
 };
 

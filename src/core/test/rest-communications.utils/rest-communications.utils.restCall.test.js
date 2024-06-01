@@ -60,14 +60,19 @@ describe('Rest Communications Utils', function () {
       const s2sToken = config.headers['x-s2s-token'];
       chai.expect(s2sToken).to.exist;
 
-      const s2sReq = JwtUtils.decrypt(s2sToken, restConfig.issuer, {}, [restConfig.s2sPass]);
-      console.log(`\ns2s request: ${JSON.stringify(s2sReq, null, 2)}`);
-      chai.expect(s2sReq).to.deep.equal({
+      const rv = RestCommsUtils.restValidation(s2sToken, { ..._ctx });
+      console.log(`\ns2s validation returned: ${JSON.stringify(rv, null, 2)}`);
+      chai.expect(rv).to.deep.equal({
         status: 200,
         value: {
-          ctx: { ..._ctx },
+          _ctx: {
+            reqID: 'testReq',
+            lang: 'en',
+            service: 'Service',
+          },
           method: 'PATCH',
           url: 'http://localhost:8080/api/v1/service/id1',
+          timestamp: rv.value.timestamp,
         },
       });
 

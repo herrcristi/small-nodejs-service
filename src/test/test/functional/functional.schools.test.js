@@ -15,6 +15,7 @@ const EventsDatabase = require('../../../services/events/events.database.js');
 const SchoolsConstants = require('../../../services/schools/schools.constants.js');
 const TestsUtils = require('../../tests.utils.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
+const RestCommunicationsUtils = require('../../../core/utils/rest-communications.utils.js');
 
 describe('Schools Functional', function () {
   let _ctx = { reqID: 'Test-Schools', lang: 'en' };
@@ -87,6 +88,11 @@ describe('Schools Functional', function () {
     delete testSchool.type;
     delete testSchool._lang_en;
 
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: {} };
+    });
+
     // call
     let res = await chai
       .request(TestConstants.WebServer)
@@ -118,6 +124,11 @@ describe('Schools Functional', function () {
     // check events before
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
+
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: {} };
+    });
 
     // call
     let res = await chai

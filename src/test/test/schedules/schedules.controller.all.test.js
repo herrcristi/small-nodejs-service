@@ -11,6 +11,7 @@ const SchedulesConstants = require('../../../services/schedules/schedules.consta
 const SchedulesService = require('../../../services/schedules/schedules.service.js');
 const RestApiUtils = require('../../../core/utils/rest-api.utils.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
+const RestCommunicationsUtils = require('../../../core/utils/rest-communications.utils.js');
 
 describe('Schedules Controller', function () {
   const _ctx = { tenantID: 'school-univ1', reqID: 'testReq', lang: 'en', service: 'Service' };
@@ -21,6 +22,10 @@ describe('Schedules Controller', function () {
     sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
       return { status: 200, value: { userID: 'user.id', username: 'user.email' } };
+    });
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: {} };
     });
   });
 
@@ -75,7 +80,7 @@ describe('Schedules Controller', function () {
     const testSchedules = _.cloneDeep(TestConstants.Schedules);
 
     // stub
-    sinon.restore();
+    sinon.restore(); // restore validation
     let stubValidate = sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
       return { status: 401, error: { message: 'Test error message', error: new Error('Test error').toString() } };

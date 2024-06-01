@@ -36,7 +36,7 @@ const Private = {
    * config: { serviceName, method, path, query?, body?, headers? }
    */
   restCall: async (config, _ctx) => {
-    console.log(`\nRest api call: ${JSON.stringify(config, null, 2)}`);
+    console.log(`\nRest api call: ${JSON.stringify(CommonUtils.protectData(config), null, 2)}`);
 
     let srvConfigUri = Private.Config.rest[config.serviceName];
     if (!srvConfigUri) {
@@ -56,16 +56,18 @@ const Private = {
 
     console.log(`\nCurrent url to call: ${config.method} ${srvUri}`);
 
+    let time = new Date();
+
     // service2service auth
     const s2sData = {
-      ctx: _ctx, // original ctx
+      _ctx, // original ctx
       method: config.method.toUpperCase(),
       url: srvUri,
+      timestamp: time.toISOString(),
     };
     const s2sToken = JwtUtils.encrypt(s2sData, Private.Config.issuer, _ctx, Private.Config.s2sPass);
 
     // call axios
-    let time = new Date();
     try {
       let r = await axios({
         method: config.method,
@@ -138,6 +140,42 @@ const Public = {
    */
   restCall: async (config, _ctx) => {
     return await Private.restCall(config, _ctx);
+  },
+
+  /**
+   * rest call validation for s2s token
+   */
+  restValidation: (s2sToken, _ctx) => {
+    // decode
+    const rs = JwtUtils.decrypt(s2sToken, Private.Config.issuer, _ctx, [Private.Config.s2sPass]);
+    if (rs.error) {
+      return rs;
+    }
+
+    // check expiration
+    const s2sData = rs.value;
+    const expiredTime = new Date(s2sData.timestamp).getTime() + 60 * 1000; /*1m*/
+    if (expiredTime < new Date().getTime()) {
+      const msg = 'Token is expired';
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
+
+    _ctx.initialMethod = s2sData._ctx.initialMethod || s2sData._ctx.reqMethod;
+    _ctx.initialUrl = s2sData._ctx.initialUrl || s2sData._ctx.reqUrl;
+    _ctx.callerMethod = s2sData._ctx.reqMethod;
+    _ctx.callerUrl = s2sData._ctx.reqUrl;
+
+    // some properties should be kept from original request
+    _ctx.tenantID = s2sData._ctx.tenantID;
+    _ctx.reqID = s2sData._ctx.reqID;
+    _ctx.lang = s2sData._ctx.lang;
+    _ctx.ipAddress = s2sData._ctx.ipAddress;
+    _ctx.userID = s2sData._ctx.userID;
+    _ctx.username = s2sData._ctx.username;
+
+    console.log('\nS2S received call', _ctx);
+
+    return { status: 200, value: s2sData };
   },
 
   /**

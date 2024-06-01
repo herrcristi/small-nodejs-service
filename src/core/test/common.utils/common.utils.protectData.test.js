@@ -30,7 +30,10 @@ describe('Common Utils', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(res).to.deep.equal({ name: 'user' });
+    chai.expect(res).to.deep.equal({
+      name: 'user',
+      password: '***',
+    });
 
     data = {
       name: 'user',
@@ -46,7 +49,14 @@ describe('Common Utils', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(res).to.deep.equal({ name: 'user', set: { name: 'user1' } });
+    chai.expect(res).to.deep.equal({
+      name: 'user',
+      password: '***',
+      set: {
+        name: 'user1',
+        password: '***',
+      },
+    });
   }).timeout(10000);
 
   /**

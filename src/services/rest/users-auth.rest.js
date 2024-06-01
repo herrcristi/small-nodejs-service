@@ -44,8 +44,9 @@ const Public = {
    * invite
    * objInfo: { email, school: { role } } - schoolID is _ctx.tenantID
    */
-  invite: async (objInfo, _ctx) => {
-    const config = { serviceName: UsersAuthConstants.ServiceName, method: 'POST', path: '/invite', body: objInfo };
+  invite: async (objID, objInfo, _ctx) => {
+    const path = `/${objID}/invite`;
+    const config = { serviceName: UsersAuthConstants.ServiceName, method: 'POST', path, body: objInfo };
     return await RestCommsUtils.call(config, _ctx);
   },
 

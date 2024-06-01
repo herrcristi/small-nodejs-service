@@ -47,11 +47,17 @@ const Public = {
 
     try {
       console.log(
-        `\n${_ctx.serviceName}: Invite called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+        `\n${_ctx.serviceName}: Invite called, param ${JSON.stringify(
+          CommonUtils.protectData(req.params),
+          null,
+          2
+        )}, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
 
+      const objID = req.params.id;
+
       // invite (is a separate service)
-      const r = await UsersAuthSignupService.invite(req.body, _ctx);
+      const r = await UsersAuthSignupService.invite(objID, req.body, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
