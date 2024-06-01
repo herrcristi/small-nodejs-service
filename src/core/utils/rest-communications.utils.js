@@ -56,17 +56,18 @@ const Private = {
 
     console.log(`\nCurrent url to call: ${config.method} ${srvUri}`);
 
+    let time = new Date();
+
     // service2service auth
     const s2sData = {
-      _ctx: _ctx, // original ctx
+      _ctx, // original ctx
       method: config.method.toUpperCase(),
       url: srvUri,
-      timestamp: new Date().toISOString(),
+      timestamp: time.toISOString(),
     };
     const s2sToken = JwtUtils.encrypt(s2sData, Private.Config.issuer, _ctx, Private.Config.s2sPass);
 
     // call axios
-    let time = new Date();
     try {
       let r = await axios({
         method: config.method,
@@ -153,7 +154,8 @@ const Public = {
 
     // check expiration
     const s2sData = rs.value;
-    if (new Date(s2sData.timestamp).getTime() >= new Date().getTime() + 60 * 1000 /*1m*/) {
+    const expiredTime = new Date(s2sData.timestamp).getTime() + 60 * 1000; /*1m*/
+    if (expiredTime < new Date().getTime()) {
       const msg = 'Token is expired';
       return { status: 401, error: { message: msg, error: new Error(msg) } };
     }
@@ -173,7 +175,7 @@ const Public = {
 
     console.log('\nS2S received call', _ctx);
 
-    return { status: 200, value: true };
+    return { status: 200, value: s2sData };
   },
 
   /**

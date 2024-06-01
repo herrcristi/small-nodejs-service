@@ -8,12 +8,16 @@ const JwtUtils = require('../../utils/jwt.utils.js');
 
 describe('Jwt Utils', function () {
   const issuer = 'init';
+  let clock = null;
 
   before(async function () {});
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    clock = sinon.useFakeTimers();
+  });
 
   afterEach(async function () {
+    clock.restore();
     sinon.restore();
   });
 
@@ -23,9 +27,6 @@ describe('Jwt Utils', function () {
    * init with success
    */
   it('should init with success', async () => {
-    // stub
-    const clock = sinon.useFakeTimers();
-
     const time = new Date();
 
     const one_day = 24 * 60 * 60 * 1000;
