@@ -177,13 +177,18 @@ describe('Users Auth Controller', function () {
   }).timeout(10000);
 
   /**
-   * token validate with success
+   * s2s + token validate with success
    */
-  it('should token validate with success', async () => {
+  it('should s2s+token validate with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersToken);
     const testUser = testUsers[0];
 
     // stub
+    let stubRest = sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: {} };
+    });
+
     let stubService = sinon.stub(UsersAuthService, 'validate').callsFake(() => {
       console.log(`\nUsersAuthService.validate called\n`);
       return {
@@ -201,6 +206,7 @@ describe('Users Auth Controller', function () {
 
     // check
     chai.expect(res.status).to.equal(201);
+    chai.expect(stubRest.callCount).to.equal(1);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
       ...testUser,
@@ -208,13 +214,142 @@ describe('Users Auth Controller', function () {
   }).timeout(10000);
 
   /**
-   * token validate fail
+   * s2s middleware validate fail
    */
-  it('should token validate fail', async () => {
+  it('should s2s middleware validate fail', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersToken);
     const testUser = testUsers[0];
 
     // stub
+    let stubRest = sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 401, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(401);
+    chai.expect(stubRest.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('Request is not authorized');
+    chai.expect(res.body.error).to.include('Test error');
+  }).timeout(10000);
+
+  /**
+   * s2s middleware validate fail exception
+   */
+  it('should s2s middleware validate fail exception', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersToken);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubRest = sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubRest.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * token middleware validate fail
+   */
+  it('should token middleware validate fail', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersToken);
+    const testUser = testUsers[0];
+
+    // stub
+    sinon.restore(); // restore validation
+
+    let stubRest = sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: {} };
+    });
+
+    let stubService = sinon.stub(UsersAuthRest, 'validate').callsFake(() => {
+      console.log(`\UsersAuthRest.validate called\n`);
+      return { status: 401, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .post(`${UsersAuthConstants.ApiPath}/logout`)
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(401);
+    chai.expect(stubRest.callCount).to.equal(0);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('Request is not authorized');
+    chai.expect(res.body.error).to.include('Test error');
+  }).timeout(10000);
+
+  /**
+   * token middleware validate fail exception
+   */
+  it('should token middleware validate fail exception', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersToken);
+    const testUser = testUsers[0];
+
+    // stub
+    sinon.restore(); // restore validation
+
+    let stubRest = sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: {} };
+    });
+
+    let stubService = sinon.stub(UsersAuthRest, 'validate').callsFake(() => {
+      console.log(`\nUsersAuthRest.validate called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .post(`${UsersAuthConstants.ApiPath}/logout`)
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubRest.callCount).to.equal(0);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * token service validate fail
+   */
+  it('should token service validate fail', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersToken);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubRest = sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: {} };
+    });
+
     let stubService = sinon.stub(UsersAuthService, 'validate').callsFake(() => {
       console.log(`\nUsersAuthService.validate called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
@@ -229,18 +364,26 @@ describe('Users Auth Controller', function () {
 
     // check
     chai.expect(res.status).to.equal(400);
+    chai.expect(stubRest.callCount).to.equal(1);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
 
   /**
-   * token validate fail exception
+   * token service validate fail exception
    */
-  it('should token validate fail exception', async () => {
+  it('should token service validate fail exception', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersToken);
     const testUser = testUsers[0];
 
     // stub
+    sinon.restore(); // restore validation
+
+    let stubRest = sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: {} };
+    });
+
     let stubService = sinon.stub(UsersAuthService, 'validate').callsFake(() => {
       console.log(`\nUsersAuthService.validate called\n`);
       throw new Error('Test error message');
@@ -255,6 +398,7 @@ describe('Users Auth Controller', function () {
 
     // check
     chai.expect(res.status).to.equal(500);
+    chai.expect(stubRest.callCount).to.equal(1);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body.message).to.include('An unknown error has occured');
     chai.expect(res.body.error).to.include('Test error message');
