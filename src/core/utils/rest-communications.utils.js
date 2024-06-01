@@ -36,7 +36,7 @@ const Private = {
    * config: { serviceName, method, path, query?, body?, headers? }
    */
   restCall: async (config, _ctx) => {
-    console.log(`\nRest api call: ${JSON.stringify(config, null, 2)}`);
+    console.log(`\nRest api call: ${JSON.stringify(CommonUtils.protectData(config), null, 2)}`);
 
     let srvConfigUri = Private.Config.rest[config.serviceName];
     if (!srvConfigUri) {
@@ -160,10 +160,10 @@ const Public = {
       return { status: 401, error: { message: msg, error: new Error(msg) } };
     }
 
-    _ctx.initialMethod = s2sData._ctx.initialMethod || s2sData._ctx.method;
-    _ctx.initialUrl = s2sData._ctx.initialUrl || s2sData._ctx.url;
-    _ctx.callerMethod = s2sData._ctx.method;
-    _ctx.callerUrl = s2sData._ctx.url;
+    _ctx.initialMethod = s2sData._ctx.initialMethod || s2sData._ctx.reqMethod;
+    _ctx.initialUrl = s2sData._ctx.initialUrl || s2sData._ctx.reqUrl;
+    _ctx.callerMethod = s2sData._ctx.reqMethod;
+    _ctx.callerUrl = s2sData._ctx.reqUrl;
 
     // some properties should be kept from original request
     _ctx.tenantID = s2sData._ctx.tenantID;

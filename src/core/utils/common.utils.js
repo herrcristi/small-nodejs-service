@@ -136,13 +136,17 @@ const Public = {
     }
 
     let newObj = { ...obj };
-    delete newObj.password;
-    delete newObj.newPassword;
-    delete newObj.oldPassword;
-    delete newObj.salt;
 
-    if (newObj.set) {
-      newObj.set = Public.protectData(newObj.set);
+    for (const field of ['password', 'salt', 'newPassword', 'oldPassword', 'cookie', 'x-s2s-token']) {
+      if (newObj[field]) {
+        newObj[field] = '***';
+      }
+    }
+
+    for (const field of ['set', 'headers']) {
+      if (newObj[field]) {
+        newObj[field] = Public.protectData(newObj[field]);
+      }
     }
 
     return newObj;
