@@ -90,7 +90,7 @@ describe('Schools Functional', function () {
 
     sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
       console.log(`\nRestCommunicationsUtils.restValidation called`);
-      return { status: 200, value: true };
+      return { status: 200, value: {} };
     });
 
     // call
@@ -127,7 +127,7 @@ describe('Schools Functional', function () {
 
     sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
       console.log(`\nRestCommunicationsUtils.restValidation called`);
-      return { status: 200, value: true };
+      return { status: 200, value: {} };
     });
 
     // call
