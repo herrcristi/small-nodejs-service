@@ -143,7 +143,7 @@ const Public = {
       }
     }
 
-    for (const field of ['set', 'headers']) {
+    for (const field of ['set', 'body', 'headers']) {
       if (newObj[field]) {
         newObj[field] = Public.protectData(newObj[field]);
       }
