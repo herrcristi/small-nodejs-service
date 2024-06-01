@@ -62,7 +62,6 @@ describe('Rest Communications Utils', function () {
 
       const rv = RestCommsUtils.restValidation(s2sToken, { ..._ctx });
       console.log(`\ns2s validation returned: ${JSON.stringify(rv, null, 2)}`);
-      console.log(rv.value);
       chai.expect(rv).to.deep.equal({
         status: 200,
         value: {
