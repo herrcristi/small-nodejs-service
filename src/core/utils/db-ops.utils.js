@@ -23,6 +23,45 @@ const Utils = {
       time: new Date() - time /*milliseconds*/,
     };
   },
+
+  /**
+   * get references fields (filter and update) to be used in updateMany
+   */
+  getReferencesUpdateMany: (referenceFieldName, objInfo, _ctx) => {
+    // examples of fieldName:
+    // user, schools[], schedules[].location, etc
+
+    // process fields in reverse order
+    const fields = referenceFieldName.split('.').reverse();
+
+    const filterFields = ['id'];
+    const updateFields = [];
+    const arrayFilters = [];
+
+    for (const field of fields) {
+      const isArray = field.includes('[]');
+      if (isArray) {
+        const fieldSimple = field.replace('[]', '');
+        filterFields.push(fieldSimple);
+        updateFields.push(`${fieldSimple}.$[${fieldSimple}]`);
+
+        const arrayFieldName = [...filterFields].reverse().join('.');
+        arrayFilters.push({ [arrayFieldName]: objInfo.id });
+      } else {
+        filterFields.push(field);
+        updateFields.push(field);
+      }
+    }
+    filterFields.reverse();
+    updateFields.reverse();
+    arrayFilters.reverse();
+
+    return {
+      filterField: filterFields.join('.'),
+      updateField: updateFields.join('.'),
+      arrayFilters,
+    };
+  },
 };
 
 const Public = {
@@ -72,7 +111,7 @@ const Public = {
     const logFilter = JSON.stringify(filter, CommonUtils.stringifyFilter, 2);
 
     try {
-      const count = await config.collection.count(filter.filter);
+      const count = await config.collection.countDocuments(filter.filter);
 
       console.log(
         `\nDB Calling: ${
@@ -354,65 +393,80 @@ const Public = {
   },
 
   /**
-   * references update many
+   * references add many
    * config: { serviceName, collection }
-   * ref: { fieldName, isArray }
+   * ref: { fieldName }
    * return: { status, value } or { status, error: { message, error } }
    */
-  addManyReferences: async (config, targetIDs, ref, objInfo, _ctx) => {
+  addManyReferences: async (config, targetsIDs, ref, objInfo, _ctx) => {
     const time = new Date();
 
     try {
-      const filterField = `${ref.fieldName}.id`;
-      const fieldName = ref.fieldName;
+      // examples of fieldName: user, schools[]
+      // !!! this function does not work for inner arrays like this schedules[].location (only last field is ok to be array)
+      // otherwise objinfo must include info about the inner arrays and filters must be constructed with elemMatch and same for arrayFilters
+
+      const lastFieldIsArray = ref.fieldName.slice(-2) == '[]';
+
+      // remove [] from last field
+      const refFieldName = lastFieldIsArray ? ref.fieldName.slice(0, -2) : ref.fieldName;
+      const { filterField, updateField } = Utils.getReferencesUpdateMany(refFieldName, objInfo, _ctx);
+
+      const filters = { id: { $in: targetsIDs } };
+      const arrayFilters = [];
 
       let setObj = {};
       for (const key in objInfo) {
-        const setKey = `${fieldName}.${key}`;
-        setObj[setKey] = objInfo[key];
+        setObj[`${updateField}.${key}`] = objInfo[key]; // schools.id: ..
       }
 
       // update obj
       let r = null;
-      if (ref.isArray) {
+      if (lastFieldIsArray) {
         // add to array
         r = await config.collection.updateMany(
           {
-            id: { $in: targetIDs },
-            [filterField]: { $nin: [objInfo.id] },
+            ...filters,
+            [filterField]: { $nin: [objInfo.id] }, // schools.id: ...
           },
           {
             $push: {
-              [fieldName]: objInfo,
+              [updateField]: objInfo, // schools: ...
             },
             $set: {
-              lastModifiedTimestamp: new Date(),
+              lastModifiedTimestamp: new Date().toISOString(),
             },
             $inc: {
               modifiedCount: 1,
             },
+          },
+          {
+            arrayFilters,
           }
         );
       } else {
         r = await config.collection.updateMany(
           {
-            id: { $in: targetIDs },
+            ...filters,
           },
           {
             $set: {
               ...setObj,
-              lastModifiedTimestamp: new Date(),
+              lastModifiedTimestamp: new Date().toISOString(),
             },
             $inc: {
               modifiedCount: 1,
             },
+          },
+          {
+            arrayFilters,
           }
         );
       }
 
       console.log(
         `\nDB Calling: ${config.serviceName} addManyReferences for field '${ref.fieldName}' for ids ${JSON.stringify(
-          targetIDs
+          filters
         )} with info ${JSON.stringify(objInfo)} returned ${JSON.stringify(r, null, 2)}. Finished in ${
           new Date() - time
         } ms`
@@ -423,7 +477,7 @@ const Public = {
       console.log(
         `\nDB Calling Failed: ${config.serviceName} addManyReferences for field '${
           ref.fieldName
-        }' for ids ${JSON.stringify(targetIDs)} with info ${JSON.stringify(objInfo)}. Error ${CommonUtils.getLogError(
+        }' for ids ${JSON.stringify(targetsIDs)} with info ${JSON.stringify(objInfo)}. Error ${CommonUtils.getLogError(
           e
         )}. Finished in ${new Date() - time} ms`
       );
@@ -434,35 +488,38 @@ const Public = {
   /**
    * references update many
    * config: { serviceName, collection }
-   * ref: { fieldName, isArray }
+   * ref: { fieldName }
    * return: { status, value } or { status, error: { message, error } }
    */
   updateManyReferences: async (config, ref, objInfo, _ctx) => {
     const time = new Date();
 
     try {
-      const filterField = `${ref.fieldName}.id`;
-      // if array set fieldName.$.field = objInfo.field
-      const fieldName = ref.isArray ? `${ref.fieldName}.$` : ref.fieldName;
+      // examples of fieldName:
+      // user, schools[], schedules[].location, etc
+      const { filterField, updateField, arrayFilters } = Utils.getReferencesUpdateMany(ref.fieldName, objInfo, _ctx);
+
       let setObj = {};
       for (const key in objInfo) {
-        const setKey = `${fieldName}.${key}`;
-        setObj[setKey] = objInfo[key];
+        setObj[`${updateField}.${key}`] = objInfo[key]; // schedules.$[schedules].location.id: ...
       }
 
       // update obj
       const r = await config.collection.updateMany(
-        { [filterField]: objInfo.id },
+        { [filterField]: objInfo.id }, // schedules.location.id: ...
         {
           $set: {
             ...setObj,
-            lastModifiedTimestamp: new Date(),
+            lastModifiedTimestamp: new Date().toISOString(),
           },
           $inc: {
             modifiedCount: 1,
           },
+        },
+        {
+          arrayFilters, // [{ schedules.location.id: '...' }]
+          //explain: 'executionStats'
         }
-        // {explain: 'executionStats'}
       );
 
       console.log(
@@ -487,55 +544,68 @@ const Public = {
   /**
    * references delete many
    * config: { serviceName, collection }
-   * ref: { fieldName, isArray }
+   * ref: { fieldName }
    * return: { status, value } or { status, error: { message, error } }
    */
   deleteManyReferences: async (config, ref, objInfo, _ctx) => {
     const time = new Date();
 
     try {
-      const filterField = `${ref.fieldName}.id`;
-      const fieldName = ref.fieldName;
+      // examples of fieldName:
+      // user, schools[], schedules[].location, etc
+
+      const lastFieldIsArray = ref.fieldName.slice(-2) == '[]';
+
+      // remove [] from last field
+      const refFieldName = lastFieldIsArray ? ref.fieldName.slice(0, -2) : ref.fieldName;
+      const { filterField, updateField, arrayFilters } = Utils.getReferencesUpdateMany(refFieldName, objInfo, _ctx);
 
       let setObj = {};
       let setProps = {};
       for (const key in objInfo) {
-        const setKey = `${fieldName}.${key}`;
-        if (key !== 'id') {
-          setObj[setKey] = objInfo[key];
-          setProps[setKey] = 1;
+        if (key === 'id') {
+          continue;
         }
+        const setKey = `${updateField}.${key}`; // schedules.$[schedules].location.name: ...
+        setObj[setKey] = objInfo[key];
+        setProps[setKey] = 1;
       }
 
       // update obj
       let r = null;
-      if (ref.isArray) {
+      if (lastFieldIsArray) {
         // remove from array
         r = await config.collection.updateMany(
-          { [filterField]: objInfo.id },
+          { [filterField]: objInfo.id }, // schedules.location.id: ...
           {
             $pull: {
-              [fieldName]: { id: objInfo.id },
+              [updateField]: { id: objInfo.id }, //  schedules.$[schedules].location: ...
             },
             $set: {
-              lastModifiedTimestamp: new Date(),
+              lastModifiedTimestamp: new Date().toISOString(),
             },
             $inc: {
               modifiedCount: 1,
             },
+          },
+          {
+            arrayFilters, // [{ schedules.location.id: '...' }]
           }
         );
       } else {
         r = await config.collection.updateMany(
-          { [filterField]: objInfo.id },
+          { [filterField]: objInfo.id }, // schedules.location.id: ...
           {
-            $unset: setProps,
+            $unset: setProps, //  schedules.$[schedules].location.name ....
             $set: {
-              lastModifiedTimestamp: new Date(),
+              lastModifiedTimestamp: new Date().toISOString(),
             },
             $inc: {
               modifiedCount: 1,
             },
+          },
+          {
+            arrayFilters, // [{ schedules.location.id: '...' }]
           }
         );
       }

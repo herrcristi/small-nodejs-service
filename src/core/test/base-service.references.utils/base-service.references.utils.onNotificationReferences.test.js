@@ -17,7 +17,6 @@ describe('Base Service', function () {
       {
         fieldName: 'target',
         service: { getAllByIDs: () => {}, Constants: { ServiceName: 'serviceRef' } },
-        isArray: false,
         projection: null /*default*/,
       },
     ],
@@ -128,16 +127,12 @@ describe('Base Service', function () {
     };
 
     // stub
-    let stubDB = sinon.stub(DbOpsUtils, 'addManyReferences').callsFake((config, targetIDs, ref, obj) => {
+    let stubDB = sinon.stub(DbOpsUtils, 'addManyReferences').callsFake((config, targetsIDs, ref, obj) => {
       console.log(
-        `\nDbOpsUtils.addManyReferences service called with ref ${JSON.stringify(ref)}, ids ${JSON.stringify(
-          targetIDs,
-          null,
-          2
-        )} and obj ${JSON.stringify(obj, null, 2)}`
+        `\nDbOpsUtils.addManyReferences service called with ${JSON.stringify({ ref, targetsIDs, obj }, null, 2)}`
       );
-      chai.expect(targetIDs).to.deep.equal(['targetID']);
-      chai.expect(ref).to.deep.include({ fieldName: 'target', isArray: false });
+      chai.expect(targetsIDs).to.deep.equal(['targetID']);
+      chai.expect(ref).to.deep.include({ fieldName: 'target' });
       chai.expect(obj).to.deep.equal({ id: 'id1', name: 'name1' });
 
       return {
@@ -174,16 +169,12 @@ describe('Base Service', function () {
     };
 
     // stub
-    let stubDB = sinon.stub(DbOpsUtils, 'addManyReferences').callsFake((config, targetIDs, ref, obj) => {
+    let stubDB = sinon.stub(DbOpsUtils, 'addManyReferences').callsFake((config, targetsIDs, ref, obj) => {
       console.log(
-        `\nDbOpsUtils.addManyReferences service called with ref ${JSON.stringify(ref)}, ids ${JSON.stringify(
-          targetIDs,
-          null,
-          2
-        )} and obj ${JSON.stringify(obj, null, 2)}`
+        `\nDbOpsUtils.addManyReferences service called with ${JSON.stringify({ ref, targetsIDs, obj }, null, 2)}`
       );
-      chai.expect(targetIDs).to.deep.equal(['targetID']);
-      chai.expect(ref).to.deep.include({ fieldName: 'target', isArray: false });
+      chai.expect(targetsIDs).to.deep.equal(['targetID']);
+      chai.expect(ref).to.deep.include({ fieldName: 'target' });
       chai.expect(obj).to.deep.equal({ id: 'id1', name: 'name1' });
 
       return {
@@ -220,16 +211,12 @@ describe('Base Service', function () {
     };
 
     // stub
-    let stubDB = sinon.stub(DbOpsUtils, 'addManyReferences').callsFake((config, targetIDs, ref, obj) => {
+    let stubDB = sinon.stub(DbOpsUtils, 'addManyReferences').callsFake((config, targetsIDs, ref, obj) => {
       console.log(
-        `\nDbOpsUtils.addManyReferences service called with ref ${JSON.stringify(ref)}, ids ${JSON.stringify(
-          targetIDs,
-          null,
-          2
-        )} and obj ${JSON.stringify(obj, null, 2)}`
+        `\nDbOpsUtils.addManyReferences service called with ${JSON.stringify({ ref, targetsIDs, obj }, null, 2)}`
       );
-      chai.expect(targetIDs).to.deep.equal([]);
-      chai.expect(ref).to.deep.include({ fieldName: 'target', isArray: false });
+      chai.expect(targetsIDs).to.deep.equal([]);
+      chai.expect(ref).to.deep.include({ fieldName: 'target' });
       chai.expect(obj).to.deep.equal({ id: 'id1', name: 'name1' });
 
       return {
@@ -266,13 +253,9 @@ describe('Base Service', function () {
     };
 
     // stub
-    let stubDB = sinon.stub(DbOpsUtils, 'addManyReferences').callsFake((config, targetIDs, ref, obj) => {
+    let stubDB = sinon.stub(DbOpsUtils, 'addManyReferences').callsFake((config, targetsIDs, ref, obj) => {
       console.log(
-        `\nDbOpsUtils.addManyReferences service called with ref ${JSON.stringify(ref)}, ids ${JSON.stringify(
-          targetIDs,
-          null,
-          2
-        )} and obj ${JSON.stringify(obj, null, 2)}`
+        `\nDbOpsUtils.addManyReferences service called with ${JSON.stringify({ ref, targetsIDs, obj }, null, 2)}`
       );
       return {
         error: { message: 'Test error message', error: new Error('Test error').toString() },
@@ -313,7 +296,7 @@ describe('Base Service', function () {
           obj
         )}`
       );
-      chai.expect(ref).to.deep.include({ fieldName: 'target', isArray: false });
+      chai.expect(ref).to.deep.include({ fieldName: 'target' });
       chai.expect(obj).to.deep.equal({ id: 'id1', name: 'name1' });
 
       return {
@@ -393,7 +376,7 @@ describe('Base Service', function () {
           obj
         )}`
       );
-      chai.expect(ref).to.deep.include({ fieldName: 'target', isArray: false });
+      chai.expect(ref).to.deep.include({ fieldName: 'target' });
       chai.expect(obj).to.deep.equal({ id: 'id1', name: 'name1' });
 
       return {

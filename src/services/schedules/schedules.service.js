@@ -117,31 +117,26 @@ const Private = {
         {
           fieldName: 'class',
           service: ClassesRest,
-          isArray: false,
           projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
         },
         {
-          fieldName: 'schedules.location', // TODO
+          fieldName: 'schedules[].location',
           service: LocationsRest,
-          isArray: false,
           projection: { id: 1, name: 1, type: 1, status: 1, address: 1 },
         },
         {
-          fieldName: 'professors',
+          fieldName: 'professors[]',
           service: ProfessorsRest,
-          isArray: true,
           projection: { id: 1, name: 1, type: 1, status: 1, user: 1 },
         },
         {
-          fieldName: 'groups',
+          fieldName: 'groups[]',
           service: GroupsRest,
-          isArray: true,
           projection: { id: 1, name: 1, type: 1, status: 1, students: 1 },
         },
         {
-          fieldName: 'students',
+          fieldName: 'students[]',
           service: StudentsRest,
-          isArray: true,
           projection: { id: 1, name: 1, type: 1, status: 1, user: 1 },
         },
       ],

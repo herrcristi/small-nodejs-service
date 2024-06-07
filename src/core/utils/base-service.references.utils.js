@@ -117,10 +117,10 @@ const Utils = {
 const Public = {
   /**
    * populate the field by getting the detail info via rest
-   * config: {fieldName, service, isArray, projection}
+   * config: {fieldName, service, projection}
    */
   populate: async (configRef, objs, _ctx) => {
-    const fieldsPath = configRef.fieldName.split('.');
+    const fieldsPath = configRef.fieldName.replaceAll('[]', '').split('.');
     // convert to object first
     for (const i in objs) {
       Utils.convertToObject(objs[i], fieldsPath, 0);
@@ -166,7 +166,7 @@ const Public = {
 
   /**
    * populate references
-   * config: { ..., fillReferences, references: [ {fieldName, service, isArray, projection} ] }
+   * config: { ..., fillReferences, references: [ {fieldName, service, projection} ] }
    */
   populateReferences: async (config, obj_objs, _ctx) => {
     if (!config.fillReferences || !Array.isArray(config.references)) {
@@ -209,7 +209,7 @@ const Public = {
 
     let processed = null;
 
-    // configRef: { fieldName, service, isArray, projection }
+    // configRef: { fieldName, service, projection }
     for (const configRef of config.references) {
       if (configRef.service?.Constants?.ServiceName !== notification.serviceName) {
         continue;
@@ -223,6 +223,7 @@ const Public = {
         for (const refObj of notification.added) {
           // changes are applied only if object has an array (of ids or objects with id field)
           // with same name where this is applied
+          // example schedules has { groups } and this will auto add to each group that schedule from the notification
           let targets = refObj[config.serviceName];
           if (targets == null) {
             console.log(
@@ -233,12 +234,12 @@ const Public = {
 
           processed = true;
           targets = Array.isArray(targets) ? targets : [targets]; // make array
-          const targetIDs = targets
+          const targetsIDs = targets
             .map((item) => (typeof item === 'string' ? item : typeof item === 'object' ? item.id : null))
             .filter((item) => item != null);
 
           const projectedValue = CommonUtils.getProjectedObj(refObj, projection);
-          const rn = await DbOpsUtils.addManyReferences(config, targetIDs, configRef, projectedValue, _ctx);
+          const rn = await DbOpsUtils.addManyReferences(config, targetsIDs, configRef, projectedValue, _ctx);
           if (rn.error) {
             return rn;
           }

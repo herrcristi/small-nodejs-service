@@ -28,8 +28,7 @@ describe('DB-Ops Utils', function () {
    */
   it('should addManyReferences with success array', async () => {
     const ref = {
-      fieldName: 'schools',
-      isArray: true,
+      fieldName: 'schools[]',
     };
 
     let objInfo = {
@@ -38,9 +37,8 @@ describe('DB-Ops Utils', function () {
     };
 
     let collection = {};
-    collection.updateMany = sinon.stub().callsFake((filter, op) => {
-      console.log(`\nCurrent filter ${JSON.stringify(filter, null, 2)}`);
-      console.log(`\nCurrent op ${JSON.stringify(op, null, 2)}`);
+    collection.updateMany = sinon.stub().callsFake((filter, op, options) => {
+      console.log(`\nCurrent updateMany ${JSON.stringify({ filter, op, options }, null, 2)}`);
 
       chai.expect(filter).to.deep.equal({
         id: { $in: ['targetID'] },
@@ -60,6 +58,10 @@ describe('DB-Ops Utils', function () {
         $inc: {
           modifiedCount: 1,
         },
+      });
+
+      chai.expect(options).to.deep.equal({
+        arrayFilters: [],
       });
 
       return {
@@ -86,7 +88,6 @@ describe('DB-Ops Utils', function () {
   it('should addManyReferences with success non array', async () => {
     const ref = {
       fieldName: 'user',
-      isArray: false,
     };
 
     let objInfo = {
@@ -95,9 +96,8 @@ describe('DB-Ops Utils', function () {
     };
 
     let collection = {};
-    collection.updateMany = sinon.stub().callsFake((filter, op) => {
-      console.log(`\nCurrent filter ${JSON.stringify(filter, null, 2)}`);
-      console.log(`\nCurrent op ${JSON.stringify(op, null, 2)}`);
+    collection.updateMany = sinon.stub().callsFake((filter, op, options) => {
+      console.log(`\nCurrent updateMany ${JSON.stringify({ filter, op, options }, null, 2)}`);
 
       chai.expect(filter).to.deep.equal({
         id: { $in: ['targetID'] },
@@ -112,6 +112,10 @@ describe('DB-Ops Utils', function () {
         $inc: {
           modifiedCount: 1,
         },
+      });
+
+      chai.expect(options).to.deep.equal({
+        arrayFilters: [],
       });
 
       return {
@@ -137,8 +141,7 @@ describe('DB-Ops Utils', function () {
    */
   it('should addManyReferences exception', async () => {
     const ref = {
-      fieldName: 'schools',
-      isArray: true,
+      fieldName: 'schools[]',
     };
 
     let objInfo = {

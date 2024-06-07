@@ -108,9 +108,8 @@ const Private = {
       collection: await UsersDatabase.collection(_ctx),
       references: [
         {
-          fieldName: 'schools',
+          fieldName: 'schools[]',
           service: SchoolsRest,
-          isArray: true,
           projection: null /*default*/,
         },
       ],
