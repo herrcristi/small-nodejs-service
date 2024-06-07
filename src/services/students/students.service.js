@@ -472,7 +472,7 @@ const Public = {
         tenantNotifications[0].notification[Private.Notification.Added] = notification[Private.Notification.Modified];
       }
 
-      // schedules notification -> auto add schedules for students (schedules is not in notification projection so no notification needed)
+      // schedules notification -> auto add schedules for students
       if (
         notification.serviceName === SchedulesRest.Constants?.ServiceName &&
         notification[Private.Notification.Modified]
