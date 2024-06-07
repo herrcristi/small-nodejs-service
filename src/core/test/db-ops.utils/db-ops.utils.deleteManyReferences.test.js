@@ -28,8 +28,7 @@ describe('DB-Ops Utils', function () {
    */
   it('should deleteManyReferences array', async () => {
     const ref = {
-      fieldName: 'schools',
-      isArray: true,
+      fieldName: 'schools[]',
     };
 
     let objInfo = {
@@ -38,23 +37,27 @@ describe('DB-Ops Utils', function () {
     };
 
     let collection = {};
-    collection.updateMany = sinon.stub().callsFake((filter, op) => {
-      console.log(`\nCurrent filter ${JSON.stringify(filter, null, 2)}`);
-      console.log(`\nCurrent op ${JSON.stringify(op, null, 2)}`);
+    collection.updateMany = sinon.stub().callsFake((filter, op, operations) => {
+      console.log(`\nCurrent updateMany ${JSON.stringify({ filter, op, operations }, null, 2)}`);
 
       chai.expect(filter).to.deep.equal({
         'schools.id': 'id1',
       });
 
-      delete op.$set.lastModifiedTimestamp;
       chai.expect(op).to.deep.equal({
         $pull: {
           schools: { id: 'id1' },
         },
-        $set: {},
+        $set: {
+          lastModifiedTimestamp: op.$set.lastModifiedTimestamp,
+        },
         $inc: {
           modifiedCount: 1,
         },
+      });
+
+      chai.expect(operations).to.deep.equal({
+        arrayFilters: [],
       });
 
       return {
@@ -81,7 +84,6 @@ describe('DB-Ops Utils', function () {
   it('should deleteManyReferences non-array', async () => {
     const ref = {
       fieldName: 'user',
-      isArray: false,
     };
 
     let objInfo = {
@@ -90,22 +92,145 @@ describe('DB-Ops Utils', function () {
     };
 
     let collection = {};
-    collection.updateMany = sinon.stub().callsFake((filter, op) => {
-      console.log(`\nCurrent filter ${JSON.stringify(filter, null, 2)}`);
-      console.log(`\nCurrent op ${JSON.stringify(op, null, 2)}`);
+    collection.updateMany = sinon.stub().callsFake((filter, op, operations) => {
+      console.log(`\nCurrent updateMany ${JSON.stringify({ filter, op, operations }, null, 2)}`);
 
       chai.expect(filter).to.deep.equal({
         'user.id': 'id1',
       });
-      delete op.$set.lastModifiedTimestamp;
+
       chai.expect(op).to.deep.equal({
         $unset: {
           'user.name': 1,
         },
-        $set: {},
+        $set: {
+          lastModifiedTimestamp: op.$set.lastModifiedTimestamp,
+        },
         $inc: {
           modifiedCount: 1,
         },
+      });
+
+      chai.expect(operations).to.deep.equal({
+        arrayFilters: [],
+      });
+
+      return {
+        modifiedCount: 1,
+      };
+    });
+
+    // call
+    let res = await DbOpsUtils.deleteManyReferences({ ...config, collection }, ref, objInfo, _ctx);
+    console.error(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    delete res.time;
+
+    // check
+    chai.expect(collection.updateMany.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: 1,
+    });
+  }).timeout(10000);
+
+  /**
+   * deleteManyReferences array with array
+   */
+  it('should deleteManyReferences array with array', async () => {
+    const ref = {
+      fieldName: 'schedules[].locations[]',
+    };
+
+    let objInfo = {
+      id: 'id1',
+      name: 'name',
+    };
+
+    let collection = {};
+    collection.updateMany = sinon.stub().callsFake((filter, op, operations) => {
+      console.log(`\nCurrent updateMany ${JSON.stringify({ filter, op, operations }, null, 2)}`);
+
+      chai.expect(filter).to.deep.equal({
+        'schedules.locations.id': 'id1',
+      });
+
+      chai.expect(op).to.deep.equal({
+        $pull: {
+          'schedules.$[schedules].locations': { id: 'id1' },
+        },
+        $set: {
+          lastModifiedTimestamp: op.$set.lastModifiedTimestamp,
+        },
+        $inc: {
+          modifiedCount: 1,
+        },
+      });
+
+      chai.expect(operations).to.deep.equal({
+        arrayFilters: [
+          {
+            'schedules.locations.id': 'id1',
+          },
+        ],
+      });
+
+      return {
+        modifiedCount: 1,
+      };
+    });
+
+    // call
+    let res = await DbOpsUtils.deleteManyReferences({ ...config, collection }, ref, objInfo, _ctx);
+    console.error(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    delete res.time;
+
+    // check
+    chai.expect(collection.updateMany.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: 1,
+    });
+  }).timeout(10000);
+
+  /**
+   * deleteManyReferences array with non-array
+   */
+  it('should deleteManyReferences array with non-array', async () => {
+    const ref = {
+      fieldName: 'schedules[].location',
+    };
+
+    let objInfo = {
+      id: 'id1',
+      name: 'name',
+    };
+
+    let collection = {};
+    collection.updateMany = sinon.stub().callsFake((filter, op, operations) => {
+      console.log(`\nCurrent updateMany ${JSON.stringify({ filter, op, operations }, null, 2)}`);
+
+      chai.expect(filter).to.deep.equal({
+        'schedules.location.id': 'id1',
+      });
+
+      chai.expect(op).to.deep.equal({
+        $unset: {
+          'schedules.$[schedules].location.name': 1,
+        },
+        $set: {
+          lastModifiedTimestamp: op.$set.lastModifiedTimestamp,
+        },
+        $inc: {
+          modifiedCount: 1,
+        },
+      });
+
+      chai.expect(operations).to.deep.equal({
+        arrayFilters: [
+          {
+            'schedules.location.id': 'id1',
+          },
+        ],
       });
 
       return {
@@ -131,8 +256,7 @@ describe('DB-Ops Utils', function () {
    */
   it('should deleteManyReferences exception', async () => {
     const ref = {
-      fieldName: 'schools',
-      isArray: true,
+      fieldName: 'schools[]',
     };
 
     let objInfo = {

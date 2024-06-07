@@ -32,7 +32,7 @@ describe('Jwt Utils', function () {
       console.log(`\njwt.sign called for ${JSON.stringify({ payload, options }, null, 2)}\n`);
 
       chai.expect(payload).to.deep.equal({ data: { test: 'test' } });
-      chai.expect(options).to.deep.equal({ algorithm: 'HS512', expiresIn: '1d', issuer });
+      chai.expect(options).to.deep.equal({ algorithm: 'HS512', expiresIn: '12h', issuer });
       return 'token';
     });
 

@@ -46,6 +46,12 @@ const Public = {
     await coll?.createIndex({ id: 1 }, { unique: true });
     await coll?.createIndex({ name: 1 }, { unique: true });
 
+    await coll?.createIndex({ 'class.id': 1 }, {});
+    await coll?.createIndex({ 'schedules.location.id': 1 }, {});
+    await coll?.createIndex({ 'groups.id': 1 }, {});
+    await coll?.createIndex({ 'professors.id': 1 }, {});
+    await coll?.createIndex({ 'students.id': 1 }, {});
+
     console.log(`\nIndexes added for ${collName}`);
   },
 };

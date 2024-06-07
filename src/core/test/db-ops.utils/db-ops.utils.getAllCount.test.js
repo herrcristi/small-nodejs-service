@@ -36,7 +36,7 @@ describe('DB-Ops Utils', function () {
     };
 
     let collection = {};
-    collection.count = sinon.stub().returns(5);
+    collection.countDocuments = sinon.stub().returns(5);
 
     // call
     let res = await DbOpsUtils.getAllCount({ ...config, collection }, filter, _ctx);
@@ -44,7 +44,7 @@ describe('DB-Ops Utils', function () {
     delete res.time;
 
     // check
-    chai.expect(collection.count.callCount).to.equal(1);
+    chai.expect(collection.countDocuments.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
       value: 5,
@@ -64,7 +64,7 @@ describe('DB-Ops Utils', function () {
     };
 
     let collection = {};
-    collection.count = sinon.stub().throws('Test exception');
+    collection.countDocuments = sinon.stub().throws('Test exception');
 
     // call
     let res = await DbOpsUtils.getAllCount({ ...config, collection }, filter, _ctx);

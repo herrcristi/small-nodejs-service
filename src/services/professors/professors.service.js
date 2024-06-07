@@ -72,19 +72,16 @@ const Private = {
         {
           fieldName: 'user',
           service: UsersRest,
-          isArray: false,
           projection: { id: 1, name: 1, type: 1, status: 1, email: 1 },
         },
         {
-          fieldName: 'classes',
+          fieldName: 'classes[]',
           service: ClassesRest,
-          isArray: true,
           projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
         },
         {
-          fieldName: 'schedules',
+          fieldName: 'schedules[]',
           service: SchedulesRest,
-          isArray: true,
           projection: { id: 1, name: 1, type: 1, status: 1, class: 1 },
         },
       ],
@@ -492,6 +489,9 @@ const Public = {
       if (r.error) {
         return r;
       }
+
+      // TODO user is in notification projection so trigger notification
+      // (schedules is not in notification projection so no notification needed)
     }
 
     return { status: 200, value: true };

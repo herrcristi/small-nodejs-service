@@ -86,7 +86,7 @@ const Public = {
         data,
       },
       Private.JwtPasswords[issuer].at(-1),
-      { algorithm: 'HS512', expiresIn: '1d', issuer }
+      { algorithm: 'HS512', expiresIn: '12h', issuer }
     );
 
     return { status: 200, value: jwtToken };

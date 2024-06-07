@@ -822,7 +822,7 @@ describe('Database Functional', function () {
       id: 's1',
       name: 'name1',
     };
-    res = await DBOpsUtils.updateManyReferences(config, { fieldName: 'schools', isArray: true }, refInfo, _ctx);
+    res = await DBOpsUtils.updateManyReferences(config, { fieldName: 'schools[]' }, refInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -880,7 +880,7 @@ describe('Database Functional', function () {
       id: 's1',
       name: 'name1',
     };
-    res = await DBOpsUtils.updateManyReferences(config, { fieldName: 'school', isArray: false }, refInfo, _ctx);
+    res = await DBOpsUtils.updateManyReferences(config, { fieldName: 'school' }, refInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -938,7 +938,7 @@ describe('Database Functional', function () {
       id: 's1',
       name: 'name1',
     };
-    res = await DBOpsUtils.deleteManyReferences(config, { fieldName: 'schools', isArray: true }, refInfo, _ctx);
+    res = await DBOpsUtils.deleteManyReferences(config, { fieldName: 'schools[]' }, refInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -992,7 +992,7 @@ describe('Database Functional', function () {
       id: 's1',
       name: 'name1',
     };
-    res = await DBOpsUtils.deleteManyReferences(config, { fieldName: 'school', isArray: false }, refInfo, _ctx);
+    res = await DBOpsUtils.deleteManyReferences(config, { fieldName: 'school' }, refInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

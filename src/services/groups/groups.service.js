@@ -75,15 +75,13 @@ const Private = {
       collection: await GroupsDatabase.collection(_ctx),
       references: [
         {
-          fieldName: 'students',
+          fieldName: 'students[]',
           service: StudentsRest,
-          isArray: true,
           projection: { id: 1, name: 1, type: 1, status: 1, user: 1 },
         },
         {
-          fieldName: 'schedules',
+          fieldName: 'schedules[]',
           service: SchedulesRest,
-          isArray: true,
           projection: { id: 1, name: 1, type: 1, status: 1, class: 1 },
         },
       ],

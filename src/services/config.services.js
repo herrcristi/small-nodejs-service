@@ -149,6 +149,12 @@ const Public = {
       await SchedulesRest.subscribe({ callback: rest.notification, projection });
     }
 
+    // locations
+    for (const rest of [SchedulesRest]) {
+      const projection = { ...notifyProjection, address: 1 };
+      await LocationsRest.subscribe({ callback: rest.notification, projection });
+    }
+
     // init the communication
     const config = {
       issuer: 'SmallApp-Service2Service',
