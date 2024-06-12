@@ -159,6 +159,92 @@ const Public = {
   },
 
   /**
+   * reset password
+   */
+  resetPassword: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersAuthConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Reset password called, body ${JSON.stringify(
+          CommonUtils.protectData(req.body),
+          null,
+          2
+        )}`
+      );
+
+      // reset password
+      const r = await UsersAuthService.resetPassword(req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * reset token validate
+   */
+  validateResetToken: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersAuthConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Reset token validate called, query ${JSON.stringify(
+          CommonUtils.protectData(req.query),
+          null,
+          2
+        )}`
+      );
+
+      // check if reset token is still valid
+      const r = await UsersAuthService.validateResetToken({ token: req.query.token }, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * put reset password using reset token
+   */
+  putResetPassword: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersAuthConstants.ServiceName;
+
+    try {
+      console.log(`\n${_ctx.serviceName}: Put reset password called`);
+
+      const resetToken = req.headers['x-reset-token'];
+
+      // check reset token and reset password
+      const r = await UsersAuthService.putResetPassword(resetToken, req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
    * put password
    */
   putPassword: async (req, res, next) => {

@@ -47,10 +47,10 @@ const Public = {
   /**
    * get the token
    * config: { serviceName }
-   * userInfo: { token }
+   * userInfo: { token, id, userID }
    */
   getToken: async (config, userInfo, _ctx) => {
-    return { status: 200, value: userInfo.token };
+    return { status: 200, value: { token: userInfo.token, data: { id: userInfo.id, userID: userInfo.userID } } };
   },
 
   /**
@@ -107,24 +107,6 @@ const Public = {
    * objInfo: { oldPassword, newPassword }
    */
   putPassword: async (config, objID, objInfo, _ctx) => {
-    return await Public.patchPassword(config, objID, { set: objInfo }, _ctx);
-  },
-
-  /**
-   * put id (email)
-   * config: { serviceName }
-   * objInfo: { id, password }
-   */
-  putID: async (config, objID, objInfo, _ctx) => {
-    return await Public.patchID(config, objID, { set: objInfo }, _ctx);
-  },
-
-  /**
-   * patch password
-   * config: { serviceName }
-   * patchInfo: { set: { oldPassword, newPassword } }
-   */
-  patchPassword: async (config, objID, patchInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
 
     // patch
@@ -138,14 +120,31 @@ const Public = {
   },
 
   /**
-   * patch id (email)
+   * put id (email)
    * config: { serviceName }
-   * patchInfo: { set: { id, password } }
+   * objInfo: { id, password }
    */
-  patchID: async (config, objID, patchInfo, _ctx) => {
+  putID: async (config, objID, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
 
     // patch
+    const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
+    if (r.error) {
+      return r;
+    }
+
+    // success
+    return { id: objID };
+  },
+
+  /**
+   * reset password
+   * config: { serviceName }
+   * objInfo: { id }
+   */
+  resetPassword: async (config, objID, _ctx, resetType) => {
+    await Private.setupConfig(config, _ctx);
+
     const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
     if (r.error) {
       return r;

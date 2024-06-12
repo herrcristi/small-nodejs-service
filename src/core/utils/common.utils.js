@@ -137,7 +137,7 @@ const Public = {
 
     let newObj = { ...obj };
 
-    for (const field of ['password', 'salt', 'newPassword', 'oldPassword', 'cookie', 'x-s2s-token']) {
+    for (const field of ['password', 'salt', 'newPassword', 'oldPassword', 'cookie', 'x-s2s-token', 'token']) {
       if (newObj[field]) {
         newObj[field] = '***';
       }

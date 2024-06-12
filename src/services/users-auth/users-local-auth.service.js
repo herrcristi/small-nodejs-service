@@ -231,6 +231,64 @@ const Public = {
     // success
     return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
   },
+
+  /**
+   * reset password
+   * config: { serviceName }
+   */
+  resetPassword: async (config, objID, _ctx, resetType) => {
+    // { serviceName, collection, notifications.projection }
+    await Private.setupConfig(config, _ctx);
+
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+
+    // check user exists
+    const r = await DbOpsUtils.getOne(config, objID, { ...projection, userID: 1 }, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // create reset token
+    const userInfo = { id: r.value.id, userID: r.value.userID };
+    return Public.getToken(config, userInfo, _ctx);
+  },
+
+  /**
+   * check reset token is valid
+   * config: { serviceName }
+   * objInfo: { token }
+   */
+  validateResetToken: async (config, objInfo, _ctx) => {
+    return Public.validateToken(config, objInfo, _c);
+  },
+
+  /**
+   * check reset token is valid
+   * config: { serviceName }
+   * objInfo: { password }
+   */
+  putResetPassword: async (config, objID, objInfo, _ctx) => {
+    // { serviceName, collection, notifications.projection }
+    await Private.setupConfig(config, _ctx);
+
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+
+    // hash password with new salt
+    const newSalt = Private.genSalt();
+    const passwordPut = {
+      salt: newSalt,
+      password: Private.hashPassword(objInfo.password, newSalt, _ctx),
+    };
+
+    // put
+    const r = await DbOpsUtils.put(config, objID, passwordPut, projection, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // success
+    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+  },
 };
 
 module.exports = {

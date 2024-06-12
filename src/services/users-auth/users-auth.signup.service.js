@@ -25,15 +25,6 @@ const Schema = {
       .email({ tlds: { allow: false } })
       .min(1)
       .max(128),
-    // TODO
-    // password: Joi.string().min(1).max(64),
-    // name: Joi.string().min(1).max(128),
-    // birthday: Joi.date().iso(),
-    // phoneNumber: Joi.string()
-    //   .min(1)
-    //   .max(32)
-    //   .regex(/^(\d|\+|\-|\.|' ')*$/), // allow 0-9 + - . in any order
-    // address: Joi.string().min(1).max(256),
     school: Joi.object().keys({
       name: Joi.string().min(1).max(64).required(),
       description: Joi.string().min(0).max(1024).allow(null),
@@ -243,6 +234,10 @@ const Public = {
       await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
       return rUser;
     }
+
+    // send reset password email (dont fail if this returns error)
+    const resetInfo = { email: objInfo.email };
+    const rr = await UsersAuthRest.resetPassword(resetInfo, _ctx, UsersAuthConstants.ResetTokenType.Invite);
 
     return rUser;
   },
