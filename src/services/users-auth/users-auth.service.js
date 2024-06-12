@@ -725,12 +725,20 @@ const Public = {
     // reset password
     let r;
     if (config.isFirebaseAuth) {
-      r = await UsersAuthServiceFirebase.resetPassword(config, objID, _ctx, resetType);
+      r = await UsersAuthServiceFirebase.resetPassword(config, objID, _ctx);
     } else {
-      r = await UsersAuthServiceLocal.resetPassword(config, objID, _ctx, resetType);
+      r = await UsersAuthServiceLocal.resetPassword(config, objID, _ctx);
     }
     if (r.error) {
       return r;
+    }
+
+    // only for local auth
+    if (!config.isFirebaseAuth) {
+      // encrypt token again
+      r.value = JwtUtils.encrypt(r.value, Private.Issuer, _ctx).value;
+      // send via email
+      await UsersAuthServiceLocal.sendEmail(config, objID, r.value, _ctx, resetType);
     }
 
     // raise event for reset password

@@ -236,7 +236,7 @@ const Public = {
    * reset password
    * config: { serviceName }
    */
-  resetPassword: async (config, objID, _ctx, resetType) => {
+  resetPassword: async (config, objID, _ctx) => {
     // { serviceName, collection, notifications.projection }
     await Private.setupConfig(config, _ctx);
 
@@ -288,6 +288,17 @@ const Public = {
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+  },
+
+  /**
+   * send email
+   * config: { serviceName }
+   */
+  sendEmail: async (config, objID, _ctx, resetType) => {
+    // { serviceName, collection, notifications.projection }
+    await Private.setupConfig(config, _ctx);
+
+    // TODO
   },
 };
 

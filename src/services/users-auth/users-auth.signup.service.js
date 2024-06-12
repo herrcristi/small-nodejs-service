@@ -220,9 +220,11 @@ const Public = {
       _ctx
     );
 
+    let sendInvite;
     if (rUser.status === 404) {
       // the user does not exists -> create
       rUser = await Private.postNewUser(objInfo, _ctx);
+      sendInvite = true;
     } else if (rUser.status === 200) {
       // user already exists, check if already has the school and role
       rUser = await Private.putUserRole(rUser.value, objInfo, _ctx);
@@ -236,8 +238,10 @@ const Public = {
     }
 
     // send reset password email (dont fail if this returns error)
-    const resetInfo = { email: objInfo.email };
-    const rr = await UsersAuthRest.resetPassword(resetInfo, _ctx, UsersAuthConstants.ResetTokenType.Invite);
+    if (sendInvite) {
+      const resetInfo = { email: objInfo.email };
+      const rr = await UsersAuthRest.resetPassword(resetInfo, _ctx, UsersAuthConstants.ResetTokenType.Invite);
+    }
 
     return rUser;
   },
