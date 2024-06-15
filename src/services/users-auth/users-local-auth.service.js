@@ -5,9 +5,11 @@ const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const CommonUtils = require('../../core/utils/common.utils.js');
 const JwtUtils = require('../../core/utils/jwt.utils.js');
+const TranslationsUtils = require('../../core/utils/translations.utils.js');
 
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthDatabase = require('./users-local-auth.database.js');
+const EmailService = require('./email.service.js');
 
 const Private = {
   Issuer: `${UsersAuthConstants.ServiceName}-local`,
@@ -55,6 +57,7 @@ const Public = {
   init: async () => {
     Private.SiteSalt = process.env.SALT;
     await JwtUtils.init(Private.Issuer);
+    await EmailService.init();
   },
 
   /**
@@ -259,7 +262,7 @@ const Public = {
    * objInfo: { token }
    */
   validateResetToken: async (config, objInfo, _ctx) => {
-    return Public.validateToken(config, objInfo, _c);
+    return Public.validateToken(config, objInfo, _ctx);
   },
 
   /**
@@ -294,11 +297,28 @@ const Public = {
    * send email
    * config: { serviceName }
    */
-  sendEmail: async (config, objID, _ctx, resetType) => {
+  sendEmail: async (config, objID, token, _ctx, resetType) => {
     // { serviceName, collection, notifications.projection }
     await Private.setupConfig(config, _ctx);
 
-    // TODO
+    let args = {
+      user: '',
+      school: _ctx.tenantID,
+      appUrl: `${process.env.APP_URL}`,
+      resetUrl: `${process.env.APP_URL}/api/v1/users-auth/reset-token/validate?token=${token}`,
+    };
+
+    if (
+      resetType === UsersAuthConstants.ResetTokenType.Signup ||
+      resetType === UsersAuthConstants.ResetTokenType.Invite
+    ) {
+      // TODO get school name
+    }
+
+    let emailTemplate = TranslationsUtils.email(resetType, _ctx, args);
+
+    // send email
+    /* no await */ EmailService.sendEmail(objID, emailTemplate['en'].subject, emailTemplate['en'].email, _ctx);
   },
 };
 

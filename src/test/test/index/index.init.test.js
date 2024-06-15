@@ -31,8 +31,8 @@ describe('Index', function () {
    */
   it('should init with success', async () => {
     // stub
-    let stubTranslations = sinon.stub(TranslationsUtils, 'initLanguage').callsFake(() => {
-      console.log(`\nTranslationsUtils.initLanguage called`);
+    let stubTranslations = sinon.stub(TranslationsUtils, 'initStrings').callsFake(() => {
+      console.log(`\nTranslationsUtils.initStrings called`);
     });
 
     let stubConfig = sinon.stub(ConfigServices, 'init').callsFake(() => {
@@ -63,8 +63,8 @@ describe('Index', function () {
       console.log(`\nProcess exit called`);
     });
 
-    let stubTranslations = sinon.stub(TranslationsUtils, 'initLanguage').callsFake(() => {
-      console.log(`\nTranslationsUtils.initLanguage throws exception`);
+    let stubTranslations = sinon.stub(TranslationsUtils, 'initStrings').callsFake(() => {
+      console.log(`\nTranslationsUtils.initStrings throws exception`);
       throw new Error('Test');
     });
 

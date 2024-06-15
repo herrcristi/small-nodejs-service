@@ -130,7 +130,8 @@ const Private = {
     Post: 'post',
     Delete: 'delete',
     PutPassword: 'putPassword',
-    PutResetPassword: 'putRestPassword',
+    ResetPassword: 'resetPassword',
+    PutResetPassword: 'putResetPassword',
     PutID: 'putID',
     PatchPassword: 'patchPassword',
     PatchID: 'patchID',
@@ -743,6 +744,7 @@ const Public = {
 
     // raise event for reset password
     const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    const action = Private.Action.ResetPassword;
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, { resetType } /*args*/, _ctx);
 
     // success
@@ -817,7 +819,7 @@ const Public = {
 
     // raise event for put reset password
     const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
-    const action = Constants.Action.PutResetPassword;
+    const action = Private.Action.PutResetPassword;
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, {} /*args*/, _ctx);
 
     // raise a notification for modified obj

@@ -48,7 +48,8 @@ const Public = {
 
       // init language
       for (const lang of Constants.Languages) {
-        await TranslationsUtils.initLanguage(lang, path.resolve(__dirname, `translations/${lang}.json`));
+        await TranslationsUtils.initStrings(lang, path.resolve(__dirname, `translations/${lang}.json`));
+        await TranslationsUtils.initEmails(lang, path.resolve(__dirname, `translations/${lang}.emails.json`));
       }
 
       const port = process.env.PORT;
