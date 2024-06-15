@@ -20,7 +20,7 @@ describe('Translations Utils', function () {
   after(async function () {});
 
   /**
-   * initLangStrings
+   * initStrings
    */
   it('should init Language', async () => {
     let translations = {
@@ -30,10 +30,10 @@ describe('Translations Utils', function () {
     let stub = sinon.stub(fs, 'readFileSync').returns(JSON.stringify(translations));
 
     // call
-    let res = await TranslationsUtils.initLangStrings('en', 'filename', _ctx);
+    let res = await TranslationsUtils.initStrings('en', 'filename', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    res = await TranslationsUtils.initLangStrings('ro', 'filename', _ctx);
+    res = await TranslationsUtils.initStrings('ro', 'filename', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -45,7 +45,7 @@ describe('Translations Utils', function () {
   }).timeout(10000);
 
   /**
-   * fail to initLangStrings
+   * fail to initStrings
    */
   it('should fail to init Language', async () => {
     let translations = {
@@ -57,7 +57,7 @@ describe('Translations Utils', function () {
     });
 
     // call
-    let res = await TranslationsUtils.initLangStrings('en', 'filename', _ctx);
+    let res = await TranslationsUtils.initStrings('en', 'filename', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
