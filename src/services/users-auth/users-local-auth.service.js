@@ -305,7 +305,7 @@ const Public = {
       user: '',
       school: _ctx.tenantID,
       appUrl: `${process.env.APP_URL}`,
-      resetUrl: `${process.env.APP_URL}/api/v1/users-auth/reset-token/validate?token=${token}`,
+      resetUrl: `${process.env.APP_URL}/api/v1/users-auth/reset-token/validate?&type=${resetType}&token=${token}`,
     };
 
     if (
