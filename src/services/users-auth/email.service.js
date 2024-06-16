@@ -2,7 +2,7 @@
  * Users service
  */
 const mailer = require('nodemailer');
-const commonUtils = require('../../core/utils/common.utils');
+const CommonUtils = require('../../core/utils/common.utils');
 
 const Private = {
   // will be initialized on init
@@ -53,7 +53,7 @@ const Public = {
         html: body,
       };
 
-      if (commonUtils.isDebug()) {
+      if (CommonUtils.isDebug()) {
         msg.to = msg.from;
       }
 
