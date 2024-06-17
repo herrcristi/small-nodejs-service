@@ -47,10 +47,7 @@ const Schema = {
 };
 
 const Validators = {
-  Signup: Schema.Signup.fork(
-    ['email' /* 'password', 'name', 'birthday', 'address' */],
-    (x) => x.required() /*make required */
-  ),
+  Signup: Schema.Signup.fork(['email'], (x) => x.required() /*make required */),
 
   Invite: Schema.Invite.fork(['email'], (x) => x.required() /*make required */),
 };
