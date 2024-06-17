@@ -102,9 +102,9 @@ const Public = {
     let r = {};
     for (const lang in Private.Emails) {
       const lval = val?.toLowerCase();
-      r[lang] = Private.Emails[lang][lval] || Private.Emails['en'][lval] || {};
+      r[lang] = Private.Emails[lang][lval] || Private.Emails['en'][lval] || null;
       // expand subject, email
-      for (const key in r[lang]) {
+      for (const key in r[lang] || {}) {
         r[lang][key] = Private.expandArgs(r[lang][key], args, _ctx);
       }
     }

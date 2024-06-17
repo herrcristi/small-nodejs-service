@@ -2,6 +2,7 @@
  * Called by mocha
  */
 const sinon = require('sinon');
+const mailer = require('nodemailer');
 
 const TestUtils = require('../core/utils/test.utils.js');
 
@@ -27,7 +28,6 @@ exports.mochaHooks = {
       console.log('\ncurrent env TEST_DB', process.env.TEST_DB);
 
       // init service
-      const service = require('../index.js');
       const DBMgr = require('../core/utils/database-manager.utils.js');
 
       if (!process.env.TEST_DB) {
@@ -37,6 +37,17 @@ exports.mochaHooks = {
         });
       }
 
+      // stub mailer
+      sinon.stub(mailer, 'createTransport').returns({
+        verify: async () => {
+          return true;
+        },
+        sendEmail: async () => {
+          return true;
+        },
+      });
+
+      const service = require('../index.js');
       const fnDone = () => {
         service.event.off('inited', fnDone);
         done();
