@@ -12,6 +12,7 @@ require('./users-auth.signup.controller.all.test.js');
 require('./users-auth.rest.test.js');
 
 // service tests
+require('./emails.service.all.test.js');
 require('./users-auth.service.all.test.js');
 require('./users-auth.signup.service.all.test.js');
 

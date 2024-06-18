@@ -9,7 +9,7 @@ const TranslationsUtils = require('../../core/utils/translations.utils.js');
 
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthDatabase = require('./users-local-auth.database.js');
-const EmailService = require('./email.service.js');
+const EmailsService = require('./emails.service.js');
 
 const Private = {
   Issuer: `${UsersAuthConstants.ServiceName}-local`,
@@ -57,7 +57,7 @@ const Public = {
   init: async () => {
     Private.SiteSalt = process.env.SALT;
     await JwtUtils.init(Private.Issuer);
-    await EmailService.init();
+    await EmailsService.init();
   },
 
   /**
@@ -318,7 +318,7 @@ const Public = {
     let emailTemplate = TranslationsUtils.email(resetType, _ctx, args);
 
     // send email
-    /* no await */ EmailService.sendEmail(objID, emailTemplate['en'].subject, emailTemplate['en'].email, _ctx);
+    /* no await */ EmailsService.sendEmail(objID, emailTemplate['en'].subject, emailTemplate['en'].email, _ctx);
   },
 };
 
