@@ -62,14 +62,10 @@ const Schema = {
 
 const Validators = {
   Post: Schema.UserEmail.keys({
-    status: Joi.string()
-      .min(1)
-      .max(64)
-      .valid(...Object.values(UsersConstants.Status)),
     name: Joi.string().min(1).max(128),
     type: Joi.string().valid(UsersConstants.Type),
     schools: SchemaSchools,
-  }).fork(['email'], (x) => x.required() /*make required */),
+  }).fork(['email', 'schools'], (x) => x.required() /*make required */),
 
   Put: Schema.User,
   PutEmail: Schema.UserEmail.fork(['email'], (x) => x.required() /*make required */),
