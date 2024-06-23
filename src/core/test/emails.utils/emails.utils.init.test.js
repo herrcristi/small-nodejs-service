@@ -8,13 +8,12 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
-const TestConstants = require('../../test-constants.js');
-const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
-const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
-const EmailsService = require('../../../services/users-auth/emails.service.js');
+const EmailsUtils = require('../../utils/emails.utils.js');
 
-describe('Emails Service', function () {
+describe('Emails Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
+  const smtpConfig =
+    '{ "host": "host", "port": "465", "user": "user", "password": "password", "from": "small@localhost" }';
 
   before(async function () {});
 
@@ -40,7 +39,7 @@ describe('Emails Service', function () {
     let stubProcess = sinon.stub(process, 'exit');
 
     // call
-    let res = await EmailsService.init();
+    let res = await EmailsUtils.init(smtpConfig);
 
     chai.expect(stubMailer.callCount).to.equal(1);
     chai.expect(stubProcess.callCount).to.equal(1);
@@ -60,7 +59,7 @@ describe('Emails Service', function () {
     let stubProcess = sinon.stub(process, 'exit');
 
     // call
-    let res = await EmailsService.init();
+    let res = await EmailsUtils.init(smtpConfig);
 
     chai.expect(stubMailer.callCount).to.equal(1);
     chai.expect(stubProcess.callCount).to.equal(1);
@@ -78,7 +77,7 @@ describe('Emails Service', function () {
     });
 
     // call
-    let res = await EmailsService.init();
+    let res = await EmailsUtils.init(smtpConfig);
 
     chai.expect(stubMailer.callCount).to.equal(1);
   }).timeout(10000);

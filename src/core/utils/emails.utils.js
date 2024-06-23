@@ -2,7 +2,7 @@
  * Users service
  */
 const mailer = require('nodemailer');
-const CommonUtils = require('../../core/utils/common.utils');
+const CommonUtils = require('./common.utils');
 
 const Private = {
   // will be initialized on init
@@ -15,9 +15,10 @@ const Private = {
 const Public = {
   /**
    * init
+   * smtpConfig: { host, port, user, password }
    */
-  init: async () => {
-    const config = JSON.parse(process.env.SMTP_CONFIG);
+  init: async (smtpConfig) => {
+    const config = JSON.parse(smtpConfig);
 
     Private.FromSender = config.from;
     Private.ToSender = config.to; // override to for dev purposes

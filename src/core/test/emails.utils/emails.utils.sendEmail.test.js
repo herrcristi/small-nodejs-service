@@ -8,13 +8,13 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
-const CommonUtils = require('../../../core/utils/common.utils.js');
+const CommonUtils = require('../../utils/common.utils.js');
+const EmailsUtils = require('../../utils/emails.utils.js');
 
-const TestConstants = require('../../test-constants.js');
-const EmailsService = require('../../../services/users-auth/emails.service.js');
-
-describe('Emails Service', function () {
+describe('Emails Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
+  const smtpConfig =
+    '{ "host": "host", "port": "465", "user": "user", "password": "password", "from": "small@localhost" }';
 
   before(async function () {});
 
@@ -46,9 +46,9 @@ describe('Emails Service', function () {
     let stubMailer = sinon.stub(mailer, 'createTransport').returns(testMail);
 
     // call
-    let res = await EmailsService.init();
+    let res = await EmailsUtils.init(smtpConfig);
 
-    res = await EmailsService.sendEmail('to', 'subject', 'body', _ctx);
+    res = await EmailsUtils.sendEmail('to', 'subject', 'body', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai.expect(stubMailer.callCount).to.equal(1);
@@ -85,16 +85,11 @@ describe('Emails Service', function () {
     // stub
     let stubMailer = sinon.stub(mailer, 'createTransport').returns(testMail);
 
-    let stubConfig = sinon.stub(process, 'env').value({
-      NODE_ENV: 'test',
-      SMTP_CONFIG:
-        '{ "host": "host", "port": "465", "user": "user", "password": "password", "from": "small@localhost", "to": "tooverride" }',
-    });
-
     // call
-    let res = await EmailsService.init();
+    const newSmtpConfig = JSON.stringify({ ...JSON.parse(smtpConfig), to: 'tooverride' });
+    let res = await EmailsUtils.init(newSmtpConfig);
 
-    res = await EmailsService.sendEmail('to', 'subject', 'body', _ctx);
+    res = await EmailsUtils.sendEmail('to', 'subject', 'body', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai.expect(stubMailer.callCount).to.equal(1);
@@ -132,9 +127,9 @@ describe('Emails Service', function () {
     let stubMailer = sinon.stub(mailer, 'createTransport').returns(testMail);
 
     // call
-    let res = await EmailsService.init();
+    let res = await EmailsUtils.init(smtpConfig);
 
-    res = await EmailsService.sendEmail('to', 'subject', 'body', _ctx);
+    res = await EmailsUtils.sendEmail('to', 'subject', 'body', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai.expect(stubMailer.callCount).to.equal(1);
@@ -173,9 +168,9 @@ describe('Emails Service', function () {
     let stubDebug = sinon.stub(CommonUtils, 'isDebug').returns(false);
 
     // call
-    let res = await EmailsService.init();
+    let res = await EmailsUtils.init(smtpConfig);
 
-    res = await EmailsService.sendEmail('to', 'subject', 'body', _ctx);
+    res = await EmailsUtils.sendEmail('to', 'subject', 'body', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     chai.expect(stubMailer.callCount).to.equal(1);

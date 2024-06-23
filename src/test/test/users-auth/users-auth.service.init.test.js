@@ -14,6 +14,7 @@ const UsersAuthConstants = require('../../../services/users-auth/users-auth.cons
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
+const EmailsUtils = require('../../../services/users-auth/emails.service.js');
 
 describe('Users Auth Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
@@ -34,6 +35,7 @@ describe('Users Auth Service', function () {
   it('should init with success', async () => {
     // stub
     let stubJwt = sinon.stub(JwtUtils, 'init');
+    let stubEmail = sinon.stub(EmailsUtils, 'init');
 
     // call
     let res = await UsersAuthService.init();
