@@ -61,14 +61,11 @@ const Schema = {
 };
 
 const Validators = {
-  Post: Schema.User.keys({
-    email: Joi.string()
-      .email({ tlds: { allow: false } })
-      .min(1)
-      .max(128),
+  Post: Schema.UserEmail.keys({
+    name: Joi.string().min(1).max(128),
     type: Joi.string().valid(UsersConstants.Type),
     schools: SchemaSchools,
-  }).fork(['email', 'name', 'birthday', 'address', 'schools'], (x) => x.required() /*make required */),
+  }).fork(['email', 'schools'], (x) => x.required() /*make required */),
 
   Put: Schema.User,
   PutEmail: Schema.UserEmail.fork(['email'], (x) => x.required() /*make required */),
@@ -249,13 +246,15 @@ const Public = {
    */
   post: async (objInfo, _ctx) => {
     objInfo.type = UsersConstants.Type;
-    objInfo.status = objInfo.status || UsersConstants.Status.Pending; // add default status if not set
+    objInfo.name = objInfo.name || objInfo.email; // the default name is the email
 
     // validate
     const v = Validators.Post.validate(objInfo);
     if (v.error) {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+
+    objInfo.status = UsersConstants.Status.Pending; // add default status pending
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);

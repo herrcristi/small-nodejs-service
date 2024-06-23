@@ -1,0 +1,14 @@
+{
+  "reset-password": {
+    "subject": "Reset password",
+    "email": "./en.email.reset-password.html"
+  },
+  "invite": {
+    "subject": "You have been invited to {school}",
+    "email": "./en.email.invite.html"
+  },
+  "signup": {
+    "subject": "You have been invited to {school}",
+    "email": "./en.email.invite.html"
+  }
+}

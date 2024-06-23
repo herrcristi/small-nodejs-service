@@ -16,6 +16,10 @@ const router = express.Router();
 router.route(`${UsersAuthConstants.ApiPath}/login`).post(UsersAuthController.login); // public dont require authentication
 router.route(`${UsersAuthConstants.ApiPath}/logout`).post(UsersAuthController.logout); // logout the current login user
 router.route(`${UsersAuthConstants.ApiPath}/signup`).post(UsersAuthSignupController.signup); // may be done by portal admin user or by anonymous user
+router.route(`${UsersAuthConstants.ApiPath}/reset-password`).post(UsersAuthController.resetPassword); // public dont require authentication
+
+router.route(`${UsersAuthConstants.ApiPath}/reset-token/validate`).get(UsersAuthController.validateResetToken); // public dont require authentication only for local auth
+router.route(`${UsersAuthConstants.ApiPath}/reset-token/password`).put(UsersAuthController.putResetPassword); // public dont require authentication only for local auth
 
 router.route(`${UsersAuthConstants.ApiPath}/:id/invite`).post(UsersAuthSignupController.invite);
 

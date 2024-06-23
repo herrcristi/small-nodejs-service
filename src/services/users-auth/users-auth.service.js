@@ -99,6 +99,29 @@ const Validators = {
     add: Schema.SchoolRoles,
     remove: Schema.SchoolRoles,
   }),
+
+  ResetPassword: Joi.object().keys({
+    id: Joi.string()
+      .email({ tlds: { allow: false } })
+      .min(1)
+      .max(128),
+  }),
+
+  ResetToken: Joi.object().keys({
+    token: Joi.string().min(1).required(),
+  }),
+
+  PutResetPassword: Joi.object().keys({
+    password: Joi.string().min(1).max(64).required(),
+    // TODO if resetType is invite provide all details
+    // name: Joi.string().min(1).max(128),
+    // birthday: Joi.date().iso(),
+    // phoneNumber: Joi.string()
+    //   .min(1)
+    //   .max(32)
+    //   .regex(/^(\d|\+|\-|\.|' ')*$/), // allow 0-9 + - . in any order
+    // address: Joi.string().min(1).max(256),
+  }),
 };
 
 const Private = {
@@ -107,6 +130,8 @@ const Private = {
     Post: 'post',
     Delete: 'delete',
     PutPassword: 'putPassword',
+    ResetPassword: 'resetPassword',
+    PutResetPassword: 'putResetPassword',
     PutID: 'putID',
     PatchPassword: 'patchPassword',
     PatchID: 'patchID',
@@ -416,14 +441,14 @@ const Public = {
     if (decodedToken.error) {
       return decodedToken;
     }
-    objInfo.token = decodedToken.value;
 
     // token
+    const validateTokenInfo = { token: decodedToken.value };
     let rT;
     if (config.isFirebaseAuth) {
-      rT = await UsersAuthServiceFirebase.validateToken(config, objInfo, _ctx);
+      rT = await UsersAuthServiceFirebase.validateToken(config, validateTokenInfo, _ctx);
     } else {
-      rT = await UsersAuthServiceLocal.validateToken(config, objInfo, _ctx);
+      rT = await UsersAuthServiceLocal.validateToken(config, validateTokenInfo, _ctx);
     }
     if (rT.error) {
       const msg = 'Failed to validate token';
@@ -680,6 +705,128 @@ const Public = {
     // patch user schools
     const rUserDetails = await UsersRest.patchSchool(userID, patchSchoolInfo, _ctx);
     return rUserDetails;
+  },
+
+  /**
+   * reset password
+   * objInfo: { id }
+   */
+  resetPassword: async (objInfo, _ctx, resetType = UsersAuthConstants.ResetTokenType.ResetPassword) => {
+    // validate
+    const v = Validators.ResetPassword.validate(objInfo);
+    if (v.error) {
+      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+
+    // config: { serviceName }
+    const config = await Private.getConfig(_ctx);
+
+    const objID = objInfo.id;
+
+    // reset password
+    let r;
+    if (config.isFirebaseAuth) {
+      r = await UsersAuthServiceFirebase.resetPassword(config, objID, _ctx);
+    } else {
+      r = await UsersAuthServiceLocal.resetPassword(config, objID, _ctx);
+    }
+    if (r.error) {
+      return r;
+    }
+
+    // only for local auth
+    if (!config.isFirebaseAuth) {
+      // encrypt token again
+      r.value = JwtUtils.encrypt(r.value, Private.Issuer, _ctx).value;
+      // send via email
+      await UsersAuthServiceLocal.sendEmail(config, objID, r.value, _ctx, resetType);
+    }
+
+    // raise event for reset password
+    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    const action = resetType;
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, { resetType } /*args*/, _ctx);
+
+    // success
+    return { status: 200, value: newObj };
+  },
+
+  /**
+   * validate reset token (only for local auth)
+   * objInfo: { token }
+   */
+  validateResetToken: async (objInfo, _ctx) => {
+    // validate
+    const v = Validators.ResetToken.validate(objInfo);
+    if (v.error) {
+      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+
+    // config: { serviceName }
+    const config = await Private.getConfig(_ctx);
+
+    // decrypt token
+    const decodedToken = JwtUtils.decrypt(objInfo.token, Private.Issuer, _ctx);
+    if (decodedToken.error) {
+      return decodedToken;
+    }
+
+    // validate reset token
+    const validateInfo = { token: decodedToken.value };
+    let r = await UsersAuthServiceLocal.validateResetToken(config, validateInfo, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    _ctx.username = r.value.id;
+    _ctx.userID = r.value.id;
+    const objID = _ctx.username;
+
+    // success
+    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    return { status: 200, value: newObj };
+  },
+
+  /**
+   * validate reset token and put reset password
+   * objInfo: { id, password }
+   */
+  putResetPassword: async (resetToken, objInfo, _ctx) => {
+    // validate
+    const v = Validators.PutResetPassword.validate(objInfo);
+    if (v.error) {
+      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+
+    // config: { serviceName }
+    const config = await Private.getConfig(_ctx);
+
+    // check reset token
+    const resetTokenInfo = { token: resetToken };
+    let rT = await Public.validateResetToken(resetTokenInfo, _ctx);
+    if (rT.error) {
+      return rT;
+    }
+
+    const objID = rT.value.id;
+
+    // put reset password
+    const putResetPasswordInfo = { password: objInfo.password };
+    let r = await UsersAuthServiceLocal.putResetPassword(config, objID, putResetPasswordInfo, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // raise event for put reset password
+    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    const action = Private.Action.PutResetPassword;
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, {} /*args*/, _ctx);
+
+    // raise a notification for modified obj
+    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
+
+    // success
+    return { status: 200, value: newObj };
   },
 
   /**

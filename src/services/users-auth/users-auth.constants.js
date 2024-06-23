@@ -17,6 +17,13 @@ const Public = {
 
   // token
   AuthToken: 'SmallApp-token',
+
+  // reset token reason
+  ResetTokenType: {
+    Signup: 'signup',
+    Invite: 'invite',
+    ResetPassword: 'reset-password',
+  },
 };
 
 module.exports = { ...Public };

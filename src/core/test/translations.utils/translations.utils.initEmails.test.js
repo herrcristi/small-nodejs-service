@@ -20,44 +20,59 @@ describe('Translations Utils', function () {
   after(async function () {});
 
   /**
-   * initLanguage
+   * initEmails
    */
   it('should init Language', async () => {
     let translations = {
-      active: 'Active',
+      'reset-password': {
+        subject: 'Reset password',
+        email: './en.email.reset-password.html',
+      },
     };
 
-    let stub = sinon.stub(fs, 'readFileSync').returns(JSON.stringify(translations));
+    const emailContent = 'email html text';
+
+    let stub = sinon.stub(fs, 'readFileSync');
+    stub.onCall(0).returns(JSON.stringify(translations));
+    stub.onCall(1).returns(emailContent);
+    stub.onCall(2).returns(JSON.stringify(translations));
+    stub.onCall(3).returns(emailContent);
 
     // call
-    let res = await TranslationsUtils.initLanguage('en', 'filename', _ctx);
+    let res = await TranslationsUtils.initEmails('en', 'filename', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    res = await TranslationsUtils.initLanguage('ro', 'filename', _ctx);
+    res = await TranslationsUtils.initEmails('ro', 'filename', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stub.callCount).to.equal(2);
+    chai.expect(stub.callCount).to.equal(4);
     chai.expect(res).to.deep.equal({
-      en: translations,
-      ro: translations,
+      en: {
+        'reset-password': {
+          subject: 'Reset password',
+          email: emailContent,
+        },
+      },
+      ro: {
+        'reset-password': {
+          subject: 'Reset password',
+          email: emailContent,
+        },
+      },
     });
   }).timeout(10000);
 
   /**
-   * fail to initLanguage
+   * fail to initEmails
    */
   it('should fail to init Language', async () => {
-    let translations = {
-      active: 'Active',
-    };
-
     let stub = sinon.stub(fs, 'readFileSync').callsFake(() => {
       throw new Error('Test error');
     });
 
     // call
-    let res = await TranslationsUtils.initLanguage('en', 'filename', _ctx);
+    let res = await TranslationsUtils.initEmails('en', 'filename', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

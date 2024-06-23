@@ -25,14 +25,6 @@ const Schema = {
       .email({ tlds: { allow: false } })
       .min(1)
       .max(128),
-    password: Joi.string().min(1).max(64),
-    name: Joi.string().min(1).max(128),
-    birthday: Joi.date().iso(),
-    phoneNumber: Joi.string()
-      .min(1)
-      .max(32)
-      .regex(/^(\d|\+|\-|\.|' ')*$/), // allow 0-9 + - . in any order
-    address: Joi.string().min(1).max(256),
     school: Joi.object().keys({
       name: Joi.string().min(1).max(64).required(),
       description: Joi.string().min(0).max(1024).allow(null),
@@ -55,10 +47,7 @@ const Schema = {
 };
 
 const Validators = {
-  Signup: Schema.Signup.fork(
-    ['email', 'password', 'name', 'birthday', 'address'],
-    (x) => x.required() /*make required */
-  ),
+  Signup: Schema.Signup.fork(['email'], (x) => x.required() /*make required */),
 
   Invite: Schema.Invite.fork(['email'], (x) => x.required() /*make required */),
 };
@@ -67,6 +56,83 @@ const Private = {
   Action: {
     Signup: 'signup',
     Invite: 'invite',
+  },
+
+  /**
+   * create new user
+   * objInfo: { email, school: { role } }
+   */
+  postNewUser: async (objInfo, _ctx) => {
+    // create first user details (with default status pending) and get the id
+    const rUser = await UsersRest.post(
+      {
+        email: objInfo.email,
+        schools: [
+          {
+            id: _ctx.tenantID, // schoolID
+            roles: [objInfo.school.role],
+          },
+        ],
+      },
+      _ctx
+    );
+    if (rUser.error) {
+      return rUser;
+    }
+
+    const userID = rUser.value.id;
+
+    // create user auth with a random password
+    const rAuth = await UsersAuthRest.post(
+      {
+        id: objInfo.email,
+        password: CommonUtils.getRandomBytes(32).toString('hex'),
+        userID: userID,
+      },
+      _ctx
+    );
+    if (rAuth.error) {
+      // delete previous added user
+      await UsersRest.delete(userID, _ctx);
+
+      return rAuth;
+    }
+
+    // success { status:201, value: { id, name, type, userID } }
+    return rAuth;
+  },
+
+  /**
+   * put user role
+   * userInfo: { id, schools: [ { id, roles } ] }
+   * objInfo: { email, school: { role } }
+   */
+  putUserRole: async (userInfo, objInfo, _ctx) => {
+    const schoolID = _ctx.tenantID;
+
+    const school = userInfo.schools.find((item) => item.id === schoolID);
+    const role = school?.roles.find((item) => item === objInfo.school.role);
+    if (role) {
+      return {
+        status: 204,
+        value: { id: userInfo.email, name: userInfo.name, type: UsersAuthConstants.Type, userID: userInfo.id },
+      };
+    }
+
+    // add school role to user
+    const rUser = await UsersRest.patchSchool(
+      userInfo.id,
+      { add: { schools: [{ id: schoolID, roles: [objInfo.school.role] }] } },
+      _ctx
+    );
+    if (rUser.error) {
+      return rUser;
+    }
+
+    return {
+      status: 200,
+      value: { id: userInfo.email, name: userInfo.name, type: UsersAuthConstants.Type, userID: userInfo.id },
+    };
   },
 };
 
@@ -87,7 +153,7 @@ const Public = {
     const errorO = {
       id: objInfo.email,
       email: objInfo.email,
-      name: objInfo.name,
+      name: objInfo.email,
       type: UsersAuthConstants.Type,
       school: objInfo.school.name,
     };
@@ -101,61 +167,26 @@ const Public = {
       return rSchool;
     }
 
+    // create user and auth and invite user to school
     const schoolID = rSchool.value.id;
+    const inviteInfo = {
+      email: objInfo.email,
+      school: { role: UsersRest.Constants.Roles.Admin },
+    };
 
-    // create first user details (with default status pending) and get the id
-    const rUser = await UsersRest.post(
-      {
-        email: objInfo.email,
-        name: objInfo.name,
-        birthday: objInfo.birthday,
-        phoneNumber: objInfo.phoneNumber,
-        address: objInfo.address,
-        schools: [
-          {
-            id: schoolID,
-            roles: [UsersRest.Constants.Roles.Admin],
-          },
-        ],
-      },
-      _ctx
-    );
-    if (rUser.error) {
+    const rInvite = await Public.invite(_ctx.userID, inviteInfo, { ..._ctx, tenantID: schoolID });
+    if (rInvite.error) {
       // delete school
       await SchoolsRest.delete(schoolID, _ctx);
 
       // raise event for invalid signup
       const failedAction = `${Private.Action.Signup}.failed`;
       await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
-      return rUser;
-    }
-
-    const userID = rUser.value.id;
-    errorO.id = userID;
-    _ctx.userID = userID;
-
-    // create user auth
-    const rAuth = await UsersAuthRest.post(
-      {
-        id: objInfo.email,
-        password: objInfo.password,
-        userID: userID,
-      },
-      _ctx
-    );
-    if (rAuth.error) {
-      // delete previous
-      await SchoolsRest.delete(schoolID, _ctx);
-      await UsersRest.delete(userID, _ctx);
-
-      // raise event for invalid signup
-      const failedAction = `${Private.Action.Signup}.failed`;
-      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
-      return rAuth;
+      return rInvite;
     }
 
     // success
-    return rAuth;
+    return rInvite;
   },
 
   /**
@@ -175,63 +206,37 @@ const Public = {
     const errorO = {
       id: objInfo.email,
       email: objInfo.email,
-      name: objInfo.name,
+      name: objInfo.email,
       type: UsersAuthConstants.Type,
     };
 
-    const schoolID = _ctx.tenantID;
+    // check if user exists and has school role
+    let rUser = await UsersRest.getOneByEmail(
+      objInfo.email,
+      { ...BaseServiceUtils.Constants.DefaultProjection, email: 1, schools: 1 },
+      _ctx
+    );
 
-    // TODO
-    return { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
-    // // create first user details (with default status pending) and get the id
-    // const rUser = await UsersRest.post(
-    //   {
-    //     email: objInfo.email,
-    //     name: objInfo.name,
-    //     birthday: objInfo.birthday,
-    //     phoneNumber: objInfo.phoneNumber,
-    //     address: objInfo.address,
-    //     schools: [
-    //       {
-    //         id: schoolID,
-    //         roles: [UsersRest.Constants.Roles.Admin],
-    //       },
-    //     ],
-    //   },
-    //   _ctx
-    // );
-    // if (rUser.error) {
-    //   // raise event for invalid invite
-    //   const failedAction = `${Private.Action.Invite}.failed`;
-    //   await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
-    //   return rUser;
-    // }
+    if (rUser.status === 404) {
+      // the user does not exists -> create
+      rUser = await Private.postNewUser(objInfo, _ctx);
+    } else if (rUser.status === 200) {
+      // user already exists, check if already has the school and role
+      rUser = await Private.putUserRole(rUser.value, objInfo, _ctx);
+    }
 
-    // const userID = rUser.value.id;
-    // errorO.id = userID;
-    // _ctx.userID = userID;
+    if (rUser.error) {
+      // raise event for invalid invite
+      const failedAction = `${Private.Action.Invite}.failed`;
+      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
+      return rUser;
+    }
 
-    // // create user auth
-    // const rAuth = await UsersAuthRest.post(
-    //   {
-    //     id: objInfo.email,
-    //     password: objInfo.password,
-    //     userID: userID,
-    //   },
-    //   _ctx
-    // );
-    // if (rAuth.error) {
-    //   // delete previous
-    //   await UsersRest.delete(userID, _ctx);
+    // send reset password email (dont fail if this returns error)
+    const resetInfo = { id: objInfo.email };
+    const rr = await UsersAuthRest.resetPassword(resetInfo, _ctx, UsersAuthConstants.ResetTokenType.Invite);
 
-    //   // raise event for invalid invite
-    //   const failedAction = `${Private.Action.Invite}.failed`;
-    //   await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
-    //   return rAuth;
-    // }
-
-    // // success
-    // return rAuth;
+    return rUser;
   },
 };
 

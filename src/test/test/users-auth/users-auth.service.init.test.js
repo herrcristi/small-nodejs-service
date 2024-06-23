@@ -8,6 +8,7 @@ const chaiHttp = require('chai-http');
 chai.use(chaiHttp);
 
 const JwtUtils = require('../../../core/utils/jwt.utils.js');
+const EmailsUtils = require('../../../core/utils/emails.utils.js');
 
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
@@ -34,6 +35,7 @@ describe('Users Auth Service', function () {
   it('should init with success', async () => {
     // stub
     let stubJwt = sinon.stub(JwtUtils, 'init');
+    let stubEmail = sinon.stub(EmailsUtils, 'init');
 
     // call
     let res = await UsersAuthService.init();

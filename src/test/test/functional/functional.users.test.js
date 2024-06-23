@@ -182,9 +182,11 @@ describe('Users Functional', function () {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = _.cloneDeep(testUsers[0]);
 
-    delete testUser.id;
-    delete testUser.type;
-    delete testUser._lang_en;
+    const postReq = {
+      email: testUser.email,
+      name: testUser.name,
+      schools: testUser.schools,
+    };
 
     sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
       console.log(`\nRestCommunicationsUtils.restValidation called`);
@@ -197,7 +199,7 @@ describe('Users Functional', function () {
       .post(`${UsersConstants.ApiPathInternal}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
-      .send({ ...testUser });
+      .send({ ...postReq });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -214,11 +216,11 @@ describe('Users Functional', function () {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = _.cloneDeep(testUsers[0]);
 
-    testUser.email = 'newemail@test.com';
-    testUser.name = 'new name';
-    delete testUser.id;
-    delete testUser.type;
-    delete testUser._lang_en;
+    const postReq = {
+      email: 'newemail@test.com',
+      name: 'new name',
+      schools: testUser.schools,
+    };
 
     // check global events before
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
@@ -238,14 +240,14 @@ describe('Users Functional', function () {
       .post(`${UsersConstants.ApiPathInternal}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
-      .send({ ...testUser });
+      .send({ ...postReq });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(201);
     chai.expect(res.body.id).to.exist;
     chai.expect(res.body.type).to.equal(testUsers[0].type);
-    chai.expect(res.body.status).to.equal(UsersConstants.Status.Active);
+    chai.expect(res.body.status).to.equal(UsersConstants.Status.Pending);
     chai.expect(res.body.createdTimestamp).to.exist;
     chai.expect(res.body.lastModifiedTimestamp).to.exist;
 
@@ -257,7 +259,12 @@ describe('Users Functional', function () {
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
     // events/students/professors after (in each school)
-    await checkSchoolsAfter(testUserID, testUser, testUser.status, _ctx);
+    await checkSchoolsAfter(
+      testUserID,
+      { ...testUser, email: 'newemail@test.com', name: 'new name' },
+      UsersConstants.Status.Pending,
+      _ctx
+    );
 
     // do a get
     res = await chai.request(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUserID}`);
@@ -266,7 +273,10 @@ describe('Users Functional', function () {
     // check
     chai.expect(res.status).to.equal(200);
     chai.expect({ ...res.body, schools: undefined }).to.deep.include({
-      ...testUser,
+      id: testUserID,
+      email: 'newemail@test.com',
+      name: 'new name',
+      status: UsersConstants.Status.Pending,
       schools: undefined,
     });
     chai.expect(res.body._lang_en).to.exist;

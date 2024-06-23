@@ -20,4 +20,5 @@ require('./translations.utils/translations.utils.all.tests.js');
 require('./db-ops.utils/db-ops.utils.all.tests.js');
 require('./database-manager.utils/database-manager.utils.all.tests.js');
 
+require('./emails.utils/emails.utils.all.test.js');
 require('./web-server.utils/web-server.utils.all.tests.js');

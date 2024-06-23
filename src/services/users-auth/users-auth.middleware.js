@@ -23,7 +23,12 @@ const Public = {
     }
 
     // is whitelisted
-    const whitelistRoutes = [`${UsersAuthRest.Constants.ApiPath}/login`];
+    const whitelistRoutes = [
+      `${UsersAuthRest.Constants.ApiPath}/login`,
+      `${UsersAuthRest.Constants.ApiPath}/reset-password`,
+      `${UsersAuthRest.Constants.ApiPath}/reset-token/validate`,
+      `${UsersAuthRest.Constants.ApiPath}/reset-token/password`,
+    ];
     if (whitelistRoutes.includes(route)) {
       console.log(`\nRoute whitelisted: ${route}`);
       return next();
@@ -39,12 +44,16 @@ const Public = {
         token,
       };
 
-      // _ctx: _userID, username;
+      // extract userID and username from token
       const r = await UsersAuthRest.validate(objValidation, _ctx);
       if (r.error) {
         res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error.error, _ctx));
         return res.end();
       }
+
+      // apply
+      _ctx.userID = r.value.userID;
+      _ctx.username = r.value.username;
     } catch (e) {
       console.log(`\nFailed to authenticate request. Error: ${e.stack}`, _ctx);
       res.status(500).json(await RestMessagesUtils.exception(e, _ctx));

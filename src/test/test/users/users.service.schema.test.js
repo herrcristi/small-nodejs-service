@@ -22,11 +22,10 @@ describe('Users Service', function () {
 
     // valid post req
     postReq = {
-      ...testUser,
+      email: testUser.email,
+      name: testUser.name,
+      schools: testUser.schools,
     };
-    delete postReq.id;
-    delete postReq.type;
-    delete postReq._lang_en;
   });
 
   afterEach(async function () {
@@ -86,12 +85,6 @@ describe('Users Service', function () {
    * schema post name
    */
   it('should validate post schema for name', async () => {
-    // name is required
-    delete postReq.name;
-    let res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"name" is required');
-
     // name is number
     postReq.name = 1;
     res = UsersService.Validators.Post.validate(postReq);
@@ -109,146 +102,6 @@ describe('Users Service', function () {
     res = UsersService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.error.details[0].message).to.include('"name" is not allowed to be empty');
-  }).timeout(10000);
-
-  /**
-   * schema post address
-   */
-  it('should validate post schema for address', async () => {
-    // address is required
-    delete postReq.address;
-    let res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"address" is required');
-
-    // address is number
-    postReq.address = 1;
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"address" must be a string');
-
-    // address is null
-    postReq.address = null;
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"address" must be a string');
-
-    // address empty
-    postReq.address = '';
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"address" is not allowed to be empty');
-  }).timeout(10000);
-
-  /**
-   * schema post phoneNumber
-   */
-  it('should validate post schema for phoneNumber', async () => {
-    // phoneNumber is number
-    postReq.phoneNumber = 1;
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"phoneNumber" must be a string');
-
-    // phoneNumber is null
-    postReq.phoneNumber = null;
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"phoneNumber" must be a string');
-
-    // phoneNumber empty
-    postReq.phoneNumber = '';
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"phoneNumber" is not allowed to be empty');
-
-    // phoneNumber not valid
-    postReq.phoneNumber = 'phoneNumber';
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('fails to match the required pattern');
-  }).timeout(10000);
-
-  /**
-   * schema post birthday
-   */
-  it('should validate post schema for birthday', async () => {
-    // birthday is required
-    delete postReq.birthday;
-    let res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"birthday" is required');
-
-    // birthday is number
-    postReq.birthday = 1;
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"birthday" must be a valid date');
-
-    // birthday is null
-    postReq.birthday = null;
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"birthday" must be a valid date');
-
-    // birthday empty
-    postReq.birthday = '';
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"birthday" must be in ISO 8601 date format');
-
-    // birthday not valid
-    postReq.birthday = 'birthday';
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"birthday" must be in ISO 8601 date format');
-
-    // birthday not valid
-    postReq.birthday = '01-1908';
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"birthday" must be in ISO 8601 date format');
-
-    // birthday valid
-    postReq.birthday = '1980';
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
-  }).timeout(10000);
-
-  /**
-   * schema post status
-   */
-  it('should validate post schema for status', async () => {
-    // status must be a string
-    postReq.status = 1;
-    let res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
-
-    // status null
-    postReq.status = null;
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
-
-    // status empty
-    postReq.status = '';
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
-
-    // status invalid value
-    postReq.status = 'some value';
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"status" must be one of [pending, active, disabled]');
-
-    // status value
-    postReq.status = UsersConstants.Status.Active;
-    res = UsersService.Validators.Post.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
   }).timeout(10000);
 
   /**

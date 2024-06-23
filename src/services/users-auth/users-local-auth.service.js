@@ -5,9 +5,11 @@ const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const CommonUtils = require('../../core/utils/common.utils.js');
 const JwtUtils = require('../../core/utils/jwt.utils.js');
+const TranslationsUtils = require('../../core/utils/translations.utils.js');
 
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthDatabase = require('./users-local-auth.database.js');
+const EmailsUtils = require('../../core/utils/emails.utils.js');
 
 const Private = {
   Issuer: `${UsersAuthConstants.ServiceName}-local`,
@@ -55,6 +57,7 @@ const Public = {
   init: async () => {
     Private.SiteSalt = process.env.SALT;
     await JwtUtils.init(Private.Issuer);
+    await EmailsUtils.init(process.env.SMTP_CONFIG);
   },
 
   /**
@@ -230,6 +233,92 @@ const Public = {
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+  },
+
+  /**
+   * reset password
+   * config: { serviceName }
+   */
+  resetPassword: async (config, objID, _ctx) => {
+    // { serviceName, collection, notifications.projection }
+    await Private.setupConfig(config, _ctx);
+
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+
+    // check user exists
+    const r = await DbOpsUtils.getOne(config, objID, { ...projection, userID: 1 }, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // create reset token
+    const userInfo = { id: r.value.id, userID: r.value.userID };
+    return Public.getToken(config, userInfo, _ctx);
+  },
+
+  /**
+   * check reset token is valid
+   * config: { serviceName }
+   * objInfo: { token }
+   */
+  validateResetToken: async (config, objInfo, _ctx) => {
+    return Public.validateToken(config, objInfo, _ctx);
+  },
+
+  /**
+   * check reset token is valid
+   * config: { serviceName }
+   * objInfo: { password }
+   */
+  putResetPassword: async (config, objID, objInfo, _ctx) => {
+    // { serviceName, collection, notifications.projection }
+    await Private.setupConfig(config, _ctx);
+
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+
+    // hash password with new salt
+    const newSalt = Private.genSalt();
+    const passwordPut = {
+      salt: newSalt,
+      password: Private.hashPassword(objInfo.password, newSalt, _ctx),
+    };
+
+    // put
+    const r = await DbOpsUtils.put(config, objID, passwordPut, projection, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // success
+    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
+  },
+
+  /**
+   * send email
+   * config: { serviceName }
+   */
+  sendEmail: async (config, objID, token, _ctx, resetType) => {
+    // { serviceName, collection, notifications.projection }
+    await Private.setupConfig(config, _ctx);
+
+    let args = {
+      user: '',
+      school: _ctx.tenantID,
+      appUrl: `${process.env.APP_URL}`,
+      resetUrl: `${process.env.APP_URL}/api/v1/users-auth/reset-token/validate?&type=${resetType}&token=${token}`,
+    };
+
+    if (
+      resetType === UsersAuthConstants.ResetTokenType.Signup ||
+      resetType === UsersAuthConstants.ResetTokenType.Invite
+    ) {
+      // TODO get school name
+    }
+
+    let emailTemplate = TranslationsUtils.email(resetType, _ctx, args);
+
+    // send email
+    /* no await */ EmailsUtils.sendEmail(objID, emailTemplate['en'].subject, emailTemplate['en'].email, _ctx);
   },
 };
 

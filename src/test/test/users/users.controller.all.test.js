@@ -294,7 +294,7 @@ describe('Users Controller', function () {
     let res = await chai
       .request(TestConstants.WebServer)
       .post(`${UsersConstants.ApiPathInternal}`)
-      .send({ ...testUser });
+      .send({ ...testUser }); // only email and schools
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
