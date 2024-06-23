@@ -663,6 +663,259 @@ describe('Users Auth Controller', function () {
   }).timeout(10000);
 
   /**
+   * reset password with success
+   */
+  it('should reset password with success', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'resetPassword').callsFake(() => {
+      console.log(`\nUsersAuthService.resetPassword called\n`);
+      return {
+        status: 200,
+        value: testUser,
+      };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .post(`${UsersAuthConstants.ApiPath}/reset-password`)
+      .send({ id: testUser });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal({
+      ...testUser,
+    });
+  }).timeout(10000);
+
+  /**
+   * reset password fail
+   */
+  it('should reset password fail', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'resetPassword').callsFake(() => {
+      console.log(`\nUsersAuthService.resetPassword called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .post(`${UsersAuthConstants.ApiPath}/reset-password`)
+      .send({ id: testUser.id });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * reset password fail exception
+   */
+  it('should reset password fail exception', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'resetPassword').callsFake(() => {
+      console.log(`\nUsersAuthService.resetPassword called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .post(`${UsersAuthConstants.ApiPath}/reset-password`)
+      .send({ id: testUser.id });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * validate reset token  with success
+   */
+  it('should validate reset token with success', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'validateResetToken').callsFake(() => {
+      console.log(`\nUsersAuthService.validateResetToken called\n`);
+      return {
+        status: 200,
+        value: testUser,
+      };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPath}/reset-token/validate?token=token`)
+      .send({ id: testUser });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal({
+      ...testUser,
+    });
+  }).timeout(10000);
+
+  /**
+   * validate reset token fail
+   */
+  it('should validate reset token fail', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'validateResetToken').callsFake(() => {
+      console.log(`\nUsersAuthService.validateResetToken called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPath}/reset-token/validate?token=token`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * validate reset token fail exception
+   */
+  it('should validate reset token fail exception', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'validateResetToken').callsFake(() => {
+      console.log(`\nUsersAuthService.validateResetToken called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPath}/reset-token/validate?token=token`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * put reset password with success
+   */
+  it('should put reset password with success', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'putResetPassword').callsFake(() => {
+      console.log(`\nUsersAuthService.putResetPassword called\n`);
+      return {
+        status: 200,
+        value: testUser,
+      };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${UsersAuthConstants.ApiPath}/reset-token/password`)
+      .set('x-reset-token', 'token')
+      .send({ password: 'password' });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal({
+      ...testUser,
+    });
+  }).timeout(10000);
+
+  /**
+   * put reset password fail
+   */
+  it('should put reset password fail', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'putResetPassword').callsFake(() => {
+      console.log(`\nUsersAuthService.putResetPassword called\n`);
+      return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${UsersAuthConstants.ApiPath}/reset-token/password`)
+      .set('x-reset-token', 'token')
+      .send({ password: 'password' });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * put reset password fail exception
+   */
+  it('should put reset password fail exception', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'putResetPassword').callsFake(() => {
+      console.log(`\nUsersAuthService.putResetPassword called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .put(`${UsersAuthConstants.ApiPath}/reset-token/password`)
+      .set('x-reset-token', 'token')
+      .send({ password: 'password' });
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
    * put id (email) with success
    */
   it('should put id (email) with success', async () => {
