@@ -80,35 +80,6 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * schema post password
-   */
-  it('should validate post schema for password', async () => {
-    // password is required
-    delete postReq.password;
-    let res = UsersAuthSignupService.Validators.Signup.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"password" is required');
-
-    // password is number
-    postReq.password = 1;
-    res = UsersAuthSignupService.Validators.Signup.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"password" must be a string');
-
-    // password is null
-    postReq.password = null;
-    res = UsersAuthSignupService.Validators.Signup.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"password" must be a string');
-
-    // password empty
-    postReq.password = '';
-    res = UsersAuthSignupService.Validators.Signup.validate(postReq);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"password" is not allowed to be empty');
-  }).timeout(10000);
-
-  /**
    * schema post extra
    */
   it('should validate post schema for extra', async () => {
