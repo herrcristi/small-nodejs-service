@@ -246,14 +246,15 @@ const Public = {
    */
   post: async (objInfo, _ctx) => {
     objInfo.type = UsersConstants.Type;
-    objInfo.status = UsersConstants.Status.Pending; // add default status pending
-    objInfo.name = objInfo.email; // the default name is the email
+    objInfo.name = objInfo.name || objInfo.email; // the default name is the email
 
     // validate
     const v = Validators.Post.validate(objInfo);
     if (v.error) {
       return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+
+    objInfo.status = UsersConstants.Status.Pending; // add default status pending
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);

@@ -36,67 +36,10 @@ describe('Users Service', function () {
     const testUser = testUsers[0];
 
     const postReq = {
-      ...testUser,
+      email: testUser.email,
+      name: testUser.name,
+      schools: testUser.schools,
     };
-    delete postReq.id;
-    delete postReq.type;
-    delete postReq._lang_en;
-
-    // stub
-    let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
-      return { status: 200, value: true };
-    });
-
-    let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`\nDbOpsUtils.post called`);
-      return {
-        status: 201,
-        value: { ...postObj, id: testUser.id },
-      };
-    });
-
-    let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`\nEventsRest.raiseEventForObject called`);
-    });
-
-    let stubUsersRest = sinon.stub(UsersRest, 'raiseNotification').callsFake(() => {
-      console.log(`\nUsersRest raiseNotification called`);
-    });
-
-    // call
-    let res = await UsersService.post(postReq, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubPopulateReferences.callCount).to.equal(1);
-    chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubEvent.callCount).to.equal(1);
-    chai.expect(stubUsersRest.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 201,
-      value: {
-        id: testUser.id,
-        name: testUser.name,
-        type: testUser.type,
-        status: testUser.status,
-      },
-    });
-  }).timeout(10000);
-
-  /**
-   * post with success with defaults
-   */
-  it('should post with success with defaults', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
-    const testUser = testUsers[0];
-
-    const postReq = {
-      ...testUser,
-    };
-    delete postReq.id;
-    delete postReq.type;
-    delete postReq.status;
-    delete postReq._lang_en;
 
     // stub
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
@@ -140,6 +83,59 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
+   * post with success with defaults
+   */
+  it('should post with success with defaults', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
+
+    const postReq = {
+      email: testUser.email,
+      schools: testUser.schools,
+    };
+
+    // stub
+    let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
+      return { status: 200, value: true };
+    });
+
+    let stubBase = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
+      console.log(`\nDbOpsUtils.post called`);
+      return {
+        status: 201,
+        value: { ...postObj, id: testUser.id },
+      };
+    });
+
+    let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
+      console.log(`\nEventsRest.raiseEventForObject called`);
+    });
+
+    let stubUsersRest = sinon.stub(UsersRest, 'raiseNotification').callsFake(() => {
+      console.log(`\nUsersRest raiseNotification called`);
+    });
+
+    // call
+    let res = await UsersService.post(postReq, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubPopulateReferences.callCount).to.equal(1);
+    chai.expect(stubBase.callCount).to.equal(1);
+    chai.expect(stubEvent.callCount).to.equal(1);
+    chai.expect(stubUsersRest.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 201,
+      value: {
+        id: testUser.id,
+        name: testUser.email,
+        type: testUser.type,
+        status: UsersConstants.Status.Pending,
+      },
+    });
+  }).timeout(10000);
+
+  /**
    * post fail validation
    */
   it('should post fail validation', async () => {
@@ -167,11 +163,9 @@ describe('Users Service', function () {
     const testUser = testUsers[0];
 
     const postReq = {
-      ...testUser,
+      email: testUser.email,
+      schools: testUser.schools,
     };
-    delete postReq.id;
-    delete postReq.type;
-    delete postReq._lang_en;
 
     // stub
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
@@ -201,11 +195,9 @@ describe('Users Service', function () {
     const testUser = testUsers[0];
 
     const postReq = {
-      ...testUser,
+      email: testUser.email,
+      schools: testUser.schools,
     };
-    delete postReq.id;
-    delete postReq.type;
-    delete postReq._lang_en;
 
     // stub
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
