@@ -744,7 +744,7 @@ const Public = {
 
     // raise event for reset password
     const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
-    const action = Private.Action.ResetPassword;
+    const action = resetType;
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, { resetType } /*args*/, _ctx);
 
     // success

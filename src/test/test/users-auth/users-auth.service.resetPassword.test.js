@@ -124,4 +124,50 @@ describe('Users Auth Service', function () {
       error: { message: 'Test error message', error: new Error('Test error') },
     });
   }).timeout(10000);
+
+  /**
+   * resetPassword with success for type invite
+   */
+  it('should resetPassword with success for type invite', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
+    const postReq = {
+      id: testUser.id,
+    };
+
+    // stub
+    let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.getOne called ${JSON.stringify(objID, null, 2)}`);
+      return {
+        status: 200,
+        value: { ...testUser },
+      };
+    });
+
+    let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
+      console.log(`\nEventsRest.raiseEventForObject called`);
+    });
+
+    let stubEmail = sinon.stub(EmailsUtils, 'sendEmail').callsFake(() => {
+      console.log(`\nEmailsUtils.sendEmail called`);
+    });
+
+    // call
+    let res = await UsersAuthService.resetPassword(postReq, _ctx, UsersAuthConstants.ResetTokenType.Invite);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubGet.callCount).to.equal(1);
+    chai.expect(stubEmail.callCount).to.equal(1);
+    chai.expect(stubEvent.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        id: testUser.id,
+        name: testUser.id,
+        type: testUser.type,
+      },
+    });
+  }).timeout(10000);
 });

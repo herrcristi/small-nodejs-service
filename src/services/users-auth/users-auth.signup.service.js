@@ -171,7 +171,7 @@ const Public = {
     const schoolID = rSchool.value.id;
     const inviteInfo = {
       email: objInfo.email,
-      school: { role: SchoolsRest.Constants.Roles.Admin },
+      school: { role: UsersRest.Constants.Roles.Admin },
     };
 
     const rInvite = await Public.invite(_ctx.userID, inviteInfo, { ..._ctx, tenantID: schoolID });
