@@ -12,7 +12,7 @@ describe('Jwt Utils', function () {
   const issuer = 'decrypt';
 
   before(async function () {
-    await JwtUtils.init(issuer);
+    await JwtUtils.init(issuer, [process.env.AUTHPASS]);
   });
 
   beforeEach(async function () {});

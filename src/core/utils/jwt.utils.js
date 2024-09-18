@@ -7,30 +7,23 @@ const CommonUtils = require('./common.utils');
 
 const Private = {
   // will be initialized on init for a issuer
-  JwtPasswords: {}, // passwords to sign the jwt, (keep last 2 due to rotation)
-
-  /**
-   * rotate jwt passwords
-   */
-  rotateJwtPassords: (issuer) => {
-    console.log(`\nGenerating a new jwt password for ${issuer}`);
-
-    Private.JwtPasswords[issuer] ??= [];
-    Private.JwtPasswords[issuer].push(CommonUtils.getRandomBytes(32)); // add a random password
-    Private.JwtPasswords[issuer] = Private.JwtPasswords[issuer].slice(-2); // keep only last 2
-  },
+  JwtPasswords: {}, // passwords to sign the jwt
 };
 
 const Public = {
   /**
    * init
    */
-  init: async (issuer) => {
-    Private.rotateJwtPassords(issuer);
+  init: async (issuer, passwords /*oldest first, newest last */) => {
+    if (!Array.isArray(passwords)) {
+      throw new Error(`Password required for issuer ${issuer}`);
+    }
 
-    setInterval(() => {
-      Private.rotateJwtPassords(issuer); // rotate passwords every day, interval must be greater than or equal to jwt expiration
-    }, 24 * 60 * 60 * 1000);
+    if (passwords.some((item) => item.length != 32)) {
+      throw new Error(`Password must  have 32 bytes for issuer ${issuer}`);
+    }
+
+    Private.JwtPasswords[issuer] = passwords;
   },
 
   /**
