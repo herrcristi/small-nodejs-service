@@ -62,7 +62,9 @@ const Public = {
     }
 
     // valid
-    console.log(`\nRequest authenticated ${route}`);
+    console.log(
+      `\nRequest authenticated route ${route} for user ${_ctx.username} (${_ctx.userID}) for tenant ${_ctx.tenantName} (${_ctx.tenantID})`
+    );
     next();
   },
 };
