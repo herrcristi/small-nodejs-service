@@ -169,12 +169,17 @@ const Public = {
 
     // create user and auth and invite user to school
     const schoolID = rSchool.value.id;
+    const schoolName = rSchool.value.name;
     const inviteInfo = {
       email: objInfo.email,
       school: { role: UsersRest.Constants.Roles.Admin },
     };
 
-    const rInvite = await Public.invite(_ctx.userID, inviteInfo, { ..._ctx, tenantID: schoolID });
+    const rInvite = await Public.invite(_ctx.userID, inviteInfo, {
+      ..._ctx,
+      tenantID: schoolID,
+      tenantName: schoolName,
+    });
     if (rInvite.error) {
       // delete school
       await SchoolsRest.delete(schoolID, _ctx);
