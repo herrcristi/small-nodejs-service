@@ -54,6 +54,7 @@ const Public = {
       // apply
       _ctx.userID = r.value.userID;
       _ctx.username = r.value.username;
+      _ctx.tenantName = r.value.tenantName;
     } catch (e) {
       console.log(`\nFailed to authenticate request. Error: ${e.stack}`, _ctx);
       res.status(500).json(await RestMessagesUtils.exception(e, _ctx));

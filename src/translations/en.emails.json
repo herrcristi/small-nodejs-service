@@ -9,6 +9,6 @@
   },
   "signup": {
     "subject": "You have been invited to {school}",
-    "email": "./en.email.invite.html"
+    "email": "./en.email.signup.html"
   }
 }

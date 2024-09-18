@@ -11,6 +11,7 @@ const Public = {
     // add _ctx to request
     req._ctx = {
       tenantID: req.headers['x-tenant-id'],
+      tenantName: null, // must be filled in middleware: users-auth and service2service
       reqID: req.headers['x-request-id'] || CommonUtils.uuidc(),
       lang: req.headers['x-lang'] || 'en',
       ipAddress: req.headers['x-forwarded-for'] || req.socket.remoteAddress,

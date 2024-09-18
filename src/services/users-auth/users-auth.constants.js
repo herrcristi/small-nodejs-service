@@ -20,9 +20,8 @@ const Public = {
 
   // reset token reason
   ResetTokenType: {
-    Signup: 'signup',
-    Invite: 'invite',
-    ResetPassword: 'reset-password',
+    Signup: 'signup', // a new user is created and is invited to a school
+    ResetPassword: 'reset-password', // user exists and resets password
   },
 };
 

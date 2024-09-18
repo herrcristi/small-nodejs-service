@@ -14,6 +14,7 @@ const Public = {
    */
   middleware: async (req, res, next) => {
     const _ctx = req._ctx;
+    _ctx.tenantName = req.headers['x-tenant-name'];
 
     const route = req.route?.path;
 

@@ -296,26 +296,23 @@ const Public = {
   /**
    * send email
    * config: { serviceName }
+   * args: { token, resetType }
    */
-  sendEmail: async (config, objID, token, _ctx, resetType) => {
+  sendEmail: async (config, objID, args, _ctx) => {
     // { serviceName, collection, notifications.projection }
     await Private.setupConfig(config, _ctx);
 
-    let args = {
+    let emailArgs = {
       user: '',
-      school: _ctx.tenantID,
+      school: _ctx.tenantName || _ctx.tenantID,
       appUrl: `${process.env.APP_URL}`,
-      resetUrl: `${process.env.APP_URL}/api/v1/users-auth/reset-token/validate?&type=${resetType}&token=${token}`,
     };
 
-    if (
-      resetType === UsersAuthConstants.ResetTokenType.Signup ||
-      resetType === UsersAuthConstants.ResetTokenType.Invite
-    ) {
-      // TODO get school name
+    if (args.resetType != null) {
+      emailArgs.resetUrl = `${process.env.APP_URL}/api/v1/users-auth/reset-token/validate?&type=${args.resetType}&token=${args.token}`;
     }
 
-    let emailTemplate = TranslationsUtils.email(resetType, _ctx, args);
+    let emailTemplate = TranslationsUtils.email(resetType, _ctx, emailArgs);
 
     // send email
     /* no await */ EmailsUtils.sendEmail(objID, emailTemplate['en'].subject, emailTemplate['en'].email, _ctx);
