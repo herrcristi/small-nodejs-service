@@ -271,8 +271,9 @@ const Public = {
    * init
    */
   init: async () => {
-    // init token encryption
-    await JwtUtils.init(Private.Issuer);
+    // init token encryption (due to multipod env password must be the same for all pods)
+    // allow rotation of password by providing mutiple password to support old tokens
+    await JwtUtils.init(Private.Issuer, [process.env.PREVAUTHPASS, process.env.AUTHPASS]);
 
     // init auth provider
     Private.UsersAuthProviderType = process.env.USERS_AUTH_PROVIDER;

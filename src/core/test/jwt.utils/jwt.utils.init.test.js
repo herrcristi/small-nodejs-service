@@ -8,16 +8,12 @@ const JwtUtils = require('../../utils/jwt.utils.js');
 
 describe('Jwt Utils', function () {
   const issuer = 'init';
-  let clock = null;
 
   before(async function () {});
 
-  beforeEach(async function () {
-    clock = sinon.useFakeTimers();
-  });
+  beforeEach(async function () {});
 
   afterEach(async function () {
-    clock.restore();
     sinon.restore();
   });
 
@@ -29,23 +25,75 @@ describe('Jwt Utils', function () {
   it('should init with success', async () => {
     const time = new Date();
 
-    const one_day = 24 * 60 * 60 * 1000;
+    // call
+    await JwtUtils.init(issuer, [process.env.AUTHPASS]);
 
-    // stub
-    let stubPass = sinon.stub(CommonUtils, 'getRandomBytes').callThrough();
+    // test by generate a valid token
+    const rT = JwtUtils.getJwt({ test: 'test' }, issuer, {});
+    console.log(`\nGenerate token: ${JSON.stringify(rT)}\n`);
 
     // call
-    let res = await JwtUtils.init(issuer);
-
-    chai.expect(stubPass.callCount).to.equal(1);
-
-    clock.tick(one_day + 10);
+    let res = JwtUtils.validateJwt(rT.value, issuer, {});
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    const endTime = new Date();
-    console.log(`\nElapsed time: ${endTime - time}`);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: { test: 'test' },
+    });
+  }).timeout(10000);
 
-    chai.expect(stubPass.callCount).to.equal(2);
-    chai.expect(endTime - time).to.be.greaterThanOrEqual(one_day); // 1 day
+  /**
+   * init fail no passwords
+   */
+  it('should init fail no passwords ', async () => {
+    const time = new Date();
+
+    // call
+    let exceptionThrown = false;
+    try {
+      await JwtUtils.init(issuer); // no password
+    } catch (e) {
+      chai.expect(e.message).to.include('Password required');
+      exceptionThrown = true;
+    }
+
+    chai.expect(exceptionThrown).to.equal(true);
+  }).timeout(10000);
+
+  /**
+   * init fail password is not array
+   */
+  it('should init fail no password set', async () => {
+    const time = new Date();
+
+    // call
+    let exceptionThrown = false;
+    try {
+      await JwtUtils.init(issuer, 'pass');
+    } catch (e) {
+      chai.expect(e.message).to.include('Password required');
+      exceptionThrown = true;
+    }
+
+    chai.expect(exceptionThrown).to.equal(true);
+  }).timeout(10000);
+
+  /**
+   * init fail password is not array
+   */
+  it('should init fail no password set', async () => {
+    const time = new Date();
+
+    // call
+    let exceptionThrown = false;
+    try {
+      await JwtUtils.init(issuer, ['pass']);
+    } catch (e) {
+      chai.expect(e.message).to.include('Password must  have 32 bytes');
+      exceptionThrown = true;
+    }
+
+    chai.expect(exceptionThrown).to.equal(true);
   }).timeout(10000);
 });

@@ -56,7 +56,9 @@ const Public = {
    */
   init: async () => {
     Private.SiteSalt = process.env.SALT;
-    await JwtUtils.init(Private.Issuer);
+    // (due to multipod env password must be the same for all pods)
+    // allow rotation of password by providing mutiple password to support old tokens
+    await JwtUtils.init(Private.Issuer, [process.env.PREVAUTHPASS, process.env.AUTHPASS]);
     await EmailsUtils.init(process.env.SMTP_CONFIG);
   },
 
