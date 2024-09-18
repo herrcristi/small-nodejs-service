@@ -54,6 +54,7 @@ const Public = {
       // apply
       _ctx.userID = r.value.userID;
       _ctx.username = r.value.username;
+      _ctx.tenantName = r.value.tenantName;
     } catch (e) {
       console.log(`\nFailed to authenticate request. Error: ${e.stack}`, _ctx);
       res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
@@ -61,7 +62,9 @@ const Public = {
     }
 
     // valid
-    console.log(`\nRequest authenticated ${route}`);
+    console.log(
+      `\nRequest authenticated route ${route} for user ${_ctx.username} (${_ctx.userID}) for tenant ${_ctx.tenantName} (${_ctx.tenantID})`
+    );
     next();
   },
 };

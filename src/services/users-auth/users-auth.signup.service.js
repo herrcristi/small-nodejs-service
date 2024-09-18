@@ -12,7 +12,7 @@ const NotificationsUtils = require('../../core/utils/base-service.notifications.
 const EventsRest = require('../rest/events.rest.js');
 const UsersRest = require('../rest/users.rest.js');
 const SchoolsRest = require('../rest/schools.rest.js');
-const UsersAuthRest = require('./users-auth.service.js');
+const UsersAuth = require('./users-auth.service.js');
 
 const UsersAuthConstants = require('./users-auth.constants.js');
 
@@ -83,7 +83,7 @@ const Private = {
     const userID = rUser.value.id;
 
     // create user auth with a random password
-    const rAuth = await UsersAuthRest.post(
+    const rAuth = await UsersAuth.post(
       {
         id: objInfo.email,
         password: CommonUtils.getRandomBytes(32).toString('hex'),
@@ -169,12 +169,17 @@ const Public = {
 
     // create user and auth and invite user to school
     const schoolID = rSchool.value.id;
+    const schoolName = rSchool.value.name;
     const inviteInfo = {
       email: objInfo.email,
       school: { role: UsersRest.Constants.Roles.Admin },
     };
 
-    const rInvite = await Public.invite(_ctx.userID, inviteInfo, { ..._ctx, tenantID: schoolID });
+    const rInvite = await Public.invite(_ctx.userID, inviteInfo, {
+      ..._ctx,
+      tenantID: schoolID,
+      tenantName: schoolName,
+    });
     if (rInvite.error) {
       // delete school
       await SchoolsRest.delete(schoolID, _ctx);
@@ -217,7 +222,8 @@ const Public = {
       _ctx
     );
 
-    if (rUser.status === 404) {
+    const isNewUser = rUser.status === 404;
+    if (isNewUser) {
       // the user does not exists -> create
       rUser = await Private.postNewUser(objInfo, _ctx);
     } else if (rUser.status === 200) {
@@ -232,9 +238,13 @@ const Public = {
       return rUser;
     }
 
-    // send reset password email (dont fail if this returns error)
-    const resetInfo = { id: objInfo.email };
-    const rr = await UsersAuthRest.resetPassword(resetInfo, _ctx, UsersAuthConstants.ResetTokenType.Invite);
+    // send invitation email and for signup reset password email (dont fail if this returns error)
+    const userInfo = { id: objInfo.email };
+    if (isNewUser) {
+      /* const rr = */ await UsersAuth.resetPassword(userInfo, _ctx, UsersAuthConstants.ResetTokenType.Signup);
+    } else {
+      /* const rr = */ await UsersAuth.invite(userInfo, _ctx);
+    }
 
     return rUser;
   },

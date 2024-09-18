@@ -75,6 +75,7 @@ const Private = {
         headers: {
           ...config.headers,
           'x-tenant-id': _ctx.tenantID,
+          'x-tenant-name': _ctx.tenantName,
           'x-request-id': _ctx.reqID,
           'x-lang': _ctx.lang,
           'x-forwarded-for': _ctx.ipAddress,

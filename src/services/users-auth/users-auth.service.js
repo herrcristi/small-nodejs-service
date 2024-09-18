@@ -100,6 +100,13 @@ const Validators = {
     remove: Schema.SchoolRoles,
   }),
 
+  Invite: Joi.object().keys({
+    id: Joi.string()
+      .email({ tlds: { allow: false } })
+      .min(1)
+      .max(128),
+  }),
+
   ResetPassword: Joi.object().keys({
     id: Joi.string()
       .email({ tlds: { allow: false } })
@@ -130,6 +137,7 @@ const Private = {
     Post: 'post',
     Delete: 'delete',
     PutPassword: 'putPassword',
+    Invite: 'invite',
     ResetPassword: 'resetPassword',
     PutResetPassword: 'putResetPassword',
     PutID: 'putID',
@@ -254,7 +262,7 @@ const Private = {
     }
 
     // valid
-    return { status: 200, value: true };
+    return { status: 200, value: true, tenantName: validSchool.name };
   },
 };
 
@@ -487,7 +495,7 @@ const Public = {
     ///
     // success
     ///
-    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username } };
+    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username, tenantName: rr.tenantName } };
   },
 
   /**
@@ -708,6 +716,40 @@ const Public = {
   },
 
   /**
+   * invite user to school
+   * objInfo: { id }
+   */
+  invite: async (objInfo, _ctx) => {
+    // validate
+    const v = Validators.Invite.validate(objInfo);
+    if (v.error) {
+      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+
+    // config: { serviceName }
+    const config = await Private.getConfig(_ctx);
+
+    const objID = objInfo.id;
+    const action = Private.Action.Invite;
+    const args = { emailID: 'invite' };
+
+    // only for local auth
+    if (config.isFirebaseAuth) {
+      // nothing to do
+    } else {
+      // send via email
+      await UsersAuthServiceLocal.sendEmail(config, objID, args, _ctx);
+    }
+
+    // raise event for reset password
+    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
+
+    // success
+    return { status: 200, value: newObj };
+  },
+
+  /**
    * reset password
    * objInfo: { id }
    */
@@ -722,6 +764,8 @@ const Public = {
     const config = await Private.getConfig(_ctx);
 
     const objID = objInfo.id;
+    const action = resetType;
+    const args = { emailID: resetType, resetType };
 
     // reset password
     let r;
@@ -737,15 +781,15 @@ const Public = {
     // only for local auth
     if (!config.isFirebaseAuth) {
       // encrypt token again
-      r.value = JwtUtils.encrypt(r.value, Private.Issuer, _ctx).value;
+      const token = JwtUtils.encrypt(r.value, Private.Issuer, _ctx).value;
+
       // send via email
-      await UsersAuthServiceLocal.sendEmail(config, objID, r.value, _ctx, resetType);
+      await UsersAuthServiceLocal.sendEmail(config, objID, { ...args, token }, _ctx);
     }
 
     // raise event for reset password
     const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
-    const action = resetType;
-    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, { resetType } /*args*/, _ctx);
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
     // success
     return { status: 200, value: newObj };

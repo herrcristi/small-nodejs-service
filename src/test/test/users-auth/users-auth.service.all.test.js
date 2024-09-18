@@ -9,6 +9,7 @@ require('./users-auth.service.post.test.js');
 require('./users-auth.service.delete.test.js');
 require('./users-auth.service.putPassword.test.js');
 require('./users-auth.service.resetPassword.test.js');
+require('./users-auth.service.invite.test.js');
 require('./users-auth.service.validateResetToken.test.js');
 require('./users-auth.service.putResetPassword.test.js');
 require('./users-auth.service.putID.test.js');
