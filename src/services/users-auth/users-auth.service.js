@@ -731,18 +731,19 @@ const Public = {
 
     const objID = objInfo.id;
     const action = Private.Action.Invite;
+    const args = { emailID: 'invite' };
 
     // only for local auth
     if (config.isFirebaseAuth) {
       // nothing to do
     } else {
       // send via email
-      await UsersAuthServiceLocal.sendEmail(config, objID, {} /*args*/, _ctx);
+      await UsersAuthServiceLocal.sendEmail(config, objID, args, _ctx);
     }
 
     // raise event for reset password
     const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
-    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, {} /*args*/, _ctx);
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
     // success
     return { status: 200, value: newObj };
@@ -764,7 +765,7 @@ const Public = {
 
     const objID = objInfo.id;
     const action = resetType;
-    const args = { resetType };
+    const args = { emailID: resetType, resetType };
 
     // reset password
     let r;

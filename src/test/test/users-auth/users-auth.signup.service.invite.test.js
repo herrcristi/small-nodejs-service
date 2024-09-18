@@ -115,6 +115,19 @@ describe('Users Auth Service', function () {
       };
     });
 
+    let stubUsersAuthInvite = sinon.stub(UsersAuthService, 'invite').callsFake((objInfo) => {
+      console.log(`\nUsersAuth.invite called with ${JSON.stringify(objInfo, null, 2)}`);
+
+      chai.expect(objInfo).to.deep.equal({
+        id: testUser.email,
+      });
+
+      return {
+        status: 200,
+        value: { id: testUser.email, type: UsersAuthRest.Constants.Type, name: testUser.id },
+      };
+    });
+
     let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
       console.log(`\nEventsRest.raiseEventForObject called`);
     });
@@ -130,6 +143,7 @@ describe('Users Auth Service', function () {
 
     chai.expect(stubUsersAuthPost.callCount).to.equal(1);
     chai.expect(stubUsersAuthResetPass.callCount).to.equal(1);
+    chai.expect(stubUsersAuthInvite.callCount).to.equal(0);
 
     chai.expect(stubEvents.callCount).to.equal(0);
 
@@ -279,6 +293,19 @@ describe('Users Auth Service', function () {
       };
     });
 
+    let stubUsersAuthInvite = sinon.stub(UsersAuthService, 'invite').callsFake((objInfo) => {
+      console.log(`\nUsersAuth.invite called with ${JSON.stringify(objInfo, null, 2)}`);
+
+      chai.expect(objInfo).to.deep.equal({
+        id: testUser.email,
+      });
+
+      return {
+        status: 200,
+        value: { id: testUser.email, type: UsersAuthRest.Constants.Type, name: testUser.id },
+      };
+    });
+
     let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
       console.log(`\nEventsRest.raiseEventForObject called`);
     });
@@ -294,7 +321,8 @@ describe('Users Auth Service', function () {
     chai.expect(stubUsersPatchSchool.callCount).to.equal(1);
 
     chai.expect(stubUsersAuthPost.callCount).to.equal(0);
-    chai.expect(stubUsersAuthResetPass.callCount).to.equal(1);
+    chai.expect(stubUsersAuthResetPass.callCount).to.equal(0);
+    chai.expect(stubUsersAuthInvite.callCount).to.equal(1);
 
     chai.expect(stubEvents.callCount).to.equal(0);
 
@@ -474,6 +502,19 @@ describe('Users Auth Service', function () {
       };
     });
 
+    let stubUsersAuthInvite = sinon.stub(UsersAuthService, 'invite').callsFake((objInfo) => {
+      console.log(`\nUsersAuth.invite called with ${JSON.stringify(objInfo, null, 2)}`);
+
+      chai.expect(objInfo).to.deep.equal({
+        id: testUser.email,
+      });
+
+      return {
+        status: 200,
+        value: { id: testUser.email, type: UsersAuthRest.Constants.Type, name: testUser.id },
+      };
+    });
+
     let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
       console.log(`\nEventsRest.raiseEventForObject called`);
     });
@@ -489,7 +530,8 @@ describe('Users Auth Service', function () {
     chai.expect(stubUsersPatchSchool.callCount).to.equal(0);
 
     chai.expect(stubUsersAuthPost.callCount).to.equal(0);
-    chai.expect(stubUsersAuthResetPass.callCount).to.equal(1);
+    chai.expect(stubUsersAuthResetPass.callCount).to.equal(0);
+    chai.expect(stubUsersAuthInvite.callCount).to.equal(1);
 
     chai.expect(stubEvents.callCount).to.equal(0);
 

@@ -39,6 +39,7 @@ describe('Users Auth Service', function () {
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
     const testInfoUser = testInfoUsers[0];
     for (const school of testInfoUser.schools) {
+      school.name = school.id;
       school.status = SchoolsRest.Constants.Status.Active;
     }
 
@@ -83,20 +84,22 @@ describe('Users Auth Service', function () {
       value: {
         userID: testInfoUser.id,
         username: testAuthUser.id,
+        tenantName: undefined,
       },
     });
   }).timeout(10000);
 
   /**
-   * validate role route with success
+   * validate role school route with success
    */
-  it('should validate role route with success', async () => {
+  it('should validate role school route with success', async () => {
     const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testAuthUser = testAuthUsers[0];
 
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
     const testInfoUser = testInfoUsers[0];
     for (const school of testInfoUser.schools) {
+      school.name = school.id;
       school.status = SchoolsRest.Constants.Status.Active;
     }
 
@@ -141,6 +144,67 @@ describe('Users Auth Service', function () {
       value: {
         userID: testInfoUser.id,
         username: testAuthUser.id,
+        tenantName: 'school-high2',
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * validate role route with success
+   */
+  it('should validate role route with success', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
+
+    const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    const testInfoUser = testInfoUsers[0];
+    for (const school of testInfoUser.schools) {
+      school.name = school.id;
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+
+    const testAuthData = testAuthUser._test_data;
+    delete testAuthUser._test_data;
+
+    // stub
+    let stubUsersGet = sinon.stub(UsersRest, 'getOneByEmail').callsFake((email) => {
+      console.log(`\nUsersRest.getOne called for ${JSON.stringify(email, null, 2)}\n`);
+
+      chai.expect(email).to.equal(testAuthUser.id);
+      return { status: 200, value: testInfoUser };
+    });
+
+    let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
+      console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
+
+      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+    });
+
+    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 200, value: data };
+    });
+
+    // call
+    _ctx.tenantID = testInfoUser.schools[1].id; // where is admin
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/students/${testInfoUser.id}`;
+    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/students/:id' }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubToken.callCount).to.equal(1);
+    chai.expect(stubDecrypt.callCount).to.equal(1);
+
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        userID: testInfoUser.id,
+        username: testAuthUser.id,
+        tenantName: 'school-high2',
       },
     });
   }).timeout(10000);
@@ -186,6 +250,7 @@ describe('Users Auth Service', function () {
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
     const testInfoUser = testInfoUsers[0];
     for (const school of testInfoUser.schools) {
+      school.name = school.id;
       school.status = SchoolsRest.Constants.Status.Active;
     }
 
@@ -324,7 +389,7 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * validate fail user is disabled
+   * fail validate user is disabled
    */
   it('should validate fail user is disabled', async () => {
     const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
@@ -563,9 +628,9 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * validate fail validate school :id
+   * fail validate school :id
    */
-  it('should validate fail validate school :id', async () => {
+  it('should fail validate school :id', async () => {
     const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testAuthUser = testAuthUsers[0];
 
@@ -621,9 +686,9 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * validate fail validate school :id prefix
+   * fail validate school :id prefix
    */
-  it('should validate fail validate school :id prefix', async () => {
+  it('should fail validate school :id prefix', async () => {
     const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testAuthUser = testAuthUsers[0];
 
@@ -682,9 +747,9 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * validate fail validate school
+   * fail validate school
    */
-  it('should validate fail validate school', async () => {
+  it('should fail validate school', async () => {
     const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testAuthUser = testAuthUsers[0];
 
@@ -740,9 +805,9 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * validate fail school is disabled
+   * fail validate school is disabled
    */
-  it('should validate fail school is disabled', async () => {
+  it('should fail school is disabled', async () => {
     const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testAuthUser = testAuthUsers[0];
 
@@ -798,9 +863,9 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * validate fail route is not accesible
+   * fail validate route is not accesible
    */
-  it('should validate fail route is not accesible', async () => {
+  it('should fail route is not accesible', async () => {
     const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testAuthUser = testAuthUsers[0];
 

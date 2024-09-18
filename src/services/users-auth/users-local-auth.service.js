@@ -312,7 +312,7 @@ const Public = {
       emailArgs.resetUrl = `${process.env.APP_URL}/api/v1/users-auth/reset-token/validate?&type=${args.resetType}&token=${args.token}`;
     }
 
-    let emailTemplate = TranslationsUtils.email(resetType, _ctx, emailArgs);
+    let emailTemplate = TranslationsUtils.email(args.emailID, _ctx, emailArgs);
 
     // send email
     /* no await */ EmailsUtils.sendEmail(objID, emailTemplate['en'].subject, emailTemplate['en'].email, _ctx);
