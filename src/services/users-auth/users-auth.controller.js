@@ -393,7 +393,8 @@ const Public = {
           2
         )} body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
-      const adminID = req.params.id;
+      const adminEmail = req.params.id;
+      const adminID = _ctx.userID; // after auth validation
       const userID = req.params.uid;
 
       // patch
