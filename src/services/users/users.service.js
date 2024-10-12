@@ -61,6 +61,11 @@ const Schema = {
 };
 
 const Validators = {
+  Get: {
+    filter: ['id', 'email', 'status', 'name', 'phoneNumber', 'address', 'schools.id', 'schools.name'], // some have index
+    sort: { name: 1 },
+  },
+
   Post: Schema.UserEmail.keys({
     name: Joi.string().min(1).max(128),
     type: Joi.string().valid(UsersConstants.Type),
@@ -174,7 +179,7 @@ const Public = {
    */
   getAllForReq: async (req, _ctx) => {
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-    const rf = await RestApiUtils.buildFilterFromReq(req, Schema.User, _ctx);
+    const rf = await RestApiUtils.buildFilterFromReq(req, Validators.Get, _ctx);
     if (rf.error) {
       return rf;
     }
@@ -251,7 +256,7 @@ const Public = {
     // validate
     const v = Validators.Post.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     objInfo.status = UsersConstants.Status.Pending; // add default status pending
@@ -317,7 +322,7 @@ const Public = {
     // validation is done in caller functions
     const v = validator.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -370,7 +375,7 @@ const Public = {
     // validate
     const v = validator.validate(patchInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -433,7 +438,7 @@ const Public = {
     // validate
     const v = NotificationsUtils.getNotificationSchema().validate(notification);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, notification, _ctx);
+      return CommonUtils.getSchemaValidationError(v, notification, _ctx);
     }
 
     // { serviceName, collection, references, fillReferences }

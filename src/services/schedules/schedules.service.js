@@ -73,6 +73,25 @@ const Schema = {
 };
 
 const Validators = {
+  Get: {
+    filter: [
+      'id',
+      'name',
+      'class.id',
+      'class.name',
+      'status',
+      'schedules.location.id',
+      'schedules.location.name',
+      'professors.id',
+      'professors.user.name',
+      'groups.id',
+      'groups.name',
+      'students.id',
+      'students.user.name',
+    ], // some have index
+    sort: { name: 1 },
+  },
+
   Post: Schema.Schedule.fork(
     ['name', 'class', 'schedules', 'professors', 'groups', 'students'],
     (x) => x.required() /*make required */
@@ -252,7 +271,7 @@ const Public = {
     }
 
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-    const rf = await RestApiUtils.buildFilterFromReq(req, Schema.Schedule, _ctx);
+    const rf = await RestApiUtils.buildFilterFromReq(req, Validators.Get, _ctx);
     if (rf.error) {
       return rf;
     }
@@ -349,7 +368,7 @@ const Public = {
     // validate
     const v = Validators.Post.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -421,7 +440,7 @@ const Public = {
     // validate
     const v = Validators.Put.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -478,7 +497,7 @@ const Public = {
     // validate
     const v = Validators.Patch.validate(patchInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -543,7 +562,7 @@ const Public = {
     // validate
     const v = NotificationsUtils.getNotificationSchema().validate(notification);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, notification, _ctx);
+      return CommonUtils.getSchemaValidationError(v, notification, _ctx);
     }
 
     // { serviceName, collection, references, fillReferences }

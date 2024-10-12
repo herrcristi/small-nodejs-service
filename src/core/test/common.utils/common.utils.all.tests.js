@@ -13,6 +13,7 @@ require('./common.utils.getHash.test.js');
 require('./common.utils.encrypt.test.js');
 require('./common.utils.decrypt.test.js');
 require('./common.utils.stringifyFilter.test.js');
+require('./common.utils.getSchemaValidationError.test.js');
 require('./common.utils.chunks.test.js');
 require('./common.utils.protectData.test.js');
 require('./common.utils.getProjectedObj.test.js');

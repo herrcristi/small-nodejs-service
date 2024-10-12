@@ -55,8 +55,11 @@ describe('Locations Functional', function () {
       data: [...testLocations],
       meta: {
         count: testLocations.length,
-        limit: 0,
+        limit: 10000,
         skip: 0,
+        sort: {
+          name: 1,
+        },
       },
     });
   }).timeout(10000);

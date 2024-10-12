@@ -75,17 +75,6 @@ const Public = {
   },
 
   /**
-   * get validation error
-   */
-  getSchemaValidationError: (v, objInfo, _ctx) => {
-    const error = `Failed to validate schema. Error: ${_.get(v, 'error.details[0].message')}`;
-    console.log(
-      `\nFailed to validate schema: ${JSON.stringify(CommonUtils.protectData(objInfo), null, 2)}. Error: ${error}`
-    );
-    return { status: 400, error: { message: error, error: new Error(error) } };
-  },
-
-  /**
    * get all for a requst
    * config: { serviceName, collection, schema, references, fillReferences, events, notifications }
    * req: { query }
@@ -229,7 +218,7 @@ const Public = {
     // validate
     const v = config.schema.validate(objInfo);
     if (v.error) {
-      return Public.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // populate references
@@ -306,7 +295,7 @@ const Public = {
     // validate
     const v = config.schema.validate(objInfo);
     if (v.error) {
-      return Public.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // populate references
@@ -353,7 +342,7 @@ const Public = {
     // validate
     const v = config.schema.validate(patchInfo);
     if (v.error) {
-      return Public.getSchemaValidationError(v, patchInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
     // populate references
@@ -399,7 +388,7 @@ const Public = {
     // validate
     const v = NotificationsUtils.getNotificationSchema().validate(notification);
     if (v.error) {
-      return Public.getSchemaValidationError(v, notification, _ctx);
+      return CommonUtils.getSchemaValidationError(v, notification, _ctx);
     }
 
     // notification (process references)

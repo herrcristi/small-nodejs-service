@@ -53,8 +53,86 @@ describe('Schools Functional', function () {
       data: [...testSchools],
       meta: {
         count: testSchools.length,
-        limit: 0,
+        limit: 10000,
         skip: 0,
+        sort: {
+          name: 1,
+        },
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * getAll with success with bigger limit
+   */
+  it('should getAll with success with bigger limit', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+
+    // call
+    let res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}?limit=1000000`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal({
+      data: [...testSchools],
+      meta: {
+        count: testSchools.length,
+        limit: 10000,
+        skip: 0,
+        sort: {
+          name: 1,
+        },
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * getAll with success with search
+   */
+  it('should getAll with success with search', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+
+    // call
+    let res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}?id,name=/univ/i`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal({
+      data: [testSchools[0]],
+      meta: {
+        count: 1,
+        limit: 10000,
+        skip: 0,
+        sort: {
+          name: 1,
+        },
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * getAll with success with search not found
+   */
+  it('should getAll with success with search not found', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+
+    // call
+    let res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}?name=/something/i`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal({
+      data: [],
+      meta: {
+        count: 0,
+        limit: 10000,
+        skip: 0,
+        sort: {
+          name: 1,
+        },
       },
     });
   }).timeout(10000);

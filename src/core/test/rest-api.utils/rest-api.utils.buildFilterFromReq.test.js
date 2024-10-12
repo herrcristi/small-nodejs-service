@@ -34,7 +34,9 @@ describe('Rest Api Utils', function () {
       query: querystring.parse('?name=John&status!=active'),
     };
 
-    let schema = {};
+    let schema = {
+      filter: ['name', 'status'],
+    };
 
     // call
     let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
@@ -45,14 +47,21 @@ describe('Rest Api Utils', function () {
       status: 200,
       value: {
         filter: {
-          name: 'John',
-          status: { $ne: 'active' },
+          $and: [
+            {
+              name: 'John',
+            },
+            {
+              status: { $ne: 'active' },
+            },
+          ],
         },
         projection: {
           _id: 0,
         },
-        limit: 0,
+        limit: 10000,
         skip: 0,
+        sort: undefined,
       },
     });
   }).timeout(10000);
@@ -65,7 +74,10 @@ describe('Rest Api Utils', function () {
       query: querystring.parse('?name&!status'),
     };
 
-    let schema = {};
+    let schema = {
+      filter: ['name', 'status'],
+      sort: { name: 1 },
+    };
 
     // call
     let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
@@ -76,14 +88,23 @@ describe('Rest Api Utils', function () {
       status: 200,
       value: {
         filter: {
-          status: { $exists: false },
-          name: { $exists: true },
+          $and: [
+            {
+              status: { $exists: false },
+            },
+            {
+              name: { $exists: true },
+            },
+          ],
         },
         projection: {
           _id: 0,
         },
-        limit: 0,
+        limit: 10000,
         skip: 0,
+        sort: {
+          name: 1,
+        },
       },
     });
   }).timeout(10000);
@@ -96,7 +117,9 @@ describe('Rest Api Utils', function () {
       query: querystring.parse('?name=/john/i&status!=/active/i'),
     };
 
-    let schema = {};
+    let schema = {
+      filter: ['name', 'status'],
+    };
 
     // call
     let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
@@ -107,16 +130,21 @@ describe('Rest Api Utils', function () {
       status: 200,
       value: {
         filter: {
-          name: /john/i,
-          status: {
-            $not: /active/i,
-          },
+          $and: [
+            {
+              name: /john/i,
+            },
+            {
+              status: { $not: /active/i },
+            },
+          ],
         },
         projection: {
           _id: 0,
         },
-        limit: 0,
+        limit: 10000,
         skip: 0,
+        sort: undefined,
       },
     });
   }).timeout(10000);
@@ -129,7 +157,9 @@ describe('Rest Api Utils', function () {
       query: querystring.parse('?count=1&value>10&value<=20'),
     };
 
-    let schema = {};
+    let schema = {
+      filter: ['count', 'value'],
+    };
 
     // call
     let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
@@ -140,14 +170,68 @@ describe('Rest Api Utils', function () {
       status: 200,
       value: {
         filter: {
-          count: 1,
-          value: { $gt: 10, $lte: 20 },
+          $and: [
+            {
+              count: 1,
+            },
+            {
+              value: { $gt: 10, $lte: 20 },
+            },
+          ],
         },
         projection: {
           _id: 0,
         },
-        limit: 0,
+        limit: 10000,
         skip: 0,
+        sort: undefined,
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * buildFilterFromReq test multiple keys
+   */
+  it('should buildFilterFromReq test multiple keys', async () => {
+    let req = {
+      query: querystring.parse('?id,name,_lang_en.id=/a1/i'),
+    };
+
+    let schema = {
+      filter: ['id', 'name'],
+    };
+
+    // call
+    let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        filter: {
+          $and: [
+            {
+              $or: [
+                {
+                  id: /a1/i,
+                },
+                {
+                  name: /a1/i,
+                },
+                {
+                  '_lang_en.id': /a1/i,
+                },
+              ],
+            },
+          ],
+        },
+        projection: {
+          _id: 0,
+        },
+        limit: 10000,
+        skip: 0,
+        sort: undefined,
       },
     });
   }).timeout(10000);
@@ -160,7 +244,9 @@ describe('Rest Api Utils', function () {
       query: querystring.parse('?g.id=a1,2,3,4'),
     };
 
-    let schema = {};
+    let schema = {
+      filter: ['g.id'],
+    };
 
     // call
     let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
@@ -171,15 +257,18 @@ describe('Rest Api Utils', function () {
       status: 200,
       value: {
         filter: {
-          'g.id': {
-            $in: ['a1', 2, 3, 4],
-          },
+          $and: [
+            {
+              'g.id': { $in: ['a1', 2, 3, 4] },
+            },
+          ],
         },
         projection: {
           _id: 0,
         },
-        limit: 0,
+        limit: 10000,
         skip: 0,
+        sort: undefined,
       },
     });
   }).timeout(10000);
@@ -192,35 +281,9 @@ describe('Rest Api Utils', function () {
       query: querystring.parse(''),
     };
 
-    let schema = {};
-
-    // call
-    let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: {
-        filter: {},
-        projection: {
-          _id: 0,
-        },
-        limit: 0,
-        skip: 0,
-      },
-    });
-  }).timeout(10000);
-
-  /**
-   * buildFilterFromReq test limit, skip, sort, projection
-   */
-  it('should buildFilterFromReq test limit, skip, sort, projection', async () => {
-    let req = {
-      query: querystring.parse('?name=John&limit=1&skip=1&sort=name,-date&projection=id,name,type,status'),
+    let schema = {
+      filter: ['name', 'status'],
     };
-
-    let schema = {};
 
     // call
     let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
@@ -231,14 +294,51 @@ describe('Rest Api Utils', function () {
       status: 200,
       value: {
         filter: {
-          name: 'John',
+          id: { $exists: true },
+        },
+        projection: {
+          _id: 0,
+        },
+        limit: 10000,
+        skip: 0,
+        sort: undefined,
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * buildFilterFromReq test limit, skip, sort, projection
+   */
+  it('should buildFilterFromReq test limit, skip, sort, projection', async () => {
+    let req = {
+      query: querystring.parse('?name=John&limit=1000000&skip=1&sort=name,-date&projection=id,name,type,status'),
+    };
+
+    let schema = {
+      filter: ['name', 'status'],
+    };
+
+    // call
+    let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        filter: {
+          $and: [
+            {
+              name: 'John',
+            },
+          ],
         },
         sort: {
           name: 1,
           date: -1,
         },
         skip: 1,
-        limit: 1,
+        limit: 10000,
         projection: {
           _id: 0,
           id: 1,
@@ -251,9 +351,9 @@ describe('Rest Api Utils', function () {
   }).timeout(10000);
 
   /**
-   * buildFilterFromReq fail
+   * buildFilterFromReq fail req
    */
-  it('should buildFilterFromReq fail', async () => {
+  it('should buildFilterFromReq fail req', async () => {
     let req = null;
     let schema = {};
 
@@ -263,5 +363,66 @@ describe('Rest Api Utils', function () {
 
     // check
     chai.expect(res.error.message).to.include('Cannot read properties of null');
+  }).timeout(10000);
+
+  /**
+   * buildFilterFromReq test fail validate
+   */
+  it('should buildFilterFromReq test fail validate', async () => {
+    let req = {
+      query: querystring.parse('?unknown=John'),
+    };
+
+    let schema = {
+      filter: ['name', 'status'],
+    };
+
+    // call
+    let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 400,
+      error: {
+        message: 'Failed to validate schema. Error: "$and[0].unknown" is not allowed',
+        error: new Error('Failed to validate schema. Error: "$and[0].unknown" is not allowed'),
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * buildFilterFromReq test no config
+   */
+  it('should buildFilterFromReq test no config', async () => {
+    let req = {
+      query: querystring.parse('?name=John'),
+    };
+
+    let schema = undefined;
+
+    // call
+    let res = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        filter: {
+          $and: [
+            {
+              name: 'John',
+            },
+          ],
+        },
+        projection: {
+          _id: 0,
+        },
+        limit: 10000,
+        skip: 0,
+        sort: undefined,
+      },
+    });
   }).timeout(10000);
 });

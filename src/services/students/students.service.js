@@ -37,6 +37,21 @@ const Schema = {
 };
 
 const Validators = {
+  Get: {
+    filter: [
+      'id',
+      'user.id',
+      'user.name',
+      'classes.id',
+      'classes.name',
+      'groups.id',
+      'groups.name',
+      'schedules.id',
+      'schedules.name',
+    ], // some have index
+    sort: { 'user.name': 1 },
+  },
+
   Post: Schema.Student.fork(['classes'], (x) => x.required() /*make required */).keys({
     id: Joi.string().min(1).max(64).required(),
     type: Joi.string().valid(StudentsConstants.Type),
@@ -126,7 +141,7 @@ const Public = {
     }
 
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-    const rf = await RestApiUtils.buildFilterFromReq(req, Schema.Student, _ctx);
+    const rf = await RestApiUtils.buildFilterFromReq(req, Validators.Get, _ctx);
     if (rf.error) {
       return rf;
     }
@@ -222,7 +237,7 @@ const Public = {
     // validate
     const v = Validators.Post.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
     objInfo.user = objInfo.id;
 
@@ -337,7 +352,7 @@ const Public = {
     // validate
     const v = Validators.Put.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -382,7 +397,7 @@ const Public = {
     // validate
     const v = Validators.Patch.validate(patchInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -425,7 +440,7 @@ const Public = {
     // validate
     const v = NotificationsUtils.getNotificationSchema().validate(notification);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, notification, _ctx);
+      return CommonUtils.getSchemaValidationError(v, notification, _ctx);
     }
 
     let tenantNotifications = [];

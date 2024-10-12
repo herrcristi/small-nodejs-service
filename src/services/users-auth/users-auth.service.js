@@ -295,7 +295,7 @@ const Public = {
     // validate
     const v = Validators.Login.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     _ctx.userID = objInfo.id;
@@ -437,7 +437,7 @@ const Public = {
     // validate
     const v = Validators.Token.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // config: { serviceName }
@@ -508,7 +508,7 @@ const Public = {
     // validate
     const v = Validators.Post.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // config: { serviceName }
@@ -578,7 +578,7 @@ const Public = {
     // validate
     const v = Validators.PutPassword.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // config: { serviceName }
@@ -613,7 +613,7 @@ const Public = {
     // validate
     const v = Validators.PutID.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // config: { serviceName }
@@ -665,7 +665,7 @@ const Public = {
     // validate
     const v = Validators.PatchPassword.validate(patchInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
     return await Public.putPassword(objID, patchInfo.set, _ctx, Private.Action.PatchPassword);
@@ -678,7 +678,7 @@ const Public = {
     // validate
     const v = Validators.PatchID.validate(patchInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
     return await Public.putID(objID, patchInfo.set, _ctx, Private.Action.PatchID);
@@ -692,7 +692,7 @@ const Public = {
     // validate
     const v = Validators.PatchUserSchool.validate(patchInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
     // here route is already validated that the current adminID (_ctx.userID) is the admin of the school (_ctx.tenantID)
@@ -731,7 +731,7 @@ const Public = {
     // validate
     const v = Validators.Invite.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // config: { serviceName }
@@ -765,7 +765,7 @@ const Public = {
     // validate
     const v = Validators.ResetPassword.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // config: { serviceName }
@@ -811,7 +811,7 @@ const Public = {
     // validate
     const v = Validators.ResetToken.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // config: { serviceName }
@@ -847,7 +847,7 @@ const Public = {
     // validate
     const v = Validators.PutResetPassword.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // config: { serviceName }
@@ -889,7 +889,7 @@ const Public = {
     // validate
     const v = NotificationsUtils.getNotificationSchema().validate(notification);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, notification, _ctx);
+      return CommonUtils.getSchemaValidationError(v, notification, _ctx);
     }
 
     // config: { serviceName }

@@ -37,6 +37,22 @@ const Schema = {
 };
 
 const Validators = {
+  Get: {
+    filter: [
+      'id',
+      'createdTimestamp',
+      'name',
+      'severity',
+      'messageID',
+      'target.id',
+      'target.name',
+      'target.type',
+      'user.id',
+      'user.username',
+    ], // some have index
+    sort: { createdTimestamp: -1 },
+  },
+
   Post: Schema.Event.fork(['severity', 'messageID', 'target', 'user'], (x) => x.required() /*make required */).keys({
     type: Joi.string().valid(EventsConstants.Type),
     name: Joi.string(),
@@ -78,7 +94,7 @@ const Public = {
    */
   getAllForReq: async (req, _ctx) => {
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-    const rf = await RestApiUtils.buildFilterFromReq(req, Schema.Event, _ctx);
+    const rf = await RestApiUtils.buildFilterFromReq(req, Validators.Get, _ctx);
     if (rf.error) {
       return rf;
     }
@@ -155,7 +171,7 @@ const Public = {
     // validate
     const v = Validators.Post.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -192,7 +208,7 @@ const Public = {
     // validate
     const v = NotificationsUtils.getNotificationSchema().validate(notification);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, notification, _ctx);
+      return CommonUtils.getSchemaValidationError(v, notification, _ctx);
     }
 
     // { serviceName, collection, references, fillReferences }

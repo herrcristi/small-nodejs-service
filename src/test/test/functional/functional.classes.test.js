@@ -55,8 +55,11 @@ describe('Classes Functional', function () {
       data: [...testClasses],
       meta: {
         count: testClasses.length,
-        limit: 0,
+        limit: 10000,
         skip: 0,
+        sort: {
+          name: 1,
+        },
       },
     });
   }).timeout(10000);
