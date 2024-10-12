@@ -144,7 +144,7 @@ const Public = {
     // validate
     const v = Validators.Signup.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // currently signup can be done only by portal admin not by anonymous otherwise // _ctx.userID = objInfo.email; // _ctx.username = objInfo.email;
@@ -202,7 +202,7 @@ const Public = {
     // validate
     const v = Validators.Invite.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // objID is the _ctx.userID

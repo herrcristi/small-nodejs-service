@@ -2,6 +2,7 @@
  * Common utils
  */
 const crypto = require('crypto');
+const _ = require('lodash');
 
 const Public = {
   /**
@@ -90,6 +91,17 @@ const Public = {
    */
   stringifyFilter: (key, value) => {
     return value instanceof RegExp ? value.toString() : value;
+  },
+
+  /**
+   * get validation error
+   */
+  getSchemaValidationError: (v, objInfo, _ctx) => {
+    const error = `Failed to validate schema. Error: ${_.get(v, 'error.details[0].message')}`;
+    console.log(
+      `\nFailed to validate schema: ${JSON.stringify(Public.protectData(objInfo), null, 2)}. Error: ${error}`
+    );
+    return { status: 400, error: { message: error, error: new Error(error) } };
   },
 
   /**

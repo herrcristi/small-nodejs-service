@@ -158,7 +158,7 @@ const Public = {
     // validate
     const v = Validators.Post.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -222,7 +222,7 @@ const Public = {
     // validate
     const v = Validators.Put.validate(objInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -262,7 +262,7 @@ const Public = {
     // validate
     const v = Validators.Patch.validate(patchInfo);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
+      return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -303,7 +303,7 @@ const Public = {
     // validate
     const v = NotificationsUtils.getNotificationSchema().validate(notification);
     if (v.error) {
-      return BaseServiceUtils.getSchemaValidationError(v, notification, _ctx);
+      return CommonUtils.getSchemaValidationError(v, notification, _ctx);
     }
 
     // { serviceName, collection, references, fillReferences }

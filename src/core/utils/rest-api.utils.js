@@ -5,7 +5,6 @@ const Aqs = require('api-query-params');
 const Joi = require('joi');
 
 const CommonUtils = require('./common.utils.js');
-const BaseServiceUtils = require('./base-service.utils.js');
 
 const Utils = {
   /**
@@ -91,7 +90,7 @@ const Public = {
         const validator = Utils.getValidator(config, _ctx);
         const v = validator.validate(filter.filter);
         if (v.error) {
-          return BaseServiceUtils.getSchemaValidationError(v, filter.filter, _ctx);
+          return CommonUtils.getSchemaValidationError(v, filter.filter, _ctx);
         }
       }
 
