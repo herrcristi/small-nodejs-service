@@ -59,8 +59,11 @@ describe('Schedules Functional', function () {
       data: [...testSchedules],
       meta: {
         count: testSchedules.length,
-        limit: 0,
+        limit: 10000,
         skip: 0,
+        sort: {
+          name: 1,
+        },
       },
     });
   }).timeout(10000);

@@ -151,8 +151,11 @@ describe('Users Functional', function () {
       data: [...testUsers],
       meta: {
         count: testUsers.length,
-        limit: 0,
+        limit: 10000,
         skip: 0,
+        sort: {
+          name: 1,
+        },
       },
     });
   }).timeout(10000);

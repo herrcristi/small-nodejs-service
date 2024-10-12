@@ -56,8 +56,11 @@ describe('Groups Functional', function () {
       data: [...testGroups],
       meta: {
         count: testGroups.length,
-        limit: 0,
+        limit: 10000,
         skip: 0,
+        sort: {
+          name: 1,
+        },
       },
     });
   }).timeout(10000);
