@@ -31,6 +31,12 @@ const Schema = {
 };
 
 const Validators = {
+  Get: {
+    filter: ['id', 'name'], // only with index
+    sort: { name: 1 },
+    search: ['id', 'name', 'description', 'status'],
+  },
+
   Post: Schema.School.fork(['name'], (x) => x.required() /*make required */).keys({
     type: Joi.string().valid(SchoolsConstants.Type),
   }),
@@ -76,7 +82,7 @@ const Public = {
    */
   getAllForReq: async (req, _ctx) => {
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-    const rf = await RestApiUtils.buildFilterFromReq(req, Schema.School, _ctx);
+    const rf = await RestApiUtils.buildFilterFromReq(req, Validators.Get, _ctx);
     if (rf.error) {
       return rf;
     }

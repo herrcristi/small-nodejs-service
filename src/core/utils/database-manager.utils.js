@@ -51,7 +51,12 @@ const Public = {
       if (Private.DBClients[cacheKey]) {
         return Private.DBClients[cacheKey].db(dbName);
       }
-      const options = {};
+      const options = {
+        // Specifies the preferences for this connection
+        readPreference: 'secondaryPreferred',
+        readConcern: { level: 'majority' },
+        writeConcern: { w: 'majority' },
+      };
       let client = await MongoDB.MongoClient.connect(dbUrl, options);
       if (!client) {
         throw new Error(`Cannot connect to ${dbUrl}`);

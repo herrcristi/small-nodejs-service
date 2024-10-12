@@ -202,7 +202,9 @@ describe('Rest Api Utils', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        filter: {},
+        filter: {
+          id: { $exists: true },
+        },
         projection: {
           _id: 0,
         },

@@ -41,6 +41,21 @@ const Schema = {
 };
 
 const Validators = {
+  Get: {
+    filter: ['id', 'name', 'students.id', 'schedules.id'], // only with index
+    sort: { name: 1 },
+    search: [
+      'id',
+      'name',
+      'status',
+      'description',
+      'students.id',
+      'students.user.name',
+      'schedules.id',
+      'schedules.name',
+    ],
+  },
+
   Post: Schema.Group.fork(['name', 'students'], (x) => x.required() /*make required */).keys({
     type: Joi.string().valid(GroupsConstants.Type),
   }),
@@ -150,7 +165,7 @@ const Public = {
     }
 
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-    const rf = await RestApiUtils.buildFilterFromReq(req, Schema.Group, _ctx);
+    const rf = await RestApiUtils.buildFilterFromReq(req, Validators.Get, _ctx);
     if (rf.error) {
       return rf;
     }

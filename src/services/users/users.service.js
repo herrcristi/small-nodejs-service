@@ -61,6 +61,12 @@ const Schema = {
 };
 
 const Validators = {
+  Get: {
+    filter: ['id', 'email', 'name', 'schools.id'], // only with index
+    sort: { name: 1 },
+    search: ['id', 'email', 'status', 'name', 'phoneNumber', 'address', 'schools.id', 'schools.name'],
+  },
+
   Post: Schema.UserEmail.keys({
     name: Joi.string().min(1).max(128),
     type: Joi.string().valid(UsersConstants.Type),
@@ -174,7 +180,7 @@ const Public = {
    */
   getAllForReq: async (req, _ctx) => {
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-    const rf = await RestApiUtils.buildFilterFromReq(req, Schema.User, _ctx);
+    const rf = await RestApiUtils.buildFilterFromReq(req, Validators.Get, _ctx);
     if (rf.error) {
       return rf;
     }

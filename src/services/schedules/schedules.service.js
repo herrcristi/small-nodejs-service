@@ -73,6 +73,25 @@ const Schema = {
 };
 
 const Validators = {
+  Get: {
+    filter: ['id', 'name', 'class.id', 'schedules.location.id', 'groups.id', 'professors.id', 'students.id'], // only with index
+    sort: { name: 1 },
+    search: [
+      'id',
+      'class.id',
+      'class.name',
+      'status',
+      'schedules.location.id',
+      'schedules.location.name',
+      'professors.id',
+      'professors.user.name',
+      'groups.id',
+      'groups.name',
+      'students.id',
+      'students.user.name',
+    ],
+  },
+
   Post: Schema.Schedule.fork(
     ['name', 'class', 'schedules', 'professors', 'groups', 'students'],
     (x) => x.required() /*make required */
@@ -252,7 +271,7 @@ const Public = {
     }
 
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-    const rf = await RestApiUtils.buildFilterFromReq(req, Schema.Schedule, _ctx);
+    const rf = await RestApiUtils.buildFilterFromReq(req, Validators.Get, _ctx);
     if (rf.error) {
       return rf;
     }

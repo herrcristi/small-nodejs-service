@@ -37,6 +37,22 @@ const Schema = {
 };
 
 const Validators = {
+  Get: {
+    filter: ['id', 'createdTimestamp', 'severity', 'messageID', 'target.id', 'target.name'], // only with index
+    sort: { createdTimestamp: -1 },
+    search: [
+      'id',
+      'name',
+      'severity',
+      'messageID',
+      'target.id',
+      'target.name',
+      'target.type',
+      'user.id',
+      'user.username',
+    ],
+  },
+
   Post: Schema.Event.fork(['severity', 'messageID', 'target', 'user'], (x) => x.required() /*make required */).keys({
     type: Joi.string().valid(EventsConstants.Type),
     name: Joi.string(),
@@ -78,7 +94,7 @@ const Public = {
    */
   getAllForReq: async (req, _ctx) => {
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-    const rf = await RestApiUtils.buildFilterFromReq(req, Schema.Event, _ctx);
+    const rf = await RestApiUtils.buildFilterFromReq(req, Validators.Get, _ctx);
     if (rf.error) {
       return rf;
     }

@@ -36,6 +36,12 @@ const Schema = {
 };
 
 const Validators = {
+  Get: {
+    filter: ['id', 'user.id', 'user.name', 'classes.id', 'schedules.id'], // only with index
+    sort: { 'user.name': 1 },
+    search: ['id', 'user.name', 'classes.id', 'classes.name', 'schedules.id', 'schedules.name'],
+  },
+
   Post: Schema.Professor.fork(['classes'], (x) => x.required() /*make required */).keys({
     id: Joi.string().min(1).max(64).required(),
     type: Joi.string().valid(ProfessorsConstants.Type),
@@ -120,7 +126,7 @@ const Public = {
     }
 
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-    const rf = await RestApiUtils.buildFilterFromReq(req, Schema.Professor, _ctx);
+    const rf = await RestApiUtils.buildFilterFromReq(req, Validators.Get, _ctx);
     if (rf.error) {
       return rf;
     }
