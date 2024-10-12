@@ -9,55 +9,54 @@ const BaseServiceUtils = require('./base-service.utils.js');
 
 const Utils = {
   /**
+   *  convert multi fields into OR fields
+   */
+  convertFilter: (filter, _ctx) => {
+    let convertedFilter = {
+      $and: [],
+    };
+
+    // make OR from the multi fields
+    for (const field of Object.keys(filter)) {
+      const value = filter[field];
+
+      const innerFields = field.split(',');
+      const orFilter = { $or: [] };
+      for (const innerField of innerFields) {
+        orFilter.$or.push({ [innerField]: value });
+      }
+
+      convertedFilter.$and.push(orFilter.$or.length === 1 ? orFilter.$or[0] : orFilter);
+    }
+
+    return convertedFilter;
+  },
+
+  /**
    * get validator for fields adding search fields
-   * config: { filter, sort, search }
+   * config: { filter, sort? }
    */
   getValidator: (config, _ctx) => {
-    const validateKeys = {
-      searchFields: Joi.array().items(
-        Joi.string()
-          .min(1)
-          .max(128)
-          .valid(...config.search)
-      ), // this will be OR'ed
-
-      searchValue: Joi.string().when('searchFields', {
-        is: Joi.exist(),
-        then: Joi.required(),
-        otherwise: Joi.forbidden(),
-      }),
-    };
+    let validateKeys = {};
 
     // all other fields
     for (const field of config.filter) {
       validateKeys[field] = Joi.any();
+      validateKeys[`_lang_${_ctx.lang}.${field}`] = Joi.any();
     }
 
-    return Joi.object().keys(validateKeys);
-  },
-
-  /**
-   * convert searchFields and searchValue to real db query
-   */
-  updateSearchFilter: (filter, _ctx) => {
-    if (!filter.searchFields) {
-      return;
-    }
-    const fields = filter.searchFields;
-    let value = filter.searchValue;
-    delete filter.searchFields;
-    delete filter.searchValue;
-
-    // must replace special regexp characters
-    value = value.replace(/[.*+?^${}()|[\]\\]/g, '');
-
-    // make OR from the searchFields
-    filter.$or = [];
-    for (const field of fields) {
-      filter.$or.push({
-        [field]: new RegExp(value, 'i'),
-      });
-    }
+    return Joi.object().keys({
+      $and: Joi.array().items(
+        Joi.object().keys({
+          ...validateKeys,
+          $or: Joi.array().items(
+            Joi.object().keys({
+              ...validateKeys,
+            })
+          ),
+        })
+      ),
+    });
   },
 };
 
@@ -83,25 +82,21 @@ const Public = {
       filter.skip = filter.skip || 0;
       filter.sort = filter.sort || config?.sort;
 
+      // convert multi fields into OR fields
+      filter.filter = Utils.convertFilter(filter.filter, _ctx);
+
       // use config to validate filter
       if (config) {
-        if (filter.filter.searchFields) {
-          filter.filter.searchFields = filter.filter.searchFields.$in || [filter.filter.searchFields];
-        }
-
         // create a Joi validator and add searchFields, searchValue (only strings so far)
         const validator = Utils.getValidator(config, _ctx);
         const v = validator.validate(filter.filter);
         if (v.error) {
           return BaseServiceUtils.getSchemaValidationError(v, filter.filter, _ctx);
         }
-
-        // convert searchFields and searchValue to real db query
-        Utils.updateSearchFilter(filter.filter, _ctx);
       }
 
       // optimize empty filter for countDocuments
-      if (!Object.keys(filter.filter).length) {
+      if (!Object.keys(filter.filter.$and).length) {
         filter.filter = { id: { $exists: true } };
       }
 
