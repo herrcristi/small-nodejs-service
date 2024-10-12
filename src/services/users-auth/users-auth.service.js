@@ -695,20 +695,27 @@ const Public = {
       return BaseServiceUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
-    // here route is already validated that the current adminID is the admin of the school (_ctx.tenantID)
+    // here route is already validated that the current adminID (_ctx.userID) is the admin of the school (_ctx.tenantID)
 
     // add the school id
-    const patchSchoolInfo = _.cloneDeep(patchInfo);
+    const patchSchoolInfo = {};
     for (const op of ['add', 'remove']) {
-      if (patchSchoolInfo[op]) {
-        patchSchoolInfo[op].schools = [
-          {
-            id: _ctx.tenantID,
-            roles: patchSchoolInfo[op].roles,
-          },
-        ];
-        delete patchSchoolInfo[op].roles;
+      if (!patchInfo[op]) {
+        continue;
       }
+      let roles = patchInfo[op].roles;
+
+      // prevent removing itself as admin
+      if (op === 'remove' && _ctx.userID === userID) {
+        roles = roles.filter((item) => item !== UsersRest.Constants.Roles.Admin);
+      }
+      if (!roles.length) {
+        continue;
+      }
+
+      patchSchoolInfo[op] = {
+        schools: [{ id: _ctx.tenantID, roles }],
+      };
     }
 
     // patch user schools
