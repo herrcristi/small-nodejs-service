@@ -33,9 +33,8 @@ const Schema = {
 
 const Validators = {
   Get: {
-    filter: ['id', 'name'], // only with index
+    filter: ['id', 'name', 'status', 'address'], // some have index
     sort: { name: 1 },
-    search: ['id', 'name', 'status', 'address'],
   },
 
   Post: Schema.Location.fork(['name', 'address'], (x) => x.required() /*make required */).keys({

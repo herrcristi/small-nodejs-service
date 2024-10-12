@@ -62,9 +62,8 @@ const Schema = {
 
 const Validators = {
   Get: {
-    filter: ['id', 'email', 'name', 'schools.id'], // only with index
+    filter: ['id', 'email', 'status', 'name', 'phoneNumber', 'address', 'schools.id', 'schools.name'], // some have index
     sort: { name: 1 },
-    search: ['id', 'email', 'status', 'name', 'phoneNumber', 'address', 'schools.id', 'schools.name'],
   },
 
   Post: Schema.UserEmail.keys({

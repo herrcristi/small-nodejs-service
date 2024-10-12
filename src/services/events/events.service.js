@@ -38,10 +38,9 @@ const Schema = {
 
 const Validators = {
   Get: {
-    filter: ['id', 'createdTimestamp', 'severity', 'messageID', 'target.id', 'target.name'], // only with index
-    sort: { createdTimestamp: -1 },
-    search: [
+    filter: [
       'id',
+      'createdTimestamp',
       'name',
       'severity',
       'messageID',
@@ -50,7 +49,8 @@ const Validators = {
       'target.type',
       'user.id',
       'user.username',
-    ],
+    ], // some have index
+    sort: { createdTimestamp: -1 },
   },
 
   Post: Schema.Event.fork(['severity', 'messageID', 'target', 'user'], (x) => x.required() /*make required */).keys({

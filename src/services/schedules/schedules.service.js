@@ -74,10 +74,9 @@ const Schema = {
 
 const Validators = {
   Get: {
-    filter: ['id', 'name', 'class.id', 'schedules.location.id', 'groups.id', 'professors.id', 'students.id'], // only with index
-    sort: { name: 1 },
-    search: [
+    filter: [
       'id',
+      'name',
       'class.id',
       'class.name',
       'status',
@@ -89,7 +88,8 @@ const Validators = {
       'groups.name',
       'students.id',
       'students.user.name',
-    ],
+    ], // some have index
+    sort: { name: 1 },
   },
 
   Post: Schema.Schedule.fork(

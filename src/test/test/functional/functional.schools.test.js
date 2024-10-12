@@ -94,9 +94,7 @@ describe('Schools Functional', function () {
     const testSchools = _.cloneDeep(TestConstants.Schools);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .get(`${SchoolsConstants.ApiPath}?searchFields=name&searchValue=univ`);
+    let res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}?id,name=/univ/i`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -121,9 +119,7 @@ describe('Schools Functional', function () {
     const testSchools = _.cloneDeep(TestConstants.Schools);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .get(`${SchoolsConstants.ApiPath}?searchFields=name&searchValue=something`);
+    let res = await chai.request(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}?name=/something/i`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check

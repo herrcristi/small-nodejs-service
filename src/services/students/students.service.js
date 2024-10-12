@@ -38,10 +38,9 @@ const Schema = {
 
 const Validators = {
   Get: {
-    filter: ['id', 'user.id', 'user.name', 'classes.id', 'groups.id', 'schedules.id'], // only with index
-    sort: { 'user.name': 1 },
-    search: [
+    filter: [
       'id',
+      'user.id',
       'user.name',
       'classes.id',
       'classes.name',
@@ -49,7 +48,8 @@ const Validators = {
       'groups.name',
       'schedules.id',
       'schedules.name',
-    ],
+    ], // some have index
+    sort: { 'user.name': 1 },
   },
 
   Post: Schema.Student.fork(['classes'], (x) => x.required() /*make required */).keys({

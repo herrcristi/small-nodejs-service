@@ -37,9 +37,8 @@ const Schema = {
 
 const Validators = {
   Get: {
-    filter: ['id', 'user.id', 'user.name', 'classes.id', 'schedules.id'], // only with index
+    filter: ['id', 'user.id', 'user.name', 'classes.id', 'classes.name', 'schedules.id', 'schedules.name'], // some have index
     sort: { 'user.name': 1 },
-    search: ['id', 'user.name', 'classes.id', 'classes.name', 'schedules.id', 'schedules.name'],
   },
 
   Post: Schema.Professor.fork(['classes'], (x) => x.required() /*make required */).keys({
