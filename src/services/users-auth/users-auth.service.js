@@ -706,7 +706,7 @@ const Public = {
       let roles = patchInfo[op].roles;
 
       // prevent removing itself as admin
-      if (op === 'remove' && _ctx.userID === userID) {
+      if (op === 'remove' && adminID === userID) {
         roles = roles.filter((item) => item !== UsersRest.Constants.Roles.Admin);
       }
       if (!roles.length) {
