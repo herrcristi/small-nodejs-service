@@ -1,0 +1,51 @@
+{
+  "name": "small-nodejs-service-ui",
+  "version": "1.0.0",
+  "description": "Frontend for the Small Node.js Service using Vue.js",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "keywords": [
+    "small",
+    "nodejs",
+    "micro",
+    "service",
+    "vue",
+    "frontend"
+  ],
+  "author": "Small",
+  "license": "ISC",
+  "dependencies": {
+    "@mdi/font": "7.4.47",
+    "axios": "1.12.1",
+    "body-parser": "2.2.0",
+    "cors": "2.8.5",
+    "dotenv": "17.2.2",
+    "dotenv-expand": "12.0.3",
+    "express": "5.1.0",
+    "material-design-icons-iconfont": "6.7.0",
+    "vue": "3.5.21",
+    "vue-i18n": "11.1.12",
+    "vue-router": "4.5.1",
+    "vuetify": "3.10.0"
+  },
+  "devDependencies": {
+    "@babel/eslint-parser": "7.28.4",
+    "@vue/cli-plugin-babel": "5.0.9",
+    "@vue/cli-service": "5.0.9",
+    "axios-mock-adapter": "2.1.0",
+    "eslint": "9.35.0",
+    "eslint-plugin-vue": "10.4.0",
+    "mocha": "11.7.2",
+    "mocha-multi-reporters": "1.5.1",
+    "nodemon": "3.1.10",
+    "nyc": "17.1.0",
+    "query-string": "9.3.0",
+    "sinon": "21.0.0"
+  }
+}

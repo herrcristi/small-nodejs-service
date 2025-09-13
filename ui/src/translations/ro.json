@@ -1,0 +1,22 @@
+{
+  "active": "Activ",
+  "disabled": "Dezactivat",
+  "pending": "În așteptare",
+  "required": "Necesar",
+  "optional": "Opțional",
+  "info": "Informare",
+  "warning": "Atenție",
+  "critical": "Critic",
+  "add": "Adaugă",
+  "delete": "Șterge",
+  "edit": "Editează",
+  "name": "Nume",
+  "actions": "Acțiuni",
+  "cancel": "Anulează",
+  "save": "Salvează",
+  "delete_confirm": "Ești sigur că dorești să ștergi?",
+
+  "schedules.title": "Orar",
+  "schedules.add": "Adaugă orar",
+  "schedules.edit": "Editează orar"
+}
