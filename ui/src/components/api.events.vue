@@ -1,11 +1,13 @@
 <template>
-  <div>
-    <h2>Events</h2>
+  <v-card>
+    <v-card-title class="d-flex justify-space-between">
+      <div>Events</div>
+    </v-card-title>
 
     <v-data-table :headers="headers" :items="items" item-key="id" class="elevation-1">
       <template #item.actions="{ item }"> </template>
     </v-data-table>
-  </div>
+  </v-card>
 </template>
 
 <script>
@@ -21,9 +23,7 @@ export default {
       itemData: {
         name: '',
       },
-      isEditing: false,
-      editingItemID: null,
-      headers: [{ title: 'Name', key: 'name', value: 'name' }],
+      headers: [{ text: 'Name', value: 'name' }],
     };
   },
 
@@ -37,7 +37,7 @@ export default {
     async fetchAll() {
       try {
         const response = await Api.getEvents();
-        this.items = response.data;
+        this.items = response.data || response;
       } catch (e) {
         console.error('Error fetching all events:', e);
       }
@@ -54,5 +54,5 @@ export default {
 </script>
 
 <style scoped>
-/* Add your styles here */
+/* component styles */
 </style>

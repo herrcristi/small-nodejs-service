@@ -1,24 +1,33 @@
 <template>
-  <div>
-    <h2>Classes</h2>
-
-    <v-row>
-      <v-col cols="12" md="6">
-        <v-form @submit.prevent="handleSubmit">
-          <v-text-field v-model="itemData.name" label="Class Name" required />
-          <v-btn color="primary" type="submit">{{ isEditing ? 'Update' : 'Add' }} Class</v-btn>
-          <v-btn text @click="resetForm">Reset</v-btn>
-        </v-form>
-      </v-col>
-    </v-row>
+  <v-card>
+    <v-card-title class="d-flex justify-space-between">
+      <div>Classes</div>
+      <v-btn color="primary" @click="openAdd"><v-icon left>mdi-plus</v-icon></v-btn>
+    </v-card-title>
 
     <v-data-table :headers="headers" :items="items" item-key="id" class="elevation-1">
       <template #item.actions="{ item }">
-        <v-btn small @click="edit(item)">Edit</v-btn>
-        <v-btn small color="error" @click="del(item.id)">Delete</v-btn>
+        <v-icon small class="mr-2" @click="openEdit(item)" title="Edit">mdi-pencil</v-icon>
+        <v-icon small color="error" @click="del(item.id)" title="Delete">mdi-delete</v-icon>
       </template>
     </v-data-table>
-  </div>
+
+    <v-dialog v-model="dialog" max-width="500px">
+      <v-card>
+        <v-card-title>{{ isEditing ? 'Edit' : 'Add' }}</v-card-title>
+        <v-card-text>
+          <v-form ref="form">
+            <v-text-field v-model="itemData.name" label="Name" required />
+          </v-form>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn text @click="closeDialog">Cancel</v-btn>
+          <v-btn color="primary" @click="handleSubmit">Save</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </v-card>
 </template>
 
 <script>
@@ -36,9 +45,10 @@ export default {
       },
       isEditing: false,
       editingItemID: null,
+      isDialog: false,
       headers: [
-        { title: 'Name', key: 'name', value: 'name' },
-        { title: 'Actions', key: 'actions', value: 'actions' },
+        { text: 'Name', value: 'name' },
+        { text: 'Actions', value: 'actions', sortable: false },
       ],
     };
   },
@@ -53,7 +63,7 @@ export default {
     async fetchAll() {
       try {
         const response = await Api.getClasses();
-        this.items = response.data;
+        this.items = response.data || response;
       } catch (e) {
         console.error('Error fetching all classes:', e);
       }
@@ -68,7 +78,7 @@ export default {
       } else {
         await this.add();
       }
-      this.resetForm();
+      this.closeDialog();
       this.fetchAll();
     },
 
@@ -95,15 +105,6 @@ export default {
     },
 
     /**
-     * edit
-     */
-    edit(item) {
-      this.itemData.name = item.name;
-      this.isEditing = true;
-      this.editingItemID = item.id;
-    },
-
-    /**
      * delete
      */
     async del(itemID) {
@@ -116,10 +117,37 @@ export default {
     },
 
     /**
+     * open add dialog
+     */
+    openAdd() {
+      this.resetForm();
+      this.isEditing = false;
+      this.isDialog = true;
+    },
+
+    /**
+     * open edit dialog
+     */
+    openEdit(item) {
+      this.itemData = { ...item };
+      this.isEditing = true;
+      this.editingItemID = item.id;
+      this.isDialog = true;
+    },
+
+    /**
+     * close dialog
+     */
+    closeDialog() {
+      this.dialog = false;
+      this.resetForm();
+    },
+
+    /**
      * reset form
      */
     resetForm() {
-      this.itemData.name = '';
+      this.itemData = { name: '' };
       this.isEditing = false;
       this.editingItemID = null;
     },
@@ -135,5 +163,5 @@ export default {
 </script>
 
 <style scoped>
-/* Add your styles here */
+/* component styles */
 </style>
