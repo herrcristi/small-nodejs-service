@@ -103,3 +103,19 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+.v-application .v-navigation-drawer {
+  /* background-color: var(--v-theme-primary-base) !important; */
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+}
+.breadcrumb-link {  
+  text-decoration: none;
+
+}
+.breadcrumb-link:hover {
+  text-decoration: underline;
+}

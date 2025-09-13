@@ -1,5 +1,5 @@
 // import Vue from 'vue';
-import { createRouter, createMemoryHistory } from 'vue-router';
+import { createRouter, createWebHistory } from 'vue-router';
 import Schools from '../components/schools.vue';
 import Students from '../components/students.vue';
 import Professors from '../components/professors.vue';
@@ -10,13 +10,12 @@ import Classes from '../components/classes.vue';
 import Schedules from '../components/schedules.vue';
 
 const Router = createRouter({
-  mode: 'history',
-  history: createMemoryHistory(),
+  history: createWebHistory(),
   routes: [
     {
       path: '/',
       name: 'Home',
-      component: Schools,
+      component: Classes,
     },
     {
       path: '/schools',

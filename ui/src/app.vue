@@ -1,37 +1,26 @@
 <template>
-  <!-- <h1>Small App</h1> -->
-  <nav>
-    <RouterLink to="/">Home</RouterLink>
-    <RouterLink to="/schools">Schools</RouterLink>
-    <RouterLink to="/professors">Professors</RouterLink>
-    <RouterLink to="/students">Students</RouterLink>
-    <RouterLink to="/groups">Groups</RouterLink>
-    <RouterLink to="/classes">Classes</RouterLink>
-    <RouterLink to="/events">Events</RouterLink>
-    <RouterLink to="/locations">Locations</RouterLink>
-    <RouterLink to="/schedules">Schedules</RouterLink>
-    <RouterLink to="/contact">Contact</RouterLink>
-  </nav>
-  <p><strong>Current route path:</strong> {{ $route.fullPath }}</p>
-
-  <div id="app">
+  <Layout>
     <router-view />
-  </div>
+  </Layout>
 </template>
 
 <script>
+import Layout from './components/layout.vue';
+
 export default {
   name: 'App',
+  components: { Layout },
 };
 </script>
 
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap');
+html,
+body,
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+  height: 100%;
+}
+body {
+  font-family: 'Roboto', sans-serif;
 }
 </style>

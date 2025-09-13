@@ -1,17 +1,23 @@
 <template>
   <div>
     <h2>Classes</h2>
-    <form @submit.prevent="handleSubmit">
-      <input v-model="itemData.name" placeholder="Class Name" required />
-      <button type="submit">{{ isEditing ? 'Update' : 'Add' }} Class</button>
-    </form>
-    <ul>
-      <li v-for="item in items" :key="item.id">
-        {{ item.name }}
-        <button @click="edit(item)">Edit</button>
-        <button @click="del(item.id)">Delete</button>
-      </li>
-    </ul>
+
+    <!-- <v-row>
+      <v-col cols="12" md="6">
+        <v-form @submit.prevent="handleSubmit">
+          <v-text-field v-model="itemData.name" label="Class Name" required />
+          <v-btn color="primary" type="submit">{{ isEditing ? 'Update' : 'Add' }} Class</v-btn>
+          <v-btn text @click="resetForm">Reset</v-btn>
+        </v-form>
+      </v-col>
+    </v-row> -->
+
+    <v-data-table :headers="headers" :items="items" item-key="id" class="elevation-1">
+      <template #item.actions="{ item }">
+        <v-btn small @click="edit(item)">Edit</v-btn>
+        <v-btn small color="error" @click="del(item.id)">Delete</v-btn>
+      </template>
+    </v-data-table>
   </div>
 </template>
 
@@ -30,6 +36,11 @@ export default {
       },
       isEditing: false,
       editingItemID: null,
+      headers: [
+        // { title: 'ID', key: 'id', value: 'id' },
+        { title: 'Name', key: 'name', value: 'name' },
+        { title: 'Actions', key: 'actions', value: 'actions' },
+      ],
     };
   },
 
@@ -78,7 +89,7 @@ export default {
      */
     async update() {
       try {
-        await Api.updateClass(this.editingitemID, this.itemData);
+        await Api.updateClass(this.editingItemID, this.itemData);
       } catch (e) {
         console.error('Error updating class:', e);
       }
