@@ -2,6 +2,7 @@
   "name": "small-nodejs-service-ui",
   "version": "1.0.0",
   "description": "Frontend for the Small Node.js Service using Vue.js",
+  "type": "module",
   "main": "index.js",
   "scripts": {
     "start": "node index.js",

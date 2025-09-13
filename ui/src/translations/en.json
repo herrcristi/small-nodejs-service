@@ -1,0 +1,13 @@
+{
+  "active": "Active",
+  "disabled": "Disabled",
+  "pending": "Pending",
+  "required": "Required",
+  "optional": "Optional",
+  "info": "Informational",
+  "warning": "Warning",
+  "critical": "Critical",
+  "add": "Add",
+  "delete": "Delete",
+  "edit": "Edit"
+}
