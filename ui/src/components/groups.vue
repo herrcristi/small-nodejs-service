@@ -9,7 +9,7 @@
       <li v-for="item in items" :key="item.id">
         {{ item.name }}
         <button @click="edit(item)">Edit</button>
-        <button @click="delete item.id">Delete</button>
+        <button @click="del(item.id)">Delete</button>
       </li>
     </ul>
   </div>
@@ -96,7 +96,7 @@ export default {
     /**
      * delete
      */
-    async delete(itemID) {
+    async del(itemID) {
       try {
         await Api.deleteGroup(itemID);
         this.fetchAll();

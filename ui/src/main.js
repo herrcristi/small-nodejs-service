@@ -3,4 +3,11 @@ import App from './app.vue';
 import './style.css';
 import Router from './router/index.js';
 
-createApp(App).use(Router).mount('#app');
+const app = createApp(App);
+
+app.config.errorHandler = (err) => {
+  /* handle error */
+  console.error(err);
+};
+
+app.use(Router).mount('#app');
