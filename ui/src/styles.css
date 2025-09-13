@@ -34,8 +34,7 @@ a:hover {
 
 body {
   margin: 0;
-  display: flex;
-  place-items: inherit;
+  display: block;
   min-width: 320px;
   min-height: 100vh;
 }
@@ -86,9 +85,9 @@ button:focus-visible {
 
 #app {
   max-width: 1280px;
-  margin: 0 auto;
+  margin: 0; /* left aligned instead of centered */
   padding: 2rem;
-  text-align: justify;
+  text-align: left;
 }
 
 @media (prefers-color-scheme: light) {
@@ -104,9 +103,7 @@ button:focus-visible {
   }
 }
 
-.v-application .v-navigation-drawer {
-  /* background-color: var(--v-theme-primary-base) !important; */
-}
+
 
 .breadcrumbs {
   display: flex;
