@@ -15,7 +15,7 @@ const Router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'Dashboard',
+      name: 'Home',
       component: Schools,
     },
     {

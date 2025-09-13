@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Locations</h1>
+    <h2>Locations</h2>
     <form @submit.prevent="handleSubmit">
       <input v-model="itemData.name" placeholder="Location Name" required />
       <button type="submit">{{ isEditing ? 'Update' : 'Add' }} Location</button>
@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import Api from '../api/index';
+import Api from '../api/api.js';
 
 export default {
   /**

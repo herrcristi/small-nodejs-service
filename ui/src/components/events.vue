@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Events</h1>
+    <h2>Events</h2>
     <ul>
       <li v-for="item in items" :key="item.id">
         {{ item.name }}
@@ -10,7 +10,7 @@
 </template>
 
 <script>
-import Api from '../api/index';
+import Api from '../api/api.js';
 
 export default {
   /**

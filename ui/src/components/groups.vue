@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Groups</h1>
+    <h2>Groups</h2>
     <form @submit.prevent="handleSubmit">
       <input v-model="itemData.name" placeholder="Group Name" required />
       <button type="submit">{{ isEditing ? 'Update' : 'Add' }} Group</button>
@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import Api from '../api/index';
+import Api from '../api/api.js';
 
 export default {
   /**

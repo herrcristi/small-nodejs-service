@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Classes</h1>
+    <h2>Classes</h2>
     <form @submit.prevent="handleSubmit">
       <input v-model="itemData.name" placeholder="Class Name" required />
       <button type="submit">{{ isEditing ? 'Update' : 'Add' }} Class</button>
@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import Api from '../api/index';
+import Api from '../api/api.js';
 
 export default {
   /**

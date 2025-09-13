@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h1>Schedules</h1>
+    <h2>Schedules</h2>
     <form @submit.prevent="handleSubmit">
       <input v-model="itemData.name" placeholder="Schedule Name" required />
       <button type="submit">{{ isEditing ? 'Update' : 'Add' }} Schedule</button>
@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import Api from '../api/index';
+import Api from '../api/api.js';
 
 export default {
   /**
