@@ -2,7 +2,7 @@
   <div>
     <h2>Classes</h2>
 
-    <!-- <v-row>
+    <v-row>
       <v-col cols="12" md="6">
         <v-form @submit.prevent="handleSubmit">
           <v-text-field v-model="itemData.name" label="Class Name" required />
@@ -10,7 +10,7 @@
           <v-btn text @click="resetForm">Reset</v-btn>
         </v-form>
       </v-col>
-    </v-row> -->
+    </v-row>
 
     <v-data-table :headers="headers" :items="items" item-key="id" class="elevation-1">
       <template #item.actions="{ item }">
@@ -37,7 +37,6 @@ export default {
       isEditing: false,
       editingItemID: null,
       headers: [
-        // { title: 'ID', key: 'id', value: 'id' },
         { title: 'Name', key: 'name', value: 'name' },
         { title: 'Actions', key: 'actions', value: 'actions' },
       ],

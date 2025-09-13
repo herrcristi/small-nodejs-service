@@ -1,11 +1,10 @@
 <template>
   <div>
     <h2>Events</h2>
-    <ul>
-      <li v-for="item in items" :key="item.id">
-        {{ item.name }}
-      </li>
-    </ul>
+
+    <v-data-table :headers="headers" :items="items" item-key="id" class="elevation-1">
+      <template #item.actions="{ item }"> </template>
+    </v-data-table>
   </div>
 </template>
 
@@ -24,6 +23,7 @@ export default {
       },
       isEditing: false,
       editingItemID: null,
+      headers: [{ title: 'Name', key: 'name', value: 'name' }],
     };
   },
 
