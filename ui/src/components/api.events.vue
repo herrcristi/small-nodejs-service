@@ -1,7 +1,8 @@
 <template>
   <v-card>
     <v-card-title class="d-flex justify-space-between">
-      <div>Events</div>
+      <div>{{ $t('events.title') }}</div>
+      <v-btn color="primary" @click="openAdd"><v-icon left>mdi-plus</v-icon></v-btn>
     </v-card-title>
 
     <v-data-table :headers="headers" :items="items" item-key="id" class="elevation-1">
@@ -23,8 +24,13 @@ export default {
       itemData: {
         name: '',
       },
-      headers: [{ text: 'Name', value: 'name' }],
     };
+  },
+
+  computed: {
+    headers() {
+      return [{ title: this.$t('name'), key: 'name' }];
+    },
   },
 
   /**

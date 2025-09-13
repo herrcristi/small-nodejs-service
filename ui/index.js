@@ -12,8 +12,6 @@ import { createServer } from 'http';
 import dotenv from 'dotenv';
 import dotenvExpand from 'dotenv-expand';
 
-import Translations from './src/translations/translations.js';
-
 import { EventEmitter } from 'events';
 
 /**
@@ -44,16 +42,6 @@ const Util = {
       return true;
     }
     return false;
-  },
-
-  /**
-   * init language
-   */
-  initLanguages: () => {
-    // init language
-    for (const lang of Constants.Languages) {
-      Translations.initStrings(lang, path.resolve(__dirname, `./src/translations/${lang}.json`));
-    }
   },
 
   /**
@@ -101,5 +89,4 @@ const Util = {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 Util.initEnv();
-Util.initLanguages();
 Util.initApp();

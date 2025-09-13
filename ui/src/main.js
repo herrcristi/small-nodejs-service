@@ -1,4 +1,6 @@
 import { createApp } from 'vue';
+import { createI18n } from 'vue-i18n';
+
 import App from './app.vue';
 import './styles.css';
 import Router from './router/router.js';
@@ -16,10 +18,27 @@ const vuetify = createVuetify({
   directives,
 });
 
+import en from './translations/en.json';
+import ro from './translations/ro.json';
+
+const i18n = createI18n({
+  locale: 'ro',
+  fallbackLocale: 'en',
+  formatFallbackMessages: true,
+  silentFallbackWarn: true,
+  messages: {
+    en: en,
+    ro: ro,
+  },
+});
+
 const app = createApp(App);
 
 app.config.errorHandler = (err) => {
   console.error(err);
 };
 
-app.use(Router).use(vuetify).mount('#app');
+app.use(i18n);
+app.use(Router);
+app.use(vuetify);
+app.mount('#app');

@@ -1,29 +1,29 @@
 <template>
   <v-card>
     <v-card-title class="d-flex justify-space-between">
-      <div>Groups</div>
+      <div>{{ $t('groups.title') }}</div>
       <v-btn color="primary" @click="openAdd"><v-icon left>mdi-plus</v-icon></v-btn>
     </v-card-title>
 
     <v-data-table :headers="headers" :items="items" item-key="id" class="elevation-1">
       <template #item.actions="{ item }">
-        <v-icon small class="mr-2" @click="openEdit(item)" title="Edit">mdi-pencil</v-icon>
-        <v-icon small color="error" @click="del(item.id)" title="Delete">mdi-delete</v-icon>
+        <v-icon small class="mr-2" @click="openEdit(item)" :title="$t('groups.edit')">mdi-pencil</v-icon>
+        <v-icon small color="error" @click="del(item.id)" :title="$t('delete')">mdi-delete</v-icon>
       </template>
     </v-data-table>
 
     <v-dialog v-model="isDialog" max-width="800px">
       <v-card>
-        <v-card-title>{{ isEditing ? 'Edit Group' : 'Add Group' }}</v-card-title>
+        <v-card-title>{{ isEditing ? $t('groups.edit') : $t('groups.add') }}</v-card-title>
         <v-card-text>
           <v-form ref="form">
-            <v-text-field v-model="itemData.name" label="Name" required />
+            <v-text-field v-model="itemData.name" :label="$t('name')" required />
           </v-form>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn text @click="closeDialog">Cancel</v-btn>
-          <v-btn color="primary" @click="handleSubmit">Save</v-btn>
+          <v-btn text @click="closeDialog">{{ $t('cancel') }}</v-btn>
+          <v-btn color="primary" @click="handleSubmit">{{ $t('save') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -46,11 +46,16 @@ export default {
       isEditing: false,
       editingItemID: null,
       isDialog: false,
-      headers: [
-        { text: 'Name', value: 'name' },
-        { text: 'Actions', value: 'actions', sortable: false },
-      ],
     };
+  },
+
+  computed: {
+    headers() {
+      return [
+        { title: this.$t('name'), key: 'name' },
+        { title: this.$t('actions'), value: 'actions', sortable: false },
+      ];
+    },
   },
 
   /**
