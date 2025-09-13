@@ -79,6 +79,20 @@ const Translations = {
 
     return r;
   },
+
+  /**
+   * get all loaded strings
+   */
+  getAll: () => {
+    return Private.Strings;
+  },
+
+  /**
+   * get strings for a specific language
+   */
+  getStrings: (lang) => {
+    return Private.Strings[lang] || null;
+  },
 };
 
 export default Translations;

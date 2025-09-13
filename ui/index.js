@@ -71,16 +71,15 @@ const Util = {
     app.use(bodyParser.urlencoded({ extended: true }));
 
     // API routes
-
     // app.use('/api', apiRoutes);
 
     // Serve static files from the Vue.js frontend
-    app.use(express.static('dist'));
+    app.use(express.static(path.resolve(__dirname, 'dist')));
 
     // Handle any other routes (for Vue Router)
-    // app.get('*', (req, res) => {
-    //   res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
-    // });
+    app.get('*', (req, res) => {
+      res.sendFile(path.resolve(__dirname, 'dist', 'index.html'));
+    });
 
     // // Socket.io setup (if needed)
     // io.on('connection', (socket) => {
