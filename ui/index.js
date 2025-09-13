@@ -18,8 +18,6 @@ import { EventEmitter } from 'events';
  * constants
  */
 const Constants = {
-  Languages: ['en', 'ro'],
-
   event: new EventEmitter(),
 };
 
