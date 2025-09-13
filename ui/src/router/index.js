@@ -1,5 +1,5 @@
-import Vue from 'vue';
-import Router from 'vue-router';
+// import Vue from 'vue';
+import { createRouter, createMemoryHistory } from 'vue-router';
 import Schools from '../components/schools.vue';
 import Students from '../components/students.vue';
 import Professors from '../components/professors.vue';
@@ -9,11 +9,15 @@ import Events from '../components/events.vue';
 import Classes from '../components/classes.vue';
 import Schedules from '../components/schedules.vue';
 
-Vue.use(Router);
-
-export default new Router({
+const Router = createRouter({
   mode: 'history',
+  history: createMemoryHistory(),
   routes: [
+    {
+      path: '/',
+      name: 'Dashboard',
+      component: Schools,
+    },
     {
       path: '/schools',
       name: 'Schools',
@@ -56,3 +60,5 @@ export default new Router({
     },
   ],
 });
+
+export default Router;
