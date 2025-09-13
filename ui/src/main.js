@@ -5,6 +5,8 @@ import Router from './router/router.js';
 
 // Vuetify
 import 'vuetify/styles';
+// Material Design Icons (used by v-icon)
+import '@mdi/font/css/materialdesignicons.css';
 import { createVuetify } from 'vuetify';
 import * as components from 'vuetify/components';
 import * as directives from 'vuetify/directives';

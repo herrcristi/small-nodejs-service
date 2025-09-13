@@ -90,6 +90,17 @@ button:focus-visible {
   text-align: left;
 }
 
+/* Make actions column narrow and center icons */
+.v-data-table td[data-test="actions"], .v-data-table th[data-test="actions"] {
+  width: 80px;
+  max-width: 80px;
+  text-align: center;
+}
+
+.v-data-table .v-icon {
+  cursor: pointer;
+}
+
 @media (prefers-color-scheme: light) {
   :root {
     color: #213547;

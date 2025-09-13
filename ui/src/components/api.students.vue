@@ -12,9 +12,9 @@
       </template>
     </v-data-table>
 
-    <v-dialog v-model="dialog" max-width="500px">
+    <v-dialog v-model="dialog" max-width="800px">
       <v-card>
-        <v-card-title>{{ isEditing ? 'Edit' : 'Add' }}</v-card-title>
+        <v-card-title>{{ isEditing ? 'Edit Student' : 'Add Student' }}</v-card-title>
         <v-card-text>
           <v-form ref="form">
             <v-text-field v-model="itemData.name" label="Name" required />
