@@ -12,7 +12,7 @@
       </template>
     </v-data-table>
 
-    <v-dialog v-model="dialog" max-width="800px">
+    <v-dialog v-model="isDialog" max-width="800px">
       <v-card>
         <v-card-title>{{ isEditing ? 'Edit Class' : 'Add Class' }}</v-card-title>
         <v-card-text>
@@ -139,7 +139,7 @@ export default {
      * close dialog
      */
     closeDialog() {
-      this.dialog = false;
+      this.isDialog = false;
       this.resetForm();
     },
 
