@@ -64,7 +64,9 @@
       -->
       <template #item.actions="{ item }">
         <v-icon small class="mr-2" @click="openEdit(item)" :title="$t('schools.edit')" size="small">mdi-pencil</v-icon>
-        <v-icon small color="mr-2" @click="del(item.id)" :title="$t('delete')" size="small">mdi-delete</v-icon>
+        <v-icon small color="mr-2" @click="confirmDelete(item.id)" :title="$t('delete')" size="small"
+          >mdi-delete</v-icon
+        >
       </template>
     </v-data-table-server>
 
@@ -89,13 +91,27 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Confirm delete dialog -->
+    <ConfirmDialog
+      :model-value="confirmDeleteDialog"
+      @update:modelValue="confirmDeleteDialog = $event"
+      @confirm="doDelete"
+      title-key="delete_confirm"
+      message-key="delete_confirm"
+      ok-key="delete"
+      cancel-key="cancel"
+      :args="{}"
+    />
   </v-card>
 </template>
 
 <script>
 import Api from '../api/api.js';
+import ConfirmDialog from './confirm.dialog.vue';
 
 export default {
+  components: { ConfirmDialog },
   /**
    * data
    */
@@ -115,6 +131,8 @@ export default {
       editingItemID: null,
       dialog: false,
       text: '',
+      confirmDeleteDialog: false,
+      toDeleteID: null,
 
       lastRequestParams: {},
     };
@@ -172,9 +190,9 @@ export default {
         this.nodatatext = '';
       } catch (e) {
         console.error('Error fetching all schools:', e);
+        this.nodatatext = e.toString();
         this.totalItems = 0;
         this.items = [];
-        this.nodatatext = e.toString();
       }
 
       // reset loading
@@ -228,6 +246,26 @@ export default {
         this.fetchAll(this.lastRequestParams);
       } catch (e) {
         console.error('Error deleting school:', e);
+      }
+    },
+
+    confirmDelete(itemID) {
+      this.toDeleteID = itemID;
+      this.confirmDeleteDialog = true;
+    },
+
+    cancelDelete() {
+      this.toDeleteID = null;
+      this.confirmDeleteDialog = false;
+    },
+
+    async doDelete() {
+      if (!this.toDeleteID) return;
+      try {
+        await this.del(this.toDeleteID);
+      } finally {
+        this.toDeleteID = null;
+        this.confirmDeleteDialog = false;
       }
     },
 
