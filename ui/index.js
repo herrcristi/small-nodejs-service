@@ -87,4 +87,4 @@ const Util = {
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 Util.initEnv();
-Util.initApp();
+// Util.initApp();
