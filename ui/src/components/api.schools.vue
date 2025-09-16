@@ -63,8 +63,8 @@
           actions
       -->
       <template #item.actions="{ item }">
-        <v-icon small class="mr-2" @click="openEdit(item)" :title="$t('schools.edit')">mdi-pencil</v-icon>
-        <v-icon small color="error" @click="del(item.id)" :title="$t('delete')">mdi-delete</v-icon>
+        <v-icon small class="mr-2" @click="openEdit(item)" :title="$t('schools.edit')" size="small">mdi-pencil</v-icon>
+        <v-icon small color="mr-2" @click="del(item.id)" :title="$t('delete')" size="small">mdi-delete</v-icon>
       </template>
     </v-data-table-server>
 

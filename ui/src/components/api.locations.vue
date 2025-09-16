@@ -1,25 +1,89 @@
 <template>
   <v-card>
-    <v-card-title class="d-flex justify-space-between">
-      <div>{{ $t('locations.title') }}</div>
-      <v-btn color="primary" @click="openAdd"><v-icon left>mdi-plus</v-icon></v-btn>
-    </v-card-title>
+    <!-- 
+          table
+    -->
+    <v-data-table-server
+      :headers="headers"
+      :items="items"
+      :items-length="totalItems"
+      :loading="loading"
+      :search="search"
+      :no-data-text="nodatatext"
+      @update:options="fetchAll"
+      item-key="id"
+      class="elevation-1"
+      striped="even"
+      items-per-page="50"
+    >
+      <!-- 
+          top of the table, title + add + search 
+      -->
+      <template v-slot:top>
+        <v-toolbar flat>
+          <v-card-title class="d-flex justify-space-between">
+            <!-- <v-toolbar-title> -->
+            {{ $t('locations.title') }}
+            <!-- </v-toolbar-title> -->
+          </v-card-title>
 
-    <v-data-table :headers="headers" :items="items" item-key="id" class="elevation-1">
-      <template #item.actions="{ item }">
-        <v-icon small class="mr-2" @click="openEdit(item)" :title="$t('locations.edit')">mdi-pencil</v-icon>
-        <v-icon small color="error" @click="del(item.id)" :title="$t('delete')">mdi-delete</v-icon>
+          <v-btn
+            class="me-2 left"
+            color="primary"
+            prepend-icon="mdi-plus"
+            rounded="lg"
+            text=""
+            border
+            @click="openAdd"
+          ></v-btn>
+
+          <v-toolbar-title> </v-toolbar-title>
+
+          <v-text-field
+            v-model="search"
+            label="Search"
+            class="me-2"
+            rounded="lg"
+            prepend-inner-icon="mdi-magnify"
+            variant="outlined"
+            hide-details
+            single-line
+          ></v-text-field>
+        </v-toolbar>
       </template>
-    </v-data-table>
 
-    <v-dialog v-model="isDialog" max-width="800px">
+      <!-- 
+          loading
+      -->
+      <template v-slot:loading>
+        <v-skeleton-loader type="table-row@1"></v-skeleton-loader>
+      </template>
+
+      <!-- 
+          actions
+      -->
+      <template #item.actions="{ item }">
+        <v-icon small class="mr-2" @click="openEdit(item)" :title="$t('locations.edit')" size="small"
+          >mdi-pencil</v-icon
+        >
+        <v-icon small color="mr-2" @click="del(item.id)" :title="$t('delete')" size="small">mdi-delete</v-icon>
+      </template>
+    </v-data-table-server>
+
+    <!-- 
+          dialog
+    -->
+    <v-dialog v-model="dialog" max-width="800px">
       <v-card>
-        <v-card-title>{{ isEditing ? $t('locations.edit') : $t('locations.add') }}</v-card-title>
+        <v-card-title>{{ editing ? $t('locations.edit') : $t('locations.add') }}</v-card-title>
+
         <v-card-text>
           <v-form ref="form">
             <v-text-field v-model="itemData.name" :label="$t('name')" required />
+            <v-text-field v-model="itemData.description" :label="$t('description')" required />
           </v-form>
         </v-card-text>
+
         <v-card-actions>
           <v-spacer />
           <v-btn text @click="closeDialog">{{ $t('cancel') }}</v-btn>
@@ -40,12 +104,18 @@ export default {
   data() {
     return {
       items: [],
-      itemData: {
-        name: '',
-      },
-      isEditing: false,
+      totalItems: 0,
+      search: '',
+      loading: true,
+      nodatatext: '',
+
+      itemData: { id: '', name: '', description: '', status: '' },
+      editing: false,
       editingItemID: null,
-      isDialog: false,
+      dialog: false,
+      text: '',
+
+      lastRequestParams: {},
     };
   },
 
@@ -53,6 +123,8 @@ export default {
     headers() {
       return [
         { title: this.$t('name'), key: 'name' },
+        { title: this.$t('status'), key: 'status' },
+        { title: this.$t('description'), value: 'description' },
         { title: this.$t('actions'), value: 'actions', sortable: false },
       ];
     },
@@ -65,26 +137,61 @@ export default {
     /**
      * get all
      */
-    async fetchAll() {
+    async fetchAll({ page, itemsPerPage, sortBy }) {
+      this.lastRequestParams = { page, itemsPerPage, sortBy };
+
+      let timeoutID = setTimeout(() => {
+        this.loading = true;
+      }, 300); // Show loader if it takes more than 300ms
+
       try {
-        const response = await Api.getLocations();
+        const start = (page - 1) * itemsPerPage;
+
+        let params = {
+          skip: start,
+          limit: itemsPerPage,
+          projection: 'id,name,description,status',
+          sort: 'name',
+          search: this.search || '',
+        };
+
+        if (sortBy.length) {
+          params.sort = '';
+          sortBy.map((s) => {
+            params.sort += `${s.order === 'desc' ? `-${s.key}` : s.key},`;
+          });
+          params.sort = params.sort.slice(0, -1);
+        }
+
+        console.log('Fetching locations with params:', new URLSearchParams(params).toString());
+
+        const response = await Api.getLocations(new URLSearchParams(params).toString());
+        this.totalItems = response.meta?.count || 0;
         this.items = response.data || response;
+        this.nodatatext = '';
       } catch (e) {
         console.error('Error fetching all locations:', e);
+        this.nodatatext = e.toString();
+        this.totalItems = 0;
+        this.items = [];
       }
+
+      // reset loading
+      clearTimeout(timeoutID);
+      this.loading = false;
     },
 
     /**
      * handle submit
      */
     async handleSubmit() {
-      if (this.isEditing) {
+      if (this.editing) {
         await this.update();
       } else {
         await this.add();
       }
       this.closeDialog();
-      this.fetchAll();
+      this.fetchAll(this.lastRequestParams);
     },
 
     /**
@@ -115,7 +222,7 @@ export default {
     async del(itemID) {
       try {
         await Api.deleteLocation(itemID);
-        this.fetchAll();
+        this.fetchAll(this.lastRequestParams);
       } catch (e) {
         console.error('Error deleting location:', e);
       }
@@ -126,8 +233,8 @@ export default {
      */
     openAdd() {
       this.resetForm();
-      this.isEditing = false;
-      this.isDialog = true;
+      this.editing = false;
+      this.dialog = true;
     },
 
     /**
@@ -135,16 +242,16 @@ export default {
      */
     openEdit(item) {
       this.itemData = { ...item };
-      this.isEditing = true;
+      this.editing = true;
       this.editingItemID = item.id;
-      this.isDialog = true;
+      this.dialog = true;
     },
 
     /**
      * close dialog
      */
     closeDialog() {
-      this.isDialog = false;
+      this.dialog = false;
       this.resetForm();
     },
 
@@ -152,8 +259,8 @@ export default {
      * reset form
      */
     resetForm() {
-      this.itemData = { name: '' };
-      this.isEditing = false;
+      this.itemData = { id: '', name: '', description: '', status: '' };
+      this.editing = false;
       this.editingItemID = null;
     },
   },
@@ -161,9 +268,7 @@ export default {
   /**
    * mounted
    */
-  mounted() {
-    this.fetchAll();
-  },
+  mounted() {},
 };
 </script>
 
