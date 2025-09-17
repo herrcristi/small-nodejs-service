@@ -223,7 +223,7 @@ const Private = {
       }
 
       const msg = ':id restriction applied';
-      return { status: 401, error: { message: msg, error: new Error(msg) } };
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
     }
 
     // validate for all (non-tenant) route
@@ -245,20 +245,20 @@ const Private = {
     const validSchool = user.schools.find((item) => item.id === _ctx.tenantID);
     if (!validSchool) {
       const msg = 'Failed to validate school';
-      return { status: 401, error: { message: msg, error: new Error(msg) } };
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
     }
 
     // validate school is not disabled
     if (validSchool.status === SchoolsRest.Constants.Status.Disabled) {
       const msg = 'School is disabled';
-      return { status: 401, error: { message: msg, error: new Error(msg) } };
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
     }
 
     // validate also route
     const validRole = Private.isValidRouteForRoles(validSchool.roles, method, route);
     if (!validRole) {
       const msg = `Route is not accesible: ${method} ${route}`;
-      return { status: 401, error: { message: msg, error: new Error(msg) } };
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
     }
 
     // valid
@@ -480,7 +480,7 @@ const Public = {
     const userProjection = { id: 1, status: 1, email: 1, schools: 1 };
     const rUserDetails = await UsersRest.getOneByEmail(email, userProjection, _ctx);
     if (rUserDetails.error) {
-      return rUserDetails;
+      return { ...rUserDetails, status: 401 };
     }
 
     // fail if user is disabled
