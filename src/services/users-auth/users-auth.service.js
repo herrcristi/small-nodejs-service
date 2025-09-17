@@ -295,7 +295,10 @@ const Public = {
     // validate
     const v = Validators.Login.validate(objInfo);
     if (v.error) {
-      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return {
+        ...CommonUtils.getSchemaValidationError(v, objInfo, _ctx),
+        status: 401, // return 401 instead of 400
+      };
     }
 
     _ctx.userID = objInfo.id;
@@ -437,7 +440,10 @@ const Public = {
     // validate
     const v = Validators.Token.validate(objInfo);
     if (v.error) {
-      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
+      return {
+        ...CommonUtils.getSchemaValidationError(v, objInfo, _ctx),
+        status: 401, // return 401 instead of 400
+      };
     }
 
     // config: { serviceName }

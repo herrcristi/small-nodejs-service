@@ -37,7 +37,7 @@ const Public = {
       });
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      return res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
     } finally {
       res.end();
     }
@@ -68,7 +68,7 @@ const Public = {
       });
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      return res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
     } finally {
       res.end();
     }
@@ -99,7 +99,7 @@ const Public = {
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      return res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
     } finally {
       res.end();
     }
