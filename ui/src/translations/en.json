@@ -41,5 +41,13 @@
   "schools.edit": "Edit School",
   "students.title": "Students",
   "students.add": "Add Student",
-  "students.edit": "Edit Student"
+  "students.edit": "Edit Student",
+  "login.title": "Login",
+  "login.username": "Username",
+  "login.password": "Password",
+  "login.submit": "Sign In",
+  "login.failed": "Login failed",
+  "login.username_required": "Username is required",
+  "login.password_required": "Password is required",
+  "login.remember_me": "Remember me"
 }

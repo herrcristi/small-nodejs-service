@@ -8,6 +8,8 @@ import Locations from '../components/api.locations.vue';
 import Events from '../components/api.events.vue';
 import Classes from '../components/api.classes.vue';
 import Schedules from '../components/api.schedules.vue';
+import Login from '../components/login.vue';
+import { useAuthStore } from '../stores/auth.stores.js';
 
 const Router = createRouter({
   history: createWebHistory(),
@@ -17,6 +19,7 @@ const Router = createRouter({
       name: 'Home',
       component: Schedules,
       meta: {
+        requiresAuth: true,
         breadcrumbs: [{ text: 'Dashboard', to: '/' }],
       },
     },
@@ -25,6 +28,7 @@ const Router = createRouter({
       name: 'Schools',
       component: Schools,
       meta: {
+        requiresAuth: true,
         breadcrumbs: [{ text: 'Schools', to: '/schools' }],
       },
     },
@@ -33,6 +37,7 @@ const Router = createRouter({
       name: 'Students',
       component: Students,
       meta: {
+        requiresAuth: true,
         breadcrumbs: [{ text: 'Students', to: '/students' }],
       },
     },
@@ -41,6 +46,7 @@ const Router = createRouter({
       name: 'Professors',
       component: Professors,
       meta: {
+        requiresAuth: true,
         breadcrumbs: [{ text: 'Professors', to: '/professors' }],
       },
     },
@@ -49,6 +55,7 @@ const Router = createRouter({
       name: 'Groups',
       component: Groups,
       meta: {
+        requiresAuth: true,
         breadcrumbs: [{ text: 'Groups', to: '/groups' }],
       },
     },
@@ -57,6 +64,7 @@ const Router = createRouter({
       name: 'Locations',
       component: Locations,
       meta: {
+        requiresAuth: true,
         breadcrumbs: [{ text: 'Locations', to: '/locations' }],
       },
     },
@@ -65,6 +73,7 @@ const Router = createRouter({
       name: 'Events',
       component: Events,
       meta: {
+        requiresAuth: true,
         breadcrumbs: [{ text: 'Events', to: '/events' }],
       },
     },
@@ -73,6 +82,7 @@ const Router = createRouter({
       name: 'Classes',
       component: Classes,
       meta: {
+        requiresAuth: true,
         breadcrumbs: [{ text: 'Classes', to: '/classes' }],
       },
     },
@@ -81,10 +91,45 @@ const Router = createRouter({
       name: 'Schedules',
       component: Schedules,
       meta: {
+        requiresAuth: true,
         breadcrumbs: [{ text: 'Schedules', to: '/schedules' }],
       },
     },
+    {
+      path: '/login',
+      name: 'Login',
+      component: Login,
+      props: (route) => ({ next: route.query.next || '/' }),
+      meta: { requiresAuth: false },
+    },
   ],
+});
+
+// navigation guard - redirect to /login if route requires auth and user is not authenticated
+Router.beforeEach((to, from, next) => {
+  if (!to.meta || to.meta.requiresAuth === false) {
+    return next();
+  }
+
+  try {
+    const auth = useAuthStore();
+    if (auth && auth.token) {
+      return next();
+    }
+  } catch (e) {
+    // store not available or not initialized
+  }
+
+  try {
+    const raw = localStorage.getItem('app.auth');
+    if (raw) {
+      const obj = JSON.parse(raw);
+      if (obj?.token) return next();
+    }
+  } catch (e) {}
+
+  const nextPath = encodeURIComponent(to.fullPath || to.path || '/');
+  return next({ path: '/login', query: { next: nextPath } });
 });
 
 export default Router;
