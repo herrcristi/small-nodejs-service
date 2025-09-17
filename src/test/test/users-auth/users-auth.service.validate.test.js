@@ -232,7 +232,7 @@ describe('Users Auth Service', function () {
 
     // check
     chai.expect(res).to.deep.equal({
-      status: 400,
+      status: 401,
       error: {
         message: 'Failed to validate schema. Error: "token" is required',
         error: new Error('Failed to validate schema. Error: "token" is required'),
@@ -380,7 +380,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 404,
+      status: 401,
       error: {
         message: 'Test error message',
         error: new Error('Test error'),
@@ -497,7 +497,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubDecrypt.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 401,
+      status: 403,
       error: {
         message: ':id restriction applied',
         error: new Error(':id restriction applied'),
@@ -558,7 +558,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubDecrypt.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 401,
+      status: 403,
       error: {
         message: ':id restriction applied',
         error: new Error(':id restriction applied'),
@@ -619,7 +619,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubDecrypt.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 401,
+      status: 403,
       error: {
         message: ':id restriction applied',
         error: new Error(':id restriction applied'),
@@ -677,7 +677,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 401,
+      status: 403,
       error: {
         message: ':id restriction applied',
         error: new Error(':id restriction applied'),
@@ -738,7 +738,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 401,
+      status: 403,
       error: {
         message: ':id restriction applied',
         error: new Error(':id restriction applied'),
@@ -796,7 +796,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 401,
+      status: 403,
       error: {
         message: 'Failed to validate school',
         error: new Error('Failed to validate school'),
@@ -854,7 +854,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 401,
+      status: 403,
       error: {
         message: 'School is disabled',
         error: new Error('School is disabled'),
@@ -909,7 +909,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 401,
+      status: 403,
       error: {
         message: 'Route is not accesible: invalid /api/v1/users/:id',
         error: new Error('Route is not accesible: invalid /api/v1/users/:id'),

@@ -57,7 +57,7 @@ const Public = {
       _ctx.tenantName = r.value.tenantName;
     } catch (e) {
       console.log(`\nFailed to authenticate request. Error: ${e.stack}`, _ctx);
-      res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
       return res.end();
     }
 
