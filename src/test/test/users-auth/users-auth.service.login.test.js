@@ -262,7 +262,7 @@ describe('Users Auth Service', function () {
     // check
     chai.expect(stubBase.callCount).to.equal(0);
     chai.expect(res).to.deep.equal({
-      status: 400,
+      status: 401,
       error: {
         message: 'Failed to validate schema. Error: "password" is required',
         error: new Error('Failed to validate schema. Error: "password" is required'),

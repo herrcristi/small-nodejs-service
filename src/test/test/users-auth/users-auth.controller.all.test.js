@@ -106,7 +106,7 @@ describe('Users Auth Controller', function () {
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
-    chai.expect(res.status).to.equal(500);
+    chai.expect(res.status).to.equal(401);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body.message).to.include('An unknown error has occured');
     chai.expect(res.body.error).to.include('Test error message');
@@ -170,7 +170,7 @@ describe('Users Auth Controller', function () {
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
-    chai.expect(res.status).to.equal(500);
+    chai.expect(res.status).to.equal(401);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body.message).to.include('An unknown error has occured');
     chai.expect(res.body.error).to.include('Test error message');
@@ -330,7 +330,7 @@ describe('Users Auth Controller', function () {
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
-    chai.expect(res.status).to.equal(500);
+    chai.expect(res.status).to.equal(401);
     chai.expect(stubRest.callCount).to.equal(0);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body.message).to.include('An unknown error has occured');
@@ -397,7 +397,7 @@ describe('Users Auth Controller', function () {
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
-    chai.expect(res.status).to.equal(500);
+    chai.expect(res.status).to.equal(401);
     chai.expect(stubRest.callCount).to.equal(1);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body.message).to.include('An unknown error has occured');

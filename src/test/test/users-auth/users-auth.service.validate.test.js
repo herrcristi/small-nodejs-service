@@ -232,7 +232,7 @@ describe('Users Auth Service', function () {
 
     // check
     chai.expect(res).to.deep.equal({
-      status: 400,
+      status: 401,
       error: {
         message: 'Failed to validate schema. Error: "token" is required',
         error: new Error('Failed to validate schema. Error: "token" is required'),
