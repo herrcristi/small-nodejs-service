@@ -30,7 +30,7 @@ export const piniaAuthStore = defineStore('auth', {
         this.expires = obj.expires || null;
         this.raw = obj.raw || obj;
 
-        if (new Date(this.expires) < new Date()) {
+        if (!this.expires || new Date(this.expires) < new Date()) {
           this.clear();
         }
       } catch (e) {

@@ -8,13 +8,11 @@ import { API_BASE_URL } from './api/api.url.js';
  */
 export async function processLoginResponse(response) {
   try {
-    console.log('Processing login response', response); // TODO debug, remove it
-
     // give the app a chance to run custom processing
     const data = response?.data ? response.data : response;
     if (data?.token) {
       const s = useAuthStore();
-      s.save({ token: data.token, raw: data });
+      s.save({ token: data.token, expires: data.expires, raw: data });
     }
 
     // if server sent a cookie value in response.data.cookie, set it (may not be necessary if server uses Set-Cookie)
