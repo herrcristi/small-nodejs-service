@@ -8,7 +8,7 @@
       :items="items"
       :items-length="totalItems"
       :loading="loading"
-      :search="search"
+      :search="filter"
       :no-data-text="nodatatext"
       @update:options="fetchAll"
       item-key="id"
@@ -17,7 +17,7 @@
       items-per-page="50"
     >
       <!-- 
-          top of the table, title + add + search 
+          top of the table, title + add + filter 
       -->
       <template v-slot:top>
         <v-toolbar flat>
@@ -40,8 +40,8 @@
           <v-toolbar-title> </v-toolbar-title>
 
           <v-text-field
-            v-model="search"
-            label="Search"
+            v-model="filter"
+            label="Filter"
             class="me-2"
             rounded="lg"
             prepend-inner-icon="mdi-magnify"
@@ -73,7 +73,7 @@ export default {
     return {
       items: [],
       totalItems: 0,
-      search: '',
+      filter: '',
       loading: true,
       nodatatext: '',
 
@@ -118,7 +118,7 @@ export default {
           limit: itemsPerPage,
           projection: 'id,name,status',
           sort: 'name',
-          search: this.search || '',
+          filter: this.filter || '',
         };
 
         if (sortBy.length) {
