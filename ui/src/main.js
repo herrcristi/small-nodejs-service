@@ -1,7 +1,7 @@
 import { createApp } from 'vue';
 import { createI18n } from 'vue-i18n';
 import { createPinia } from 'pinia';
-import { useAuthStore } from './stores/auth.stores.js';
+import { useAuthStore } from './stores/stores.js';
 
 import App from './app.vue';
 import './styles.css';

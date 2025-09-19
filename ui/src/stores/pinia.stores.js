@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia';
 
-const STORAGE_KEY = 'app.auth';
+import { SMALL_AUTH_KEY, SMALL_APP_KEY } from './appkeys.stores.js';
 
-export const useAuthStore = defineStore('auth', {
+export const piniaAuthStore = defineStore('auth', {
   /**
    * state
    */
@@ -20,7 +20,7 @@ export const useAuthStore = defineStore('auth', {
      */
     load() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = localStorage.getItem(SMALL_AUTH_KEY);
         if (!raw) {
           return;
         }
@@ -39,7 +39,7 @@ export const useAuthStore = defineStore('auth', {
     save(obj) {
       try {
         const payload = { token: obj.token || obj?.access_token || null, raw: obj };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+        localStorage.setItem(SMALL_AUTH_KEY, JSON.stringify(payload));
         this.token = payload.token;
         this.raw = payload.raw;
       } catch (e) {
@@ -52,7 +52,7 @@ export const useAuthStore = defineStore('auth', {
      */
     clear() {
       try {
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(SMALL_AUTH_KEY);
       } catch (e) {
         console.error('Failed to clear in store', e);
       }

@@ -1,45 +1,6 @@
 import axios from 'axios';
+import { useAuthStore } from './stores/stores.js';
 import { API_BASE_URL } from './api/api.url.js';
-
-const STORAGE_KEY = 'app.auth';
-
-/**
- * set auth
- */
-export function setAuth(obj) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
-  } catch (e) {
-    console.error('Failed to save auth to localStorage', e);
-  }
-}
-
-/**
- * get auth
- */
-export function getAuth() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return null;
-    }
-    return JSON.parse(raw);
-  } catch (e) {
-    console.error('Failed to get auth localStorage', e);
-    return null;
-  }
-}
-
-/**
- * clear auth
- */
-export function clearAuth() {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch (e) {
-    console.error('Failed to clear auth localStorage', e);
-  }
-}
 
 /**
  * Default processing of login response.
@@ -47,38 +8,27 @@ export function clearAuth() {
  */
 export async function processLoginResponse(response) {
   try {
-    console.log('Processing login response', response);
+    console.log('Processing login response', response); // TODO debug, remove it
 
     // give the app a chance to run custom processing
-    try {
-      const data = response?.data ? response.data : response;
-      if (data?.token) {
-        const s = useAuthStore();
-        s.save({ token: data.token, raw: data });
-      }
-    } catch (e) {
-      console.error('Error in custom processor', e);
-    }
-
     const data = response?.data ? response.data : response;
     if (data?.token) {
-      setAuth({ token: data.token, raw: data });
+      const s = useAuthStore();
+      s.save({ token: data.token, raw: data });
     }
 
     // if server sent a cookie value in response.data.cookie, set it (may not be necessary if server uses Set-Cookie)
-    if (data?.cookie && typeof document !== 'undefined') {
+    if (typeof document !== 'undefined') {
       // value expected like 'sid=abc; Path=/; HttpOnly' — be careful with HttpOnly which JS cannot set/read
-      document.cookie = data.cookie;
+      const cookie = response?.data?.cookie || response?.cookie;
+      if (cookie) {
+        document.cookie = cookie;
+      }
     }
 
-    return getAuth();
+    return { status: 200, token: data?.token };
   } catch (e) {
     console.error('Error processing login response', e);
-    return null;
+    return { status: 401, error: { message: e.message, error: e } };
   }
-}
-
-export function getAuthToken() {
-  const auth = getAuth();
-  return auth?.token || null;
 }

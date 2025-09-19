@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { processLoginResponse, getAuthToken } from '../auth.js';
-import { useAuthStore } from '../stores/auth.stores.js';
+import { useAuthStore } from '../stores/stores.js';
+
 import { API_BASE_URL } from './api.url.js';
 
 // Do NOT send credentials by default to avoid CORS preflight failure when server
@@ -8,20 +9,25 @@ import { API_BASE_URL } from './api.url.js';
 // If you need to send cookies, pass { withCredentials: true } explicitly to the call
 const instance = axios.create({
   baseURL: API_BASE_URL,
-  withCredentials: true,
+  withCredentials: false,
 });
 
-let isRefreshing = false;
-let refreshQueue = [];
+/**
+ * Token refresh handling
+ */
+const Refresh = {
+  isRefreshing: false,
+  refreshQueue: [],
 
-function enqueueRefresh(cb) {
-  refreshQueue.push(cb);
-}
+  enqueueRefresh: (cb) => {
+    refreshQueue.push(cb);
+  },
 
-function processQueue(error, token = null) {
-  refreshQueue.forEach((cb) => cb(error, token));
-  refreshQueue = [];
-}
+  processQueue: (error, token = null) => {
+    refreshQueue.forEach((cb) => cb(error, token));
+    refreshQueue = [];
+  },
+};
 
 /**
  * request
@@ -29,20 +35,24 @@ function processQueue(error, token = null) {
 instance.interceptors.request.use((config) => {
   try {
     let token = null;
+    let tenantID = null;
+
+    // token
     try {
-      const store = useAuthStore();
-      token = store?.token || token;
+      const s = useAuthStore();
+      token = s?.token || token;
     } catch (e) {
-      // pinia not initialized
+      // store not initialized
     }
+    // TODO tenantID
 
-    if (!token) {
-      token = getAuthToken();
-    }
-
+    // add to headers
     if (token) {
       config.headers = config.headers || {};
       config.headers['Authorization'] = `Bearer ${token}`;
+      if (tenantID) {
+        config.headers['x-tenant-id'] = tenantID;
+      }
     }
   } catch (e) {}
   return config;
@@ -63,21 +73,24 @@ instance.interceptors.response.use(
         originalRequest._retry = true;
 
         // attempt to refresh token if possible
-        if (!isRefreshing) {
-          isRefreshing = true;
+        if (!Refresh.isRefreshing) {
+          Refresh.isRefreshing = true;
           try {
             // call refresh endpoint
             const refreshResp = await instance.post('/auth/refresh');
             // let auth processing save token into store/localStorage
-            await processLoginResponse(refreshResp);
+            const rLogin = await processLoginResponse(refreshResp);
+            if (rLogin.error || !rLogin.token) {
+              return Promise.reject(rLogin.error.error);
+            }
 
-            const newToken = getAuthToken();
-            processQueue(null, newToken);
-            isRefreshing = false;
+            const newToken = r.token;
+            Refresh.processQueue(null, newToken);
+            Refresh.isRefreshing = false;
             return instance(originalRequest);
           } catch (refreshErr) {
-            processQueue(refreshErr, null);
-            isRefreshing = false;
+            Refresh.processQueue(refreshErr, null);
+            Refresh.isRefreshing = false;
             // redirect to login
             const current = window.location.pathname + window.location.search;
             window.location.href = `/login?next=${encodeURIComponent(current)}`;
@@ -87,8 +100,10 @@ instance.interceptors.response.use(
 
         // queue the request until refresh finishes
         return new Promise((resolve, reject) => {
-          enqueueRefresh((error, token) => {
-            if (error) return reject(error);
+          Refresh.enqueueRefresh((error, token) => {
+            if (error) {
+              return reject(error);
+            }
             originalRequest.headers['Authorization'] = `Bearer ${token}`;
             resolve(instance(originalRequest));
           });

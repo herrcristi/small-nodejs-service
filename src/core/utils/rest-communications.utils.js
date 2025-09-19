@@ -355,10 +355,11 @@ const Public = {
     }
 
     const cookie = `${cookieTokenName}=${objInfo.token}`;
+    const authorization = `Bearer ${objInfo.token}`;
     const queryParams = `method=${objInfo.method}&route=${encodeURIComponent(objInfo.route)}`;
 
     return await Private.restCall(
-      { serviceName, method: 'GET', path: '/validate', query: queryParams, headers: { cookie } },
+      { serviceName, method: 'GET', path: '/validate', query: queryParams, headers: { cookie, authorization } },
       _ctx
     );
   },

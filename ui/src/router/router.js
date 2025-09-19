@@ -9,7 +9,7 @@ import Events from '../components/api.events.vue';
 import Classes from '../components/api.classes.vue';
 import Schedules from '../components/api.schedules.vue';
 import Login from '../components/login.vue';
-import { useAuthStore } from '../stores/auth.stores.js';
+import { useAuthStore } from '../stores/stores';
 
 const Router = createRouter({
   history: createWebHistory(),
@@ -112,24 +112,26 @@ Router.beforeEach((to, from, next) => {
   }
 
   try {
-    const auth = useAuthStore();
-    if (auth && auth.token) {
+    const s = useAuthStore();
+    if (s && s.token) {
       return next();
     }
   } catch (e) {
     // store not available or not initialized
   }
 
-  try {
-    const raw = localStorage.getItem('app.auth');
-    if (raw) {
-      const obj = JSON.parse(raw);
-      if (obj?.token) return next();
-    }
-  } catch (e) {}
+  // TODO get current tenantID from local store
+  let currentTenantID;
+  // try {
+  //   currentTenantID = piniaOrgStore()?.tenantID;
+  //   }
+  // } catch (e) {
+  //   // store not available or not initialized
+  // }
 
+  // if organization will be changed the next should be cleared
   const nextPath = encodeURIComponent(to.fullPath || to.path || '/');
-  return next({ path: '/login', query: { next: nextPath } });
+  return next({ path: '/login', query: { tenantID: currentTenantID, next: nextPath } });
 });
 
 export default Router;
