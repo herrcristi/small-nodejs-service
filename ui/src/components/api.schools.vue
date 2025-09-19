@@ -118,6 +118,7 @@ export default {
   data() {
     return {
       items: [
+        // debug
         // { id: 1, name: 'Test School', description: 'A test school', status: 'active' },
         // { id: 2, name: 'Another School', description: 'Another test school', status: 'inactive' },
       ],

@@ -69,16 +69,25 @@ export default {
       loading.value = true;
       try {
         const resp = await Api.login({ id: username.value, password: password.value }, withCreds.value);
-        await processLoginResponse(resp);
-        // redirect to next
-        const target = props.next || '/';
-        router.push(decodeURIComponent(target));
-      } catch (e) {
-        try {
-          error.value = e.response?.data?.message || e.message || 'Login failed';
-        } catch (ee) {
-          error.value = 'Login failed';
+        const r = await processLoginResponse(resp);
+        if (r.error) {
+          throw r.error.error;
         }
+        if (r.status !== 200) {
+          throw new Error('Authentication failed');
+        }
+
+        if (r.tenantID) {
+          // redirect to next
+          const target = props.next || '/';
+          router.push(decodeURIComponent(target));
+        } else {
+          // redirect to tenant selection page
+          props.next = '';
+          router.push(`/select-tenant`);
+        }
+      } catch (e) {
+        error.value = e.message || 'Login failed';
       } finally {
         loading.value = false;
       }

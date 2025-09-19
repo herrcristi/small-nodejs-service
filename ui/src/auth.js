@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { useAuthStore } from './stores/stores.js';
+import { useAppStore, useAuthStore } from './stores/stores.js';
 import { API_BASE_URL } from './api/api.url.js';
 
 /**
@@ -14,6 +14,12 @@ export async function processLoginResponse(response) {
       const s = useAuthStore();
       s.save({ token: data.token, expires: data.expires, raw: data });
     }
+    // if only one school is active, set it as current tenantID
+    let tenantID = null;
+    if (Array.isArray(data?.schools) && data.schools.length == 1 && data.schools[0].status === 'active') {
+      tenantID = data.schools[0].id;
+      useAppStore()?.saveTenantID(tenantID);
+    }
 
     // if server sent a cookie value in response.data.cookie, set it (may not be necessary if server uses Set-Cookie)
     if (typeof document !== 'undefined') {
@@ -24,7 +30,7 @@ export async function processLoginResponse(response) {
       }
     }
 
-    return { status: 200, token: data?.token };
+    return { status: 200, token: data?.token, tenantID };
   } catch (e) {
     console.error('Error processing login response', e);
     return { status: 401, error: { message: e.message, error: e } };

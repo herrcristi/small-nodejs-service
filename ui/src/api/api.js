@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { processLoginResponse, getAuthToken } from '../auth.js';
-import { useAuthStore } from '../stores/stores.js';
+import { useAuthStore, useAppStore } from '../stores/stores.js';
 
 import { API_BASE_URL } from './api.url.js';
 
@@ -34,17 +34,11 @@ const Refresh = {
  */
 instance.interceptors.request.use((config) => {
   try {
-    let token = null;
-    let tenantID = null;
-
     // token
-    try {
-      const s = useAuthStore();
-      token = s?.token || token;
-    } catch (e) {
-      // store not initialized
-    }
-    // TODO tenantID
+    const token = useAuthStore()?.token;
+
+    // tenantID
+    const tenantID = useAppStore()?.tenantID;
 
     // add to headers
     if (token) {
@@ -93,7 +87,10 @@ instance.interceptors.response.use(
             Refresh.isRefreshing = false;
             // redirect to login
             const current = window.location.pathname + window.location.search;
-            window.location.href = `/login?next=${encodeURIComponent(current)}`;
+            const tenantID = useAppStore()?.tenantID;
+            const loginUrl = `/login?tenantID=${encodeURIComponent(tenantID)}&next=${encodeURIComponent(current)}`;
+            window.location.href = loginUrl;
+
             return Promise.reject(refreshErr);
           }
         }
@@ -116,7 +113,9 @@ instance.interceptors.response.use(
     try {
       if (err.response?.status === 401) {
         const current = window.location.pathname + window.location.search;
-        window.location.href = `/login?next=${encodeURIComponent(current)}`;
+        const tenantID = useAppStore()?.tenantID;
+        const loginUrl = `/login?tenantID=${encodeURIComponent(tenantID)}&next=${encodeURIComponent(current)}`;
+        window.location.href = loginUrl;
       }
     } catch (e) {}
     return Promise.reject(err);

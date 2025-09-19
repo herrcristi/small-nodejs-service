@@ -31,7 +31,7 @@ export const localAuthStore = {
       const payload = {
         token: obj.token || obj?.access_token || null,
         expires: obj.expires || null,
-        raw: obj,
+        raw: obj.raw || obj || null,
       };
 
       if (!obj.expires || new Date(obj.expires) < new Date()) {
