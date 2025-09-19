@@ -1,7 +1,7 @@
 import { createApp } from 'vue';
 import { createI18n } from 'vue-i18n';
 import { createPinia } from 'pinia';
-import { useAuthStore } from './stores/stores.js';
+import { useAuthStore, useAppStore } from './stores/stores.js';
 
 import App from './app.vue';
 import './styles.css';
@@ -42,6 +42,8 @@ app.use(pinia);
 // load auth store into pinia
 const authStore = useAuthStore();
 authStore.load();
+const appStore = useAppStore();
+appStore.load();
 
 app.config.errorHandler = (err) => {
   console.error(err);

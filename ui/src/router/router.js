@@ -9,7 +9,7 @@ import Events from '../components/api.events.vue';
 import Classes from '../components/api.classes.vue';
 import Schedules from '../components/api.schedules.vue';
 import Login from '../components/login.vue';
-import { useAuthStore } from '../stores/stores.js';
+import { useAuthStore, useAppStore } from '../stores/stores.js';
 
 const Router = createRouter({
   history: createWebHistory(),
@@ -113,25 +113,20 @@ Router.beforeEach((to, from, next) => {
 
   try {
     const s = useAuthStore();
-    if (s && s.token) {
+    if (s?.token) {
       return next();
     }
   } catch (e) {
     // store not available or not initialized
   }
 
-  // TODO get current tenantID from local store
-  let currentTenantID;
-  // try {
-  //   currentTenantID = useAppStore()?.tenantID;
-  //   }
-  // } catch (e) {
-  //   // store not available or not initialized
-  // }
+  // get current tenantID from local store
+  const tenantID = useAppStore()?.tenantID;
+  useAppStore()?.saveTenantID(null); // reset it
 
   // if organization will be changed the next should be cleared
   const nextPath = encodeURIComponent(to.fullPath || to.path || '/');
-  return next({ path: '/login', query: { tenantID: currentTenantID, next: nextPath } });
+  return next({ path: '/login', query: { tenantID, next: nextPath } });
 });
 
 export default Router;

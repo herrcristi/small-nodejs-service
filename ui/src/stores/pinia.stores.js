@@ -1,6 +1,5 @@
 import { defineStore } from 'pinia';
-
-import { SMALL_AUTH_KEY, SMALL_APP_KEY } from './appkeys.stores.js';
+import { localAuthStore, localAppStore } from './localstorage.stores.js';
 
 export const piniaAuthStore = defineStore('auth', {
   /**
@@ -20,61 +19,89 @@ export const piniaAuthStore = defineStore('auth', {
      * load
      */
     load() {
-      try {
-        const raw = localStorage.getItem(SMALL_AUTH_KEY);
-        if (!raw) {
-          return;
-        }
-        const obj = JSON.parse(raw);
-        this.token = obj.token || null;
-        this.expires = obj.expires || null;
-        this.raw = obj.raw || obj;
+      const obj = localAuthStore.load();
 
-        if (!this.expires || new Date(this.expires) < new Date()) {
-          this.clear();
-        }
-      } catch (e) {
-        // ignore
-        console.error('Failed to load auth in store', e);
-      }
+      this.token = obj?.token || null;
+      this.expires = obj?.expires || null;
+      this.raw = obj?.raw || null;
+      return obj;
     },
 
     /**
      * save
      */
     save(obj) {
-      try {
-        const payload = {
-          token: obj.token || obj?.access_token || null,
-          expires: obj.expires || null,
-          raw: obj,
-        };
+      const payload = localAuthStore.save(obj);
 
-        if (!payload.expires || new Date(payload.expires) < new Date()) {
-          this.clear();
-        } else {
-          localStorage.setItem(SMALL_AUTH_KEY, JSON.stringify(payload));
-          this.token = payload.token;
-          this.expires = payload.expires;
-          this.raw = payload.raw;
-        }
-      } catch (e) {
-        console.error('Failed to save auth in store', e);
-      }
+      this.token = payload?.token || null;
+      this.expires = payload?.expires || null;
+      this.raw = payload?.raw || null;
     },
 
     /**
      * clear
      */
     clear() {
-      try {
-        localStorage.removeItem(SMALL_AUTH_KEY);
-      } catch (e) {
-        console.error('Failed to clear in store', e);
-      }
+      localAuthStore.clear();
+
       this.token = null;
       this.expires = null;
       this.raw = null;
+    },
+  },
+});
+
+export const piniaAppStore = defineStore('app', {
+  /**
+   * state
+   */
+  state: () => ({
+    tenantID: null,
+  }),
+
+  /**
+   * actions
+   */
+  actions: {
+    /**
+     * load
+     */
+    load() {
+      const obj = localAppStore.load();
+
+      this.tenantID = obj?.tenantID || null;
+      return obj;
+    },
+
+    /**
+     * save
+     */
+    save() {
+      const payload = {
+        tenantID: this.tenantID || null,
+      };
+
+      localAppStore.save(payload);
+    },
+
+    /**
+     * clear
+     */
+    clear() {
+      localAppStore.clear();
+
+      this.tenantID = null;
+    },
+
+    /**
+     * save
+     */
+    saveTenantID(tenantID) {
+      this.load();
+
+      this.tenantID = tenantID || null;
+
+      this.save();
     },
   },
 });

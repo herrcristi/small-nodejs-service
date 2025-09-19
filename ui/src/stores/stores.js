@@ -1,4 +1,5 @@
-import { piniaAuthStore } from './pinia.stores.js';
-import { localAuthStore } from './localstorage.stores.js';
+import { piniaAuthStore, piniaAppStore } from './pinia.stores.js';
+import { localAuthStore, localAppStore } from './localstorage.stores.js';
 
 export const useAuthStore = piniaAuthStore;
+export const useAppStore = piniaAppStore;
