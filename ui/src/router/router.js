@@ -9,7 +9,7 @@ import Events from '../components/api.events.vue';
 import Classes from '../components/api.classes.vue';
 import Schedules from '../components/api.schedules.vue';
 import Login from '../components/login.vue';
-import { useAuthStore } from '../stores/stores';
+import { useAuthStore } from '../stores/stores.js';
 
 const Router = createRouter({
   history: createWebHistory(),
@@ -123,7 +123,7 @@ Router.beforeEach((to, from, next) => {
   // TODO get current tenantID from local store
   let currentTenantID;
   // try {
-  //   currentTenantID = piniaOrgStore()?.tenantID;
+  //   currentTenantID = useAppStore()?.tenantID;
   //   }
   // } catch (e) {
   //   // store not available or not initialized

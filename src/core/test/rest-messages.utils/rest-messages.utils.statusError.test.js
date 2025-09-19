@@ -54,6 +54,23 @@ describe('Rest Messages Utils', function () {
   }).timeout(10000);
 
   /**
+   * status error 403
+   */
+  it('should call statusError 403', async () => {
+    let error = 'Test error';
+
+    // call
+    let res = await RestMessagesUtils.statusError(403, error, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      message: 'Request is not having enough permissions',
+      error: 'Test error',
+    });
+  }).timeout(10000);
+
+  /**
    * status error 404
    */
   it('should call statusError 404', async () => {
