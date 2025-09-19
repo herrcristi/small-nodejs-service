@@ -77,7 +77,17 @@ export default {
       loading: true,
       nodatatext: '',
 
-      itemData: { id: '', name: '', status: '' },
+      itemData: {
+        id: '',
+        createdTimestamp: '',
+        severity: '',
+        messageID: '',
+        args: [],
+        target: {},
+        user: {},
+        name: '',
+        _lang_en: { severity: '', message: '' },
+      },
       editing: false,
       editingItemID: null,
       dialog: false,
@@ -90,8 +100,11 @@ export default {
   computed: {
     headers() {
       return [
-        { title: this.$t('name'), key: 'name' },
-        { title: this.$t('status'), key: 'status' },
+        { title: this.$t('createdTimestamp'), key: 'createdTimestamp' },
+        { title: this.$t('severity'), key: '_lang_en.severity' },
+        { title: this.$t('user'), key: 'user.username' },
+        { title: this.$t('target'), key: 'target.name' },
+        { title: this.$t('message'), key: '_lang_en.message' },
       ];
     },
   },
@@ -116,10 +129,17 @@ export default {
         let params = {
           skip: start,
           limit: itemsPerPage,
-          projection: 'id,name,status',
-          sort: 'name',
-          filter: this.filter || '',
+          projection: 'id,createdTimestamp,severity,messageID,args,target,user,name,_lang_en',
+          sort: '-createdTimestamp',
         };
+
+        // filter
+        if (this.filter) {
+          params = {
+            ...params,
+            'createdTimestamp,_lang_en.severity,user.username,target.name,_lang_en.message': `/${this.filter}/i`,
+          };
+        }
 
         if (sortBy.length) {
           params.sort = '';

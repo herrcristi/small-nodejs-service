@@ -107,7 +107,15 @@ export default {
       loading: true,
       nodatatext: '',
 
-      itemData: { id: '', name: '', description: '', status: '' },
+      itemData: {
+        id: '',
+        name: '',
+        status: '',
+        description: '',
+        credits: '',
+        required: '',
+        _lang_en: { status: '', credits: '', required: '' },
+      },
       editing: false,
       editingItemID: null,
       dialog: false,
@@ -121,8 +129,10 @@ export default {
     headers() {
       return [
         { title: this.$t('name'), key: 'name' },
-        { title: this.$t('status'), key: 'status' },
+        { title: this.$t('status'), key: '_lang_en.status' },
         { title: this.$t('description'), value: 'description' },
+        { title: this.$t('credits'), value: '_lang_en.credits' },
+        { title: this.$t('required'), value: '_lang_en.required' },
         { title: this.$t('actions'), value: 'actions', sortable: false },
       ];
     },
@@ -148,10 +158,17 @@ export default {
         let params = {
           skip: start,
           limit: itemsPerPage,
-          projection: 'id,name,description,status',
+          projection: 'id,name,status,description,credits,required,_lang_en',
           sort: 'name',
-          filter: this.filter || '',
         };
+
+        // filter
+        if (this.filter) {
+          params = {
+            ...params,
+            'name,_lang_en.status,description,_lang_en.credits,_lang_en.required': `/${this.filter}/i`,
+          };
+        }
 
         if (sortBy.length) {
           params.sort = '';
@@ -257,7 +274,15 @@ export default {
      * reset form
      */
     resetForm() {
-      this.itemData = { id: '', name: '', description: '', status: '' };
+      this.itemData = {
+        id: '',
+        name: '',
+        status: '',
+        description: '',
+        credits: '',
+        required: '',
+        _lang_en: { status: '', credits: '', required: '' },
+      };
       this.editing = false;
       this.editingItemID = null;
     },

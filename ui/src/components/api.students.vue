@@ -78,7 +78,7 @@
         <v-card-text>
           <v-form ref="form">
             <v-text-field v-model="itemData.name" :label="$t('name')" required />
-            <v-text-field v-model="itemData.description" :label="$t('description')" required />
+            <v-text-field v-model="itemData.email" :label="$t('email')" required />
           </v-form>
         </v-card-text>
 
@@ -107,7 +107,7 @@ export default {
       loading: true,
       nodatatext: '',
 
-      itemData: { id: '', name: '', description: '', status: '' },
+      itemData: { id: '', user: { name: '', email: '', status: '' }, classes: [], _lang_en: { user: { status: '' } } },
       editing: false,
       editingItemID: null,
       dialog: false,
@@ -120,9 +120,9 @@ export default {
   computed: {
     headers() {
       return [
-        { title: this.$t('name'), key: 'name' },
-        { title: this.$t('status'), key: 'status' },
-        { title: this.$t('description'), value: 'description' },
+        { title: this.$t('name'), key: 'user.name' },
+        { title: this.$t('status'), key: '_lang_en.user.status' },
+        { title: this.$t('email'), value: 'user.email' },
         { title: this.$t('actions'), value: 'actions', sortable: false },
       ];
     },
@@ -148,10 +148,16 @@ export default {
         let params = {
           skip: start,
           limit: itemsPerPage,
-          projection: 'id,name,description,status',
+          projection: 'id,user.name,user.email,user.status,classes,_lang_en',
           sort: 'name',
-          filter: this.filter || '',
         };
+        // filter
+        if (this.filter) {
+          params = {
+            ...params,
+            'user.name,user.email,_lang_en.user.status': `/${this.filter}/i`,
+          };
+        }
 
         if (sortBy.length) {
           params.sort = '';
@@ -258,7 +264,12 @@ export default {
      * reset form
      */
     resetForm() {
-      this.itemData = { id: '', name: '', description: '', status: '' };
+      this.itemData = {
+        id: '',
+        user: { name: '', email: '', status: '' },
+        classes: [],
+        _lang_en: { user: { status: '' } },
+      };
       this.editing = false;
       this.editingItemID = null;
     },

@@ -99,7 +99,11 @@ const Public = {
   getSchemaValidationError: (v, objInfo, _ctx) => {
     const error = `Failed to validate schema. Error: ${_.get(v, 'error.details[0].message')}`;
     console.log(
-      `\nFailed to validate schema: ${JSON.stringify(Public.protectData(objInfo), null, 2)}. Error: ${error}`
+      `\nFailed to validate schema: ${JSON.stringify(
+        Public.protectData(objInfo),
+        Public.stringifyFilter,
+        2
+      )}. Error: ${error}`
     );
     return { status: 400, error: { message: error, error: new Error(error) } };
   },
