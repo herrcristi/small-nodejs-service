@@ -796,7 +796,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 403,
+      status: 401,
       error: {
         message: 'Failed to validate school',
         error: new Error('Failed to validate school'),
@@ -854,7 +854,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 403,
+      status: 401,
       error: {
         message: 'School is disabled',
         error: new Error('School is disabled'),
