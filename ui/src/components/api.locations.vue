@@ -166,8 +166,8 @@ export default {
         console.log('Fetching locations with params:', new URLSearchParams(params).toString());
 
         const response = await Api.getLocations(new URLSearchParams(params).toString());
-        this.totalItems = response.meta?.count || 0;
-        this.items = response.data || response;
+        this.totalItems = response.data?.meta?.count || 0;
+        this.items = response.data?.data || [];
         this.nodatatext = '';
       } catch (e) {
         console.error('Error fetching all locations:', e);

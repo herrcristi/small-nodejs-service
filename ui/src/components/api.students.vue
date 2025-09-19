@@ -164,8 +164,9 @@ export default {
         console.log('Fetching students with params:', new URLSearchParams(params).toString());
 
         const response = await Api.getStudents(new URLSearchParams(params).toString());
-        this.totalItems = response.meta?.count || 0;
-        this.items = response.data || response;
+        console.log('Fetched students response:', response);
+        this.totalItems = response.data?.meta?.count || 0;
+        this.items = response.data?.data || [];
         this.nodatatext = '';
       } catch (e) {
         console.error('Error fetching all students:', e);
