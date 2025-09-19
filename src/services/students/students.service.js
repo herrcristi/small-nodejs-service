@@ -42,6 +42,8 @@ const Validators = {
       'id',
       'user.id',
       'user.name',
+      'user.email',
+      'user.status',
       'classes.id',
       'classes.name',
       'groups.id',

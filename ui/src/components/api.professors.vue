@@ -8,7 +8,7 @@
       :items="items"
       :items-length="totalItems"
       :loading="loading"
-      :search="search"
+      :search="filter"
       :no-data-text="nodatatext"
       @update:options="fetchAll"
       item-key="id"
@@ -17,7 +17,7 @@
       items-per-page="50"
     >
       <!-- 
-          top of the table, title + add + search 
+          top of the table, title + add + filter 
       -->
       <template v-slot:top>
         <v-toolbar flat>
@@ -40,8 +40,8 @@
           <v-toolbar-title> </v-toolbar-title>
 
           <v-text-field
-            v-model="search"
-            label="Search"
+            v-model="filter"
+            label="Filter"
             class="me-2"
             rounded="lg"
             prepend-inner-icon="mdi-magnify"
@@ -80,7 +80,7 @@
         <v-card-text>
           <v-form ref="form">
             <v-text-field v-model="itemData.name" :label="$t('name')" required />
-            <v-text-field v-model="itemData.description" :label="$t('description')" required />
+            <v-text-field v-model="itemData.email" :label="$t('email')" required />
           </v-form>
         </v-card-text>
 
@@ -105,11 +105,11 @@ export default {
     return {
       items: [],
       totalItems: 0,
-      search: '',
+      filter: '',
       loading: true,
       nodatatext: '',
 
-      itemData: { id: '', name: '', description: '', status: '' },
+      itemData: { id: '', user: { name: '', email: '', status: '' }, classes: [], _lang_en: { user: { status: '' } } },
       editing: false,
       editingItemID: null,
       dialog: false,
@@ -122,9 +122,9 @@ export default {
   computed: {
     headers() {
       return [
-        { title: this.$t('name'), key: 'name' },
-        { title: this.$t('status'), key: 'status' },
-        { title: this.$t('description'), value: 'description' },
+        { title: this.$t('name'), key: 'user.name' },
+        { title: this.$t('status'), key: '_lang_en.status' },
+        { title: this.$t('email'), value: 'user.email' },
         { title: this.$t('actions'), value: 'actions', sortable: false },
       ];
     },
@@ -150,10 +150,17 @@ export default {
         let params = {
           skip: start,
           limit: itemsPerPage,
-          projection: 'id,name,description,status',
-          sort: 'name',
-          search: this.search || '',
+          projection: 'id,user.name,user.email,user.status,classes,_lang_en',
+          sort: 'user.name',
         };
+
+        // filter
+        if (this.filter) {
+          params = {
+            ...params,
+            'user.name,user.email,_lang_en.user.status': `/${this.filter}/i`,
+          };
+        }
 
         if (sortBy.length) {
           params.sort = '';
@@ -166,8 +173,8 @@ export default {
         console.log('Fetching professors with params:', new URLSearchParams(params).toString());
 
         const response = await Api.getProfessors(new URLSearchParams(params).toString());
-        this.totalItems = response.meta?.count || 0;
-        this.items = response.data || response;
+        this.totalItems = response.data?.meta?.count || 0;
+        this.items = response.data?.data || [];
         this.nodatatext = '';
       } catch (e) {
         console.error('Error fetching all professors:', e);
@@ -259,7 +266,12 @@ export default {
      * reset form
      */
     resetForm() {
-      this.itemData = { id: '', name: '', description: '', status: '' };
+      this.itemData = {
+        id: '',
+        user: { name: '', email: '', status: '' },
+        classes: [],
+        _lang_en: { user: { status: '' } },
+      };
       this.editing = false;
       this.editingItemID = null;
     },

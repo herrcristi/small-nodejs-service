@@ -245,13 +245,13 @@ const Private = {
     const validSchool = user.schools.find((item) => item.id === _ctx.tenantID);
     if (!validSchool) {
       const msg = 'Failed to validate school';
-      return { status: 403, error: { message: msg, error: new Error(msg) } };
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
     }
 
     // validate school is not disabled
     if (validSchool.status === SchoolsRest.Constants.Status.Disabled) {
       const msg = 'School is disabled';
-      return { status: 403, error: { message: msg, error: new Error(msg) } };
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
     }
 
     // validate also route

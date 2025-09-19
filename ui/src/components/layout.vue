@@ -30,6 +30,9 @@
         <v-list-item link to="/classes">
           <v-list-item-title>Classes</v-list-item-title>
         </v-list-item>
+        <v-list-item link to="/schedules">
+          <v-list-item-title>Schedules</v-list-item-title>
+        </v-list-item>
         <v-list-item link to="/users">
           <v-list-item-title>Users</v-list-item-title>
         </v-list-item>

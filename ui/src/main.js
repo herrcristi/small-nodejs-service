@@ -1,5 +1,7 @@
 import { createApp } from 'vue';
 import { createI18n } from 'vue-i18n';
+import { createPinia } from 'pinia';
+import { useAuthStore, useAppStore } from './stores/stores.js';
 
 import App from './app.vue';
 import './styles.css';
@@ -22,6 +24,7 @@ import en from './translations/en.json';
 import ro from './translations/ro.json';
 
 const i18n = createI18n({
+  legacy: false,
   locale: 'ro',
   fallbackLocale: 'en',
   formatFallbackMessages: true,
@@ -33,6 +36,14 @@ const i18n = createI18n({
 });
 
 const app = createApp(App);
+const pinia = createPinia();
+app.use(pinia);
+
+// load auth store into pinia
+const authStore = useAuthStore();
+authStore.load();
+const appStore = useAppStore();
+appStore.load();
 
 app.config.errorHandler = (err) => {
   console.error(err);

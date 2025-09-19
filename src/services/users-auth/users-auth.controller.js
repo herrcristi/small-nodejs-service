@@ -31,11 +31,18 @@ const Public = {
       }
 
       // set token as cookie
+      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000 /*1d*/);
       res.cookie(UsersAuthConstants.AuthToken, r.token, {
-        expires: new Date(Date.now() + 24 * 60 * 60 * 1000 /*1d*/),
+        expires,
         httpOnly: true,
       });
-      res.status(r.status).json(r.value);
+
+      // add token and expires to response due to CORS limitations
+      res.status(r.status).json({
+        ...r.value,
+        token: r.token,
+        expires: expires.toISOString(),
+      });
     } catch (e) {
       return res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
     } finally {
@@ -62,11 +69,18 @@ const Public = {
       }
 
       // set expired token as cookie
+      const expires = new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/);
       res.cookie(UsersAuthConstants.AuthToken, 'token', {
-        expires: new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/),
+        expires,
         httpOnly: true,
       });
-      res.status(r.status).json(r.value);
+
+      // add token and expires to response due to CORS limitations
+      res.status(r.status).json({
+        ...r.value,
+        token: 'token',
+        expires: expires.toISOString(),
+      });
     } catch (e) {
       return res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
     } finally {
@@ -86,8 +100,8 @@ const Public = {
         `\n${_ctx.serviceName}: Validate called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
 
-      // get token from cookie
-      const token = req.cookies[UsersAuthConstants.AuthToken];
+      // get token from cookie or from authorization header
+      const token = req.cookies[UsersAuthConstants.AuthToken] || req.headers['authorization']?.split('Bearer ')[1];
       const method = req.query['method'];
       const route = req.query['route'];
 
@@ -299,11 +313,18 @@ const Public = {
       }
 
       // set expired token as cookie
+      const expires = new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/);
       res.cookie(UsersAuthConstants.AuthToken, 'token', {
-        expires: new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/),
+        expires,
         httpOnly: true,
       });
-      res.status(r.status).json(r.value);
+
+      // add token and expires to response due to CORS limitations
+      res.status(r.status).json({
+        ...r.value,
+        token: 'token',
+        expires: expires.toISOString(),
+      });
     } catch (e) {
       return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
     } finally {
@@ -366,11 +387,18 @@ const Public = {
       }
 
       // set expired token as cookie
+      const expires = new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/);
       res.cookie(UsersAuthConstants.AuthToken, 'token', {
-        expires: new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/),
+        expires,
         httpOnly: true,
       });
-      res.status(r.status).json(r.value);
+
+      // add token and expires to response due to CORS limitations
+      res.status(r.status).json({
+        ...r.value,
+        token: 'token',
+        expires: expires.toISOString(),
+      });
     } catch (e) {
       return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
     } finally {

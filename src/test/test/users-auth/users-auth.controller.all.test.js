@@ -54,8 +54,9 @@ describe('Users Auth Controller', function () {
     // check
     chai.expect(res.status).to.equal(201);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body).to.deep.equal({
+    chai.expect({ ...res.body, expires: '' }).to.deep.equal({
       ...testUser,
+      expires: '', // ignore expires
     });
   }).timeout(10000);
 
@@ -132,7 +133,10 @@ describe('Users Auth Controller', function () {
     // check
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body).to.deep.equal({});
+    chai.expect({ ...res.body, expires: '' }).to.deep.equal({
+      token: 'token',
+      expires: '', // ignore expires for testing
+    });
   }).timeout(10000);
 
   /**
@@ -177,9 +181,9 @@ describe('Users Auth Controller', function () {
   }).timeout(10000);
 
   /**
-   * s2s + token validate with success
+   * s2s + token validate with success with cookie
    */
-  it('should s2s+token validate with success', async () => {
+  it('should s2s+token validate with success with cookie', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersToken);
     const testUser = testUsers[0];
 
@@ -202,6 +206,43 @@ describe('Users Auth Controller', function () {
       .request(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
       .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(201);
+    chai.expect(stubRest.callCount).to.equal(1);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal({
+      ...testUser,
+    });
+  }).timeout(10000);
+
+  /**
+   * s2s + token validate with success with authorization header
+   */
+  it('should s2s+token validate with success with authorization header', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersToken);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubRest = sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+      console.log(`\nRestCommunicationsUtils.restValidation called`);
+      return { status: 200, value: {} };
+    });
+
+    let stubService = sinon.stub(UsersAuthService, 'validate').callsFake(() => {
+      console.log(`\nUsersAuthService.validate called\n`);
+      return {
+        status: 201,
+        value: { ...testUser },
+      };
+    });
+
+    // call
+    let res = await chai
+      .request(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
+      .set('authorization', `Bearer ${UsersAuthConstants.AuthToken}=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -941,8 +982,10 @@ describe('Users Auth Controller', function () {
     // check
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body).to.deep.equal({
+    chai.expect({ ...res.body, expires: '' }).to.deep.equal({
       ...testUser,
+      token: 'token',
+      expires: '', // ignore expires for testing
     });
   }).timeout(10000);
 
@@ -1109,8 +1152,10 @@ describe('Users Auth Controller', function () {
     // check
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body).to.deep.equal({
+    chai.expect({ ...res.body, expires: '' }).to.deep.equal({
       ...testUser,
+      token: 'token',
+      expires: '', // ignore expires for testing
     });
   }).timeout(10000);
 

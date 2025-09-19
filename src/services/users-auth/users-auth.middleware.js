@@ -36,7 +36,7 @@ const Public = {
 
     // user authentication with token
     try {
-      const token = req.cookies[UsersAuthRest.Constants.AuthToken];
+      const token = req.cookies[UsersAuthRest.Constants.AuthToken] || req.headers['authorization']?.split('Bearer ')[1];
 
       const objValidation = {
         method: req.method,

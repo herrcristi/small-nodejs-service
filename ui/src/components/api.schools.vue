@@ -8,7 +8,7 @@
       :items="items"
       :items-length="totalItems"
       :loading="loading"
-      :search="search"
+      :search="filter"
       :no-data-text="nodatatext"
       @update:options="fetchAll"
       item-key="id"
@@ -17,7 +17,7 @@
       items-per-page="50"
     >
       <!-- 
-          top of the table, title + add + search 
+          top of the table, title + add + filter 
       -->
       <template v-slot:top>
         <v-toolbar flat>
@@ -40,8 +40,8 @@
           <v-toolbar-title> </v-toolbar-title>
 
           <v-text-field
-            v-model="search"
-            label="Search"
+            v-model="filter"
+            label="Filter"
             class="me-2"
             rounded="lg"
             prepend-inner-icon="mdi-magnify"
@@ -117,16 +117,13 @@ export default {
    */
   data() {
     return {
-      items: [
-        // { id: 1, name: 'Test School', description: 'A test school', status: 'active' },
-        // { id: 2, name: 'Another School', description: 'Another test school', status: 'inactive' },
-      ],
+      items: [],
       totalItems: 0,
-      search: '',
+      filter: '',
       loading: true,
       nodatatext: '',
 
-      itemData: { id: '', name: '', description: '', status: '' },
+      itemData: { id: '', name: '', status: '', description: '', _lang_en: { status: '' } },
       editing: false,
       editingItemID: null,
       dialog: false,
@@ -142,7 +139,7 @@ export default {
     headers() {
       return [
         { title: this.$t('name'), key: 'name' },
-        { title: this.$t('status'), key: 'status' },
+        { title: this.$t('status'), key: '_lang_en.status' },
         { title: this.$t('description'), value: 'description' },
         { title: this.$t('actions'), value: 'actions', sortable: false },
       ];
@@ -169,10 +166,17 @@ export default {
         let params = {
           skip: start,
           limit: itemsPerPage,
-          projection: 'id,name,description,status',
+          projection: 'id,name,status,description,_lang_en',
           sort: 'name',
-          search: this.search || '',
         };
+
+        // filter
+        if (this.filter) {
+          params = {
+            ...params,
+            'name,_lang_en.status,description': `/${this.filter}/i`,
+          };
+        }
 
         if (sortBy.length) {
           params.sort = '';
@@ -185,8 +189,8 @@ export default {
         console.log('Fetching schools with params:', new URLSearchParams(params).toString());
 
         const response = await Api.getSchools(new URLSearchParams(params).toString());
-        this.totalItems = response.meta?.count || 0;
-        this.items = response.data || response;
+        this.totalItems = response.data?.meta?.count || 0;
+        this.items = response.data?.data || [];
         this.nodatatext = '';
       } catch (e) {
         console.error('Error fetching all schools:', e);
@@ -300,7 +304,7 @@ export default {
      * reset form
      */
     resetForm() {
-      this.itemData = { id: '', name: '', description: '', status: '' };
+      this.itemData = { id: '', name: '', status: '', description: '', _lang_en: { status: '' } };
       this.editing = false;
       this.editingItemID = null;
     },

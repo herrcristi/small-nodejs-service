@@ -8,7 +8,7 @@
       :items="items"
       :items-length="totalItems"
       :loading="loading"
-      :search="search"
+      :search="filter"
       :no-data-text="nodatatext"
       @update:options="fetchAll"
       item-key="id"
@@ -17,7 +17,7 @@
       items-per-page="50"
     >
       <!-- 
-          top of the table, title + add + search 
+          top of the table, title + add + filter 
       -->
       <template v-slot:top>
         <v-toolbar flat>
@@ -40,8 +40,8 @@
           <v-toolbar-title> </v-toolbar-title>
 
           <v-text-field
-            v-model="search"
-            label="Search"
+            v-model="filter"
+            label="Filter"
             class="me-2"
             rounded="lg"
             prepend-inner-icon="mdi-magnify"
@@ -73,11 +73,21 @@ export default {
     return {
       items: [],
       totalItems: 0,
-      search: '',
+      filter: '',
       loading: true,
       nodatatext: '',
 
-      itemData: { id: '', name: '', status: '' },
+      itemData: {
+        id: '',
+        createdTimestamp: '',
+        severity: '',
+        messageID: '',
+        args: [],
+        target: {},
+        user: {},
+        name: '',
+        _lang_en: { severity: '', message: '' },
+      },
       editing: false,
       editingItemID: null,
       dialog: false,
@@ -90,8 +100,11 @@ export default {
   computed: {
     headers() {
       return [
-        { title: this.$t('name'), key: 'name' },
-        { title: this.$t('status'), key: 'status' },
+        { title: this.$t('createdTimestamp'), key: 'createdTimestamp' },
+        { title: this.$t('severity'), key: '_lang_en.severity' },
+        { title: this.$t('user'), key: 'user.username' },
+        { title: this.$t('target'), key: 'target.name' },
+        { title: this.$t('message'), key: '_lang_en.message' },
       ];
     },
   },
@@ -116,10 +129,17 @@ export default {
         let params = {
           skip: start,
           limit: itemsPerPage,
-          projection: 'id,name,status',
-          sort: 'name',
-          search: this.search || '',
+          projection: 'id,createdTimestamp,severity,messageID,args,target,user,name,_lang_en',
+          sort: '-createdTimestamp',
         };
+
+        // filter
+        if (this.filter) {
+          params = {
+            ...params,
+            'createdTimestamp,_lang_en.severity,user.username,target.name,_lang_en.message': `/${this.filter}/i`,
+          };
+        }
 
         if (sortBy.length) {
           params.sort = '';
@@ -132,8 +152,8 @@ export default {
         console.log('Fetching events with params:', new URLSearchParams(params).toString());
 
         const response = await Api.getEvents(new URLSearchParams(params).toString());
-        this.totalItems = response.meta?.count || 0;
-        this.items = response.data || response;
+        this.totalItems = response.data?.meta?.count || 0;
+        this.items = response.data?.data || [];
         this.nodatatext = '';
       } catch (e) {
         console.error('Error fetching all events:', e);

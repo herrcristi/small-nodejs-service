@@ -38,7 +38,7 @@ const Schema = {
 
 const Validators = {
   Get: {
-    filter: ['id', 'name', 'status', 'description', 'required'], // some have with index
+    filter: ['id', 'name', 'status', 'description', 'credits', 'required'], // some have with index
     sort: { name: 1 },
   },
 

@@ -11,6 +11,7 @@
   "delete": "Șterge",
   "edit": "Editează",
   "name": "Nume",
+  "email": "Email",
   "actions": "Acțiuni",
   "cancel": "Anulează",
   "save": "Salvează",
@@ -18,5 +19,13 @@
 
   "schedules.title": "Orar",
   "schedules.add": "Adaugă orar",
-  "schedules.edit": "Editează orar"
+  "schedules.edit": "Editează orar",
+  "login.title": "Autentificare",
+  "login.username": "Nume de utilizator",
+  "login.password": "Parolă",
+  "login.submit": "Autentifică-te",
+  "login.failed": "Autentificarea a eșuat",
+  "login.username_required": "Numele de utilizator este necesar",
+  "login.password_required": "Parola este necesară",
+  "login.remember_me": "Păstrează autentificarea"
 }

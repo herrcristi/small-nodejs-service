@@ -44,6 +44,7 @@ const Validators = {
       'name',
       'severity',
       'messageID',
+      'message',
       'target.id',
       'target.name',
       'target.type',
