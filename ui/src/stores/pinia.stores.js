@@ -8,6 +8,7 @@ export const piniaAuthStore = defineStore('auth', {
    */
   state: () => ({
     token: null,
+    expires: null,
     raw: null,
   }),
 
@@ -26,7 +27,12 @@ export const piniaAuthStore = defineStore('auth', {
         }
         const obj = JSON.parse(raw);
         this.token = obj.token || null;
+        this.expires = obj.expires || null;
         this.raw = obj.raw || obj;
+
+        if (new Date(this.expires) < new Date()) {
+          this.clear();
+        }
       } catch (e) {
         // ignore
         console.error('Failed to load auth in store', e);
@@ -38,10 +44,20 @@ export const piniaAuthStore = defineStore('auth', {
      */
     save(obj) {
       try {
-        const payload = { token: obj.token || obj?.access_token || null, raw: obj };
-        localStorage.setItem(SMALL_AUTH_KEY, JSON.stringify(payload));
-        this.token = payload.token;
-        this.raw = payload.raw;
+        const payload = {
+          token: obj.token || obj?.access_token || null,
+          expires: obj.expires || null,
+          raw: obj,
+        };
+
+        if (!payload.expires || new Date(payload.expires) < new Date()) {
+          this.clear();
+        } else {
+          localStorage.setItem(SMALL_AUTH_KEY, JSON.stringify(payload));
+          this.token = payload.token;
+          this.expires = payload.expires;
+          this.raw = payload.raw;
+        }
       } catch (e) {
         console.error('Failed to save auth in store', e);
       }
@@ -57,6 +73,7 @@ export const piniaAuthStore = defineStore('auth', {
         console.error('Failed to clear in store', e);
       }
       this.token = null;
+      this.expires = null;
       this.raw = null;
     },
   },

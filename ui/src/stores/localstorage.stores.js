@@ -11,6 +11,11 @@ export const localAuthStore = {
         return;
       }
       const obj = JSON.parse(raw);
+
+      if (!obj.expires || new Date(obj.expires) < new Date()) {
+        this.clear();
+        return null;
+      }
       return obj;
     } catch (e) {
       // ignore
@@ -23,8 +28,17 @@ export const localAuthStore = {
    */
   save(obj) {
     try {
-      const payload = { token: obj.token || obj?.access_token || null, raw: obj };
-      localStorage.setItem(SMALL_AUTH_KEY, JSON.stringify(payload));
+      const payload = {
+        token: obj.token || obj?.access_token || null,
+        expires: obj.expires || null,
+        raw: obj,
+      };
+
+      if (!obj.expires || new Date(obj.expires) < new Date()) {
+        this.clear();
+      } else {
+        localStorage.setItem(SMALL_AUTH_KEY, JSON.stringify(payload));
+      }
     } catch (e) {
       console.error('Failed to save auth in store', e);
     }
