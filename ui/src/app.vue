@@ -1,7 +1,9 @@
 <template>
-  <Layout>
-    <router-view />
-  </Layout>
+  <router-view v-slot="{ Component, route }">
+    <component :is="route.meta?.noLayout ? 'div' : 'Layout'">
+      <component :is="Component" />
+    </component>
+  </router-view>
 </template>
 
 <script>

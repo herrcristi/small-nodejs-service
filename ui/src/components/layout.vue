@@ -2,39 +2,63 @@
   <v-app>
     <v-app-bar app color="primary" dark>
       <v-app-bar-title>Small App</v-app-bar-title>
+
+      <v-spacer />
+
+      <div class="d-flex align-center">
+        <v-menu offset-y>
+          <template #activator="{ props }">
+            <v-btn v-bind="props" class="d-flex align-center" text>
+              <v-avatar class="me-2" size="32" color="secondary">
+                <span class="avatar-initials">{{ initials }}</span>
+              </v-avatar>
+              <div class="me-2">{{ $t('hi_user', { user: userName }) }}</div>
+            </v-btn>
+          </template>
+
+          <v-list>
+            <v-list-item link @click="goProfile">
+              <v-list-item-title>{{ $t('profile') }}</v-list-item-title>
+            </v-list-item>
+            <v-list-item @click="doLogout">
+              <v-list-item-title>{{ $t('logout') }}</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </v-menu>
+      </div>
     </v-app-bar>
 
     <v-navigation-drawer app permanent color="primary" dark>
       <v-list dense>
         <v-list-item link to="/">
-          <v-list-item-title>Home</v-list-item-title>
+          <v-list-item-title>{{ $t('Home') }} </v-list-item-title>
         </v-list-item>
         <v-list-item link to="/schools">
-          <v-list-item-title>Schools</v-list-item-title>
+          <v-list-item-title>{{ $t('Schools') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/students">
-          <v-list-item-title>Students</v-list-item-title>
+          <v-list-item-title>{{ $t('Students') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/professors">
-          <v-list-item-title>Professors</v-list-item-title>
+          <v-list-item-title>{{ $t('Professors') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/groups">
-          <v-list-item-title>Groups</v-list-item-title>
+          <v-list-item-title>{{ $t('Groups') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/locations">
-          <v-list-item-title>Locations</v-list-item-title>
+          <v-list-item-title>{{ $t('Locations') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/events">
-          <v-list-item-title>Events</v-list-item-title>
+          <v-list-item-title>{{ $t('Events') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/classes">
-          <v-list-item-title>Classes</v-list-item-title>
+          <v-list-item-title>{{ $t('Classes') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/schedules">
-          <v-list-item-title>Schedules</v-list-item-title>
+          <v-list-item-title>{{ $t('Schedules') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/users">
-          <v-list-item-title>Users</v-list-item-title>
+          <v-list-item-title>{{ $t('Users') }}</v-list-item-title>
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
@@ -60,13 +84,21 @@
 
 <script>
 import { computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import { useAuthStore, useAppStore } from '../stores/stores.js';
+import Api from '../api/api.js';
 
 export default {
   name: 'Layout',
   setup() {
     const route = useRoute();
+    const router = useRouter();
+    const authStore = useAuthStore();
+    const appStore = useAppStore();
 
+    /**
+     * breadcrumbs
+     */
     const breadcrumbs = computed(() => {
       // Prefer route.meta.breadcrumbs when provided as an array of { text, to }
       if (Array.isArray(route.meta?.breadcrumbs) && route.meta.breadcrumbs.length) {
@@ -82,11 +114,63 @@ export default {
       });
     });
 
-    return { breadcrumbs };
+    /**
+     * userName
+     */
+    const userName = computed(() => {
+      return authStore?.raw?.name || authStore?.raw?.email || 'User';
+    });
+
+    /**
+     * initials
+     */
+    const initials = computed(() => {
+      const n = userName.value || '';
+      return n
+        .split(' ')
+        .map((p) => p.charAt(0).toUpperCase())
+        .slice(0, 2)
+        .join('');
+    });
+
+    /**
+     * profile
+     */
+    function goProfile() {
+      router.push('/profile');
+    }
+
+    /**
+     * logout
+     */
+    async function doLogout() {
+      // save next and tenant to re-use after logout redirect
+      const current = window.location.pathname + window.location.search;
+      const tenantID = appStore?.tenantID;
+      try {
+        await Api.logout(true);
+      } catch (e) {
+        // ignore logout errors
+      } finally {
+        authStore.clear();
+        router.push(`/login?tenantID=${encodeURIComponent(tenantID || '')}&next=${encodeURIComponent(current)}`);
+      }
+    }
+
+    return { breadcrumbs, userName, initials, goProfile, doLogout };
   },
 };
 </script>
 
 <style scoped>
+.avatar-initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  color: white;
+  font-weight: 600;
+}
 /* Add layout-specific styles here */
 </style>

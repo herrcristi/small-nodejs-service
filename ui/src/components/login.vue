@@ -46,8 +46,9 @@ import { processLoginResponse } from '../auth.js';
 import { useRouter } from 'vue-router';
 
 export default {
-  name: 'LoginPage',
+  name: 'Login',
   props: {
+    tenantID: { type: String, default: null },
     next: { type: String, default: '/' },
   },
   setup(props) {
@@ -68,7 +69,10 @@ export default {
 
       loading.value = true;
       try {
+        // call the backend login
         const resp = await Api.login({ id: username.value, password: password.value }, withCreds.value);
+
+        // process the response
         const r = await processLoginResponse(resp);
         if (r.error) {
           throw r.error.error;
@@ -77,14 +81,20 @@ export default {
           throw new Error('Authentication failed');
         }
 
+        // if tenant already selected, redirect to next
         if (r.tenantID) {
+          // if tenant changed, reset next to /
+          if (props.tenantID && props.tenantID !== r.tenantID) {
+            props.next = '/';
+          }
           // redirect to next
           const target = props.next || '/';
           router.push(decodeURIComponent(target));
         } else {
-          // redirect to tenant selection page
-          props.next = '';
-          router.push(`/select-tenant`);
+          // redirect to tenant selection page and pass next
+          const tenantIDParam = props.tenantID ? encodeURIComponent(props.tenantID) : '';
+          const nextParam = encodeURIComponent(props.next || '/');
+          router.push(`/tenants?tenantID=${tenantIDParam}&next=${nextParam}`);
         }
       } catch (e) {
         error.value = e.message || 'Login failed';

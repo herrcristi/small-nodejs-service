@@ -171,6 +171,10 @@ const Api = {
   updateSchedule: (id, data) => instance.put(`/schedules/${id}`, data),
   deleteSchedule: (id) => instance.delete(`/schedules/${id}`),
 
+  // Users API
+  getUser: (id) => instance.get(`/users/${id}`),
+  updateUser: (id, data) => instance.put(`/users/${id}`, data),
+
   // Auth
   // Pass withCreds=true if you need to send cookies (server must allow credentials)
   login: (credentials, withCreds = false) =>
