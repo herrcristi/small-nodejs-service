@@ -7,34 +7,34 @@
     <v-navigation-drawer app permanent color="primary" dark>
       <v-list dense>
         <v-list-item link to="/">
-          <v-list-item-title>Home</v-list-item-title>
+          <v-list-item-title>{{ $t('Home') }} </v-list-item-title>
         </v-list-item>
         <v-list-item link to="/schools">
-          <v-list-item-title>Schools</v-list-item-title>
+          <v-list-item-title>{{ $t('Schools') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/students">
-          <v-list-item-title>Students</v-list-item-title>
+          <v-list-item-title>{{ $t('Students') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/professors">
-          <v-list-item-title>Professors</v-list-item-title>
+          <v-list-item-title>{{ $t('Professors') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/groups">
-          <v-list-item-title>Groups</v-list-item-title>
+          <v-list-item-title>{{ $t('Groups') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/locations">
-          <v-list-item-title>Locations</v-list-item-title>
+          <v-list-item-title>{{ $t('Locations') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/events">
-          <v-list-item-title>Events</v-list-item-title>
+          <v-list-item-title>{{ $t('Events') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/classes">
-          <v-list-item-title>Classes</v-list-item-title>
+          <v-list-item-title>{{ $t('Classes') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/schedules">
-          <v-list-item-title>Schedules</v-list-item-title>
+          <v-list-item-title>{{ $t('Schedules') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/users">
-          <v-list-item-title>Users</v-list-item-title>
+          <v-list-item-title>{{ $t('Users') }}</v-list-item-title>
         </v-list-item>
       </v-list>
     </v-navigation-drawer>

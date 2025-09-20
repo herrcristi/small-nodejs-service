@@ -1,15 +1,40 @@
 <template>
-  <Layout>
-    <router-view />
-  </Layout>
+  <component :is="layoutComponent">
+    <Layout>
+      <!-- <router-view /> -->
+    </Layout>
+  </component>
+  <component :is="loginComponent">
+    <Login> </Login>
+  </component>
+  <component :is="tenantSelectComponent">
+    <TenantSelect> </TenantSelect>
+  </component>
 </template>
 
 <script>
 import Layout from './components/layout.vue';
+import Login from './components/login.vue';
+import TenantSelect from './components/tenant.select.vue';
+import { useRoute } from 'vue-router';
 
 export default {
   name: 'App',
-  components: { Layout },
+  components: { Layout, Login, TenantSelect },
+  setup() {
+    const route = useRoute();
+    const layoutComponent = () => {
+      // if route.meta.noLayout is true, render a simple fragment container
+      return !route.meta?.noLayout ? Layout : null;
+    };
+    const loginComponent = () => {
+      return route.path === '/login' ? Login : null;
+    };
+    const tenantSelectComponent = () => {
+      return route.path === '/tenants' ? TenantSelect : null;
+    };
+    return { layoutComponent, loginComponent, tenantSelectComponent };
+  },
 };
 </script>
 

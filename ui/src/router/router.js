@@ -1,5 +1,6 @@
 // import Vue from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
+
 import Schools from '../components/api.schools.vue';
 import Students from '../components/api.students.vue';
 import Professors from '../components/api.professors.vue';
@@ -8,7 +9,10 @@ import Locations from '../components/api.locations.vue';
 import Events from '../components/api.events.vue';
 import Classes from '../components/api.classes.vue';
 import Schedules from '../components/api.schedules.vue';
+
 import Login from '../components/login.vue';
+import TenantSelect from '../components/tenant.select.vue';
+
 import { useAuthStore, useAppStore } from '../stores/stores.js';
 
 const Router = createRouter({
@@ -99,8 +103,15 @@ const Router = createRouter({
       path: '/login',
       name: 'Login',
       component: Login,
-      props: (route) => ({ next: route.query.next || '/' }),
-      meta: { requiresAuth: false },
+      meta: { requiresAuth: false, noLayout: true },
+      props: (route) => ({ tenantID: route.query.tenantID, next: route.query.next || '/' }),
+    },
+    {
+      path: '/tenants',
+      name: 'Tenants',
+      component: TenantSelect,
+      meta: { requiresAuth: true, noLayout: true },
+      props: (route) => ({ tenantID: route.query.tenantID, next: route.query.next || '/' }),
     },
   ],
 });
@@ -124,7 +135,8 @@ Router.beforeEach((to, from, next) => {
   const tenantID = useAppStore()?.tenantID;
   useAppStore()?.saveTenantID(null); // reset it
 
-  // if organization will be changed the next should be cleared
+  // pass tenant and if in tenant selection tenant will be changed
+  // then the next should be cleared
   const nextPath = encodeURIComponent(to.fullPath || to.path || '/');
   return next({ path: '/login', query: { tenantID, next: nextPath } });
 });
