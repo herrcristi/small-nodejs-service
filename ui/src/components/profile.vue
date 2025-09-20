@@ -1,76 +1,46 @@
 <template>
   <v-card>
     <v-container>
-      <v-overlay :model-value="showLoading" absolute>
-        <v-progress-circular indeterminate size="48" color="primary" />
-      </v-overlay>
-
-      <v-row :loading="showLoading">
-        <v-col cols="12">
-          <h2>{{ $t('profile') }}</h2>
-        </v-col>
-      </v-row>
-
       <v-row>
         <v-col cols="12" md="6">
+          <!-- 
+              profile 
+          -->
           <v-card>
-            <v-card-title>
-              {{ $t('profile') }}
-              <v-spacer />
-              <v-btn small color="primary" @click="openEdit">{{ $t('edit') }}</v-btn>
-            </v-card-title>
-            <v-card-text>
-              <v-simple-table>
-                <tbody>
-                  <tr>
-                    <td>ID</td>
-                    <td>{{ profile.id }}</td>
-                  </tr>
-                  <tr>
-                    <td>{{ $t('name') }}</td>
-                    <td>{{ profile.name }}</td>
-                  </tr>
-                  <tr>
-                    <td>{{ $t('email') }}</td>
-                    <td>{{ profile.email }}</td>
-                  </tr>
-                  <tr>
-                    <td>{{ $t('birthday') }}</td>
-                    <td>{{ profile.birthday ? new Date(profile.birthday).toLocaleDateString() : '' }}</td>
-                  </tr>
-                  <tr>
-                    <td>{{ $t('phone') }}</td>
-                    <td>{{ profile.phone }}</td>
-                  </tr>
-                  <tr>
-                    <td>{{ $t('address') }}</td>
-                    <td>{{ profile.address }}</td>
-                  </tr>
-                </tbody>
-              </v-simple-table>
-            </v-card-text>
+            <v-toolbar flat>
+              <v-card-title class="d-flex justify-space-between">
+                {{ $t('profile') }}
+                <v-spacer />
+                <v-icon
+                  small
+                  class="mr-2"
+                  color="primary"
+                  @click="openEdit"
+                  :title="$t('edit')"
+                  size="small"
+                  v-if="!showLoading"
+                  >mdi-pencil</v-icon
+                >
+              </v-card-title>
+            </v-toolbar>
+
+            <key-value :items="profileItems" :loading="showLoading"> </key-value>
           </v-card>
         </v-col>
 
         <v-col cols="12" md="6">
+          <!-- 
+              schools 
+          -->
           <v-card>
-            <v-card-title> {{ $t('schools') }} / {{ $t('role') }} </v-card-title>
-            <v-card-text>
-              <v-simple-table>
-                <thead>
-                  <tr>
-                    <th>{{ $t('schools.title') }}</th>
-                    <th>{{ $t('role') }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="s in profile.schools || []" :key="s.name">
-                    <td>{{ s.name }}</td>
-                    <td>{{ s.role }}</td>
-                  </tr>
-                </tbody>
-              </v-simple-table>
-            </v-card-text>
+            <v-toolbar flat>
+              <v-card-title class="d-flex justify-space-between">
+                {{ $t('Roles') }}
+                <v-spacer />
+              </v-card-title>
+            </v-toolbar>
+
+            <key-value :items="schoolRolesItems" :loading="showLoading"> </key-value>
           </v-card>
         </v-col>
       </v-row>
@@ -110,12 +80,14 @@
 </template>
 
 <script>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useAuthStore } from '../stores/stores.js';
 import Api from '../api/api.js';
+import KeyValue from './keyvalue.vue';
 
 export default {
   name: 'Profile',
+  components: { KeyValue },
   /**
    * setup
    */
@@ -177,6 +149,9 @@ export default {
      * openEdit
      */
     function openEdit() {
+      if (showLoading.value) {
+        return;
+      }
       edit.value = { ...profile.value };
       editDialog.value = true;
     }
@@ -215,6 +190,41 @@ export default {
       editDialog.value = false;
     }
 
+    /**
+     * profileItems
+     */
+    const profileItems = computed(() => {
+      return [
+        { key: 'id', value: profile.value.id },
+        { key: 'name', value: profile.value.name },
+        { key: 'email', value: profile.value.email },
+        {
+          key: 'birthday',
+          value: profile.value.birthday
+            ? new Date(profile.value.birthday).toLocaleDateString(undefined, {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+              })
+            : '',
+        },
+        { key: 'phone', value: profile.value.phone },
+        { key: 'address', value: profile.value.address },
+      ];
+    });
+
+    /**
+     * schoolRolesItems
+     */
+    const schoolRolesItems = computed(() => {
+      return (
+        profile.value?.schools?.map((school) => {
+          return { key: school.name, value: school.roles.join(', ') };
+        }) || []
+      );
+    });
+
     return {
       profile,
       editDialog,
@@ -226,6 +236,8 @@ export default {
       editForm,
       onSave,
       showLoading,
+      profileItems,
+      schoolRolesItems,
     };
   },
 };

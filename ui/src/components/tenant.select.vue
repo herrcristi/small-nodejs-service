@@ -7,7 +7,7 @@
     </v-row>
 
     <v-row>
-      <v-col cols="12" md="6" v-for="t in tenants" :key="t.id">
+      <v-col cols="12" md="5" v-for="t in tenants" :key="t.id">
         <v-card
           class="tenant-card"
           :elevation="selected === t.id ? 8 : 2"

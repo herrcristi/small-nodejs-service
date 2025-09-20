@@ -27,6 +27,7 @@
   "birthday": "Birthday",
   "phone": "Phone",
   "address": "Address",
+  "id": "ID",
   "name_required": "Name is required",
 
   "classes.title": "Classes",

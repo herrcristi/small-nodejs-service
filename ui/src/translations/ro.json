@@ -23,6 +23,7 @@
   "birthday": "Data nașterii",
   "phone": "Telefon",
   "address": "Adresă",
+  "id": "ID",
   "name_required": "Numele este necesar",
 
   "schedules.title": "Orar",
