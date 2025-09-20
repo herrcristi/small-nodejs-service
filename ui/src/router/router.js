@@ -12,6 +12,7 @@ import Schedules from '../components/api.schedules.vue';
 
 import Login from '../components/login.vue';
 import TenantSelect from '../components/tenant.select.vue';
+import Profile from '../components/profile.vue';
 
 import { useAuthStore, useAppStore } from '../stores/stores.js';
 
@@ -112,6 +113,12 @@ const Router = createRouter({
       component: TenantSelect,
       meta: { requiresAuth: true, noLayout: true },
       props: (route) => ({ tenantID: route.query.tenantID, next: route.query.next || '/' }),
+    },
+    {
+      path: '/profile',
+      name: 'Profile',
+      component: Profile,
+      meta: { requiresAuth: true, breadcrumbs: [{ text: 'Profile', to: '/profile' }] },
     },
   ],
 });
