@@ -122,22 +122,29 @@ Router.beforeEach((to, from, next) => {
     return next();
   }
 
-  try {
-    const s = useAuthStore();
-    if (s?.token) {
+  const token = useAuthStore()?.token;
+  const tenantID = useAppStore()?.tenantID;
+  const nextPath = encodeURIComponent(to.fullPath || to.path || '/');
+
+  // check auth
+  if (token) {
+    // check tenant
+    if (tenantID) {
       return next();
     }
-  } catch (e) {
-    // store not available or not initialized
+
+    // redirect to tenant select
+    if (to.path === '/tenants') {
+      next();
+    }
+    return next({ path: '/tenants', query: { next: nextPath } });
   }
 
-  // get current tenantID from local store
-  const tenantID = useAppStore()?.tenantID;
+  // reset tenantID if no auth
   useAppStore()?.saveTenantID(null); // reset it
 
   // pass tenant and if in tenant selection tenant will be changed
   // then the next should be cleared
-  const nextPath = encodeURIComponent(to.fullPath || to.path || '/');
   return next({ path: '/login', query: { tenantID, next: nextPath } });
 });
 

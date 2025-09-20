@@ -92,7 +92,7 @@ export default {
           router.push(decodeURIComponent(target));
         } else {
           // redirect to tenant selection page and pass next
-          const tenantIDParam = tenantID ? encodeURIComponent(props.tenantID) : '';
+          const tenantIDParam = props.tenantID ? encodeURIComponent(props.tenantID) : '';
           const nextParam = encodeURIComponent(props.next || '/');
           router.push(`/tenants?tenantID=${tenantIDParam}&next=${nextParam}`);
         }

@@ -1,7 +1,7 @@
 <template>
   <v-container>
     <v-row>
-      <v-col cols="12">
+      <v-col cols="6">
         <h2>{{ $t('tenants.title') || 'Select Tenant' }}</h2>
       </v-col>
     </v-row>
@@ -43,8 +43,18 @@ export default {
     async function loadTenants() {
       tenants.value =
         useAuthStore()?.raw?.schools?.map((tenant) => {
-          return { id: tenant.id, name: tenant.name };
+          return {
+            id: tenant.id,
+            name: tenant.name,
+            status: tenant.status,
+            description: tenant.description,
+          };
         }) || [];
+
+      // only active tenants
+      tenants.value = tenants.value.filter((t) => t.status === 'active');
+      // sort by name
+      tenants.value.sort((a, b) => a.name.localeCompare(b.name));
     }
 
     const selected = ref(appStore.tenantID || null);
@@ -80,7 +90,7 @@ export default {
   transition: transform 0.12s ease-in-out;
 }
 .tenant-card:hover {
-  transform: translateY(-4px);
+  /* transform: translateY(-4px); */
 }
 .tenant-name {
   font-weight: 600;
