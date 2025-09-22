@@ -3,7 +3,7 @@
     <v-row align="center" justify="center">
       <v-col cols="12" sm="8" md="4">
         <v-card>
-          <v-card-title>{{ $t('login.title') || 'Login' }}</v-card-title>
+          <v-card-title>{{ $t('login') || 'Login' }}</v-card-title>
           <v-card-text>
             <v-form ref="form" v-model="valid">
               <v-text-field
