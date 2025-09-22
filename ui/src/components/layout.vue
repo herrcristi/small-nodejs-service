@@ -60,9 +60,6 @@
         <v-list-item link to="/schedules">
           <v-list-item-title>{{ $t('schedules') }}</v-list-item-title>
         </v-list-item>
-        <v-list-item link to="/users">
-          <v-list-item-title>{{ $t('users') }}</v-list-item-title>
-        </v-list-item>
       </v-list>
     </v-navigation-drawer>
 

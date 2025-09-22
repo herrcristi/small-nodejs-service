@@ -170,8 +170,6 @@ export default {
           params.sort = params.sort.slice(0, -1);
         }
 
-        console.log('Fetching locations with params:', new URLSearchParams(params).toString());
-
         const response = await Api.getLocations(new URLSearchParams(params).toString());
         this.totalItems = response.data?.meta?.count || 0;
         this.items = response.data?.data || [];

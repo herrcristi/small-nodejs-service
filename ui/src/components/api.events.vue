@@ -27,16 +27,6 @@
             <!-- </v-toolbar-title> -->
           </v-card-title>
 
-          <v-btn
-            class="me-2 left"
-            color="primary"
-            prepend-icon="mdi-plus"
-            rounded="lg"
-            text=""
-            border
-            @click="openAdd"
-          ></v-btn>
-
           <v-toolbar-title> </v-toolbar-title>
 
           <v-text-field
@@ -57,6 +47,18 @@
       -->
       <template v-slot:loading>
         <v-skeleton-loader type="table-row@1"></v-skeleton-loader>
+      </template>
+
+      <template v-slot:item.severity="{ item }">
+        <div class="text-end">
+          <v-chip
+            :color="getSeverityColor(item.severity)"
+            :text="item._lang_en.severity"
+            class="text-uppercase"
+            size="small"
+            label
+          ></v-chip>
+        </div>
       </template>
     </v-data-table-server>
   </v-card>
@@ -100,11 +102,11 @@ export default {
   computed: {
     headers() {
       return [
-        { title: this.$t('createdTimestamp'), key: 'createdTimestamp' },
-        { title: this.$t('severity'), key: '_lang_en.severity' },
+        { title: this.$t('severity'), key: 'severity' },
         { title: this.$t('user'), key: 'user.username' },
         { title: this.$t('target'), key: 'target.name' },
         { title: this.$t('message'), key: '_lang_en.message' },
+        { title: this.$t('timestamp'), key: 'createdTimestamp' },
       ];
     },
   },
@@ -149,8 +151,6 @@ export default {
           params.sort = params.sort.slice(0, -1);
         }
 
-        console.log('Fetching events with params:', new URLSearchParams(params).toString());
-
         const response = await Api.getEvents(new URLSearchParams(params).toString());
         this.totalItems = response.data?.meta?.count || 0;
         this.items = response.data?.data || [];
@@ -165,6 +165,21 @@ export default {
       // reset loading
       clearTimeout(timeoutID);
       this.loading = false;
+    },
+    /**
+     * color for severity
+     */
+    getSeverityColor(severity) {
+      switch (severity) {
+        case 'info':
+          return 'green';
+        case 'critical':
+          return 'red';
+        case 'warning':
+          return 'orange';
+        default:
+          return 'orange'; // for any other values
+      }
     },
   },
 
