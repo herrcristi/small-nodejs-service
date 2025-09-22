@@ -180,6 +180,19 @@ const Api = {
   login: (credentials, withCreds = false) =>
     instance.post('/users-auth/login', credentials, { withCredentials: withCreds }),
   logout: (withCreds = false) => instance.post('/users-auth/logout', {}, { withCredentials: withCreds }),
+
+  resetUserPassword: (data) => instance.post(`/users-auth/reset-password`, data),
+  updateUserPassword: (id, data) => instance.put(`/users-auth/${id}/password`, data),
+  updateUserEmail: (id, data) => instance.put(`/users-auth/${id}/id`, data),
+
+  deleteUser: (id) => instance.delete(`/users-auth/${id}`),
+
+  invite: (data) => instance.post(`/users-auth/${id}/invite`, data),
+  updateUserSchool: (id, uid, data) => instance.patch(`/users-auth/${id}/school/user/${uid}`, data),
+
+  // Auth for portal admin
+  // signup new school
+  signup: () => instance.delete(`/users-auth/signup`),
 };
 
 export default Api;

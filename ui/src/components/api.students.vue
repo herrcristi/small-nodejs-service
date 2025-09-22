@@ -167,10 +167,7 @@ export default {
           params.sort = params.sort.slice(0, -1);
         }
 
-        console.log('Fetching students with params:', new URLSearchParams(params).toString());
-
         const response = await Api.getStudents(new URLSearchParams(params).toString());
-        console.log('Fetched students response:', response);
         this.totalItems = response.data?.meta?.count || 0;
         this.items = response.data?.data || [];
         this.nodatatext = '';

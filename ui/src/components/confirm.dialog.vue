@@ -30,8 +30,6 @@ export default {
   },
   emits: ['update:modelValue', 'confirm'],
   setup(props, { emit }) {
-    const t = inject('t');
-
     const visible = computed({
       get: () => !!props.modelValue,
       set: (v) => emit('update:modelValue', v),

@@ -119,9 +119,9 @@ export default {
         const resp = await Api.getUser(userId);
         const data = resp?.data || resp?.value || resp;
         if (data) {
-          auth.raw = { ...auth.raw, ...data };
+          auth.raw = { ...auth.raw, name: data.name, email: data.email };
           auth.save(auth);
-          profile.value = auth.raw;
+          profile.value = { ...auth.raw, ...data };
         }
       } catch (e) {
         // ignore
@@ -168,9 +168,10 @@ export default {
     }
 
     async function saveEdit() {
+      let payload = {};
       try {
         if (profile.value?.id) {
-          const payload = {
+          payload = {
             name: edit.value.name,
             birthday: edit.value.birthday,
             phone: edit.value.phone,
@@ -179,14 +180,15 @@ export default {
           await Api.updateUser(profile.value.id, payload);
 
           // update store locally
-          auth.raw = { ...auth.raw, ...edit.value };
+          payload = { ...auth.raw, ...edit.value };
+          auth.raw = { ...auth.raw, name: payload.name, email: payload.email };
           auth.save(auth);
         }
       } catch (e) {
         // ignore API errors for now
       }
 
-      profile.value = auth.raw;
+      profile.value = payload;
       editDialog.value = false;
     }
 

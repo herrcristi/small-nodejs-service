@@ -176,8 +176,6 @@ export default {
           params.sort = params.sort.slice(0, -1);
         }
 
-        console.log('Fetching groups with params:', new URLSearchParams(params).toString());
-
         const response = await Api.getGroups(new URLSearchParams(params).toString());
         this.totalItems = response.data?.meta?.count || 0;
         this.items = response.data?.data || [];
