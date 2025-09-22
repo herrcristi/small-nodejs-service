@@ -20,6 +20,9 @@
             <v-list-item link @click="goProfile">
               <v-list-item-title>{{ $t('profile') }}</v-list-item-title>
             </v-list-item>
+            <v-list-item link @click="goTenants">
+              <v-list-item-title>{{ $t('tenants') }}</v-list-item-title>
+            </v-list-item>
             <v-list-item @click="doLogout">
               <v-list-item-title>{{ $t('logout') }}</v-list-item-title>
             </v-list-item>
@@ -141,6 +144,15 @@ export default {
     }
 
     /**
+     * tenants
+     */
+    function goTenants() {
+      const current = window.location.pathname + window.location.search;
+      const tenantID = appStore?.tenantID;
+      router.push(`/tenants?tenantID=${encodeURIComponent(tenantID || '')}&next=${encodeURIComponent(current)}`);
+    }
+
+    /**
      * logout
      */
     async function doLogout() {
@@ -157,7 +169,7 @@ export default {
       }
     }
 
-    return { breadcrumbs, userName, initials, goProfile, doLogout };
+    return { breadcrumbs, userName, initials, goProfile, goTenants, doLogout };
   },
 };
 </script>
