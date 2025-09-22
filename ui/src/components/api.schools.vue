@@ -23,7 +23,7 @@
         <v-toolbar flat>
           <v-card-title class="d-flex justify-space-between">
             <!-- <v-toolbar-title> -->
-            {{ $t('schools.title') }}
+            {{ $t('schools') }}
             <!-- </v-toolbar-title> -->
           </v-card-title>
 

@@ -1,5 +1,6 @@
 <template>
   <v-card>
+    <!-- can add striped="odd/even" -->
     <v-data-table
       :headers="headers"
       :items="items"
@@ -7,7 +8,6 @@
       item-key="key"
       class="elevation-1"
       density="compact"
-      striped=""
       hide-default-header
       hide-default-footer
     >
@@ -15,7 +15,7 @@
         <v-skeleton-loader type="table-row@4"></v-skeleton-loader>
       </template>
 
-      <template #item.key="{ item }">{{ $t(item.key) }}</template>
+      <template #item.key="{ item }">{{ item.translate ? $t(item.key) : item.key }}</template>
       <template #item.value="{ item }">{{ item.value }}</template>
     </v-data-table>
   </v-card>
@@ -32,7 +32,7 @@ export default {
 
   mounted() {
     // also log after mount to capture runtime changes
-    console.log('[KeyValue] mounted - current items:', this.items);
+    // console.log('[KeyValue] mounted - current items:', this.items);
   },
 
   computed: {

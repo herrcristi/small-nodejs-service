@@ -2,7 +2,7 @@
   <v-container>
     <v-row>
       <v-col cols="6">
-        <h2>{{ $t('tenants.title') || 'Select Tenant' }}</h2>
+        <h2>{{ $t('tenants') || 'Select Tenant' }}</h2>
       </v-col>
     </v-row>
 

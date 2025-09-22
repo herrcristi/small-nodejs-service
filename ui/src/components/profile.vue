@@ -2,7 +2,7 @@
   <v-card>
     <v-container>
       <v-row>
-        <v-col cols="12" md="6">
+        <v-col cols="12" md="7">
           <!-- 
               profile 
           -->
@@ -28,14 +28,14 @@
           </v-card>
         </v-col>
 
-        <v-col cols="12" md="6">
+        <v-col cols="12" md="5">
           <!-- 
               schools 
           -->
           <v-card>
             <v-toolbar flat>
               <v-card-title class="d-flex justify-space-between">
-                {{ $t('Roles') }}
+                {{ $t('status') }}
                 <v-spacer />
               </v-card-title>
             </v-toolbar>
@@ -195,9 +195,9 @@ export default {
      */
     const profileItems = computed(() => {
       return [
-        { key: 'id', value: profile.value.id },
-        { key: 'name', value: profile.value.name },
-        { key: 'email', value: profile.value.email },
+        { key: 'id', value: profile.value.id, translate: true },
+        { key: 'name', value: profile.value.name, translate: true },
+        { key: 'email', value: profile.value.email, translate: true },
         {
           key: 'birthday',
           value: profile.value.birthday
@@ -208,9 +208,10 @@ export default {
                 day: 'numeric',
               })
             : '',
+          translate: true,
         },
-        { key: 'phone', value: profile.value.phone },
-        { key: 'address', value: profile.value.address },
+        { key: 'phone', value: profile.value.phone, translate: true },
+        { key: 'address', value: profile.value.address, translate: true },
       ];
     });
 

@@ -31,34 +31,34 @@
     <v-navigation-drawer app permanent color="primary" dark>
       <v-list dense>
         <v-list-item link to="/">
-          <v-list-item-title>{{ $t('Home') }} </v-list-item-title>
+          <v-list-item-title>{{ $t('home') }} </v-list-item-title>
         </v-list-item>
         <v-list-item link to="/schools">
-          <v-list-item-title>{{ $t('Schools') }}</v-list-item-title>
+          <v-list-item-title>{{ $t('schools') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/students">
-          <v-list-item-title>{{ $t('Students') }}</v-list-item-title>
+          <v-list-item-title>{{ $t('students') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/professors">
-          <v-list-item-title>{{ $t('Professors') }}</v-list-item-title>
+          <v-list-item-title>{{ $t('professors') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/groups">
-          <v-list-item-title>{{ $t('Groups') }}</v-list-item-title>
+          <v-list-item-title>{{ $t('groups') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/locations">
-          <v-list-item-title>{{ $t('Locations') }}</v-list-item-title>
+          <v-list-item-title>{{ $t('locations') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/events">
-          <v-list-item-title>{{ $t('Events') }}</v-list-item-title>
+          <v-list-item-title>{{ $t('events') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/classes">
-          <v-list-item-title>{{ $t('Classes') }}</v-list-item-title>
+          <v-list-item-title>{{ $t('classes') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/schedules">
-          <v-list-item-title>{{ $t('Schedules') }}</v-list-item-title>
+          <v-list-item-title>{{ $t('schedules') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/users">
-          <v-list-item-title>{{ $t('Users') }}</v-list-item-title>
+          <v-list-item-title>{{ $t('users') }}</v-list-item-title>
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
