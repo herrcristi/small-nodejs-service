@@ -8,19 +8,44 @@
           -->
           <v-card>
             <v-toolbar flat>
-              <v-card-title class="d-flex justify-space-between">
+              <v-card-title class="d-flex justify-space-between align-center">
                 {{ $t('profile') }}
                 <v-spacer />
-                <v-icon
-                  small
-                  class="mr-2"
-                  color="primary"
-                  @click="openEdit"
-                  :title="$t('edit')"
-                  size="small"
-                  v-if="!showLoading"
-                  >mdi-pencil</v-icon
-                >
+                <v-toolbar-items class="d-flex align-center">
+                  <v-icon
+                    small
+                    class="mr-2"
+                    color="primary"
+                    @click="openEdit"
+                    :title="$t('edit')"
+                    size="small"
+                    v-if="!showLoading"
+                    >mdi-pencil</v-icon
+                  >
+                  <!-- icon-only button for extra-small screens -->
+                  <v-btn
+                    small
+                    icon
+                    class="d-flex d-sm-none ml-2"
+                    color="primary"
+                    @click="openPasswordDialog"
+                    :title="$t('password.edit')"
+                    v-if="!showLoading"
+                  >
+                    <v-icon>mdi-lock-reset</v-icon>
+                  </v-btn>
+
+                  <!-- full text button for small and larger screens -->
+                  <v-btn
+                    small
+                    class="ml-2 d-none d-sm-flex"
+                    color="primary"
+                    @click="openPasswordDialog"
+                    :title="$t('password.edit')"
+                    v-if="!showLoading"
+                    >{{ $t('password.change') }}</v-btn
+                  >
+                </v-toolbar-items>
               </v-card-title>
             </v-toolbar>
 
@@ -45,6 +70,9 @@
         </v-col>
       </v-row>
 
+      <!-- 
+          edit dialog 
+      -->
       <v-dialog v-model="editDialog" max-width="600px">
         <v-card>
           <v-card-title>{{ $t('edit') }}</v-card-title>
@@ -75,6 +103,46 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
+
+      <!-- 
+          Change password dialog 
+      -->
+      <v-dialog v-model="passwordDialog" max-width="500px">
+        <v-card>
+          <v-card-title>{{ $t('password.change') }}</v-card-title>
+          <v-card-text>
+            <v-form ref="passwordFormRef" v-model="passwordFormValid">
+              <v-text-field
+                v-model="passwordOld"
+                :label="$t('password.current')"
+                type="password"
+                :rules="[(v) => !!v || $t('password.current.required')]"
+                required
+              />
+              <v-text-field
+                v-model="passwordNew"
+                :label="$t('password.new')"
+                type="password"
+                :rules="[(v) => !!v || $t('password.new.required')]"
+                required
+              />
+              <v-text-field
+                v-model="passwordConfirm"
+                :label="$t('password.confirm')"
+                type="password"
+                :rules="[(v) => v === passwordNew || $t('password.must.match')]"
+                required
+              />
+            </v-form>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn text @click="passwordDialog = false">{{ $t('cancel') }}</v-btn>
+            <v-btn color="primary" :disabled="!passwordFormValid" @click="submitPassword">{{ $t('save') }}</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+      <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ $t(snackbarText) }}</v-snackbar>
     </v-container>
   </v-card>
 </template>
@@ -92,20 +160,33 @@ export default {
    * setup
    */
   setup() {
-    const auth = useAuthStore();
-    const profile = ref(auth.raw || {});
+    const profile = ref({});
+    let loadingTimer = null;
 
+    // edit
     const editDialog = ref(false);
     const edit = ref({ ...profile.value });
     const menu = ref(false);
     const formValid = ref(false);
     const editForm = ref(null);
     const showLoading = ref(false);
-    let loadingTimer = null;
+
+    // password
+    const passwordDialog = ref(false);
+    const passwordOld = ref('');
+    const passwordNew = ref('');
+    const passwordConfirm = ref('');
+    const passwordFormValid = ref(false);
+    const passwordFormRef = ref(null);
+
+    const snackbar = ref(false);
+    const snackbarText = ref('');
+    const snackbarColor = ref('');
 
     // fetch fresh profile from server when component mounts
     onMounted(async () => {
-      const userId = auth.raw?.id;
+      let auth = useAuthStore();
+      const userId = auth?.raw?.id;
       if (!userId) {
         return;
       }
@@ -120,7 +201,7 @@ export default {
         const data = resp?.data || resp?.value || resp;
         if (data) {
           auth.raw = { ...auth.raw, name: data.name, email: data.email };
-          auth.save(auth);
+          useAuthStore()?.save(auth);
           profile.value = { ...auth.raw, ...data };
         }
       } catch (e) {
@@ -180,9 +261,10 @@ export default {
           await Api.updateUser(profile.value.id, payload);
 
           // update store locally
+          let auth = useAuthStore();
           payload = { ...auth.raw, ...edit.value };
           auth.raw = { ...auth.raw, name: payload.name, email: payload.email };
-          auth.save(auth);
+          useAuthStore()?.save(auth);
         }
       } catch (e) {
         // ignore API errors for now
@@ -190,6 +272,50 @@ export default {
 
       profile.value = payload;
       editDialog.value = false;
+    }
+
+    /**
+     * password
+     */
+    function openPasswordDialog() {
+      if (showLoading.value) {
+        return;
+      }
+      passwordOld.value = '';
+      passwordNew.value = '';
+      passwordConfirm.value = '';
+      passwordDialog.value = true;
+    }
+
+    async function submitPassword() {
+      if (passwordFormRef.value && typeof passwordFormRef.value.validate === 'function') {
+        const ok = await passwordFormRef.value.validate();
+        if (!ok) {
+          return;
+        }
+      }
+
+      try {
+        const email = useAuthStore()?.raw?.email;
+        if (!email) {
+          throw new Error('No email found for current user');
+        }
+
+        await Api.updateUserPassword(useAuthStore()?.raw?.email, {
+          oldPassword: passwordOld.value,
+          newPassword: passwordNew.value,
+        });
+
+        passwordDialog.value = false;
+        snackbarText.value = 'password.change.success';
+        snackbarColor.value = 'success';
+        snackbar.value = true;
+      } catch (e) {
+        console.error('Error changing password', e);
+        snackbarText.value = 'password.change.error';
+        snackbarColor.value = 'error';
+        snackbar.value = true;
+      }
     }
 
     /**
@@ -238,6 +364,19 @@ export default {
       formValid,
       editForm,
       onSave,
+
+      passwordDialog,
+      passwordOld,
+      passwordNew,
+      passwordConfirm,
+      passwordFormValid,
+      passwordFormRef,
+      openPasswordDialog,
+      submitPassword,
+      snackbar,
+      snackbarText,
+      snackbarColor,
+
       showLoading,
       profileItems,
       schoolRolesItems,
