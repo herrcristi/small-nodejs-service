@@ -72,5 +72,15 @@
   "user": "Utilizator",
   "users": "Utilizatori",
   "value": "Valoare",
-  "warning": "Atenție"
+  "warning": "Atenție",
+  "password.change": "Schimbă parola",
+  "password.edit": "Schimbă parola",
+  "password.current": "Parola curentă",
+  "password.current.required": "Parola curentă este necesară",
+  "password.new": "Parola nouă",
+  "password.new.required": "Parola nouă este necesară",
+  "password.confirm": "Confirmă parola",
+  "password.must.match": "Parolele trebuie să coincidă",
+  "password.change.success": "Parola a fost schimbată cu succes",
+  "password.change.error": "Eroare la schimbarea parolei"
 }

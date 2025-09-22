@@ -72,5 +72,15 @@
   "user": "User",
   "users": "Users",
   "value": "Value",
-  "warning": "Warning"
+  "warning": "Warning",
+  "password.change": "Change Password",
+  "password.edit": "Change password",
+  "password.current": "Current password",
+  "password.current.required": "Current password is required",
+  "password.new": "New password",
+  "password.new.required": "New password is required",
+  "password.confirm": "Confirm password",
+  "password.must_match": "Passwords must match",
+  "password.change.success": "Password changed successfully",
+  "password.change.error": "Error changing password"
 }

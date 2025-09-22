@@ -207,7 +207,7 @@ const Private = {
       [`${UsersAuthRest.Constants.ApiPath}/:id`]: _ctx.username,
       // validate /api/v1/users/:id/... is called only for loggedin user
       [`${UsersRest.Constants.ApiPath}/:id`]: _ctx.userID,
-      // !! even thou school rest api doesnt require tenantID, tenantID is used to validate the current user role access
+      // !! even though school rest api doesnt require tenantID, tenantID is used to validate the current user role access
       [`${SchoolsRest.Constants.ApiPath}/:id`]: _ctx.tenantID,
     };
 
@@ -215,10 +215,21 @@ const Private = {
       if (!new RegExp(`^${checkRoute}`).test(route)) {
         continue;
       }
-      const expandRoute = `${checkRoute}`.replace(':id', restrictRouteID[checkRoute]);
-      // either is equal or it starts with expandedRoute/
-      if (new RegExp(`^${expandRoute}([/]|$)`).test(_ctx.reqUrl)) {
-        // valid route
+
+      const restrictID = restrictRouteID[checkRoute];
+
+      let isValid = false;
+      for (const checkid of [restrictID, encodeURIComponent(restrictID)]) {
+        const expandRoute = `${checkRoute}`.replace(':id', checkid);
+
+        // either is equal or it starts with expandedRoute/
+        if (new RegExp(`^${expandRoute}([/]|$)`).test(_ctx.reqUrl)) {
+          // valid route
+          isValid = true;
+          break;
+        }
+      }
+      if (isValid) {
         continue;
       }
 
