@@ -115,7 +115,7 @@
               <v-menu v-model="birthdaymenu" :close-on-content-click="false" transition="scale-transition" offset-y>
                 <template #activator>
                   <v-text-field
-                    :value="edit.birthday"
+                    v-model="edit.birthday"
                     :label="$t('birthday')"
                     readonly
                     append-icon="mdi-calendar"
