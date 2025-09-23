@@ -112,14 +112,14 @@
                 required
               />
 
-              <v-menu v-model="birtdaymenu" :close-on-content-click="false" transition="scale-transition" offset-y>
+              <v-menu v-model="birthdaymenu" :close-on-content-click="false" transition="scale-transition" offset-y>
                 <template #activator>
                   <v-text-field
                     :value="edit.birthday"
                     :label="$t('birthday')"
                     readonly
                     append-icon="mdi-calendar"
-                    @click:append="birtdaymenu = true"
+                    @click:append="birthdaymenu = true"
                   />
                 </template>
                 <v-date-picker v-model="datePicker" show-adjacent-months @update:modelValue="onDatePicked" />
@@ -235,7 +235,7 @@ export default {
     // edit
     const editDialog = ref(false);
     const edit = ref({ ...profile.value });
-    const birtdaymenu = ref(false);
+    const birthdaymenu = ref(false);
     const formValid = ref(false);
     const editForm = ref(null);
     const showLoading = ref(false);
@@ -388,7 +388,7 @@ export default {
       } else {
         edit.value.birthday = '';
       }
-      birtdaymenu.value = false;
+      birthdaymenu.value = false;
     }
 
     /**
@@ -563,7 +563,7 @@ export default {
       edit,
       openEdit,
       saveEdit,
-      birtdaymenu,
+      birthdaymenu,
       formValid,
       editForm,
       onSave,
