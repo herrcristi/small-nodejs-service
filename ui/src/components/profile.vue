@@ -116,10 +116,10 @@
                 <template #activator="{ props }">
                   <v-text-field v-bind="props" v-model="edit.birthday" :label="$t('birthday')" readonly />
                 </template>
-                <v-date-picker v-model="edit.birthday" @input="menu = false" />
+                <!-- <v-date-picker v-model="edit.birthday" @input="menu = false" /> -->
               </v-menu>
 
-              <v-text-field v-model="edit.phone" :label="$t('phone')" />
+              <v-text-field v-model="edit.phoneNumber" :label="$t('phoneNumber')" />
               <v-text-field v-model="edit.address" :label="$t('address')" />
             </v-form>
           </v-card-text>
@@ -304,6 +304,18 @@ export default {
         return;
       }
       edit.value = { ...profile.value };
+      if (edit.value.birthday) {
+        try {
+          edit.value.birthday = new Date(edit.value.birthday).toLocaleDateString(undefined, {
+            weekday: 'short',
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          });
+        } catch (e) {
+          // leave as-is
+        }
+      }
       editDialog.value = true;
     }
 
@@ -319,29 +331,37 @@ export default {
     }
 
     async function saveEdit() {
-      let payload = {};
       try {
         if (profile.value?.id) {
-          payload = {
+          const payload = {
             name: edit.value.name,
-            birthday: edit.value.birthday,
-            phone: edit.value.phone,
+            birthday: edit.value.birthday ? new Date(edit.value.birthday).toISOString() : null,
+            phoneNumber: edit.value.phoneNumber,
             address: edit.value.address,
           };
+
           await Api.updateUser(profile.value.id, payload);
 
           // update store locally
           let auth = useAuthStore();
-          payload = { ...auth.raw, ...edit.value };
-          auth.raw = { ...auth.raw, name: payload.name, email: payload.email };
+          auth.raw = { ...auth.raw, name: payload.name, email: auth.raw.email };
           useAuthStore()?.save(auth);
+
+          // update local profile and close dialog
+          profile.value = { ...profile.value, ...payload };
+          editDialog.value = false;
+
+          snackbarText.value = 'profile.update.success';
+          snackbarColor.value = 'success';
+          snackbar.value = true;
         }
       } catch (e) {
-        // ignore API errors for now
+        console.error('Error saving profile', e);
+        // keep dialog open and show error
+        snackbarText.value = 'profile.update.error';
+        snackbarColor.value = 'error';
+        snackbar.value = true;
       }
-
-      profile.value = payload;
-      editDialog.value = false;
     }
 
     /**
@@ -466,7 +486,7 @@ export default {
             : '',
           translate: true,
         },
-        { key: 'phone', value: profile.value.phone, translate: true },
+        { key: 'phoneNumber', value: profile.value.phoneNumber, translate: true },
         { key: 'address', value: profile.value.address, translate: true },
       ];
     });
