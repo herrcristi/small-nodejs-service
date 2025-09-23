@@ -82,5 +82,12 @@
   "password.confirm": "Confirm password",
   "password.must_match": "Passwords must match",
   "password.change.success": "Password changed successfully",
-  "password.change.error": "Error changing password"
+  "password.change.error": "Error changing password",
+  "email.change": "Change Email",
+  "email.edit": "Change email",
+  "email.new": "New email",
+  "email.required": "Email is required",
+  "email.invalid": "Invalid email address",
+  "email.change.success": "Email changed successfully",
+  "email.change.error": "Error changing email"
 }
