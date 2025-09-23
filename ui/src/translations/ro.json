@@ -82,5 +82,12 @@
   "password.confirm": "Confirmă parola",
   "password.must.match": "Parolele trebuie să coincidă",
   "password.change.success": "Parola a fost schimbată cu succes",
-  "password.change.error": "Eroare la schimbarea parolei"
+  "password.change.error": "Eroare la schimbarea parolei",
+  "email.change": "Schimbă email",
+  "email.edit": "Schimbă email",
+  "email.new": "Email nou",
+  "email.required": "Email-ul este necesar",
+  "email.invalid": "Adresa de email nu este validă",
+  "email.change.success": "Email-ul a fost schimbat cu succes",
+  "email.change.error": "Eroare la schimbarea email-ului"
 }

@@ -22,7 +22,8 @@
                     v-if="!showLoading"
                     >mdi-pencil</v-icon
                   >
-                  <!-- icon-only button for extra-small screens -->
+
+                  <!-- icon-only button for extra-small screens (password) -->
                   <v-btn
                     small
                     icon
@@ -35,7 +36,7 @@
                     <v-icon>mdi-lock-reset</v-icon>
                   </v-btn>
 
-                  <!-- full text button for small and larger screens -->
+                  <!-- full text button for small and larger screens (password) -->
                   <v-btn
                     small
                     class="ml-2 d-none d-sm-flex"
@@ -45,6 +46,32 @@
                     v-if="!showLoading"
                     >{{ $t('password.change') }}</v-btn
                   >
+
+                  <!-- icon-only button for extra-small screens -->
+                  <v-btn
+                    small
+                    icon
+                    class="d-flex d-sm-none ml-2"
+                    color="primary"
+                    @click="openEmailDialog"
+                    :title="$t('email.edit')"
+                    v-if="!showLoading"
+                  >
+                    <v-icon>mdi-email</v-icon>
+                  </v-btn>
+
+                  <!-- full text button for small and larger screens -->
+                  <v-btn
+                    small
+                    class="ml-2 d-none d-sm-flex"
+                    color="primary"
+                    @click="openEmailDialog"
+                    :title="$t('email.edit')"
+                    v-if="!showLoading"
+                    >{{ $t('email.change') }}</v-btn
+                  >
+
+                  <!-- email change buttons end -->
                 </v-toolbar-items>
               </v-card-title>
             </v-toolbar>
@@ -142,6 +169,42 @@
           </v-card-actions>
         </v-card>
       </v-dialog>
+
+      <!-- 
+          Change email dialog 
+      -->
+      <v-dialog v-model="emailDialog" max-width="500px">
+        <v-card>
+          <v-card-title>{{ $t('email.change') }}</v-card-title>
+          <v-card-text>
+            <v-form ref="emailFormRef" v-model="emailFormValid">
+              <v-text-field
+                v-model="emailNew"
+                :label="$t('email.new')"
+                type="email"
+                :rules="[(v) => !!v || $t('email.required'), (v) => /.+@.+\..+/.test(v) || $t('email.invalid')]"
+                required
+              />
+              <v-text-field
+                v-model="emailPassword"
+                :label="$t('password.current')"
+                type="password"
+                :rules="[(v) => !!v || $t('password.current.required')]"
+                required
+              />
+            </v-form>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn text @click="emailDialog = false">{{ $t('cancel') }}</v-btn>
+            <v-btn color="primary" :disabled="!emailFormValid" @click="submitEmail">{{ $t('save') }}</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <!-- 
+          snackbar for notifications
+      -->
       <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ $t(snackbarText) }}</v-snackbar>
     </v-container>
   </v-card>
@@ -178,6 +241,13 @@ export default {
     const passwordConfirm = ref('');
     const passwordFormValid = ref(false);
     const passwordFormRef = ref(null);
+
+    // email change
+    const emailDialog = ref(false);
+    const emailNew = ref('');
+    const emailPassword = ref('');
+    const emailFormValid = ref(false);
+    const emailFormRef = ref(null);
 
     const snackbar = ref(false);
     const snackbarText = ref('');
@@ -307,12 +377,70 @@ export default {
         });
 
         passwordDialog.value = false;
+        passwordOld.value = '';
+        passwordNew.value = '';
+        passwordConfirm.value = '';
+
         snackbarText.value = 'password.change.success';
         snackbarColor.value = 'success';
         snackbar.value = true;
       } catch (e) {
         console.error('Error changing password', e);
+
         snackbarText.value = 'password.change.error';
+        snackbarColor.value = 'error';
+        snackbar.value = true;
+      }
+    }
+
+    /**
+     * email change
+     */
+    function openEmailDialog() {
+      if (showLoading.value) {
+        return;
+      }
+      emailNew.value = '';
+      emailPassword.value = '';
+      emailDialog.value = true;
+    }
+
+    async function submitEmail() {
+      if (emailFormRef.value && typeof emailFormRef.value.validate === 'function') {
+        const ok = await emailFormRef.value.validate();
+        if (!ok) {
+          return;
+        }
+      }
+
+      try {
+        const auth = useAuthStore();
+        const email = auth?.raw?.email;
+        if (!email) {
+          throw new Error('No current email');
+        }
+
+        await Api.updateUserEmail(email, {
+          id: emailNew.value,
+          password: emailPassword.value,
+        });
+
+        // update store and local profile
+        auth.raw = { ...auth.raw, email: emailNew.value };
+        useAuthStore()?.save(auth);
+        profile.value = { ...profile.value, email: emailNew.value };
+
+        emailDialog.value = false;
+        emailNew.value = '';
+        emailPassword.value = '';
+
+        snackbarText.value = 'email.change.success';
+        snackbarColor.value = 'success';
+        snackbar.value = true;
+      } catch (e) {
+        console.error('Error changing email', e);
+
+        snackbarText.value = 'email.change.error';
         snackbarColor.value = 'error';
         snackbar.value = true;
       }
@@ -365,14 +493,23 @@ export default {
       editForm,
       onSave,
 
+      openPasswordDialog,
       passwordDialog,
+      submitPassword,
       passwordOld,
       passwordNew,
       passwordConfirm,
       passwordFormValid,
       passwordFormRef,
-      openPasswordDialog,
-      submitPassword,
+
+      openEmailDialog,
+      emailDialog,
+      submitEmail,
+      emailNew,
+      emailPassword,
+      emailFormValid,
+      emailFormRef,
+
       snackbar,
       snackbarText,
       snackbarColor,
