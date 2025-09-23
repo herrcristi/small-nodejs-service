@@ -44,7 +44,7 @@
   "name_required": "Numele este necesar",
   "optional": "Opțional",
   "pending": "În așteptare",
-  "phone": "Telefon",
+  "phoneNumber": "Telefon",
   "professors": "Profesori",
   "professors.add": "Adaugă Profesor",
   "professors.edit": "Editează Profesor",
@@ -89,5 +89,7 @@
   "email.required": "Email-ul este necesar",
   "email.invalid": "Adresa de email nu este validă",
   "email.change.success": "Email-ul a fost schimbat cu succes",
-  "email.change.error": "Eroare la schimbarea email-ului"
+  "email.change.error": "Eroare la schimbarea email-ului",
+  "profile.update.success": "Profilul a fost actualizat",
+  "profile.update.error": "Eroare la actualizarea profilului"
 }

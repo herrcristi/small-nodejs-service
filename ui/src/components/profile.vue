@@ -112,14 +112,20 @@
                 required
               />
 
-              <v-menu ref="menu" v-model="menu" :close-on-content-click="false" transition="scale-transition" offset-y>
-                <template #activator="{ props }">
-                  <v-text-field v-bind="props" v-model="edit.birthday" :label="$t('birthday')" readonly />
+              <v-menu v-model="birthdaymenu" :close-on-content-click="false" transition="scale-transition" offset-y>
+                <template #activator>
+                  <v-text-field
+                    v-model="edit.birthday"
+                    :label="$t('birthday')"
+                    readonly
+                    append-icon="mdi-calendar"
+                    @click:append="birthdaymenu = true"
+                  />
                 </template>
-                <v-date-picker v-model="edit.birthday" @input="menu = false" />
+                <v-date-picker v-model="datePicker" show-adjacent-months @update:modelValue="onDatePicked" />
               </v-menu>
 
-              <v-text-field v-model="edit.phone" :label="$t('phone')" />
+              <v-text-field v-model="edit.phoneNumber" :label="$t('phoneNumber')" />
               <v-text-field v-model="edit.address" :label="$t('address')" />
             </v-form>
           </v-card-text>
@@ -229,10 +235,11 @@ export default {
     // edit
     const editDialog = ref(false);
     const edit = ref({ ...profile.value });
-    const menu = ref(false);
+    const birthdaymenu = ref(false);
     const formValid = ref(false);
     const editForm = ref(null);
     const showLoading = ref(false);
+    const datePicker = ref(null);
 
     // password
     const passwordDialog = ref(false);
@@ -304,6 +311,18 @@ export default {
         return;
       }
       edit.value = { ...profile.value };
+      if (edit.value.birthday) {
+        try {
+          // is in UTC format
+          // console.log('openEdit birthday:', edit.value.birthday);
+          datePicker.value = new Date(edit.value.birthday);
+          edit.value.birthday = getDateString(edit.value.birthday);
+        } catch (e) {
+          // leave as-is
+        }
+      } else {
+        datePicker.value = null;
+      }
       editDialog.value = true;
     }
 
@@ -319,29 +338,57 @@ export default {
     }
 
     async function saveEdit() {
-      let payload = {};
       try {
         if (profile.value?.id) {
-          payload = {
+          // console.log('Saving profile, datePicker:', datePicker.value);
+          // console.log('datePicker as ISO:', datePicker.value ? getUTCISOString(datePicker.value) : null);
+
+          const payload = {
             name: edit.value.name,
-            birthday: edit.value.birthday,
-            phone: edit.value.phone,
+            birthday: datePicker.value ? getUTCISOString(datePicker.value) : null,
+            phoneNumber: edit.value.phoneNumber,
             address: edit.value.address,
           };
+
           await Api.updateUser(profile.value.id, payload);
 
           // update store locally
           let auth = useAuthStore();
-          payload = { ...auth.raw, ...edit.value };
-          auth.raw = { ...auth.raw, name: payload.name, email: payload.email };
+          auth.raw = { ...auth.raw, name: payload.name, email: auth.raw.email };
           useAuthStore()?.save(auth);
+
+          // update local profile and close dialog
+          profile.value = { ...profile.value, ...payload };
+          editDialog.value = false;
+
+          snackbarText.value = 'profile.update.success';
+          snackbarColor.value = 'success';
+          snackbar.value = true;
         }
       } catch (e) {
-        // ignore API errors for now
+        console.error('Error saving profile', e);
+        // keep dialog open and show error
+        snackbarText.value = 'profile.update.error';
+        snackbarColor.value = 'error';
+        snackbar.value = true;
       }
+    }
 
-      profile.value = payload;
-      editDialog.value = false;
+    function onDatePicked(value) {
+      // value is YYYY-MM-DD (date-picker v-model). Update display and close menu.
+      if (value) {
+        try {
+          // console.log('On date picked:', value);
+          edit.value.birthday = getDateString(getUTCISOString(value));
+          // console.log('On date picked set birthday:', edit.value.birthday);
+        } catch (e) {
+          console.log('Error parsing date:', e);
+          edit.value.birthday = '';
+        }
+      } else {
+        edit.value.birthday = '';
+      }
+      birthdaymenu.value = false;
     }
 
     /**
@@ -447,6 +494,41 @@ export default {
     }
 
     /**
+     * date
+     */
+    function getDateString(date) {
+      if (!date) {
+        return '';
+      }
+      try {
+        const d = new Date(date);
+        return d.toLocaleDateString(undefined, {
+          weekday: 'short',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          timeZone: 'UTC',
+        });
+      } catch (e) {
+        console.error('Error formatting date', e);
+        return '';
+      }
+    }
+
+    function getUTCISOString(date) {
+      if (!date) {
+        return '';
+      }
+      try {
+        const d = new Date(date);
+        return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
+      } catch (e) {
+        console.error('Error formatting date', e);
+        return '';
+      }
+    }
+
+    /**
      * profileItems
      */
     const profileItems = computed(() => {
@@ -456,17 +538,10 @@ export default {
         { key: 'email', value: profile.value.email, translate: true },
         {
           key: 'birthday',
-          value: profile.value.birthday
-            ? new Date(profile.value.birthday).toLocaleDateString(undefined, {
-                weekday: 'short',
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-              })
-            : '',
+          value: getDateString(profile.value.birthday),
           translate: true,
         },
-        { key: 'phone', value: profile.value.phone, translate: true },
+        { key: 'phoneNumber', value: profile.value.phoneNumber, translate: true },
         { key: 'address', value: profile.value.address, translate: true },
       ];
     });
@@ -488,10 +563,12 @@ export default {
       edit,
       openEdit,
       saveEdit,
-      menu,
+      birthdaymenu,
       formValid,
       editForm,
       onSave,
+      datePicker,
+      onDatePicked,
 
       openPasswordDialog,
       passwordDialog,

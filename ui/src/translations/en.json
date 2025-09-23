@@ -44,7 +44,7 @@
   "name_required": "Name is required",
   "optional": "Optional",
   "pending": "Pending",
-  "phone": "Phone",
+  "phoneNumber": "Phone",
   "professors": "Professors",
   "professors.add": "Add Professor",
   "professors.edit": "Edit Professor",
@@ -89,5 +89,7 @@
   "email.required": "Email is required",
   "email.invalid": "Invalid email address",
   "email.change.success": "Email changed successfully",
-  "email.change.error": "Error changing email"
+  "email.change.error": "Error changing email",
+  "profile.update.success": "Profile updated",
+  "profile.update.error": "Error updating profile"
 }
