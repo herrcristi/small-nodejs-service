@@ -112,11 +112,17 @@
                 required
               />
 
-              <v-menu ref="menu" v-model="menu" :close-on-content-click="false" transition="scale-transition" offset-y>
-                <template #activator="{ props }">
-                  <v-text-field v-bind="props" v-model="edit.birthday" :label="$t('birthday')" readonly />
+              <v-menu v-model="birtdaymenu" :close-on-content-click="false" transition="scale-transition" offset-y>
+                <template #activator>
+                  <v-text-field
+                    :value="edit.birthday"
+                    :label="$t('birthday')"
+                    readonly
+                    append-icon="mdi-calendar"
+                    @click:append="birtdaymenu = true"
+                  />
                 </template>
-                <!-- <v-date-picker v-model="edit.birthday" @input="menu = false" /> -->
+                <v-date-picker v-model="datePicker" show-adjacent-months @update:modelValue="onDatePicked" />
               </v-menu>
 
               <v-text-field v-model="edit.phoneNumber" :label="$t('phoneNumber')" />
@@ -229,10 +235,11 @@ export default {
     // edit
     const editDialog = ref(false);
     const edit = ref({ ...profile.value });
-    const menu = ref(false);
+    const birtdaymenu = ref(false);
     const formValid = ref(false);
     const editForm = ref(null);
     const showLoading = ref(false);
+    const datePicker = ref(null);
 
     // password
     const passwordDialog = ref(false);
@@ -306,15 +313,15 @@ export default {
       edit.value = { ...profile.value };
       if (edit.value.birthday) {
         try {
-          edit.value.birthday = new Date(edit.value.birthday).toLocaleDateString(undefined, {
-            weekday: 'short',
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-          });
+          // is in UTC format
+          // console.log('openEdit birthday:', edit.value.birthday);
+          datePicker.value = new Date(edit.value.birthday);
+          edit.value.birthday = getDateString(edit.value.birthday);
         } catch (e) {
           // leave as-is
         }
+      } else {
+        datePicker.value = null;
       }
       editDialog.value = true;
     }
@@ -333,9 +340,12 @@ export default {
     async function saveEdit() {
       try {
         if (profile.value?.id) {
+          // console.log('Saving profile, datePicker:', datePicker.value);
+          // console.log('datePicker as ISO:', datePicker.value ? getUTCISOString(datePicker.value) : null);
+
           const payload = {
             name: edit.value.name,
-            birthday: edit.value.birthday ? new Date(edit.value.birthday).toISOString() : null,
+            birthday: datePicker.value ? getUTCISOString(datePicker.value) : null,
             phoneNumber: edit.value.phoneNumber,
             address: edit.value.address,
           };
@@ -362,6 +372,23 @@ export default {
         snackbarColor.value = 'error';
         snackbar.value = true;
       }
+    }
+
+    function onDatePicked(value) {
+      // value is YYYY-MM-DD (date-picker v-model). Update display and close menu.
+      if (value) {
+        try {
+          // console.log('On date picked:', value);
+          edit.value.birthday = getDateString(getUTCISOString(value));
+          // console.log('On date picked set birthday:', edit.value.birthday);
+        } catch (e) {
+          console.log('Error parsing date:', e);
+          edit.value.birthday = '';
+        }
+      } else {
+        edit.value.birthday = '';
+      }
+      birtdaymenu.value = false;
     }
 
     /**
@@ -467,6 +494,41 @@ export default {
     }
 
     /**
+     * date
+     */
+    function getDateString(date) {
+      if (!date) {
+        return '';
+      }
+      try {
+        const d = new Date(date);
+        return d.toLocaleDateString(undefined, {
+          weekday: 'short',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          timeZone: 'UTC',
+        });
+      } catch (e) {
+        console.error('Error formatting date', e);
+        return '';
+      }
+    }
+
+    function getUTCISOString(date) {
+      if (!date) {
+        return '';
+      }
+      try {
+        const d = new Date(date);
+        return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
+      } catch (e) {
+        console.error('Error formatting date', e);
+        return '';
+      }
+    }
+
+    /**
      * profileItems
      */
     const profileItems = computed(() => {
@@ -476,14 +538,7 @@ export default {
         { key: 'email', value: profile.value.email, translate: true },
         {
           key: 'birthday',
-          value: profile.value.birthday
-            ? new Date(profile.value.birthday).toLocaleDateString(undefined, {
-                weekday: 'short',
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-              })
-            : '',
+          value: getDateString(profile.value.birthday),
           translate: true,
         },
         { key: 'phoneNumber', value: profile.value.phoneNumber, translate: true },
@@ -508,10 +563,12 @@ export default {
       edit,
       openEdit,
       saveEdit,
-      menu,
+      birtdaymenu,
       formValid,
       editForm,
       onSave,
+      datePicker,
+      onDatePicked,
 
       openPasswordDialog,
       passwordDialog,
