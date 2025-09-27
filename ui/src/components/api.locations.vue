@@ -61,6 +61,15 @@
       </template>
 
       <!-- 
+        status 
+        -->
+      <template v-slot:item.status="{ item }">
+        <div class="text-center">
+          <v-chip :color="getStatusColor(item.status)" :text="item._lang_en.status" size="small" label></v-chip>
+        </div>
+      </template>
+
+      <!-- 
           actions
       -->
       <template #item.actions="{ item }" v-if="write">
@@ -159,7 +168,7 @@ const { t } = useI18n();
 const headers = computed(() => {
   const h = [
     { title: t('name'), key: 'name' },
-    { title: t('status'), key: '_lang_en.status' },
+    { title: t('status'), key: 'status' },
     { title: t('address'), value: 'address' },
   ];
   if (write) {
@@ -188,6 +197,22 @@ const statusItems = computed(() => {
 
   return items;
 });
+
+/**
+ * color for severity
+ */
+function getStatusColor(status) {
+  switch (status) {
+    case 'pending':
+      return 'none';
+    case 'active':
+      return 'green';
+    case 'disabled':
+      return 'grey';
+    default:
+      return 'grey'; // for any other values
+  }
+}
 
 /**
  * fetchAll
