@@ -63,7 +63,7 @@ export default {
       selected.value = t.id;
 
       // persist via store helper
-      appStore.saveTenantID(t.id);
+      appStore.saveTenant(t.id, getRolesPermissions(t.id, useAuthStore()?.raw));
 
       // reset next if tenantID changed
       if (route.query.tenantID && route.query.tenantID !== t.id) {

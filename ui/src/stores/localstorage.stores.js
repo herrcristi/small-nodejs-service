@@ -83,6 +83,7 @@ export const localAppStore = {
     try {
       const payload = {
         tenantID: obj.tenantID || null,
+        rolesPermissions: obj.rolesPermissions || null,
       };
       localStorage.setItem(SMALL_APP_KEY, JSON.stringify(payload));
       return payload;
@@ -105,12 +106,13 @@ export const localAppStore = {
   /**
    * save
    */
-  saveTenantID(tenantID) {
+  saveTenant(tenantID, rolesPermissions) {
     try {
       let payload = this.load() || {};
       payload = {
         ...payload,
         tenantID: tenantID || null,
+        rolesPermissions: rolesPermissions || null,
       };
       this.save(payload);
     } catch (e) {

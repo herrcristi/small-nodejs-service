@@ -148,7 +148,7 @@ Router.beforeEach((to, from, next) => {
   }
 
   // reset tenantID if no auth
-  useAppStore()?.saveTenantID(null); // reset it
+  useAppStore()?.saveTenant(null, null); // reset it
 
   // pass tenant and if in tenant selection tenant will be changed
   // then the next should be cleared

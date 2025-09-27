@@ -36,28 +36,28 @@
         <v-list-item link to="/">
           <v-list-item-title>{{ $t('home') }} </v-list-item-title>
         </v-list-item>
-        <v-list-item link to="/schools">
+        <v-list-item link to="/schools" v-if="permissions.schools?.read">
           <v-list-item-title>{{ $t('schools') }}</v-list-item-title>
         </v-list-item>
-        <v-list-item link to="/students">
+        <v-list-item link to="/students" v-if="permissions.students?.read">
           <v-list-item-title>{{ $t('students') }}</v-list-item-title>
         </v-list-item>
-        <v-list-item link to="/professors">
+        <v-list-item link to="/professors" v-if="permissions.professors?.read">
           <v-list-item-title>{{ $t('professors') }}</v-list-item-title>
         </v-list-item>
-        <v-list-item link to="/groups">
+        <v-list-item link to="/groups" v-if="permissions.groups?.read">
           <v-list-item-title>{{ $t('groups') }}</v-list-item-title>
         </v-list-item>
-        <v-list-item link to="/locations">
+        <v-list-item link to="/locations" v-if="permissions.locations?.read">
           <v-list-item-title>{{ $t('locations') }}</v-list-item-title>
         </v-list-item>
-        <v-list-item link to="/events">
+        <v-list-item link to="/events" v-if="permissions.events?.read">
           <v-list-item-title>{{ $t('events') }}</v-list-item-title>
         </v-list-item>
-        <v-list-item link to="/classes">
+        <v-list-item link to="/classes" v-if="permissions.classes?.read">
           <v-list-item-title>{{ $t('classes') }}</v-list-item-title>
         </v-list-item>
-        <v-list-item link to="/schedules">
+        <v-list-item link to="/schedules" v-if="permissions.schedules?.read">
           <v-list-item-title>{{ $t('schedules') }}</v-list-item-title>
         </v-list-item>
       </v-list>
@@ -134,6 +134,14 @@ export default {
     });
 
     /**
+     * permissions
+     */
+    const permissions = computed(() => {
+      const p = appStore?.rolesPermissions || {};
+      return p;
+    });
+
+    /**
      * profile
      */
     function goProfile() {
@@ -157,7 +165,7 @@ export default {
       const current = window.location.pathname + window.location.search;
       const tenantID = appStore?.tenantID;
       try {
-        await Api.logout(true);
+        await Api.logout(false);
       } catch (e) {
         // ignore logout errors
       } finally {
@@ -166,7 +174,7 @@ export default {
       }
     }
 
-    return { breadcrumbs, userName, initials, goProfile, goTenants, doLogout };
+    return { breadcrumbs, userName, permissions, initials, goProfile, goTenants, doLogout };
   },
 };
 </script>
