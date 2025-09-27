@@ -86,6 +86,17 @@
               :rules="[(v) => !!v || $t('name_required')]"
               required
             />
+
+            <v-select
+              v-model="itemData.status"
+              :items="statusItems"
+              item-title="title"
+              item-value="value"
+              :label="$t('status')"
+              :rules="[(v) => !!v || $t('required')]"
+              required
+            />
+
             <v-text-field
               v-model="itemData.address"
               :label="$t('address')"
@@ -155,6 +166,27 @@ const headers = computed(() => {
     h.push({ title: t('actions'), value: 'actions', sortable: false });
   }
   return h;
+});
+
+/**
+ * status items for the select
+ */
+const statusItems = computed(() => {
+  // base items
+  // when adding add pending too
+  let items = [];
+
+  if (!editing.value) {
+    items.push({ title: t('pending'), value: 'pending' });
+  }
+
+  items = [
+    ...items,
+    { title: t('active'), value: 'active' },
+    { title: t('disabled'), value: 'disabled', disabled: false },
+  ];
+
+  return items;
 });
 
 /**
@@ -240,7 +272,9 @@ async function handleSubmit() {
  */
 async function add() {
   try {
-    await Api.createLocation({ ...itemData, status: 'active' });
+    // ensure status is set (default to active)
+    const payload = { ...itemData, status: itemData.status || 'active' };
+    await Api.createLocation(payload);
 
     snackbarText.value = t('locations.add.success') || 'Location added';
     snackbarColor.value = 'success';
@@ -309,8 +343,9 @@ function openAdd() {
   if (!write) {
     return;
   }
-
   resetForm();
+  // default status for new locations
+  itemData.status = 'active';
   dialog.value = true;
 }
 
@@ -325,6 +360,7 @@ function openEdit(item) {
   Object.keys(itemData).forEach((k) => delete itemData[k]);
   itemData.name = item.name;
   itemData.address = item.address;
+  itemData.status = item.status || 'active'; // keep existing status when editing
 
   editing.value = true;
   editingItemID.value = item.id;
