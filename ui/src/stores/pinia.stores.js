@@ -57,6 +57,7 @@ export const piniaAppStore = defineStore('app', {
    */
   state: () => ({
     tenantID: null,
+    rolesPermissions: null,
   }),
 
   /**
@@ -70,6 +71,7 @@ export const piniaAppStore = defineStore('app', {
       const obj = localAppStore.load();
 
       this.tenantID = obj?.tenantID || null;
+      this.rolesPermissions = obj?.rolesPermissions || null;
       return obj;
     },
 
@@ -79,6 +81,7 @@ export const piniaAppStore = defineStore('app', {
     save() {
       const payload = {
         tenantID: this.tenantID || null,
+        rolesPermissions: this.rolesPermissions || null,
       };
 
       localAppStore.save(payload);
@@ -91,15 +94,17 @@ export const piniaAppStore = defineStore('app', {
       localAppStore.clear();
 
       this.tenantID = null;
+      this.rolesPermissions = null;
     },
 
     /**
      * save
      */
-    saveTenantID(tenantID) {
+    saveTenant(tenantID, rolesPermissions) {
       this.load();
 
       this.tenantID = tenantID || null;
+      this.rolesPermissions = rolesPermissions || null;
 
       this.save();
     },

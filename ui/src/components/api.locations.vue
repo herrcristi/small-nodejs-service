@@ -1,5 +1,5 @@
 <template>
-  <v-card>
+  <v-card v-if="read || write">
     <!-- 
           table
     -->
@@ -35,6 +35,7 @@
             text=""
             border
             @click="openAdd"
+            v-if="write"
           ></v-btn>
 
           <v-toolbar-title> </v-toolbar-title>
@@ -62,7 +63,7 @@
       <!-- 
           actions
       -->
-      <template #item.actions="{ item }">
+      <template #item.actions="{ item }" v-if="write">
         <v-icon small class="mr-2" @click="openEdit(item)" :title="$t('locations.edit')" size="small"
           >mdi-pencil</v-icon
         >
@@ -73,7 +74,7 @@
     <!-- 
           dialog
     -->
-    <v-dialog v-model="dialog" max-width="800px">
+    <v-dialog v-model="dialog" max-width="800px" v-if="write">
       <v-card>
         <v-card-title>{{ editing ? $t('locations.edit') : $t('locations.add') }}</v-card-title>
 
@@ -96,6 +97,7 @@
 
 <script>
 import Api from '../api/api.js';
+import { useAppStore } from '../stores/stores.js';
 
 export default {
   /**
@@ -109,24 +111,31 @@ export default {
       loading: true,
       nodatatext: '',
 
-      itemData: { id: '', name: '', status: '', address: '', _lang_en: { status: '' } },
+      itemData: {},
       editing: false,
       editingItemID: null,
       dialog: false,
       text: '',
 
       lastRequestParams: {},
+
+      read: useAppStore()?.rolesPermissions?.locations?.read || 0,
+      write: useAppStore()?.rolesPermissions?.locations?.write || 0,
     };
   },
 
   computed: {
     headers() {
-      return [
+      let h = [
         { title: this.$t('name'), key: 'name' },
         { title: this.$t('status'), key: '_lang_en.status' },
         { title: this.$t('address'), value: 'address' },
-        { title: this.$t('actions'), value: 'actions', sortable: false },
       ];
+
+      if (this.write) {
+        h.push({ title: this.$t('actions'), value: 'actions', sortable: false });
+      }
+      return h;
     },
   },
 
@@ -237,6 +246,9 @@ export default {
      * open add dialog
      */
     openAdd() {
+      if (!write) {
+        return;
+      }
       this.resetForm();
       this.editing = false;
       this.dialog = true;
@@ -246,7 +258,13 @@ export default {
      * open edit dialog
      */
     openEdit(item) {
-      this.itemData = { ...item };
+      if (!write) {
+        return;
+      }
+      this.itemData = {
+        name: item.name,
+        address: item.address,
+      };
       this.editing = true;
       this.editingItemID = item.id;
       this.dialog = true;
@@ -264,7 +282,7 @@ export default {
      * reset form
      */
     resetForm() {
-      this.itemData = { id: '', name: '', status: '', address: '', _lang_en: { status: '' } };
+      this.itemData = {};
       this.editing = false;
       this.editingItemID = null;
     },
