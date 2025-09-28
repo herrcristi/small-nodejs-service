@@ -252,7 +252,7 @@ const requiredItems = computed(() => {
 });
 
 /**
- * color for severity
+ * color for status
  */
 function getStatusColor(status) {
   switch (status) {
@@ -280,6 +280,9 @@ function getRequiredColor(status) {
   }
 }
 
+/**
+ * rules
+ */
 const nameRule = (v) => (!!v && v.toString().trim().length > 0) || t('name.required');
 const statusRule = (v) => !!v || t('required');
 const descRule = (v) => (!!v && v.toString().trim().length > 0) || t('required');
