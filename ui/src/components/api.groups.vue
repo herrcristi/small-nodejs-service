@@ -233,9 +233,11 @@ const statusRule = (v) => !!v || t('required');
  */
 async function fetchAll({ page, itemsPerPage, sortBy } = {}) {
   lastRequestParams.value = { page, itemsPerPage, sortBy };
+
   let timeoutID = setTimeout(() => {
     loading.value = true;
   }, 300); // Show loader if it takes more than 300ms
+
   try {
     const start = (page - 1) * itemsPerPage;
     let params = {
@@ -413,7 +415,6 @@ function openAdd() {
 /**
  * open edit dialog
  */
-
 function openEdit(item) {
   if (!write) {
     return;
