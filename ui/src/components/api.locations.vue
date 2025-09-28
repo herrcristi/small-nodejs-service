@@ -64,8 +64,13 @@
         status 
         -->
       <template v-slot:item.status="{ item }">
-        <div class="text-center">
-          <v-chip :color="getStatusColor(item.status)" :text="item._lang_en.status" size="small" label></v-chip>
+        <div class="">
+          <v-chip
+            :color="getStatusColor(item.status)"
+            :text="item._lang_en?.status || item.status"
+            size="small"
+            label
+          ></v-chip>
         </div>
       </template>
 
@@ -89,12 +94,7 @@
 
         <v-card-text>
           <v-form ref="editForm" v-model="formValid">
-            <v-text-field
-              v-model="itemData.name"
-              :label="$t('name')"
-              :rules="[(v) => !!v || $t('name_required')]"
-              required
-            />
+            <v-text-field v-model="itemData.name" :label="$t('name')" :rules="[nameRule]" required />
 
             <v-select
               v-model="itemData.status"
@@ -102,16 +102,11 @@
               item-title="title"
               item-value="value"
               :label="$t('status')"
-              :rules="[(v) => !!v || $t('required')]"
+              :rules="[statusRule]"
               required
             />
 
-            <v-text-field
-              v-model="itemData.address"
-              :label="$t('address')"
-              :rules="[(v) => !!v || $t('required')]"
-              required
-            />
+            <v-text-field v-model="itemData.address" :label="$t('address')" :rules="[addressRule]" required />
           </v-form>
         </v-card-text>
 
@@ -215,6 +210,13 @@ function getStatusColor(status) {
 }
 
 /**
+ * rules
+ */
+const nameRule = (v) => (!!v && v.toString().trim().length > 0) || t('name.required');
+const statusRule = (v) => !!v || t('required');
+const addressRule = (v) => (!!v && v.toString().trim().length > 0) || t('required');
+
+/**
  * fetchAll
  */
 async function fetchAll({ page = 1, itemsPerPage = 50, sortBy = [] } = {}) {
@@ -277,6 +279,13 @@ async function handleSubmit() {
     if (!ok) {
       return;
     }
+  }
+
+  if (itemData.name) {
+    itemData.name = itemData.name.toString().trim();
+  }
+  if (itemData.address) {
+    itemData.address = itemData.address.toString().trim();
   }
 
   let ok = false;
@@ -369,8 +378,9 @@ function openAdd() {
     return;
   }
   resetForm();
-  // default status for new locations
-  itemData.status = 'active';
+  itemData.status = 'active'; // default status for new
+
+  editing.value = false;
   dialog.value = true;
 }
 
