@@ -123,12 +123,18 @@
       :model-value="confirmDeleteDialog"
       @update:modelValue="confirmDeleteDialog = $event"
       @confirm="doDelete"
-      title-key="delete_confirm"
+      @cancel="cancelDelete"
+      title-key="delete"
       message-key="delete_confirm"
       ok-key="delete"
       cancel-key="cancel"
       :args="{}"
     />
+
+    <!-- 
+      snackbar for notifications
+      -->
+    <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ snackbarText }}</v-snackbar>
   </v-card>
 </template>
 
@@ -351,24 +357,6 @@ async function update() {
 /**
  * delete
  */
-async function del(itemID) {
-  try {
-    await Api.deleteSchool(itemID);
-
-    snackbarText.value = t('schools.delete.success') || 'School deleted';
-    snackbarColor.value = 'success';
-    snackbar.value = true;
-
-    await fetchAll(lastRequestParams.value);
-  } catch (e) {
-    console.error('Error deleting school:', e);
-
-    snackbarText.value = e?.response?.data?.message || t('schools.delete.error') || 'Error deleting school';
-    snackbarColor.value = 'error';
-    snackbar.value = true;
-  }
-}
-
 function confirmDelete(itemID) {
   toDeleteID.value = itemID;
   confirmDeleteDialog.value = true;
@@ -386,6 +374,24 @@ async function doDelete() {
   } finally {
     toDeleteID.value = null;
     confirmDeleteDialog.value = false;
+  }
+}
+
+async function del(itemID) {
+  try {
+    await Api.deleteSchool(itemID);
+
+    snackbarText.value = t('schools.delete.success') || 'School deleted';
+    snackbarColor.value = 'success';
+    snackbar.value = true;
+
+    await fetchAll(lastRequestParams.value);
+  } catch (e) {
+    console.error('Error deleting school:', e);
+
+    snackbarText.value = e?.response?.data?.message || t('schools.delete.error') || 'Error deleting school';
+    snackbarColor.value = 'error';
+    snackbar.value = true;
   }
 }
 

@@ -81,7 +81,9 @@
         <v-icon small class="mr-2" @click="openEdit(item)" :title="$t('locations.edit')" size="small"
           >mdi-pencil</v-icon
         >
-        <v-icon small color="mr-2" @click="del(item.id)" :title="$t('delete')" size="small">mdi-delete</v-icon>
+        <v-icon small color="mr-2" @click="confirmDelete(item.id)" :title="$t('delete')" size="small"
+          >mdi-delete</v-icon
+        >
       </template>
     </v-data-table-server>
 
@@ -118,6 +120,19 @@
       </v-card>
     </v-dialog>
 
+    <!-- Confirm delete dialog -->
+    <ConfirmDialog
+      :model-value="confirmDeleteDialog"
+      @update:modelValue="confirmDeleteDialog = $event"
+      @confirm="doDelete"
+      @cancel="cancelDelete"
+      title-key="delete"
+      message-key="delete_confirm"
+      ok-key="delete"
+      cancel-key="cancel"
+      :args="{}"
+    />
+
     <!-- 
       snackbar for notifications
     -->
@@ -127,6 +142,7 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue';
+import ConfirmDialog from './confirm.dialog.vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
@@ -146,6 +162,8 @@ const editingItemID = ref(null);
 const dialog = ref(false);
 const editForm = ref(null);
 const formValid = ref(false);
+const confirmDeleteDialog = ref(false);
+const toDeleteID = ref(null);
 const lastRequestParams = ref({});
 
 const snackbar = ref(false);
@@ -352,6 +370,26 @@ async function update() {
 /**
  * delete
  */
+function confirmDelete(itemID) {
+  toDeleteID.value = itemID;
+  confirmDeleteDialog.value = true;
+}
+function cancelDelete() {
+  toDeleteID.value = null;
+  confirmDeleteDialog.value = false;
+}
+async function doDelete() {
+  if (!toDeleteID.value) {
+    return;
+  }
+  try {
+    await del(toDeleteID.value);
+  } finally {
+    toDeleteID.value = null;
+    confirmDeleteDialog.value = false;
+  }
+}
+
 async function del(itemID) {
   try {
     await Api.deleteLocation(itemID);

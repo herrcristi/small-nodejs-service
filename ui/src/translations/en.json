@@ -9,6 +9,7 @@
   "classes.add": "Add Class",
   "classes.edit": "Edit Class",
   "credits": "Credits",
+  "credits.limits": "Credits must be a number between 0 and 1024",
   "critical": "Critical",
   "delete": "Delete",
   "delete_confirm": "Are you sure you want to delete?",

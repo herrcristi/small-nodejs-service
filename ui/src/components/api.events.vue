@@ -1,5 +1,5 @@
 <template>
-  <v-card v-if="read || write">
+  <v-card v-if="read">
     <!-- 
           table
     -->
@@ -94,7 +94,6 @@ const snackbarColor = ref('');
 
 const app = useAppStore();
 const read = app?.rolesPermissions?.events?.read || 0;
-const write = app?.rolesPermissions?.events?.write || 0;
 const { t } = useI18n();
 
 /**
