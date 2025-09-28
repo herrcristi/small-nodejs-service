@@ -9,7 +9,7 @@
               <v-text-field
                 v-model="username"
                 :label="$t('login.username') || 'Username'"
-                :rules="[(v) => !!v || $t('login.username_required') || 'Username is required']"
+                :rules="[(v) => !!v || $t('login.username.required') || 'Username is required']"
                 outlined
                 dense
               />
@@ -17,7 +17,7 @@
                 v-model="password"
                 :label="$t('login.password') || 'Password'"
                 type="password"
-                :rules="[(v) => !!v || $t('login.password_required') || 'Password is required']"
+                :rules="[(v) => !!v || $t('login.password.required') || 'Password is required']"
                 outlined
                 dense
               />

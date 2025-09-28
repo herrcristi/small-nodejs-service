@@ -64,8 +64,13 @@
         status 
         -->
       <template v-slot:item.status="{ item }">
-        <div class="text-center">
-          <v-chip :color="getStatusColor(item.status)" :text="item._lang_en.status" size="small" label></v-chip>
+        <div class="">
+          <v-chip
+            :color="getStatusColor(item.status)"
+            :text="item._lang_en?.status || item.status"
+            size="small"
+            label
+          ></v-chip>
         </div>
       </template>
 
@@ -76,7 +81,9 @@
         <v-icon small class="mr-2" @click="openEdit(item)" :title="$t('locations.edit')" size="small"
           >mdi-pencil</v-icon
         >
-        <v-icon small color="mr-2" @click="del(item.id)" :title="$t('delete')" size="small">mdi-delete</v-icon>
+        <v-icon small color="mr-2" @click="confirmDelete(item.id)" :title="$t('delete')" size="small"
+          >mdi-delete</v-icon
+        >
       </template>
     </v-data-table-server>
 
@@ -89,12 +96,7 @@
 
         <v-card-text>
           <v-form ref="editForm" v-model="formValid">
-            <v-text-field
-              v-model="itemData.name"
-              :label="$t('name')"
-              :rules="[(v) => !!v || $t('name_required')]"
-              required
-            />
+            <v-text-field v-model="itemData.name" :label="$t('name')" :rules="[nameRule]" required />
 
             <v-select
               v-model="itemData.status"
@@ -102,16 +104,11 @@
               item-title="title"
               item-value="value"
               :label="$t('status')"
-              :rules="[(v) => !!v || $t('required')]"
+              :rules="[statusRule]"
               required
             />
 
-            <v-text-field
-              v-model="itemData.address"
-              :label="$t('address')"
-              :rules="[(v) => !!v || $t('required')]"
-              required
-            />
+            <v-text-field v-model="itemData.address" :label="$t('address')" :rules="[addressRule]" required />
           </v-form>
         </v-card-text>
 
@@ -123,6 +120,19 @@
       </v-card>
     </v-dialog>
 
+    <!-- Confirm delete dialog -->
+    <ConfirmDialog
+      :model-value="confirmDeleteDialog"
+      @update:modelValue="confirmDeleteDialog = $event"
+      @confirm="doDelete"
+      @cancel="cancelDelete"
+      title-key="delete"
+      message-key="delete_confirm"
+      ok-key="delete"
+      cancel-key="cancel"
+      :args="{}"
+    />
+
     <!-- 
       snackbar for notifications
     -->
@@ -132,6 +142,7 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue';
+import ConfirmDialog from './confirm.dialog.vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
@@ -151,6 +162,8 @@ const editingItemID = ref(null);
 const dialog = ref(false);
 const editForm = ref(null);
 const formValid = ref(false);
+const confirmDeleteDialog = ref(false);
+const toDeleteID = ref(null);
 const lastRequestParams = ref({});
 
 const snackbar = ref(false);
@@ -213,6 +226,13 @@ function getStatusColor(status) {
       return 'grey'; // for any other values
   }
 }
+
+/**
+ * rules
+ */
+const nameRule = (v) => (!!v && v.toString().trim().length > 0) || t('name.required');
+const statusRule = (v) => !!v || t('required');
+const addressRule = (v) => (!!v && v.toString().trim().length > 0) || t('required');
 
 /**
  * fetchAll
@@ -279,6 +299,13 @@ async function handleSubmit() {
     }
   }
 
+  if (itemData.name) {
+    itemData.name = itemData.name.toString().trim();
+  }
+  if (itemData.address) {
+    itemData.address = itemData.address.toString().trim();
+  }
+
   let ok = false;
   if (editing.value) {
     ok = await update();
@@ -343,6 +370,26 @@ async function update() {
 /**
  * delete
  */
+function confirmDelete(itemID) {
+  toDeleteID.value = itemID;
+  confirmDeleteDialog.value = true;
+}
+function cancelDelete() {
+  toDeleteID.value = null;
+  confirmDeleteDialog.value = false;
+}
+async function doDelete() {
+  if (!toDeleteID.value) {
+    return;
+  }
+  try {
+    await del(toDeleteID.value);
+  } finally {
+    toDeleteID.value = null;
+    confirmDeleteDialog.value = false;
+  }
+}
+
 async function del(itemID) {
   try {
     await Api.deleteLocation(itemID);
@@ -369,8 +416,9 @@ function openAdd() {
     return;
   }
   resetForm();
-  // default status for new locations
-  itemData.status = 'active';
+  itemData.status = 'active'; // default status for new
+
+  editing.value = false;
   dialog.value = true;
 }
 

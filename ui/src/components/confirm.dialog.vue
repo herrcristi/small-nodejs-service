@@ -2,9 +2,15 @@
   <v-dialog v-model="visible" max-width="500px">
     <v-card>
       <v-card-title>{{ $t(titleKey) }}</v-card-title>
+
+      <v-spacer />
+
       <v-card-text>
         <div v-html="translatedMessage"></div>
       </v-card-text>
+
+      <v-spacer />
+
       <v-card-actions>
         <v-spacer />
         <v-btn text @click="onCancel">{{ $t(cancelKey) }}</v-btn>
@@ -14,54 +20,74 @@
   </v-dialog>
 </template>
 
-<script>
-import { inject, computed } from 'vue';
+<script setup>
+import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
 
-export default {
-  name: 'ConfirmDialog',
-  props: {
-    modelValue: { type: Boolean, default: false },
-    titleKey: { type: String, default: 'delete' },
-    messageKey: { type: String, default: 'delete_confirm' },
-    args: { type: Object, default: () => ({}) },
-    okKey: { type: String, default: 'delete' },
-    cancelKey: { type: String, default: 'cancel' },
-    okColor: { type: String, default: 'error' },
-  },
-  emits: ['update:modelValue', 'confirm'],
-  setup(props, { emit }) {
-    const visible = computed({
-      get: () => !!props.modelValue,
-      set: (v) => emit('update:modelValue', v),
-    });
+/**
+ * props
+ */
+const props = defineProps({
+  modelValue: { type: Boolean, default: false },
+  titleKey: { type: String, default: 'delete' },
+  messageKey: { type: String, default: 'delete_confirm' },
+  args: { type: Object, default: () => ({}) },
+  okKey: { type: String, default: 'delete' },
+  cancelKey: { type: String, default: 'cancel' },
+  okColor: { type: String, default: 'error' },
+});
 
-    const rawMessage = computed(() => {
-      const msg = this.$t(props.messageKey) || props.messageKey;
-      return msg;
-    });
+/**
+ * emit
+ */
+const emit = defineEmits(['update:modelValue', 'confirm', 'cancel']);
 
-    const translatedMessage = computed(() => {
-      let msg = rawMessage.value;
-      // simple interpolation {key}
-      for (const k in props.args) {
-        const re = new RegExp(`\\{${k}\\}`, 'g');
-        msg = msg.replace(re, props.args[k]);
-      }
-      return msg;
-    });
+/**
+ * visible
+ */
+const visible = computed({
+  get: () => !!props.modelValue,
+  set: (v) => emit('update:modelValue', v),
+});
 
-    const onCancel = () => {
-      emit('update:modelValue', false);
-    };
+/**
+ * raw message
+ */
+const rawMessage = computed(() => {
+  return t(props.messageKey) || props.messageKey;
+});
 
-    const onConfirm = () => {
-      emit('confirm');
-      emit('update:modelValue', false);
-    };
+/**
+ * translated message
+ */
+const translatedMessage = computed(() => {
+  let msg = rawMessage.value || '';
+  // simple interpolation {key}
+  if (props.args) {
+    for (const k in props.args) {
+      const re = new RegExp(`\\{${k}\\}`, 'g');
+      msg = msg.replace(re, props.args[k]);
+    }
+  }
+  return msg;
+});
 
-    return { visible, translatedMessage, onCancel, onConfirm };
-  },
-};
+/**
+ * on cancel
+ */
+function onCancel() {
+  emit('cancel');
+  emit('update:modelValue', false);
+}
+
+/**
+ * on confirm
+ */
+function onConfirm() {
+  emit('confirm');
+  emit('update:modelValue', false);
+}
 </script>
 
 <style scoped>

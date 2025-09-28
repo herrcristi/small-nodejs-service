@@ -108,7 +108,7 @@
               <v-text-field
                 v-model="edit.name"
                 :label="$t('name')"
-                :rules="[(v) => !!v || $t('name_required') || 'Name is required']"
+                :rules="[(v) => !!v || $t('name.required') || 'Name is required']"
                 required
               />
 
