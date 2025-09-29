@@ -125,48 +125,53 @@ instance.interceptors.response.use(
 const Api = {
   // Schools API
   getSchools: (params) => instance.get(`/schools?${params}`),
+  getSchool: (id) => instance.get(`/schools/${id}`),
   createSchool: (data) => instance.post(`/schools`, data),
   updateSchool: (id, data) => instance.put(`/schools/${id}`, data),
   deleteSchool: (id) => instance.delete(`/schools/${id}`),
 
   // Students API
   getStudents: (params) => instance.get(`/students?${params}`),
+  getStudent: (id) => instance.get(`/students/${id}`),
   createStudent: (data) => instance.post(`/students`, data),
   updateStudent: (id, data) => instance.put(`/students/${id}`, data),
   deleteStudent: (id) => instance.delete(`/students/${id}`),
 
   // Professors API
   getProfessors: (params) => instance.get(`/professors?${params}`),
+  getProfessor: (id) => instance.get(`/professors/${id}`),
   createProfessor: (data) => instance.post(`/professors`, data),
   updateProfessor: (id, data) => instance.put(`/professors/${id}`, data),
   deleteProfessor: (id) => instance.delete(`/professors/${id}`),
 
   // Groups API
   getGroups: (params) => instance.get(`/groups?${params}`),
+  getGroup: (id) => instance.get(`/groups/${id}`),
   createGroup: (data) => instance.post(`/groups`, data),
   updateGroup: (id, data) => instance.put(`/groups/${id}`, data),
   deleteGroup: (id) => instance.delete(`/groups/${id}`),
 
   // Locations API
   getLocations: (params) => instance.get(`/locations?${params}`),
+  getLocation: (id) => instance.get(`/locations/${id}`),
   createLocation: (data) => instance.post(`/locations`, data),
   updateLocation: (id, data) => instance.put(`/locations/${id}`, data),
   deleteLocation: (id) => instance.delete(`/locations/${id}`),
 
   // Events API
   getEvents: (params) => instance.get(`/events?${params}`),
-  createEvent: (data) => instance.post(`/events`, data),
-  updateEvent: (id, data) => instance.put(`/events/${id}`, data),
-  deleteEvent: (id) => instance.delete(`/events/${id}`),
+  getEvent: (id) => instance.get(`/events/${id}`),
 
   // Classes API
   getClasses: (params) => instance.get(`/classes?${params}`),
+  getClass: (id) => instance.get(`/classes/${id}`),
   createClass: (data) => instance.post(`/classes`, data),
   updateClass: (id, data) => instance.put(`/classes/${id}`, data),
   deleteClass: (id) => instance.delete(`/classes/${id}`),
 
   // Schedules API
   getSchedules: (params) => instance.get(`/schedules?${params}`),
+  getSchedule: (id) => instance.get(`/schedules/${id}`),
   createSchedule: (data) => instance.post(`/schedules`, data),
   updateSchedule: (id, data) => instance.put(`/schedules/${id}`, data),
   deleteSchedule: (id) => instance.delete(`/schedules/${id}`),
