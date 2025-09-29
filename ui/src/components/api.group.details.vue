@@ -5,7 +5,7 @@
     -->
     <v-card-title class="d-flex justify-space-between">
       <div>{{ group.name || t('groups') }}</div>
-      <v-btn icon small @click="$emit('close')"><v-icon>mdi-close</v-icon></v-btn>
+      <v-btn icon small @click="closeGroup"><v-icon>mdi-close</v-icon></v-btn>
     </v-card-title>
 
     <!-- 
@@ -122,6 +122,7 @@
             :items="studentsItems"
             :items-length="totalStudentsItems"
             :loading="studentsLoading"
+            :search="studentsFilter"
             :no-data-text="nodatatextStudents"
             @update:options="fetchStudents"
           >
@@ -145,6 +146,7 @@
                   variant="outlined"
                   hide-details
                   single-line
+                  dense
                 ></v-text-field>
               </v-toolbar>
             </template>
@@ -283,6 +285,14 @@ async function fetchGroup(id) {
 }
 
 /**
+ * close
+ */
+function closeGroup() {
+  filter.value = '';
+  emit('close');
+}
+
+/**
  * delete
  */
 function confirmDelete(itemID) {
@@ -343,6 +353,7 @@ const studentsHeaders = computed(() => {
  * open add students
  */
 async function openAddStudents() {
+  studentsFilter.value = '';
   addStudentDialog.value = true;
   // fetch first page
   await fetchStudents({ page: 1, itemsPerPage: 25 });
@@ -351,6 +362,7 @@ async function openAddStudents() {
 }
 
 function closeAddStudents() {
+  studentsFilter.value = '';
   addStudentDialog.value = false;
 }
 
@@ -396,14 +408,14 @@ async function fetchStudents({ page, itemsPerPage, sortBy } = {}) {
       sort: 'user.name',
     };
 
-    if (filter.value) {
+    if (studentsFilter.value) {
       params = {
         ...params,
-        'user.name,user.email': `/${filter.value}/i`,
+        'user.name,user.email': `/${studentsFilter.value}/i`,
       };
     }
 
-    if (sortBy.length) {
+    if (sortBy?.length) {
       params.sort = '';
       sortBy.forEach((s) => {
         params.sort += `${s.order === 'desc' ? `-${s.key}` : s.key},`;
