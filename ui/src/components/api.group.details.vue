@@ -49,15 +49,15 @@
       </v-row>
 
       <!-- 
-          current students list 
+          current groupStudents list 
       -->
       <v-data-table
         :headers="headers"
-        :items="students"
-        :items-length="totalStudents"
+        :items="groupStudents"
+        :items-length="totalGroupStudents"
         :loading="loading"
         :search="filter"
-        :custom-filter="filterStudents"
+        :custom-filter="filterGroupStudents"
         :no-data-text="nodatatext"
         item-key="id"
         striped="even"
@@ -109,41 +109,59 @@
     -->
     <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ snackbarText }}</v-snackbar>
 
-    <!-- Add students modal -->
-    <v-dialog v-model="addStudentDialog" max-width="900px">
+    <!-- 
+        Add students modal     
+    -->
+    <v-dialog v-model="addStudentDialog" max-width="900px" v-if="write">
       <v-card>
         <v-card-title>{{ t('students') }}</v-card-title>
+
         <v-card-text>
           <v-data-table-server
-            :headers="[
-              { title: '', value: 'selected', sortable: false },
-              { title: t('name'), value: 'name' },
-              { title: t('email'), value: 'email' },
-            ]"
+            :headers="studentsHeaders"
             :items="studentsItems"
-            :items-length="studentTotal"
-            :loading="studentLoading"
+            :items-length="totalStudentsItems"
+            :loading="studentsLoading"
+            :no-data-text="nodatatextStudents"
             @update:options="fetchStudents"
-            hide-default-footer
           >
-            <template #item.selected="{ item }">
-              <v-checkbox v-model="selectedStudents" :value="item.id" hide-details></v-checkbox>
-            </template>
-            <template #top>
+            <!-- 
+                top of the table, title + add + filter 
+            -->
+            <template v-slot:top>
               <v-toolbar flat>
+                <v-card-title class="d-flex justify-space-between">
+                  {{ $t('students') }}
+                </v-card-title>
+
+                <v-toolbar-title> </v-toolbar-title>
+
                 <v-text-field
-                  v-model="studentSearch"
+                  v-model="studentsFilter"
                   :label="t('filter')"
                   class="me-2"
-                  rounded
-                  dense
+                  rounded="lg"
                   prepend-inner-icon="mdi-magnify"
+                  variant="outlined"
                   hide-details
+                  single-line
                 ></v-text-field>
               </v-toolbar>
             </template>
+
+            <!-- 
+                loading
+            -->
+            <template v-slot:studentsLoading>
+              <v-skeleton-loader type="table-row@1"></v-skeleton-loader>
+            </template>
+
+            <template #item.selected="{ item }">
+              <v-checkbox v-model="selectedStudents" :value="item.id" hide-details></v-checkbox>
+            </template>
           </v-data-table-server>
         </v-card-text>
+
         <v-card-actions>
           <v-spacer />
           <v-btn text @click="closeAddStudents">{{ t('cancel') }}</v-btn>
@@ -165,11 +183,11 @@ const { t } = useI18n();
 const props = defineProps({
   groupID: { type: [String, Number], default: null },
 });
-const emit = defineEmits(['close', 'update:students']);
+const emit = defineEmits(['close']);
 
 const group = reactive({});
-const students = ref([]);
-const totalStudents = ref(0);
+const groupStudents = ref([]);
+const totalGroupStudents = ref(0);
 const filter = ref('');
 const loading = ref(false);
 const nodatatext = ref('');
@@ -179,10 +197,11 @@ const toDeleteID = ref(null);
 
 const addStudentDialog = ref(false);
 const studentsItems = ref([]);
-const studentTotal = ref(0);
-const studentLoading = ref(false);
+const totalStudentsItems = ref(0);
 const selectedStudents = ref([]);
-const studentSearch = ref('');
+const studentsLoading = ref(false);
+const studentsFilter = ref('');
+const nodatatextStudents = ref('');
 
 const snackbar = ref(false);
 const snackbarText = ref('');
@@ -219,8 +238,7 @@ const headers = computed(() => {
 /**
  * custom filter
  */
-function filterStudents(value, query, item) {
-  // alert(JSON.stringify(item));
+function filterGroupStudents(value, query, item) {
   let q = query?.toLocaleUpperCase();
   let n = item?.raw?.user?.name?.toString().toLocaleUpperCase();
   let e = item?.raw?.user?.email?.toString().toLocaleUpperCase();
@@ -246,14 +264,14 @@ async function fetchGroup(id) {
     Object.keys(group).forEach((k) => delete group[k]);
     Object.assign(group, data);
 
-    students.value = data.students || [];
-    totalStudents.value = students.value.length;
+    groupStudents.value = data.students || [];
+    totalGroupStudents.value = groupStudents.value.length;
   } catch (e) {
     console.error('Error fetching group details:', e);
 
     nodatatext.value = e.toString();
-    students.value = [];
-    totalStudents.value = 0;
+    groupStudents.value = [];
+    totalGroupStudents.value = 0;
 
     snackbarText.value = t('group.fetch.error') || 'Error fetching group details';
     snackbarColor.value = 'error';
@@ -308,11 +326,27 @@ async function del(itemID) {
   }
 }
 
+/**
+ s* student headers
+ */
+const studentsHeaders = computed(() => {
+  const h = [
+    { title: '', value: 'selected', sortable: false },
+    { title: t('name'), key: 'user.name' },
+    { title: t('email'), key: 'user.email' },
+  ];
+
+  return h;
+});
+
+/**
+ * open add students
+ */
 async function openAddStudents() {
   addStudentDialog.value = true;
   // fetch first page
   await fetchStudents({ page: 1, itemsPerPage: 25 });
-  const existingIds = new Set((students.value || []).map((s) => s.id));
+  const existingIds = new Set((groupStudents.value || []).map((s) => s.id));
   selectedStudents.value = studentsItems.value.filter((s) => existingIds.has(s.id)).map((s) => s.id);
 }
 
@@ -320,47 +354,79 @@ function closeAddStudents() {
   addStudentDialog.value = false;
 }
 
+/**
+ * add students
+ */
 function confirmAddStudents() {
   const selectedSet = new Set(selectedStudents.value);
-  students.value = studentsItems.value.filter((s) => selectedSet.has(s.id));
-  // persist to server
-  if (group.id) {
-    Api.updateGroup(group.id, { ...group, students: students.value })
-      .then(() => {
-        emit('update:students', students.value);
-        // notify parent
-        emit('saved');
-      })
-      .catch((e) => {
-        console.error('Error saving group students', e);
-      });
-  } else {
-    emit('update:students', students.value);
-  }
+  const newStudentsIds = studentsItems.value.filter((s) => selectedSet.has(s.id));
+  console.log('newStudentsIds', newStudentsIds);
+  // TODO
+  // // persist to server
+  // if (group.id) {
+  //   Api.updateGroup(group.id, { ...group, students: newStudentsIds })
+  //     .then(() => {
+  //       emit('update:students', students.value);
+  //       // notify parent
+  //       emit('saved');
+  //     })
+  //     .catch((e) => {
+  //       console.error('Error saving group students', e);
+  //     });
+  // } else {
+  //   emit('update:students', students.value);
+  // }
   addStudentDialog.value = false;
 }
 
 /**
  * fetch students for selector (server-side pagination/search)
  */
-async function fetchStudents({ page = 1, itemsPerPage = 25, sortBy = [] } = {}) {
-  studentLoading.value = true;
+async function fetchStudents({ page, itemsPerPage, sortBy } = {}) {
+  let timeoutID = setTimeout(() => {
+    studentsLoading.value = true;
+  }, 300); // Show loader if it takes more than 300ms
+
   try {
     const start = (page - 1) * itemsPerPage;
-    const params = {
+    let params = {
       skip: start,
       limit: itemsPerPage,
+      projection: 'id,user.name,user.email',
+      sort: 'user.name',
     };
-    if (studentSearch.value) {
-      params['name,email'] = `/${studentSearch.value}/i`;
+
+    if (filter.value) {
+      params = {
+        ...params,
+        'user.name,user.email': `/${filter.value}/i`,
+      };
     }
-    const resp = await Api.getStudents(new URLSearchParams(params).toString());
-    studentsItems.value = resp.data?.data || [];
-    studentTotal.value = resp.data?.meta?.count || studentsItems.value.length || 0;
+
+    if (sortBy.length) {
+      params.sort = '';
+      sortBy.forEach((s) => {
+        params.sort += `${s.order === 'desc' ? `-${s.key}` : s.key},`;
+      });
+      params.sort = params.sort.slice(0, -1);
+    }
+
+    const response = await Api.getStudents(new URLSearchParams(params).toString());
+    totalStudentsItems.value = response.data?.meta?.count || 0;
+    studentsItems.value = response.data?.data || [];
   } catch (e) {
     console.error('Error fetching students page', e);
+
+    nodatatextStudents.value = e.toString();
+    studentsItems.value = [];
+    totalStudentsItems.value = 0;
+
+    snackbarText.value = t('students.fetch.error') || 'Error fetching students';
+    snackbarColor.value = 'error';
+    snackbar.value = true;
   } finally {
-    studentLoading.value = false;
+    clearTimeout(timeoutID);
+    studentsLoading.value = false;
   }
 }
 </script>
