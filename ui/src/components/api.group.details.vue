@@ -114,7 +114,7 @@
     -->
     <v-dialog v-model="addStudentDialog" max-width="900px" v-if="write">
       <v-card>
-        <v-card-title>{{ t('students') }}</v-card-title>
+        <v-card-title>{{ group.name }}</v-card-title>
 
         <v-card-text>
           <v-data-table-server
@@ -124,6 +124,9 @@
             :loading="studentsLoading"
             :search="studentsFilter"
             :no-data-text="nodatatextStudents"
+            v-model="selectedStudents"
+            item-key="id"
+            show-select
             @update:options="fetchStudents"
           >
             <!-- 
@@ -158,9 +161,9 @@
               <v-skeleton-loader type="table-row@1"></v-skeleton-loader>
             </template>
 
-            <template #item.selected="{ item }">
+            <!-- <template #item.selected="{ item }">
               <v-checkbox v-model="selectedStudents" :value="item.id" hide-details></v-checkbox>
-            </template>
+            </template> -->
           </v-data-table-server>
         </v-card-text>
 
@@ -372,7 +375,7 @@ function closeAddStudents() {
 function confirmAddStudents() {
   const selectedSet = new Set(selectedStudents.value);
   const newStudentsIds = studentsItems.value.filter((s) => selectedSet.has(s.id));
-  console.log('newStudentsIds', newStudentsIds);
+
   // TODO
   // // persist to server
   // if (group.id) {
