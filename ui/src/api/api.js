@@ -150,6 +150,19 @@ const Api = {
   createGroup: (data) => instance.post(`/groups`, data),
   updateGroup: (id, data) => instance.put(`/groups/${id}`, data),
   deleteGroup: (id) => instance.delete(`/groups/${id}`),
+  updateGroupStudents: (id, newIds, removeIds) =>
+    instance.patch(`/groups/${id}`, {
+      add: {
+        students: (newIds || []).map((id) => {
+          return { id };
+        }),
+      },
+      remove: {
+        students: (removeIds || []).map((id) => {
+          return { id };
+        }),
+      },
+    }),
 
   // Locations API
   getLocations: (params) => instance.get(`/locations?${params}`),

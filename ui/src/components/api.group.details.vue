@@ -69,17 +69,6 @@
           <v-skeleton-loader type="table-row@4"></v-skeleton-loader>
         </template>
 
-        <template #item.name="{ item }">
-          <div>
-            {{ item.user.name }}
-          </div>
-          <v-spacer></v-spacer>
-
-          <v-chip variant="plain" x-small color="grey">
-            {{ item.user.email }}
-          </v-chip>
-        </template>
-
         <!-- 
           actions
       -->
@@ -233,7 +222,10 @@ watch(
  * headers
  */
 const headers = computed(() => {
-  const h = [{ title: t('name'), key: 'name' }];
+  const h = [
+    { title: t('name'), key: 'user.name' },
+    { title: t('email'), key: 'user.email' },
+  ];
   if (write) {
     h.push({ title: t('actions'), value: 'actions', sortable: false });
   }
@@ -320,15 +312,13 @@ async function doDelete() {
 
 async function del(itemID) {
   try {
-    // TODO
-    throw 'TODO delete student from group';
-    // await Api.deleteGroup(itemID);
+    await Api.updateGroupStudents(props.groupID, [], [itemID]);
 
     snackbarText.value = t('groups.delete.student.success') || 'Student deleted from group';
     snackbarColor.value = 'success';
     snackbar.value = true;
 
-    await fetchAll(lastRequestParams.value);
+    groupStudents.value = groupStudents.value.filter((item) => item.id !== itemID);
   } catch (e) {
     console.error('Error deleting student from group:', e);
 
@@ -340,7 +330,7 @@ async function del(itemID) {
 }
 
 /**
- s* student headers
+ * student headers
  */
 const studentsHeaders = computed(() => {
   const h = [
@@ -360,6 +350,7 @@ async function openAddStudents() {
   addStudentDialog.value = true;
   // fetch first page
   await fetchStudents({ page: 1, itemsPerPage: 25 });
+
   const existingIds = new Set((groupStudents.value || []).map((s) => s.id));
   selectedStudents.value = studentsItems.value.filter((s) => existingIds.has(s.id)).map((s) => s.id);
 }
@@ -372,26 +363,39 @@ function closeAddStudents() {
 /**
  * add students
  */
-function confirmAddStudents() {
-  const selectedSet = new Set(selectedStudents.value);
-  const newStudentsIds = studentsItems.value.filter((s) => selectedSet.has(s.id));
+async function confirmAddStudents() {
+  const existingIds = new Set((groupStudents.value || []).map((s) => s.id));
+  const newIds = (selectedStudents.value || []).filter((id) => !existingIds.has(id));
 
-  // TODO
-  // // persist to server
-  // if (group.id) {
-  //   Api.updateGroup(group.id, { ...group, students: newStudentsIds })
-  //     .then(() => {
-  //       emit('update:students', students.value);
-  //       // notify parent
-  //       emit('saved');
-  //     })
-  //     .catch((e) => {
-  //       console.error('Error saving group students', e);
-  //     });
-  // } else {
-  //   emit('update:students', students.value);
-  // }
-  addStudentDialog.value = false;
+  if (!newIds.length) {
+    addStudentDialog.value = false;
+    return;
+  }
+
+  // persist to server
+  try {
+    await Api.updateGroupStudents(props.groupID, newIds, []);
+
+    addStudentDialog.value = false;
+
+    snackbarText.value = t('groups.delete.student.success') || 'Student deleted from group';
+    snackbarColor.value = 'success';
+    snackbar.value = true;
+
+    const newIdsSet = new Set(newIds);
+    studentsItems.value.forEach((item) => {
+      if (newIdsSet.has(item.id)) {
+        groupStudents.value.push({ id: item.id, user: { name: item.user.name, email: item.user.email } });
+      }
+    });
+  } catch (e) {
+    console.error('Error saving group students', e);
+
+    snackbarText.value =
+      e?.response?.data?.message || t('groups.delete.student.error') || 'Error deleting student from group';
+    snackbarColor.value = 'error';
+    snackbar.value = true;
+  }
 }
 
 /**

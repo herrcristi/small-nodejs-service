@@ -64,7 +64,8 @@
       <!-- details column (icon) -->
       <template v-slot:item.details="{ item }">
         <v-btn icon small @click.stop="selectDetails(item.id)" :title="$t('details')">
-          <v-icon>mdi-information-outline</v-icon>
+          <v-icon color="primary" class="mr-2" size="small">mdi-information-outline</v-icon>
+          <!-- <v-icon color="primary">mdi-chevron-right</v-icon> -->
         </v-btn>
       </template>
 
