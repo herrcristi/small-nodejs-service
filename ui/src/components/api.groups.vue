@@ -15,6 +15,7 @@
       class="elevation-1"
       striped="even"
       items-per-page="50"
+      :style="detailsOpen ? 'width:48%;display:inline-block;vertical-align:top;' : ''"
     >
       <!-- 
           top of the table, title + add + filter 
@@ -42,7 +43,7 @@
 
           <v-text-field
             v-model="filter"
-            label="Filter"
+            :label="t('filter')"
             class="me-2"
             rounded="lg"
             prepend-inner-icon="mdi-magnify"
@@ -58,6 +59,14 @@
       -->
       <template v-slot:loading>
         <v-skeleton-loader type="table-row@1"></v-skeleton-loader>
+      </template>
+
+      <!-- details column (icon) -->
+      <template v-slot:item.details="{ item }">
+        <v-btn icon small @click.stop="selectDetails(item.id)" :title="$t('details')">
+          <v-icon color="primary" class="mr-2" size="small">mdi-information-outline</v-icon>
+          <!-- <v-icon color="primary">mdi-chevron-right</v-icon> -->
+        </v-btn>
       </template>
 
       <!-- 
@@ -79,11 +88,16 @@
       -->
       <template #item.actions="{ item }" v-if="write">
         <v-icon small class="mr-2" @click="openEdit(item)" :title="$t('groups.edit')" size="small">mdi-pencil</v-icon>
-        <v-icon small color="mr-2" @click="confirmDelete(item.id)" :title="$t('delete')" size="small"
+        <v-icon small class="mr-2" @click="confirmDelete(item.id)" :title="$t('delete')" size="small"
           >mdi-delete</v-icon
         >
       </template>
     </v-data-table-server>
+
+    <!-- Right drawer for details -->
+    <v-navigation-drawer v-model="detailsOpen" right temporary width="520">
+      <GroupDetails :groupID="selectedGroupID" @close="closeDetailsPanel" />
+    </v-navigation-drawer>
 
     <!-- 
           dialog
@@ -141,9 +155,11 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
 import ConfirmDialog from './confirm.dialog.vue';
+import GroupDetails from './api.group.details.vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
 
 const items = ref([]);
 const totalItems = ref(0);
@@ -161,6 +177,9 @@ const confirmDeleteDialog = ref(false);
 const toDeleteID = ref(null);
 const lastRequestParams = ref({});
 
+const selectedGroupID = ref(null);
+const detailsOpen = ref(false);
+
 const snackbar = ref(false);
 const snackbarText = ref('');
 const snackbarColor = ref('');
@@ -168,13 +187,13 @@ const snackbarColor = ref('');
 const app = useAppStore();
 const read = app?.rolesPermissions?.groups?.read || 0;
 const write = app?.rolesPermissions?.groups?.write || 0;
-const { t } = useI18n();
 
 /**
  * headers
  */
 const headers = computed(() => {
   const h = [
+    { title: '', key: 'details', value: 'details', sortable: false },
     { title: t('name'), key: 'name' },
     { title: t('status'), key: 'status' },
     { title: t('description'), value: 'description' },
@@ -277,6 +296,20 @@ async function fetchAll({ page, itemsPerPage, sortBy } = {}) {
     clearTimeout(timeoutID);
     loading.value = false;
   }
+}
+
+/**
+ * details panel state (moved to separate component)
+ */
+
+function selectDetails(groupID) {
+  selectedGroupID.value = groupID;
+  detailsOpen.value = true;
+}
+
+function closeDetailsPanel() {
+  selectedGroupID.value = null;
+  detailsOpen.value = false;
 }
 
 /**
