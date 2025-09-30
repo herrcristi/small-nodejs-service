@@ -33,7 +33,7 @@
             text=""
             border
             @click="openAdd"
-            v-if="props.write && props.actions"
+            v-if="props.write && props.apiFn?.create"
           ></v-btn>
 
           <v-toolbar-title> </v-toolbar-title>
@@ -75,9 +75,17 @@
       <!-- 
           actions
       -->
-      <template #item.actions="{ item }" v-if="props.write && props.actions">
-        <v-icon small class="mr-2" @click="openEdit(item)" :title="$t('edit')" size="small">mdi-pencil</v-icon>
-        <v-icon small color="mr-2" @click="confirmDelete(item.id)" :title="$t('delete')" size="small"
+      <template #item.actions="{ item }" v-if="props.write">
+        <v-icon v-if="props.apiFn?.update" small class="mr-2" @click="openEdit(item)" :title="$t('edit')" size="small"
+          >mdi-pencil</v-icon
+        >
+        <v-icon
+          v-if="props.apiFn?.delete"
+          small
+          color="mr-2"
+          @click="confirmDelete(item.id)"
+          :title="$t('delete')"
+          size="small"
           >mdi-delete</v-icon
         >
       </template>
@@ -86,7 +94,7 @@
     <!-- 
           dialog
     -->
-    <v-dialog v-model="dialog" max-width="800px" v-if="props.write && props.actions">
+    <v-dialog v-model="dialog" max-width="800px" v-if="props.write && (props.apiFn?.create || props.apiFn?.update)">
       <v-card>
         <v-card-title>{{ editing ? $t('edit') : $t('add') }}</v-card-title>
 
@@ -170,7 +178,6 @@ const props = defineProps({
   fields: { type: Array, default: [] },
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
-  actions: { type: [Boolean, Number], default: null },
   apiFn: { type: Object, default: {} }, // getall, add, delete, update
 });
 
@@ -222,7 +229,7 @@ const headers = computed(() => {
     }
   }
 
-  if (props.write && props.actions) {
+  if (props.write && (props.apiFn.update || props.apiFn.delete)) {
     h.push({ title: t('actions'), value: 'actions', sortable: false });
   }
   return h;

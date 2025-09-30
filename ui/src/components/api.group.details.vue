@@ -111,13 +111,9 @@
             :fields="['user.name', 'user.status', 'user.email']"
             :apiFn="{
               getAll: Api.getStudents,
-              create: Api.createStudent,
-              update: Api.updateStudent,
-              delete: Api.deleteStudent,
             }"
             :read="read && app?.rolesPermissions?.students?.read"
             :write="false"
-            :actions="false"
           ></ApiPage>
         </v-card-text>
 

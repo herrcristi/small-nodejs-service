@@ -10,7 +10,6 @@
     }"
     :read="app?.rolesPermissions?.professors?.read"
     :write="app?.rolesPermissions?.professors?.write"
-    :actions="true"
   ></ApiPage>
 </template>
 

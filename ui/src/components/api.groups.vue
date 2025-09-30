@@ -10,7 +10,6 @@
     }"
     :read="app?.rolesPermissions?.groups?.read"
     :write="app?.rolesPermissions?.groups?.write"
-    :actions="true"
   ></ApiPage>
 
   <v-card v-if="app?.rolesPermissions?.groups?.read || app?.rolesPermissions?.groups?.write">
