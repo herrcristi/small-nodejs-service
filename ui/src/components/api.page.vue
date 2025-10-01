@@ -3,101 +3,20 @@
     <!-- 
           table
     -->
-    <v-data-table-server
-      :headers="headers"
-      :items="items"
-      :items-length="totalItems"
-      :loading="loading"
-      :search="filter"
-      :no-data-text="nodatatext"
-      @update:options="fetchAll"
-      item-key="id"
-      class="elevation-1"
-      striped="even"
-      items-per-page="50"
-    >
-      <!-- 
-          top of the table, title + add + filter 
-      -->
-      <template v-slot:top>
-        <v-toolbar flat>
-          <v-card-title class="d-flex justify-space-between">
-            {{ $t(props.title) }}
-          </v-card-title>
-
-          <v-btn
-            class="me-2 left"
-            color="primary"
-            prepend-icon="mdi-plus"
-            rounded="lg"
-            text=""
-            border
-            @click="openAdd"
-            v-if="props.write && props.apiFn?.create"
-          ></v-btn>
-
-          <v-toolbar-title> </v-toolbar-title>
-
-          <v-text-field
-            v-model="filter"
-            label="Filter"
-            class="me-2"
-            rounded="lg"
-            prepend-inner-icon="mdi-magnify"
-            variant="outlined"
-            hide-details
-            single-line
-          ></v-text-field>
-        </v-toolbar>
-      </template>
-
-      <!-- 
-          loading
-      -->
-      <template v-slot:loading>
-        <v-skeleton-loader type="table-row@1"></v-skeleton-loader>
-      </template>
-
-      <!-- details column (icon) -->
-      <template v-slot:item.details="{ item }" v-if="props.details">
-        <v-btn icon small @click.stop="selectDetails(item.id)" :title="$t('details')">
-          <v-icon color="primary" class="mr-2" size="small">mdi-information-outline</v-icon>
-          <!-- <v-icon color="primary">mdi-chevron-right</v-icon> -->
-        </v-btn>
-      </template>
-
-      <!-- 
-        status 
-        -->
-      <template v-slot:item.status="{ item }">
-        <div class="">
-          <v-chip
-            :color="getStatusColor(item.status)"
-            :text="item._lang_en?.status || item._lang_en?.user?.status || item.status || item.user?.status"
-            size="small"
-            label
-          ></v-chip>
-        </div>
-      </template>
-
-      <!-- 
-          actions
-      -->
-      <template #item.actions="{ item }" v-if="props.write">
-        <v-icon v-if="props.apiFn?.update" small class="mr-2" @click="openEdit(item)" :title="$t('edit')" size="small"
-          >mdi-pencil</v-icon
-        >
-        <v-icon
-          v-if="props.apiFn?.delete"
-          small
-          color="mr-2"
-          @click="confirmDelete(item.id)"
-          :title="$t('delete')"
-          size="small"
-          >mdi-delete</v-icon
-        >
-      </template>
-    </v-data-table-server>
+    <ApiTableServer
+      :title="props.title"
+      :fields="props.fields"
+      :sortFields="props.sortFields"
+      :projectionFields="props.projectionFields"
+      :filterFields="props.filterFields"
+      :apiFn="props.apiFn"
+      :read="read"
+      :write="write"
+      :details="props.details"
+      @addItem="openAdd($event)"
+      @editItem="openEdit($event)"
+      @detailsItem="openDetails($event)"
+    ></ApiTableServer>
 
     <!-- 
           dialog
@@ -174,6 +93,7 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue';
+import ApiTableServer from './api.table.server.vue';
 import ConfirmDialog from './confirm.dialog.vue';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
@@ -184,6 +104,10 @@ const { t } = useI18n();
 const props = defineProps({
   title: { type: [String], default: null },
   fields: { type: Array, default: [] },
+  sortFields: { type: Array, default: [] },
+  projectionFields: { type: Array, default: null },
+  filterFields: { type: Array, default: null },
+
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
   details: { type: [Boolean, Number], default: null },
@@ -191,11 +115,6 @@ const props = defineProps({
 });
 
 const fieldsSet = ref(new Set(props.fields));
-const items = ref([]);
-const totalItems = ref(0);
-const filter = ref('');
-const loading = ref(true);
-const nodatatext = ref('');
 
 const itemData = reactive({});
 const editing = ref(false);
@@ -214,7 +133,7 @@ const snackbarColor = ref('');
 /**
  * emit
  */
-const emit = defineEmits(['selectDetails']);
+const emit = defineEmits(['openDetails']);
 
 /**
  * fields titles
@@ -229,35 +148,6 @@ const fieldsTitles = ref({
   email: 'email',
   'user.email': 'email',
   description: 'description',
-});
-
-/**
- * headers
- */
-const headers = computed(() => {
-  const h = [];
-  // description -> value
-
-  // details
-  if (props.details) {
-    h.push({ title: '', key: 'details', value: 'details', sortable: false });
-  }
-
-  for (const field of props.fields) {
-    const title = fieldsTitles.value[field];
-    if (title) {
-      if (title == 'description') {
-        h.push({ title: t(title), value: field });
-      } else {
-        h.push({ title: t(title), key: field });
-      }
-    }
-  }
-
-  if (props.write && (props.apiFn.update || props.apiFn.delete)) {
-    h.push({ title: t('actions'), value: 'actions', sortable: false });
-  }
-  return h;
 });
 
 /**
@@ -282,82 +172,11 @@ const statusItems = computed(() => {
 });
 
 /**
- * color for status
- */
-function getStatusColor(status) {
-  switch (status) {
-    case 'pending':
-      return 'none';
-    case 'active':
-      return 'green';
-    case 'disabled':
-      return 'grey';
-    default:
-      return 'grey'; // for any other values
-  }
-}
-
-/**
  * rules
  */
 const nameRule = (v) => (!!v && v.toString().trim().length > 0) || t('name.required');
 const statusRule = (v) => !!v || t('required');
 const emailRule = (v) => (!!v && v.toString().trim().length > 0) || t('email.required');
-
-/**
- * get all
- */
-async function fetchAll({ page = 1, itemsPerPage = 50, sortBy = [] } = {}) {
-  lastRequestParams.value = { page, itemsPerPage, sortBy };
-
-  let timeoutID = setTimeout(() => {
-    loading.value = true;
-  }, 300); // Show loader if it takes more than 300ms
-
-  try {
-    const start = (page - 1) * itemsPerPage;
-    let params = {
-      skip: start,
-      limit: itemsPerPage,
-      projection: `id,` + props.fields + `,_lang_en`,
-      sort: props.fields[0],
-    };
-
-    if (filter.value) {
-      params = {
-        ...params,
-        ['' + props.fields]: `/${filter.value}/i`, // TODO some fields should be search in language fields, like status, ....
-        // TODO filter out 'details'
-      };
-    }
-
-    if (sortBy.length) {
-      params.sort = '';
-      sortBy.forEach((s) => {
-        params.sort += `${s.order === 'desc' ? `-${s.key}` : s.key},`;
-      });
-      params.sort = params.sort.slice(0, -1);
-    }
-
-    const response = await props.apiFn.getAll(new URLSearchParams(params).toString());
-    totalItems.value = response.data?.meta?.count || 0;
-    items.value = response.data?.data || [];
-    nodatatext.value = '';
-  } catch (e) {
-    console.error('Error fetching all', e);
-
-    nodatatext.value = e.toString();
-    totalItems.value = 0;
-    items.value = [];
-
-    snackbarText.value = t('fetch.error') || 'Error fetching';
-    snackbarColor.value = 'error';
-    snackbar.value = true;
-  } finally {
-    clearTimeout(timeoutID);
-    loading.value = false;
-  }
-}
 
 /**
  * handle submit
@@ -548,8 +367,8 @@ function resetForm() {
 /**
  * select details
  */
-function selectDetails(groupID) {
-  emit('selectDetails', groupID);
+function openDetails(groupID) {
+  emit('openDetails', groupID);
 }
 
 /**
