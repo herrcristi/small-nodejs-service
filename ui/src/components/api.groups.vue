@@ -1,18 +1,21 @@
 <template>
   <ApiPage
     title="groups"
-    :fields="['details', 'name', 'status', 'description']"
+    :fields="['name', 'status', 'description']"
     :apiFn="{
       getAll: Api.getGroups,
       create: Api.createGroup,
       update: Api.updateGroup,
       delete: Api.deleteGroup,
     }"
-    :read="app?.rolesPermissions?.groups?.read"
-    :write="app?.rolesPermissions?.groups?.write"
+    :read="read"
+    :write="write"
+    :details="true"
+    @selectDetails="selectDetails($event)"
+    :style="detailsOpen ? 'width:48%;display:inline-block;vertical-align:top;' : ''"
   ></ApiPage>
 
-  <v-card v-if="app?.rolesPermissions?.groups?.read || app?.rolesPermissions?.groups?.write">
+  <v-card v-if="read || write">
     <!-- Right drawer for details -->
     <v-navigation-drawer v-model="detailsOpen" right temporary width="520">
       <ApiGroupDetails :groupID="selectedGroupID" @close="closeDetailsPanel" />
@@ -36,6 +39,8 @@ const selectedGroupID = ref(null);
 const detailsOpen = ref(false);
 
 const app = useAppStore();
+const read = app?.rolesPermissions?.groups?.read;
+const write = app?.rolesPermissions?.groups?.write && 0;
 
 /**
  * details panel state (moved to separate component)

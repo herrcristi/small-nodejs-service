@@ -58,6 +58,14 @@
         <v-skeleton-loader type="table-row@1"></v-skeleton-loader>
       </template>
 
+      <!-- details column (icon) -->
+      <template v-slot:item.details="{ item }" v-if="props.details">
+        <v-btn icon small @click.stop="selectDetails(item.id)" :title="$t('details')">
+          <v-icon color="primary" class="mr-2" size="small">mdi-information-outline</v-icon>
+          <!-- <v-icon color="primary">mdi-chevron-right</v-icon> -->
+        </v-btn>
+      </template>
+
       <!-- 
         status 
         -->
@@ -178,6 +186,7 @@ const props = defineProps({
   fields: { type: Array, default: [] },
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
+  details: { type: [Boolean, Number], default: null },
   apiFn: { type: Object, default: {} }, // getall, add, delete, update
 });
 
@@ -203,6 +212,11 @@ const snackbarText = ref('');
 const snackbarColor = ref('');
 
 /**
+ * emit
+ */
+const emit = defineEmits(['selectDetails']);
+
+/**
  * fields titles
  */
 const fieldsTitles = ref({
@@ -222,10 +236,21 @@ const fieldsTitles = ref({
  */
 const headers = computed(() => {
   const h = [];
+  // description -> value
+
+  // details
+  if (props.details) {
+    h.push({ title: '', key: 'details', value: 'details', sortable: false });
+  }
+
   for (const field of props.fields) {
     const title = fieldsTitles.value[field];
     if (title) {
-      h.push({ title: t(title), key: field });
+      if (title == 'description') {
+        h.push({ title: t(title), value: field });
+      } else {
+        h.push({ title: t(title), key: field });
+      }
     }
   }
 
@@ -301,7 +326,8 @@ async function fetchAll({ page = 1, itemsPerPage = 50, sortBy = [] } = {}) {
     if (filter.value) {
       params = {
         ...params,
-        ['' + props.fields]: `/${filter.value}/i`,
+        ['' + props.fields]: `/${filter.value}/i`, // TODO some fields should be search in language fields, like status, ....
+        // TODO filter out 'details'
       };
     }
 
@@ -517,6 +543,13 @@ function resetForm() {
 
   editing.value = false;
   editingItemID.value = null;
+}
+
+/**
+ * select details
+ */
+function selectDetails(groupID) {
+  emit('selectDetails', groupID);
 }
 
 /**
