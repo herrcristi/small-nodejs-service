@@ -2,6 +2,9 @@
   <ApiPage
     title="students"
     :fields="['user.name', 'user.status', 'user.email']"
+    :projectionFields="['user.name', 'user.status', 'user.email']"
+    :sortFields="['user.name', 'user.status', 'user.email']"
+    :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
     :apiFn="{
       getAll: Api.getStudents,
       create: Api.createStudent,

@@ -37,6 +37,35 @@
             />
 
             <v-text-field
+              v-if="fieldsSet.has('credits')"
+              v-model.number="itemData.credits"
+              type="number"
+              :label="$t('credits')"
+              :rules="[creditsRule]"
+              min="1"
+              required
+            />
+
+            <v-select
+              v-if="fieldsSet.has('required')"
+              v-model="itemData.required"
+              :items="requiredItems"
+              item-title="title"
+              item-value="value"
+              :label="$t('required')"
+              :rules="[requiredRule]"
+              required
+            />
+
+            <v-text-field
+              v-if="fieldsSet.has('address')"
+              v-model="itemData.address"
+              :label="$t('address')"
+              :rules="[addressRule]"
+              required
+            />
+
+            <v-text-field
               v-if="fieldsSet.has('description')"
               v-model="itemData.description"
               :label="$t('description')"
@@ -123,11 +152,28 @@ const statusItems = computed(() => {
 });
 
 /**
+ * required items for the select
+ */
+const requiredItems = computed(() => {
+  return [
+    { title: t('required'), value: 'required' },
+    { title: t('optional'), value: 'optional' },
+  ];
+});
+
+/**
  * rules
  */
 const nameRule = (v) => (!!v && v.toString().trim().length > 0) || t('name.required');
 const statusRule = (v) => !!v || t('required');
 const emailRule = (v) => (!!v && v.toString().trim().length > 0) || t('email.required');
+const addressRule = (v) => (!!v && v.toString().trim().length > 0) || t('required');
+// credits must be a number greater than or equal to zero
+const creditsRule = (v) => {
+  const n = Number(v);
+  return (n != null && !Number.isNaN(n) && n >= 0 && n <= 1024) || t('credits.limits') || t('required');
+};
+const requiredRule = (v) => !!v || t('required');
 
 /**
  * handle submit
@@ -223,11 +269,18 @@ function openAdd() {
 
   resetForm();
 
+  // default status for new
   if (fieldsSet.value.has('status')) {
-    itemData.status = 'active'; // default status for new
+    itemData.status = 'active';
   }
   if (fieldsSet.value.has('user.status')) {
-    itemData.status = 'pending'; // default status for new
+    itemData.status = 'pending';
+  }
+  if (fieldsSet.value.has('credits')) {
+    itemData.credits = 0;
+  }
+  if (fieldsSet.value.has('required')) {
+    itemData.required = 'required';
   }
 
   editing.value = false;
@@ -257,6 +310,15 @@ function openEdit(item) {
   }
   if (item.description) {
     itemData.description = item.description;
+  }
+  if (item.credits) {
+    itemData.credits = Number(item.credits);
+  }
+  if (item.required) {
+    itemData.required = item.required || 'required';
+  }
+  if (item.address) {
+    itemData.address = item.address;
   }
 
   editing.value = true;

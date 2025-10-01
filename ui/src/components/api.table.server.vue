@@ -82,6 +82,44 @@
       </template>
 
       <!-- 
+        severity 
+      -->
+      <template v-slot:item.severity="{ item }">
+        <div class="">
+          <v-chip
+            :color="getSeverityColor(item.severity)"
+            :text="item._lang_en?.severity || item.severity"
+            class="text-uppercase"
+            size="small"
+            label
+          ></v-chip>
+        </div>
+      </template>
+
+      <!-- 
+        required
+        -->
+      <template v-slot:item.required="{ item }">
+        <div class="">
+          <v-chip
+            :color="getRequiredColor(item.required)"
+            :text="item._lang_en?.required || item.required"
+            size="small"
+            label
+          ></v-chip>
+        </div>
+      </template>
+
+      <!-- 
+        message
+        -->
+      <template v-slot:item.message="{ item }">
+        <div class="">
+          {{ item._lang_en?.message || item.message }}
+        </div>
+      </template>
+
+      <!-- 
           actions
       -->
       <template #item.actions="{ item }" v-if="props.write">
@@ -174,10 +212,11 @@ const emit = defineEmits(['addItem', 'editItem', 'deleteItem', 'detailsItem']); 
 /**
  * fields titles
  */
-const fieldsSet = ref(new Set(props.fields));
+
 const fieldsTitles = ref({
   name: 'name',
   'user.name': 'name',
+  'user.username': 'name',
   status: 'status',
   '_lang_en.status': 'status',
   'user.status': 'status',
@@ -185,6 +224,17 @@ const fieldsTitles = ref({
   email: 'email',
   'user.email': 'email',
   description: 'description',
+  credits: 'credits',
+  required: 'required',
+  address: 'address',
+  severity: 'severity',
+  'target.name': 'target',
+  message: 'message',
+  '_lang_end.message': 'message',
+  timestamp: 'timestamp',
+  createdTimestamp: 'timestamp',
+  class: 'class',
+  class: 'class.name',
 });
 
 /**
@@ -237,6 +287,35 @@ function getStatusColor(status) {
 }
 
 /**
+ * color for required
+ */
+function getRequiredColor(status) {
+  switch (status) {
+    case 'required':
+      return 'indigo';
+    case 'optional':
+    default:
+      return 'grey';
+  }
+}
+
+/**
+ * color for severity
+ */
+function getSeverityColor(severity) {
+  switch (severity) {
+    case 'critical':
+      return 'red';
+    case 'warning':
+      return 'orange';
+    case 'info':
+      return 'green';
+    default:
+      return 'grey';
+  }
+}
+
+/**
  * get all
  */
 async function fetchAll({ page = 1, itemsPerPage = 50, sortBy = [] } = {}) {
@@ -251,7 +330,6 @@ async function fetchAll({ page = 1, itemsPerPage = 50, sortBy = [] } = {}) {
     let params = {
       skip: start,
       limit: itemsPerPage,
-      sort: props.fields[0],
     };
 
     // projection
