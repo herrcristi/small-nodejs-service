@@ -333,7 +333,7 @@ async function del(itemID) {
   } catch (e) {
     console.error('Error deleting:', e);
 
-    snackbarText.value = e?.response?.data?.message || t('delete.error') || 'Error deleting';
+    snackbarText.value = (t('delete.error') || 'Error deleting') + ' ' + e.toString();
     snackbarColor.value = 'error';
     snackbar.value = true;
   }
@@ -372,6 +372,18 @@ function openDetails(itemID) {
  * mounted
  */
 function mounted() {}
+
+/**
+ * refresh
+ */
+async function refresh() {
+  await fetchAll(lastRequestParams.value);
+}
+
+/**
+ * expose
+ */
+defineExpose({ refresh });
 </script>
 
 <style scoped>
