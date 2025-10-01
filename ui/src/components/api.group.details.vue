@@ -106,15 +106,18 @@
         <v-card-title>{{ group.name }}</v-card-title>
 
         <v-card-text>
-          <ApiPage
+          <ApiTableServer
             title="students"
             :fields="['user.name', 'user.status', 'user.email']"
+            :projectionFields="['user.name', 'user.status', 'user.email']"
+            :sortFields="['user.name', 'user.status', 'user.email']"
+            :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
             :apiFn="{
               getAll: Api.getStudents,
             }"
             :read="read && app?.rolesPermissions?.students?.read"
             :write="false"
-          ></ApiPage>
+          ></ApiTableServer>
         </v-card-text>
 
         <v-card-actions>
@@ -130,7 +133,7 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
 import ConfirmDialog from './confirm.dialog.vue';
-import ApiPage from './api.page.vue';
+import ApiTableServer from './api.table.server.vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
@@ -154,7 +157,6 @@ const toDeleteID = ref(null);
 const addStudentDialog = ref(false);
 const studentsItems = ref([]);
 const selectedStudents = ref([]);
-const studentsFilter = ref('');
 
 const snackbar = ref(false);
 const snackbarText = ref('');
@@ -292,18 +294,14 @@ async function del(itemID) {
  * open add students
  */
 async function openAddStudents() {
-  studentsFilter.value = '';
-  addStudentDialog.value = true;
-  // fetch first page
-  // await fetchStudents({ page: 1, itemsPerPage: 25 });
-
   const existingIds = new Set((groupStudents.value || []).map((s) => s.id));
   selectedStudents.value = studentsItems.value.filter((s) => existingIds.has(s.id)).map((s) => s.id);
+  addStudentDialog.value = true;
 }
 
 function closeAddStudents() {
-  studentsFilter.value = '';
   addStudentDialog.value = false;
+  selectedStudents.value = [];
 }
 
 /**
