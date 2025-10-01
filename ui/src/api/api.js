@@ -147,7 +147,7 @@ const Api = {
   // Groups API
   getGroups: (params) => instance.get(`/groups?${params}`),
   getGroup: (id) => instance.get(`/groups/${id}`),
-  createGroup: (data) => instance.post(`/groups`, data),
+  createGroup: (data) => instance.post(`/groups`, { ...data, students: data.students || [] }),
   updateGroup: (id, data) => instance.put(`/groups/${id}`, data),
   deleteGroup: (id) => instance.delete(`/groups/${id}`),
   updateGroupStudents: (id, newIds, removeIds) =>

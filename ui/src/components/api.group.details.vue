@@ -106,54 +106,18 @@
         <v-card-title>{{ group.name }}</v-card-title>
 
         <v-card-text>
-          <v-data-table-server
-            :headers="studentsHeaders"
-            :items="studentsItems"
-            :items-length="totalStudentsItems"
-            :loading="studentsLoading"
-            :search="studentsFilter"
-            :no-data-text="nodatatextStudents"
-            v-model="selectedStudents"
-            item-key="id"
-            show-select
-            @update:options="fetchStudents"
-          >
-            <!-- 
-                top of the table, title + add + filter 
-            -->
-            <template v-slot:top>
-              <v-toolbar flat>
-                <v-card-title class="d-flex justify-space-between">
-                  {{ $t('students') }}
-                </v-card-title>
-
-                <v-toolbar-title> </v-toolbar-title>
-
-                <v-text-field
-                  v-model="studentsFilter"
-                  :label="t('filter')"
-                  class="me-2"
-                  rounded="lg"
-                  prepend-inner-icon="mdi-magnify"
-                  variant="outlined"
-                  hide-details
-                  single-line
-                  dense
-                ></v-text-field>
-              </v-toolbar>
-            </template>
-
-            <!-- 
-                loading
-            -->
-            <template v-slot:studentsLoading>
-              <v-skeleton-loader type="table-row@1"></v-skeleton-loader>
-            </template>
-
-            <!-- <template #item.selected="{ item }">
-              <v-checkbox v-model="selectedStudents" :value="item.id" hide-details></v-checkbox>
-            </template> -->
-          </v-data-table-server>
+          <ApiTableServer
+            title="students"
+            :fields="['user.name', 'user.status', 'user.email']"
+            :projectionFields="['user.name', 'user.status', 'user.email']"
+            :sortFields="['user.name', 'user.status', 'user.email']"
+            :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
+            :apiFn="{
+              getAll: Api.getStudents,
+            }"
+            :read="read && app?.rolesPermissions?.students?.read"
+            :write="false"
+          ></ApiTableServer>
         </v-card-text>
 
         <v-card-actions>
@@ -169,6 +133,7 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
 import ConfirmDialog from './confirm.dialog.vue';
+import ApiTableServer from './api.table.server.vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
@@ -191,11 +156,7 @@ const toDeleteID = ref(null);
 
 const addStudentDialog = ref(false);
 const studentsItems = ref([]);
-const totalStudentsItems = ref(0);
 const selectedStudents = ref([]);
-const studentsLoading = ref(false);
-const studentsFilter = ref('');
-const nodatatextStudents = ref('');
 
 const snackbar = ref(false);
 const snackbarText = ref('');
@@ -330,34 +291,17 @@ async function del(itemID) {
 }
 
 /**
- * student headers
- */
-const studentsHeaders = computed(() => {
-  const h = [
-    { title: '', value: 'selected', sortable: false },
-    { title: t('name'), key: 'user.name' },
-    { title: t('email'), key: 'user.email' },
-  ];
-
-  return h;
-});
-
-/**
  * open add students
  */
 async function openAddStudents() {
-  studentsFilter.value = '';
-  addStudentDialog.value = true;
-  // fetch first page
-  await fetchStudents({ page: 1, itemsPerPage: 25 });
-
   const existingIds = new Set((groupStudents.value || []).map((s) => s.id));
   selectedStudents.value = studentsItems.value.filter((s) => existingIds.has(s.id)).map((s) => s.id);
+  addStudentDialog.value = true;
 }
 
 function closeAddStudents() {
-  studentsFilter.value = '';
   addStudentDialog.value = false;
+  selectedStudents.value = [];
 }
 
 /**
@@ -395,57 +339,6 @@ async function confirmAddStudents() {
       e?.response?.data?.message || t('groups.delete.student.error') || 'Error deleting student from group';
     snackbarColor.value = 'error';
     snackbar.value = true;
-  }
-}
-
-/**
- * fetch students for selector (server-side pagination/search)
- */
-async function fetchStudents({ page, itemsPerPage, sortBy } = {}) {
-  let timeoutID = setTimeout(() => {
-    studentsLoading.value = true;
-  }, 300); // Show loader if it takes more than 300ms
-
-  try {
-    const start = (page - 1) * itemsPerPage;
-    let params = {
-      skip: start,
-      limit: itemsPerPage,
-      projection: 'id,user.name,user.email',
-      sort: 'user.name',
-    };
-
-    if (studentsFilter.value) {
-      params = {
-        ...params,
-        'user.name,user.email': `/${studentsFilter.value}/i`,
-      };
-    }
-
-    if (sortBy?.length) {
-      params.sort = '';
-      sortBy.forEach((s) => {
-        params.sort += `${s.order === 'desc' ? `-${s.key}` : s.key},`;
-      });
-      params.sort = params.sort.slice(0, -1);
-    }
-
-    const response = await Api.getStudents(new URLSearchParams(params).toString());
-    totalStudentsItems.value = response.data?.meta?.count || 0;
-    studentsItems.value = response.data?.data || [];
-  } catch (e) {
-    console.error('Error fetching students page', e);
-
-    nodatatextStudents.value = e.toString();
-    studentsItems.value = [];
-    totalStudentsItems.value = 0;
-
-    snackbarText.value = t('students.fetch.error') || 'Error fetching students';
-    snackbarColor.value = 'error';
-    snackbar.value = true;
-  } finally {
-    clearTimeout(timeoutID);
-    studentsLoading.value = false;
   }
 }
 </script>
