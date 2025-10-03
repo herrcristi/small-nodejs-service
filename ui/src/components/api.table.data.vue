@@ -3,17 +3,19 @@
     <!-- 
           table
     -->
-    <v-data-table-server
+    <v-data-table
       :headers="headers"
       :items="items"
       :items-length="totalItems"
       :loading="loading"
       :search="filter"
+      :custom-filter="customFilter"
       :no-data-text="nodatatext"
-      @update:options="fetchAll"
       item-key="id"
       class="elevation-1"
       striped="even"
+      density="compact"
+      hide-default-header
       items-per-page="50"
     >
       <!-- 
@@ -32,6 +34,7 @@
             rounded="lg"
             text=""
             border
+            small
             @click="openAdd"
             v-if="props.write && props.apiFn?.create"
           ></v-btn>
@@ -48,6 +51,7 @@
             variant="outlined"
             hide-details
             single-line
+            dense
           ></v-text-field>
         </v-toolbar>
       </template>
@@ -57,14 +61,6 @@
       -->
       <template v-slot:loading>
         <v-skeleton-loader type="table-row@1"></v-skeleton-loader>
-      </template>
-
-      <!-- details column (icon) -->
-      <template v-slot:item.details="{ item }" v-if="props.details">
-        <v-btn icon small @click.stop="openDetails(item.id)" :title="$t('details')">
-          <v-icon color="primary" class="mr-2" size="small">mdi-information-outline</v-icon>
-          <!-- <v-icon color="primary">mdi-chevron-right</v-icon> -->
-        </v-btn>
       </template>
 
       <!-- 
@@ -136,7 +132,7 @@
           >mdi-delete</v-icon
         >
       </template>
-    </v-data-table-server>
+    </v-data-table>
 
     <!-- Confirm delete dialog -->
     <ConfirmDialog
@@ -159,7 +155,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, watch } from 'vue';
 import ConfirmDialog from './confirm.dialog.vue';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
@@ -169,22 +165,21 @@ const { t } = useI18n();
  */
 const props = defineProps({
   title: { type: [String], default: null },
+  items: { type: Array, default: [] },
   fields: { type: Array, default: [] },
   sortFields: { type: Array, default: [] },
-  projectionFields: { type: Array, default: null },
   filterFields: { type: Array, default: null },
 
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
   details: { type: [Boolean, Number], default: null },
 
-  apiFn: { type: Object, default: {} }, // getall, delete
+  apiFn: { type: Object, default: {} }, // create:0/1, edit:0/1, delete: fn
 });
 
 /**
- * table server
+ * table data
  */
-const items = ref([]);
 const totalItems = ref(0);
 const filter = ref('');
 const loading = ref(true);
@@ -195,7 +190,6 @@ const nodatatext = ref('');
  */
 const confirmDeleteDialog = ref(false);
 const toDeleteID = ref(null);
-const lastRequestParams = ref({});
 
 /**
  * snackbar
@@ -207,7 +201,20 @@ const snackbarColor = ref('');
 /**
  * emit
  */
-const emit = defineEmits(['addItem', 'editItem', 'deleteItem', 'detailsItem']); // TODO on more info
+const emit = defineEmits(['addItem', 'editItem', 'deleteItem', 'detailsItem']);
+
+/**
+ * monitor items
+ */
+watch(
+  () => props.items,
+  (value) => {
+    if (value) {
+      totalItems.value = value.length;
+    }
+  },
+  { immediate: true }
+);
 
 /**
  * fields titles
@@ -316,62 +323,21 @@ function getSeverityColor(severity) {
 }
 
 /**
- * get all
+ * custom filter
  */
-async function fetchAll({ page = 1, itemsPerPage = 50, sortBy = [] } = {}) {
-  lastRequestParams.value = { page, itemsPerPage, sortBy };
-
-  let timeoutID = setTimeout(() => {
-    loading.value = true;
-  }, 300); // Show loader if it takes more than 300ms
-
-  try {
-    const start = (page - 1) * itemsPerPage;
-    let params = {
-      skip: start,
-      limit: itemsPerPage,
-    };
-
-    // projection
-    if (props.projectionFields) {
-      params.projection = `id,_lang_en,` + props.projectionFields;
-    }
-
-    // filtering
-    if (filter.value && Array.isArray(props.filterFields)) {
-      params['' + props.filterFields] = `/${filter.value}/i`;
-    }
-
-    // sorting
-    if (sortBy.length) {
-      params.sort = '';
-      sortBy.forEach((s) => {
-        params.sort += `${s.order === 'desc' ? `-${s.key}` : s.key},`;
-      });
-      params.sort = params.sort.slice(0, -1);
-    }
-
-    // call
-    const response = await props.apiFn.getAll(new URLSearchParams(params).toString());
-
-    // response
-    totalItems.value = response.data?.meta?.count || 0;
-    items.value = response.data?.data || [];
-    nodatatext.value = '';
-  } catch (e) {
-    console.error('Error fetching all', e);
-
-    nodatatext.value = e.toString();
-    totalItems.value = 0;
-    items.value = [];
-
-    snackbarText.value = (t('fetch.error') || 'Error fetching') + ' ' + e.toString();
-    snackbarColor.value = 'error';
-    snackbar.value = true;
-  } finally {
-    clearTimeout(timeoutID);
-    loading.value = false;
+function customFilter(value, query, item) {
+  let q = query?.toLocaleUpperCase();
+  if (q == null) {
+    return false;
   }
+
+  for (const field of filterFields.value) {
+    let value = item?.raw?.[field]?.toString().toLocaleUpperCase();
+    if (value.indexOf(q) !== -1) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -407,7 +373,8 @@ async function del(itemID) {
 
     emit('deleteItem', toDeleteID.value);
 
-    await fetchAll(lastRequestParams.value);
+    // this should be already done in caller, but to it here again
+    props.items = props.items.filter((item) => item.id !== itemID);
   } catch (e) {
     console.error('Error deleting:', e);
 
@@ -440,30 +407,9 @@ function openEdit(item) {
 }
 
 /**
- * select details
- */
-function openDetails(itemID) {
-  emit('detailsItem', itemID);
-}
-
-/**
  * mounted
  */
 function mounted() {}
-
-/**
- * refresh
- */
-async function refresh() {
-  await fetchAll(lastRequestParams.value);
-}
-
-/**
- * expose
- */
-defineExpose({ refresh });
 </script>
 
-<style scoped>
-/* component styles */
-</style>
+<style scoped></style>
