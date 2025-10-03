@@ -1,158 +1,156 @@
-<template>
-  <v-card v-if="props.read || props.write">
-    <!-- 
+<template v-if="props.read || props.write">
+  <!-- 
           table
     -->
-    <v-data-table
-      :headers="headers"
-      :items="props.items"
-      :items-length="totalItems"
-      :loading="props.loading"
-      :search="filter"
-      :custom-filter="customFilter"
-      :no-data-text="props.nodatatext"
-      item-key="id"
-      class="elevation-1"
-      striped="even"
-      density="compact"
-      hide-default-header
-      items-per-page="50"
-    >
-      <!-- 
+  <v-data-table
+    :headers="headers"
+    :items="props.items"
+    :items-length="totalItems"
+    :loading="props.loading"
+    :search="filter"
+    :custom-filter="customFilter"
+    :no-data-text="props.nodatatext"
+    item-key="id"
+    class="elevation-1"
+    striped="even"
+    density="compact"
+    hide-default-header
+    items-per-page="50"
+  >
+    <!-- 
           top of the table, title + add + filter 
       -->
-      <template v-slot:top>
-        <v-toolbar flat>
-          <v-card-title class="d-flex justify-space-between">
-            {{ $t(props.title) }}
-          </v-card-title>
+    <template v-slot:top>
+      <v-toolbar flat>
+        <v-card-title class="d-flex justify-space-between">
+          {{ $t(props.title) }}
+        </v-card-title>
 
-          <v-btn
-            class="me-2 left"
-            color="primary"
-            prepend-icon="mdi-plus"
-            rounded="lg"
-            text=""
-            border
-            small
-            @click="openAdd"
-            v-if="props.write && props.apiFn?.create"
-          ></v-btn>
-
-          <v-toolbar-title> </v-toolbar-title>
-
-          <v-text-field
-            v-if="Array.isArray(props.filterFields)"
-            v-model="filter"
-            :label="t('filter')"
-            class="me-2"
-            rounded="lg"
-            prepend-inner-icon="mdi-magnify"
-            variant="outlined"
-            hide-details
-            single-line
-            dense
-            clearable
-          ></v-text-field>
-        </v-toolbar>
-      </template>
-
-      <!-- 
-          loading
-      -->
-      <template v-slot:loading>
-        <v-skeleton-loader type="table-row@1"></v-skeleton-loader>
-      </template>
-
-      <!-- 
-        status 
-        -->
-      <template v-slot:item.status="{ item }">
-        <div class="">
-          <v-chip
-            :color="getStatusColor(item.status)"
-            :text="item._lang_en?.status || item._lang_en?.user?.status || item.status || item.user?.status"
-            size="small"
-            label
-          ></v-chip>
-        </div>
-      </template>
-
-      <!-- 
-        severity 
-      -->
-      <template v-slot:item.severity="{ item }">
-        <div class="">
-          <v-chip
-            :color="getSeverityColor(item.severity)"
-            :text="item._lang_en?.severity || item.severity"
-            class="text-uppercase"
-            size="small"
-            label
-          ></v-chip>
-        </div>
-      </template>
-
-      <!-- 
-        required
-        -->
-      <template v-slot:item.required="{ item }">
-        <div class="">
-          <v-chip
-            :color="getRequiredColor(item.required)"
-            :text="item._lang_en?.required || item.required"
-            size="small"
-            label
-          ></v-chip>
-        </div>
-      </template>
-
-      <!-- 
-        message
-        -->
-      <template v-slot:item.message="{ item }">
-        <div class="">
-          {{ item._lang_en?.message || item.message }}
-        </div>
-      </template>
-
-      <!-- 
-          actions
-      -->
-      <template #item.actions="{ item }" v-if="props.write">
-        <v-icon v-if="props.apiFn?.update" small class="mr-2" @click="openEdit(item)" :title="$t('edit')" size="small"
-          >mdi-pencil</v-icon
-        >
-        <v-icon
-          v-if="props.apiFn?.delete"
+        <v-btn
+          class="me-2 left"
+          color="primary"
+          prepend-icon="mdi-plus"
+          rounded="lg"
+          text=""
+          border
           small
-          color="mr-2"
-          @click="confirmDelete(item.id)"
-          :title="$t('delete')"
-          size="small"
-          >mdi-delete</v-icon
-        >
-      </template>
-    </v-data-table>
+          @click="openAdd"
+          v-if="props.write && props.apiFn?.add"
+        ></v-btn>
 
-    <!-- Confirm delete dialog -->
-    <ConfirmDialog
-      :model-value="confirmDeleteDialog"
-      @update:modelValue="confirmDeleteDialog = $event"
-      @confirm="doDelete"
-      @cancel="cancelDelete"
-      title-key="delete"
-      message-key="delete_confirm"
-      ok-key="delete"
-      cancel-key="cancel"
-      :args="{}"
-    />
+        <v-toolbar-title> </v-toolbar-title>
+
+        <v-text-field
+          v-if="Array.isArray(props.filterFields)"
+          v-model="filter"
+          :label="t('filter')"
+          class="me-2"
+          rounded="lg"
+          prepend-inner-icon="mdi-magnify"
+          variant="outlined"
+          hide-details
+          single-line
+          dense
+          clearable
+        ></v-text-field>
+      </v-toolbar>
+    </template>
 
     <!-- 
+          loading
+      -->
+    <template v-slot:loading>
+      <v-skeleton-loader type="table-row@1"></v-skeleton-loader>
+    </template>
+
+    <!-- 
+        status 
+        -->
+    <template v-slot:item.status="{ item }">
+      <div class="">
+        <v-chip
+          :color="getStatusColor(item.status)"
+          :text="item._lang_en?.status || item._lang_en?.user?.status || item.status || item.user?.status"
+          size="small"
+          label
+        ></v-chip>
+      </div>
+    </template>
+
+    <!-- 
+        severity 
+      -->
+    <template v-slot:item.severity="{ item }">
+      <div class="">
+        <v-chip
+          :color="getSeverityColor(item.severity)"
+          :text="item._lang_en?.severity || item.severity"
+          class="text-uppercase"
+          size="small"
+          label
+        ></v-chip>
+      </div>
+    </template>
+
+    <!-- 
+        required
+        -->
+    <template v-slot:item.required="{ item }">
+      <div class="">
+        <v-chip
+          :color="getRequiredColor(item.required)"
+          :text="item._lang_en?.required || item.required"
+          size="small"
+          label
+        ></v-chip>
+      </div>
+    </template>
+
+    <!-- 
+        message
+        -->
+    <template v-slot:item.message="{ item }">
+      <div class="">
+        {{ item._lang_en?.message || item.message }}
+      </div>
+    </template>
+
+    <!-- 
+          actions
+      -->
+    <template #item.actions="{ item }" v-if="props.write">
+      <v-icon v-if="props.apiFn?.update" small class="mr-2" @click="openEdit(item)" :title="$t('edit')" size="small"
+        >mdi-pencil</v-icon
+      >
+      <v-icon
+        v-if="props.apiFn?.delete"
+        small
+        color="mr-2"
+        @click="confirmDelete(item.id)"
+        :title="$t('delete')"
+        size="small"
+        >mdi-delete</v-icon
+      >
+    </template>
+  </v-data-table>
+
+  <!-- Confirm delete dialog -->
+  <ConfirmDialog
+    :model-value="confirmDeleteDialog"
+    @update:modelValue="confirmDeleteDialog = $event"
+    @confirm="doDelete"
+    @cancel="cancelDelete"
+    title-key="delete"
+    message-key="delete_confirm"
+    ok-key="delete"
+    cancel-key="cancel"
+    :args="{}"
+  />
+
+  <!-- 
       snackbar for notifications
     -->
-    <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ snackbarText }}</v-snackbar>
-  </v-card>
+  <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ snackbarText }}</v-snackbar>
 </template>
 
 <script setup>
@@ -177,9 +175,8 @@ const props = defineProps({
 
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
-  details: { type: [Boolean, Number], default: null },
 
-  apiFn: { type: Object, default: {} }, // create:0/1, edit:0/1, delete: fn
+  apiFn: { type: Object, default: {} }, // add:0/1, update:0/1, delete: fn
 });
 
 /**
@@ -204,7 +201,7 @@ const snackbarColor = ref('');
 /**
  * emit
  */
-const emit = defineEmits(['addItem', 'editItem', 'deleteItem', 'detailsItem']);
+const emit = defineEmits(['addItem', 'editItem', 'deleteItem']);
 
 /**
  * monitor items
@@ -252,11 +249,6 @@ const fieldsTitles = ref({
  */
 const headers = computed(() => {
   const h = [];
-
-  // details
-  if (props.details) {
-    h.push({ title: '', key: 'details', value: 'details', sortable: false });
-  }
 
   const sortFildsSet = new Set(props.sortFields);
 
@@ -384,10 +376,10 @@ async function del(itemID) {
     snackbarColor.value = 'success';
     snackbar.value = true;
 
-    emit('deleteItem', toDeleteID.value);
-
-    // this should be already done in caller, but to it here again
+    // this should be already done in caller, but do it here again
     props.items = props.items.filter((item) => item.id !== itemID);
+
+    emit('deleteItem', toDeleteID.value);
   } catch (e) {
     console.error('Error deleting:', e);
 
