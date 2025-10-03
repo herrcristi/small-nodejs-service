@@ -2,20 +2,22 @@
   <!-- 
           table
     -->
-  <v-data-table-server
+  <v-data-table
     :headers="headers"
-    :items="items"
+    :items="props.items"
     :items-length="totalItems"
-    :loading="loading"
+    :loading="props.loading"
     :search="filter"
-    :no-data-text="nodatatext"
-    @update:options="fetchAll"
+    :custom-filter="customFilter"
+    :no-data-text="props.nodatatext"
     item-key="id"
     v-model="selectedItems"
     :show-select="props.select"
     @update:model="emit('update:modelValue', $event)"
     class="elevation-1"
     striped="even"
+    density="compact"
+    hide-default-header
     items-per-page="50"
   >
     <!-- 
@@ -34,8 +36,9 @@
           rounded="lg"
           text=""
           border
+          small
           @click="openAdd"
-          v-if="props.write && props.apiFn?.create"
+          v-if="props.write && props.apiFn?.add"
         ></v-btn>
 
         <v-toolbar-title> </v-toolbar-title>
@@ -50,6 +53,7 @@
           variant="outlined"
           hide-details
           single-line
+          dense
           clearable
         ></v-text-field>
       </v-toolbar>
@@ -60,14 +64,6 @@
       -->
     <template v-slot:loading>
       <v-skeleton-loader type="table-row@1"></v-skeleton-loader>
-    </template>
-
-    <!-- details column (icon) -->
-    <template v-slot:item.details="{ item }" v-if="props.details">
-      <v-btn icon small @click.stop="openDetails(item.id)" :title="$t('details')">
-        <v-icon color="primary" class="mr-2" size="small">mdi-information-outline</v-icon>
-        <!-- <v-icon color="primary">mdi-chevron-right</v-icon> -->
-      </v-btn>
     </template>
 
     <!-- 
@@ -139,7 +135,7 @@
         >mdi-delete</v-icon
       >
     </template>
-  </v-data-table-server>
+  </v-data-table>
 
   <!-- Confirm delete dialog -->
   <ConfirmDialog
@@ -171,36 +167,33 @@ const { t } = useI18n();
  */
 const props = defineProps({
   title: { type: String, default: null },
+  items: { type: Array, default: [] },
+
   fields: { type: Array, default: [] },
   sortFields: { type: Array, default: [] },
-  projectionFields: { type: Array, default: null },
-  filterFields: { type: Array, default: null },
+  filterFields: { type: Array, default: [] },
+
+  loading: { type: [Boolean, Number], default: true },
+  nodatatext: { type: String, default: '' },
 
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
-  details: { type: [Boolean, Number], default: null },
-
   select: { type: [Boolean], default: null },
   modelValue: { type: Array, default: [] },
 
-  apiFn: { type: Object, default: {} }, // getAll, delete
+  apiFn: { type: Object, default: {} }, // add:0/1, update:0/1, delete: fn
 });
 
 /**
- * table server
+ * table data
  */
-const items = ref([]);
-const totalItems = ref(0);
 const filter = ref('');
-const loading = ref(true);
-const nodatatext = ref('');
 
 /**
  * delete
  */
 const confirmDeleteDialog = ref(false);
 const toDeleteID = ref(null);
-const lastRequestParams = ref({});
 
 /**
  * snackbar
@@ -212,7 +205,7 @@ const snackbarColor = ref('');
 /**
  * emit
  */
-const emit = defineEmits(['addItem', 'editItem', 'deleteItem', 'detailsItem', 'update:modelValue']); // TODO on more info
+const emit = defineEmits(['addItem', 'editItem', 'deleteItem', 'update:modelValue']);
 
 /**
  * model-value selectedItems
@@ -220,6 +213,13 @@ const emit = defineEmits(['addItem', 'editItem', 'deleteItem', 'detailsItem', 'u
 const selectedItems = computed({
   get: () => props.modelValue,
   set: (v) => emit('update:modelValue', v),
+});
+
+/**
+ * totalItems
+ */
+const totalItems = computed({
+  get: () => props.items.length,
 });
 
 /**
@@ -255,11 +255,6 @@ const fieldsTitles = ref({
  */
 const headers = computed(() => {
   const h = [];
-
-  // details
-  if (props.details) {
-    h.push({ title: '', key: 'details', value: 'details', sortable: false });
-  }
 
   const sortFildsSet = new Set(props.sortFields);
 
@@ -329,62 +324,31 @@ function getSeverityColor(severity) {
 }
 
 /**
- * get all
+ * custom filter
  */
-async function fetchAll({ page = 1, itemsPerPage = 50, sortBy = [] } = {}) {
-  lastRequestParams.value = { page, itemsPerPage, sortBy };
-
-  let timeoutID = setTimeout(() => {
-    loading.value = true;
-  }, 300); // Show loader if it takes more than 300ms
-
-  try {
-    const start = (page - 1) * itemsPerPage;
-    let params = {
-      skip: start,
-      limit: itemsPerPage,
-    };
-
-    // projection
-    if (props.projectionFields) {
-      params.projection = `id,_lang_en,` + props.projectionFields;
-    }
-
-    // filtering
-    if (filter.value && Array.isArray(props.filterFields)) {
-      params['' + props.filterFields] = `/${filter.value}/i`;
-    }
-
-    // sorting
-    if (sortBy.length) {
-      params.sort = '';
-      sortBy.forEach((s) => {
-        params.sort += `${s.order === 'desc' ? `-${s.key}` : s.key},`;
-      });
-      params.sort = params.sort.slice(0, -1);
-    }
-
-    // call
-    const response = await props.apiFn.getAll(new URLSearchParams(params).toString());
-
-    // response
-    totalItems.value = response.data?.meta?.count || 0;
-    items.value = response.data?.data || [];
-    nodatatext.value = '';
-  } catch (e) {
-    console.error('Error fetching all', e);
-
-    nodatatext.value = e.toString();
-    totalItems.value = 0;
-    items.value = [];
-
-    snackbarText.value = (t('fetch.error') || 'Error fetching') + ' ' + e.toString();
-    snackbarColor.value = 'error';
-    snackbar.value = true;
-  } finally {
-    clearTimeout(timeoutID);
-    loading.value = false;
+function customFilter(value, query, item) {
+  let q = query?.toLocaleUpperCase();
+  if (q == null) {
+    return false;
   }
+
+  for (const field of props.filterFields) {
+    let value = item?.raw;
+
+    const subFields = field.split('.');
+    for (const subField of subFields) {
+      if (value == null) {
+        break;
+      }
+      value = value[subField];
+    }
+
+    value = value?.toString().toLocaleUpperCase();
+    if (value && value.indexOf(q) !== -1) {
+      return true;
+    }
+  }
+  return false;
 }
 
 /**
@@ -419,8 +383,6 @@ async function del(itemID) {
     snackbar.value = true;
 
     emit('deleteItem', toDeleteID.value);
-
-    await fetchAll(lastRequestParams.value);
   } catch (e) {
     console.error('Error deleting:', e);
 
@@ -453,30 +415,21 @@ function openEdit(item) {
 }
 
 /**
- * select details
- */
-function openDetails(itemID) {
-  emit('detailsItem', itemID);
-}
-
-/**
  * mounted
  */
 function mounted() {}
 
 /**
- * refresh
+ * clear
  */
-async function refresh() {
-  await fetchAll(lastRequestParams.value);
+async function clear() {
+  filter.value = '';
 }
 
 /**
  * expose
  */
-defineExpose({ refresh });
+defineExpose({ clear });
 </script>
 
-<style scoped>
-/* component styles */
-</style>
+<style scoped></style>
