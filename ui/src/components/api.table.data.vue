@@ -24,7 +24,7 @@
           top of the table, title + add + filter 
       -->
     <template v-slot:top>
-      <v-toolbar flat>
+      <v-toolbar flat density="compact">
         <v-card-title class="d-flex justify-space-between">
           {{ $t(props.title) }}
         </v-card-title>
@@ -55,6 +55,7 @@
           single-line
           dense
           clearable
+          density="compact"
         ></v-text-field>
       </v-toolbar>
     </template>
@@ -173,7 +174,7 @@ const props = defineProps({
   sortFields: { type: Array, default: [] },
   filterFields: { type: Array, default: [] },
 
-  loading: { type: [Boolean, Number], default: true },
+  loading: { type: [Boolean, Number], default: false },
   nodatatext: { type: String, default: '' },
 
   read: { type: [Boolean, Number], default: null },
@@ -248,6 +249,7 @@ const fieldsTitles = ref({
   createdTimestamp: 'timestamp',
   class: 'class',
   class: 'class.name',
+  details: 'details',
 });
 
 /**
@@ -273,8 +275,27 @@ const headers = computed(() => {
 
   // actions
   if (props.write && (props.apiFn.update || props.apiFn.delete)) {
-    h.push({ title: t('actions'), value: 'actions', sortable: false });
+    h.push({ width: 100, title: t('actions'), value: 'actions', sortable: false });
   }
+
+  // x-small width
+  const xsmallWidthFields = new Set(['status', 'actions', 'details']);
+  for (const hitem of h) {
+    if (
+      xsmallWidthFields.has(fieldsTitles.value[hitem.key]) ||
+      xsmallWidthFields.has(fieldsTitles.value[hitem.value])
+    ) {
+      hitem.width = 50;
+    }
+  }
+  // small width
+  const smallWidthFields = new Set(['credits', 'required', 'severity']);
+  for (const hitem of h) {
+    if (smallWidthFields.has(fieldsTitles.value[hitem.key]) || smallWidthFields.has(fieldsTitles.value[hitem.value])) {
+      hitem.width = 100;
+    }
+  }
+
   return h;
 });
 

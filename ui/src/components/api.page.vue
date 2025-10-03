@@ -17,7 +17,14 @@
       @addItem="openAdd($event)"
       @editItem="openEdit($event)"
       @detailsItem="openDetails($event)"
-    ></ApiTableServer>
+    >
+      <!-- 
+        expose expanded content 
+      -->
+      <template v-slot:expanded-content="{ item, columns }">
+        <slot name="expanded-content" :item="item" :columns="columns"></slot>
+      </template>
+    </ApiTableServer>
 
     <!-- 
           edit dialog
