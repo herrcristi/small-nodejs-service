@@ -14,6 +14,7 @@
     v-model="selectedItems"
     :show-select="props.select"
     @update:model="emit('update:modelValue', $event)"
+    :show-expand="props.expand"
     class="elevation-1"
     striped="even"
     items-per-page="50"
@@ -209,9 +210,9 @@ const props = defineProps({
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
   details: { type: [Boolean, Number], default: null },
-
   select: { type: [Boolean], default: null },
   modelValue: { type: Array, default: [] },
+  expand: { type: [Boolean], default: null },
 
   apiFn: { type: Object, default: {} }, // getAll, delete
 });

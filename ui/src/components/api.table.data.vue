@@ -14,6 +14,7 @@
     v-model="selectedItems"
     :show-select="props.select"
     @update:model="emit('update:modelValue', $event)"
+    :show-expand="props.expand"
     class="elevation-1"
     striped="even"
     density="compact"
@@ -120,6 +121,36 @@
     </template>
 
     <!-- 
+        expand 
+    -->
+    <template v-slot:item.data-table-expand="{ internalItem, isExpanded, toggleExpand }">
+      <v-btn
+        :append-icon="isExpanded(internalItem) ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+        :text="isExpanded(internalItem) ? t('collapse') : t('more.info')"
+        class="text-none"
+        color="medium-emphasis"
+        size="small"
+        variant="text"
+        width="105"
+        border
+        slim
+        @click="toggleExpand(internalItem)"
+      ></v-btn>
+    </template>
+
+    <template v-slot:expanded-row="{ columns, item }">
+      <slot name="expanded-content" :item="item" :columns="columns">
+        <tr>
+          <td :colspan="columns.length" class="py-2">
+            <v-sheet rounded="lg" border>
+              <!-- Default content if no slot is provided -->
+            </v-sheet>
+          </td>
+        </tr>
+      </slot>
+    </template>
+
+    <!-- 
           actions
       -->
     <template #item.actions="{ item }" v-if="props.write">
@@ -181,6 +212,7 @@ const props = defineProps({
   write: { type: [Boolean, Number], default: null },
   select: { type: [Boolean], default: null },
   modelValue: { type: Array, default: [] },
+  expand: { type: [Boolean], default: null },
 
   apiFn: { type: Object, default: {} }, // add:0/1, update:0/1, delete: fn
 });

@@ -14,6 +14,7 @@
       :read="read"
       :write="write"
       :details="props.details"
+      :expand="props.expand"
       @addItem="openAdd($event)"
       @editItem="openEdit($event)"
       @detailsItem="openDetails($event)"
@@ -61,6 +62,8 @@ const props = defineProps({
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
   details: { type: [Boolean, Number], default: null },
+  expand: { type: [Boolean], default: null },
+
   apiFn: { type: Object, default: {} }, // getall, add, delete, update
 });
 
