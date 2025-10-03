@@ -187,7 +187,6 @@ const props = defineProps({
 /**
  * table data
  */
-const totalItems = ref(0);
 const filter = ref('');
 
 /**
@@ -217,17 +216,11 @@ const selectedItems = computed({
 });
 
 /**
- * monitor items
+ * totalItems
  */
-watch(
-  () => props.items,
-  (value) => {
-    if (value) {
-      totalItems.value = value.length;
-    }
-  },
-  { immediate: true }
-);
+const totalItems = computed({
+  get: () => props.items.length,
+});
 
 /**
  * fields titles
@@ -388,9 +381,6 @@ async function del(itemID) {
     snackbarText.value = t('delete.success') || 'Deleted';
     snackbarColor.value = 'success';
     snackbar.value = true;
-
-    // this should be already done in caller, but do it here again
-    props.items = props.items.filter((item) => item.id !== itemID);
 
     emit('deleteItem', toDeleteID.value);
   } catch (e) {
