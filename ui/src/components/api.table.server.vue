@@ -48,6 +48,7 @@
             variant="outlined"
             hide-details
             single-line
+            clearable
           ></v-text-field>
         </v-toolbar>
       </template>
@@ -168,7 +169,7 @@ const { t } = useI18n();
  * state
  */
 const props = defineProps({
-  title: { type: [String], default: null },
+  title: { type: String, default: null },
   fields: { type: Array, default: [] },
   sortFields: { type: Array, default: [] },
   projectionFields: { type: Array, default: null },

@@ -1,7 +1,7 @@
 <template>
   <v-card v-if="read || write">
     <!-- 
-        dialog title     
+        dialog title
     -->
     <v-card-title class="d-flex justify-space-between">
       <div>{{ group.name || t('groups') }}</div>
@@ -13,6 +13,7 @@
           group students 
       -->
       <ApiTableData
+        ref="tableDataStudents"
         title="students"
         :items="groupStudents"
         :fields="['user.name', 'user.status', 'user.email']"
@@ -25,6 +26,8 @@
         }"
         :read="read && app?.rolesPermissions?.students?.read"
         :write="false"
+        :loading="loading"
+        :nodatatext="nodatatext"
         @addItem="openAddStudents($event)"
       ></ApiTableData>
     </v-card-text>
@@ -88,6 +91,7 @@ const group = reactive({});
 /**
  * group students
  */
+const tableDataStudents = ref();
 const groupStudents = ref([]);
 
 const filter = ref('');
@@ -153,7 +157,7 @@ async function fetchGroup(id) {
  * close
  */
 function closeGroup() {
-  filter.value = '';
+  tableDataStudents.value.clear();
   emit('close');
 }
 

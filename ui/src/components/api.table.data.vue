@@ -5,12 +5,12 @@
     -->
     <v-data-table
       :headers="headers"
-      :items="items"
+      :items="props.items"
       :items-length="totalItems"
-      :loading="loading"
+      :loading="props.loading"
       :search="filter"
       :custom-filter="customFilter"
-      :no-data-text="nodatatext"
+      :no-data-text="props.nodatatext"
       item-key="id"
       class="elevation-1"
       striped="even"
@@ -52,6 +52,7 @@
             hide-details
             single-line
             dense
+            clearable
           ></v-text-field>
         </v-toolbar>
       </template>
@@ -164,11 +165,15 @@ const { t } = useI18n();
  * state
  */
 const props = defineProps({
-  title: { type: [String], default: null },
+  title: { type: String, default: null },
   items: { type: Array, default: [] },
+
   fields: { type: Array, default: [] },
   sortFields: { type: Array, default: [] },
-  filterFields: { type: Array, default: null },
+  filterFields: { type: Array, default: [] },
+
+  loading: { type: [Boolean, Number], default: true },
+  nodatatext: { type: String, default: '' },
 
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
@@ -182,8 +187,6 @@ const props = defineProps({
  */
 const totalItems = ref(0);
 const filter = ref('');
-const loading = ref(true);
-const nodatatext = ref('');
 
 /**
  * delete
@@ -331,9 +334,19 @@ function customFilter(value, query, item) {
     return false;
   }
 
-  for (const field of filterFields.value) {
-    let value = item?.raw?.[field]?.toString().toLocaleUpperCase();
-    if (value.indexOf(q) !== -1) {
+  for (const field of props.filterFields) {
+    let value = item?.raw;
+
+    const subFields = field.split('.');
+    for (const subField of subFields) {
+      if (value == null) {
+        break;
+      }
+      value = value[subField];
+    }
+
+    value = value?.toString().toLocaleUpperCase();
+    if (value && value.indexOf(q) !== -1) {
       return true;
     }
   }
@@ -410,6 +423,18 @@ function openEdit(item) {
  * mounted
  */
 function mounted() {}
+
+/**
+ * clear
+ */
+async function clear() {
+  filter.value = '';
+}
+
+/**
+ * expose
+ */
+defineExpose({ clear });
 </script>
 
 <style scoped></style>
