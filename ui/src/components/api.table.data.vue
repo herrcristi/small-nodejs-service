@@ -11,6 +11,9 @@
     :custom-filter="customFilter"
     :no-data-text="props.nodatatext"
     item-key="id"
+    v-model="selectedItems"
+    :show-select="props.select"
+    @update:model="emit('update:modelValue', $event)"
     class="elevation-1"
     striped="even"
     density="compact"
@@ -175,6 +178,8 @@ const props = defineProps({
 
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
+  select: { type: [Boolean], default: null },
+  modelValue: { type: Array, default: [] },
 
   apiFn: { type: Object, default: {} }, // add:0/1, update:0/1, delete: fn
 });
@@ -201,7 +206,15 @@ const snackbarColor = ref('');
 /**
  * emit
  */
-const emit = defineEmits(['addItem', 'editItem', 'deleteItem']);
+const emit = defineEmits(['addItem', 'editItem', 'deleteItem', 'update:modelValue']);
+
+/**
+ * model-value selectedItems
+ */
+const selectedItems = computed({
+  get: () => props.modelValue,
+  set: (v) => emit('update:modelValue', v),
+});
 
 /**
  * monitor items

@@ -27,7 +27,7 @@
           deleteField: deleteGroupStudent,
         }"
         :read="read && app?.rolesPermissions?.students?.read"
-        :write="false"
+        :write="write && app?.rolesPermissions?.students?.write"
         :loading="loading"
         :nodatatext="nodatatext"
       ></ApiFieldDetails>
@@ -141,7 +141,7 @@ async function updateGroupStudents(newIDs, removeIDs) {
   await Api.updateGroupStudents(props.groupID, newIDs, removeIDs);
 
   // refresh
-  await fetchGroup(groupID);
+  await fetchGroup(props.groupID);
 }
 </script>
 

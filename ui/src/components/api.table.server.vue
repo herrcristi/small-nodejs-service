@@ -11,6 +11,9 @@
     :no-data-text="nodatatext"
     @update:options="fetchAll"
     item-key="id"
+    v-model="selectedItems"
+    :show-select="props.select"
+    @update:model="emit('update:modelValue', $event)"
     class="elevation-1"
     striped="even"
     items-per-page="50"
@@ -158,7 +161,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue';
+import { ref, reactive, computed, watch } from 'vue';
 import ConfirmDialog from './confirm.dialog.vue';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
@@ -176,6 +179,9 @@ const props = defineProps({
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
   details: { type: [Boolean, Number], default: null },
+
+  select: { type: [Boolean], default: null },
+  modelValue: { type: Array, default: [] },
 
   apiFn: { type: Object, default: {} }, // getAll, delete
 });
@@ -206,7 +212,15 @@ const snackbarColor = ref('');
 /**
  * emit
  */
-const emit = defineEmits(['addItem', 'editItem', 'deleteItem', 'detailsItem']); // TODO on more info
+const emit = defineEmits(['addItem', 'editItem', 'deleteItem', 'detailsItem', 'update:modelValue']); // TODO on more info
+
+/**
+ * model-value selectedItems
+ */
+const selectedItems = computed({
+  get: () => props.modelValue,
+  set: (v) => emit('update:modelValue', v),
+});
 
 /**
  * fields titles

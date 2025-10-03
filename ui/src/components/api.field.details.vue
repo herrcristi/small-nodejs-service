@@ -15,7 +15,7 @@
       delete: deleteField,
     }"
     :read="props.read"
-    :write="false"
+    :write="props.write"
     :loading="props.loading"
     :nodatatext="props.nodatatext"
     @addItem="openAdd"
@@ -28,7 +28,7 @@
     -->
   <v-dialog v-model="addDialog" max-width="900px" v-if="props.write">
     <v-card>
-      <v-card-title>{{ props.titleAdd ? $t(props.titleAdd) : props.title ? $t(props.title) : 'Add' }}</v-card-title>
+      <v-card-title>{{ props.titleAdd || (props.title ? $t(props.title) : 'Add') }}</v-card-title>
 
       <v-card-text>
         <!-- 
@@ -45,6 +45,8 @@
           }"
           :read="props.read"
           :write="false"
+          :select="true"
+          v-model="selectedItems"
         ></ApiTableServer>
       </v-card-text>
 
@@ -55,6 +57,11 @@
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- 
+      snackbar for notifications
+    -->
+  <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ snackbarText }}</v-snackbar>
 </template>
 
 <script setup>
@@ -99,6 +106,13 @@ const tableData = ref();
 const addDialog = ref(false);
 
 const selectedItems = ref([]);
+
+/**
+ * snackbar
+ */
+const snackbar = ref(false);
+const snackbarText = ref('');
+const snackbarColor = ref('');
 
 /**
  * ApiTableData calling deleteField
