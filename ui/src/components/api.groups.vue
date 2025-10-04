@@ -30,7 +30,8 @@
 import { ref, reactive, computed } from 'vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
-import ApiPage from './api.page.vue';
+import ApiPage from './api.base.page.vue';
+import ApiTableData from './api.base.table.data.vue';
 import ApiGroupDetails from './api.group.details.vue';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();

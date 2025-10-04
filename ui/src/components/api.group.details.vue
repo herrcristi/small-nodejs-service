@@ -42,7 +42,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
-import ApiFieldDetails from './api.field.details.vue';
+import ApiFieldDetails from './api.base.field.details.vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';

@@ -66,8 +66,8 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
-import ApiTableServer from './api.table.server.vue';
-import ApiTableData from './api.table.data.vue';
+import ApiTableServer from './api.base.table.server.vue';
+import ApiTableData from './api.base.table.data.vue';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
