@@ -19,9 +19,9 @@
   ></ApiPage>
 
   <v-card v-if="read || write">
-    <!-- Right drawer for details -->
+    <!-- drawer for details -->
     <v-navigation-drawer v-model="detailsOpen" right temporary width="520">
-      <ApiGroupDetails :groupID="selectedGroupID" @close="closeDetails" />
+      <ApiGroupDetails :itemID="selectedItemID" @close="closeDetails" />
     </v-navigation-drawer>
   </v-card>
 </template>
@@ -39,7 +39,7 @@ const { t } = useI18n();
 /**
  * props
  */
-const selectedGroupID = ref(null);
+const selectedItemID = ref(null);
 const detailsOpen = ref(false);
 
 const app = useAppStore();
@@ -50,13 +50,13 @@ const write = app?.rolesPermissions?.groups?.write;
  * details panel state (moved to separate component)
  */
 
-function openDetails(groupID) {
-  selectedGroupID.value = groupID;
+function openDetails(itemID) {
+  selectedItemID.value = itemID;
   detailsOpen.value = true;
 }
 
 function closeDetails() {
-  selectedGroupID.value = null;
+  selectedItemID.value = null;
   detailsOpen.value = false;
 }
 

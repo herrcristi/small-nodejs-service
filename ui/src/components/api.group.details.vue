@@ -1,30 +1,45 @@
 <template>
   <v-card v-if="read || write">
     <!-- 
+        for details 
+    -->
+    <ApiDetails
+      ref="detailsComponent"
+      :itemID="props.itemID"
+      :read="read"
+      :apiFn="{
+        get: Api.getGroup,
+      }"
+      @loading="loading"
+      @nodatatext="nodatatext"
+      @item="onItemDetails($event)"
+    ></ApiDetails>
+
+    <!-- 
         dialog title
     -->
     <v-card-title class="d-flex justify-space-between">
-      <div>{{ group.name || t('groups') }}</div>
-      <v-btn icon small @click="closeGroup"><v-icon>mdi-close</v-icon></v-btn>
+      <div>{{ itemDetails.name || t('details') }}</div>
+      <v-btn icon small @click="closeDialog"><v-icon>mdi-close</v-icon></v-btn>
     </v-card-title>
 
     <v-card-text>
       <!-- 
-          group students 
+          field students 
       -->
       <ApiFieldDetails
-        ref="fieldDetailsStudents"
+        ref="fieldDetailsStudentsComponent"
         title="students"
-        :titleAdd="group.name"
-        :items="groupStudents"
+        :titleAdd="itemDetails.name"
+        :items="fieldStudents"
         :fields="['user.name', 'user.status', 'user.email']"
         :projectionFields="['user.name', 'user.status', 'user.email']"
         :sortFields="['user.name', 'user.status', 'user.email']"
         :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
         :apiFn="{
           getAll: Api.getStudents,
-          updateField: updateGroupStudents,
-          deleteField: deleteGroupStudent,
+          updateField: updateFieldStudents,
+          deleteField: deleteFieldStudent,
         }"
         :read="read && app?.rolesPermissions?.students?.read"
         :write="write && app?.rolesPermissions?.students?.write"
@@ -32,116 +47,83 @@
         :nodatatext="nodatatext"
       ></ApiFieldDetails>
     </v-card-text>
-
-    <!-- 
-      snackbar for notifications
-    -->
-    <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ snackbarText }}</v-snackbar>
   </v-card>
 </template>
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
+import ApiDetails from './api.base.details.vue';
 import ApiFieldDetails from './api.base.field.details.vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
+/**
+ * props
+ */
 const props = defineProps({
-  groupID: { type: [String, Number], default: null },
+  itemID: { type: String, default: null },
 });
-const emit = defineEmits(['close']);
 
-const group = reactive({});
+const detailsComponent = ref();
+const itemDetails = ref({});
 const loading = ref(false);
 const nodatatext = ref('');
-
-const snackbar = ref(false);
-const snackbarText = ref('');
-const snackbarColor = ref('');
 
 const app = useAppStore();
 const read = app?.rolesPermissions?.groups?.read || 0;
 const write = app?.rolesPermissions?.groups?.write || 0;
 
 /**
- * group students
+ * field students
  */
-const fieldDetailsStudents = ref();
-const groupStudents = ref([]);
+const fieldDetailsStudentsComponent = ref();
+const fieldStudents = ref([]);
 
 /**
- * monitor groupID
+ * emit
  */
-watch(
-  () => props.groupID,
-  (id) => {
-    if (id) {
-      fetchGroup(id);
-    }
-  },
-  { immediate: true }
-);
+const emit = defineEmits(['close']);
 
 /**
- * get group details
+ * ApiDetails events after get details
  */
-async function fetchGroup(id) {
-  let timeoutID = setTimeout(() => {
-    loading.value = true;
-  }, 300); // Show loader if it takes more than 300ms
+async function onItemDetails(data) {
+  Object.keys(itemDetails.value).forEach((k) => delete itemDetails[k]);
+  Object.assign(itemDetails.value, data);
 
-  try {
-    const resp = await Api.getGroup(id);
-    const data = resp.data || {};
-    Object.keys(group).forEach((k) => delete group[k]);
-    Object.assign(group, data);
-
-    groupStudents.value = data.students || [];
-  } catch (e) {
-    console.error('Error fetching group details:', e);
-
-    nodatatext.value = e.toString();
-    groupStudents.value = [];
-
-    snackbarText.value = t('group.fetch.error') || 'Error fetching group details';
-    snackbarColor.value = 'error';
-    snackbar.value = true;
-  } finally {
-    clearTimeout(timeoutID);
-    loading.value = false;
-  }
+  fieldStudents.value = itemDetails.value.students || [];
 }
 
 /**
- * close
+ * close details dialog
  */
-function closeGroup() {
-  fieldDetailsStudents.value.clear();
+function closeDialog() {
+  fieldDetailsStudentsComponent.value.clear();
   emit('close');
 }
 
 /**
  * ApiFieldDetails calling deleteField
  */
-async function deleteGroupStudent(studentID) {
+async function deleteFieldStudent(studentID) {
   // if fail will throw error and be catch in ApiFieldDetails
-  await Api.updateGroupStudents(props.groupID, [], [studentID]);
+  await Api.updateGroupStudents(props.itemID, [], [studentID]);
 
-  // avoid server call
-  groupStudents.value = groupStudents.value.filter((item) => item.id !== studentID);
+  // no need for server call
+  fieldStudents.value = fieldStudents.value.filter((item) => item.id !== studentID);
 }
 
 /**
  * ApiFieldDetails calling updateField
  */
-async function updateGroupStudents(newIDs, removeIDs) {
+async function updateFieldStudents(newIDs, removeIDs) {
   // if fail will throw error and be catch in ApiFieldDetails
-  await Api.updateGroupStudents(props.groupID, newIDs, removeIDs);
+  await Api.updateGroupStudents(props.itemID, newIDs, removeIDs);
 
   // refresh
-  await fetchGroup(props.groupID);
+  await detailsComponent.value.refresh();
 }
 </script>
 

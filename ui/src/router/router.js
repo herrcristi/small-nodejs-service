@@ -10,9 +10,9 @@ import Events from '../components/api.events.vue';
 import Classes from '../components/api.classes.vue';
 import Schedules from '../components/api.schedules.vue';
 
-import Login from '../components/login.vue';
-import TenantSelect from '../components/tenant.select.vue';
-import Profile from '../components/profile.vue';
+import Login from '../components/api.user.login.vue';
+import TenantSelect from '../components/base.tenant.select.vue';
+import Profile from '../components/api.user.profile.vue';
 
 import { useAuthStore, useAppStore } from '../stores/stores.js';
 
