@@ -162,73 +162,12 @@
       <!-- 
           Change password dialog 
       -->
-      <v-dialog v-model="passwordDialog" max-width="500px">
-        <v-card>
-          <v-card-title>{{ t('password.change') }}</v-card-title>
-          <v-card-text>
-            <v-form ref="passwordFormRef" v-model="passwordFormValid">
-              <v-text-field
-                v-model="passwordOld"
-                :label="t('password.current')"
-                type="password"
-                :rules="[(v) => !!v || t('password.current.required')]"
-                required
-              />
-              <v-text-field
-                v-model="passwordNew"
-                :label="t('password.new')"
-                type="password"
-                :rules="[(v) => !!v || t('password.new.required')]"
-                required
-              />
-              <v-text-field
-                v-model="passwordConfirm"
-                :label="t('password.confirm')"
-                type="password"
-                :rules="[(v) => v === passwordNew || t('password.must.match')]"
-                required
-              />
-            </v-form>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer />
-            <v-btn text @click="passwordDialog = false">{{ t('cancel') }}</v-btn>
-            <v-btn color="primary" :disabled="!passwordFormValid" @click="submitPassword">{{ t('save') }}</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+      <PasswordChange ref="passwordChangeComponent" @close="" @password-changed=""></PasswordChange>
 
       <!-- 
           Change email dialog 
       -->
-      <v-dialog v-model="emailDialog" max-width="500px">
-        <v-card>
-          <v-card-title>{{ t('email.change') }}</v-card-title>
-          <v-card-text>
-            <v-form ref="emailFormRef" v-model="emailFormValid">
-              <v-text-field
-                v-model="emailNew"
-                :label="t('email.new')"
-                type="email"
-                :rules="[(v) => !!v || t('email.required'), (v) => /.+@.+\..+/.test(v) || t('email.invalid')]"
-                required
-              />
-              <v-text-field
-                v-model="emailPassword"
-                :label="t('password.current')"
-                type="password"
-                :rules="[(v) => !!v || t('password.current.required')]"
-                required
-              />
-            </v-form>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer />
-            <v-btn text @click="emailDialog = false">{{ t('cancel') }}</v-btn>
-            <v-btn color="primary" :disabled="!emailFormValid" @click="submitEmail">{{ t('save') }}</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+      <EmailChange ref="emailChangeComponent" @close="" @email-changed="onEmailChanged($event)"></EmailChange>
 
       <!-- 
           snackbar for notifications
@@ -242,11 +181,13 @@
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import ApiDetails from './api.base.details.vue';
 import KeyValue from './base.keyvalue.vue';
+import PasswordChange from './api.user.change.password.vue';
+import EmailChange from './api.user.change.email.vue';
 import Api from '../api/api.js';
 import { useAuthStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
-
 const { t } = useI18n();
+
 /**
  * props
  */
@@ -266,19 +207,10 @@ const editForm = ref(null);
 const datePicker = ref(null);
 
 // password
-const passwordDialog = ref(false);
-const passwordOld = ref('');
-const passwordNew = ref('');
-const passwordConfirm = ref('');
-const passwordFormValid = ref(false);
-const passwordFormRef = ref(null);
+const passwordChangeComponent = ref();
 
 // email change
-const emailDialog = ref(false);
-const emailNew = ref('');
-const emailPassword = ref('');
-const emailFormValid = ref(false);
-const emailFormRef = ref(null);
+const emailChangeComponent = ref();
 
 const snackbar = ref(false);
 const snackbarText = ref('');
@@ -287,6 +219,35 @@ const snackbarColor = ref('');
 // fetch fresh profile from server when component mounts
 onMounted(async () => {
   userID.value = auth?.raw?.id;
+});
+
+/**
+ * profileItems
+ */
+const profileItems = computed(() => {
+  return [
+    { key: 'id', value: profile.value.id, translate: true },
+    { key: 'name', value: profile.value.name, translate: true },
+    { key: 'email', value: profile.value.email, translate: true },
+    {
+      key: 'birthday',
+      value: getDateString(profile.value.birthday),
+      translate: true,
+    },
+    { key: 'phoneNumber', value: profile.value.phoneNumber, translate: true },
+    { key: 'address', value: profile.value.address, translate: true },
+  ];
+});
+
+/**
+ * schoolRolesItems
+ */
+const schoolRolesItems = computed(() => {
+  return (
+    profile.value?.schools?.map((school) => {
+      return { key: school.name, value: school.roles.join(', ') };
+    }) || []
+  );
 });
 
 /**
@@ -389,108 +350,6 @@ function onDatePicked(value) {
 }
 
 /**
- * password
- */
-function openPasswordDialog() {
-  if (loading.value) {
-    return;
-  }
-  passwordOld.value = '';
-  passwordNew.value = '';
-  passwordConfirm.value = '';
-  passwordDialog.value = true;
-}
-
-async function submitPassword() {
-  if (passwordFormRef.value && typeof passwordFormRef.value.validate === 'function') {
-    const ok = await passwordFormRef.value.validate();
-    if (!ok) {
-      return;
-    }
-  }
-
-  try {
-    const email = useAuthStore()?.raw?.email;
-    if (!email) {
-      throw new Error('No email found for current user');
-    }
-
-    await Api.updateUserPassword(useAuthStore()?.raw?.email, {
-      oldPassword: passwordOld.value,
-      newPassword: passwordNew.value,
-    });
-
-    passwordDialog.value = false;
-    passwordOld.value = '';
-    passwordNew.value = '';
-    passwordConfirm.value = '';
-
-    snackbarText.value = 'password.change.success';
-    snackbarColor.value = 'success';
-    snackbar.value = true;
-  } catch (e) {
-    console.error('Error changing password', e);
-
-    snackbarText.value = 'password.change.error';
-    snackbarColor.value = 'error';
-    snackbar.value = true;
-  }
-}
-
-/**
- * email change
- */
-function openEmailDialog() {
-  if (loading.value) {
-    return;
-  }
-  emailNew.value = '';
-  emailPassword.value = '';
-  emailDialog.value = true;
-}
-
-async function submitEmail() {
-  if (emailFormRef.value && typeof emailFormRef.value.validate === 'function') {
-    const ok = await emailFormRef.value.validate();
-    if (!ok) {
-      return;
-    }
-  }
-
-  try {
-    const auth = useAuthStore();
-    const email = auth?.raw?.email;
-    if (!email) {
-      throw new Error('No current email');
-    }
-
-    await Api.updateUserEmail(email, {
-      id: emailNew.value,
-      password: emailPassword.value,
-    });
-
-    // update store and local profile
-    auth.raw = { ...auth.raw, email: emailNew.value };
-    useAuthStore()?.save(auth);
-    profile.value = { ...profile.value, email: emailNew.value };
-
-    emailDialog.value = false;
-    emailNew.value = '';
-    emailPassword.value = '';
-
-    snackbarText.value = 'email.change.success';
-    snackbarColor.value = 'success';
-    snackbar.value = true;
-  } catch (e) {
-    console.error('Error changing email', e);
-
-    snackbarText.value = 'email.change.error';
-    snackbarColor.value = 'error';
-    snackbar.value = true;
-  }
-}
-
-/**
  * date
  */
 function getDateString(date) {
@@ -526,33 +385,22 @@ function getUTCISOString(date) {
 }
 
 /**
- * profileItems
+ * password
  */
-const profileItems = computed(() => {
-  return [
-    { key: 'id', value: profile.value.id, translate: true },
-    { key: 'name', value: profile.value.name, translate: true },
-    { key: 'email', value: profile.value.email, translate: true },
-    {
-      key: 'birthday',
-      value: getDateString(profile.value.birthday),
-      translate: true,
-    },
-    { key: 'phoneNumber', value: profile.value.phoneNumber, translate: true },
-    { key: 'address', value: profile.value.address, translate: true },
-  ];
-});
+function openPasswordDialog() {
+  passwordChangeComponent.value.openDialog();
+}
 
 /**
- * schoolRolesItems
+ * email
  */
-const schoolRolesItems = computed(() => {
-  return (
-    profile.value?.schools?.map((school) => {
-      return { key: school.name, value: school.roles.join(', ') };
-    }) || []
-  );
-});
+function openEmailDialog() {
+  emailChangeComponent.value.openDialog();
+}
+
+async function onEmailChanged(emailNew) {
+  profile.value = { ...profile.value, email: emailNew };
+}
 </script>
 
 <style scoped>

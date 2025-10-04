@@ -84,11 +84,11 @@ export default {
         // if tenant already selected, redirect to next
         if (r.tenantID) {
           // if tenant changed, reset next to /
+          const target = props.next || '/';
           if (props.tenantID && props.tenantID !== r.tenantID) {
-            props.next = '/';
+            target = '/';
           }
           // redirect to next
-          const target = props.next || '/';
           router.push(decodeURIComponent(target));
         } else {
           // redirect to tenant selection page and pass next
