@@ -10,8 +10,8 @@
       :apiFn="{
         get: Api.getGroup,
       }"
-      @loading="loading"
-      @nodatatext="nodatatext"
+      @loading="loading = $event"
+      @nodatatext="nodatatext = $event"
       @item="onItemDetails($event)"
     ></ApiDetails>
 
