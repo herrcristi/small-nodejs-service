@@ -220,7 +220,7 @@
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import { useAuthStore } from '../stores/stores.js';
 import Api from '../api/api.js';
-import KeyValue from './keyvalue.vue';
+import KeyValue from './base.keyvalue.vue';
 
 export default {
   name: 'Profile',

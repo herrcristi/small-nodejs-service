@@ -44,8 +44,8 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue';
-import ApiTableServer from './api.table.server.vue';
-import ApiEditItem from './api.edit.item.vue';
+import ApiTableServer from './api.base.table.server.vue';
+import ApiEditItem from './api.base.edit.item.vue';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 

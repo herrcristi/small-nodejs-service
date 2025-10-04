@@ -19,7 +19,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
 import Api from '../api/api.js';
-import ApiPage from './api.page.vue';
+import ApiPage from './api.base.page.vue';
 import { useAppStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
