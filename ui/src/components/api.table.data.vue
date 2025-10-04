@@ -14,6 +14,7 @@
     v-model="selectedItems"
     :show-select="props.select"
     @update:model="emit('update:modelValue', $event)"
+    :show-expand="props.expand"
     class="elevation-1"
     striped="even"
     density="compact"
@@ -24,7 +25,7 @@
           top of the table, title + add + filter 
       -->
     <template v-slot:top>
-      <v-toolbar flat>
+      <v-toolbar flat density="compact">
         <v-card-title class="d-flex justify-space-between">
           {{ $t(props.title) }}
         </v-card-title>
@@ -55,6 +56,7 @@
           single-line
           dense
           clearable
+          density="compact"
         ></v-text-field>
       </v-toolbar>
     </template>
@@ -119,6 +121,36 @@
     </template>
 
     <!-- 
+        expand 
+    -->
+    <template v-slot:item.data-table-expand="{ internalItem, isExpanded, toggleExpand }">
+      <v-btn
+        :append-icon="isExpanded(internalItem) ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+        :text="isExpanded(internalItem) ? t('collapse') : t('more.info')"
+        class="text-none"
+        color="medium-emphasis"
+        size="small"
+        variant="text"
+        width="105"
+        border
+        slim
+        @click="toggleExpand(internalItem)"
+      ></v-btn>
+    </template>
+
+    <template v-slot:expanded-row="{ columns, item }">
+      <slot name="expanded-content" :item="item" :columns="columns">
+        <tr>
+          <td :colspan="columns.length" class="py-2">
+            <v-sheet rounded="lg" border>
+              <!-- Default content if no slot is provided -->
+            </v-sheet>
+          </td>
+        </tr>
+      </slot>
+    </template>
+
+    <!-- 
           actions
       -->
     <template #item.actions="{ item }" v-if="props.write">
@@ -173,13 +205,14 @@ const props = defineProps({
   sortFields: { type: Array, default: [] },
   filterFields: { type: Array, default: [] },
 
-  loading: { type: [Boolean, Number], default: true },
+  loading: { type: [Boolean, Number], default: false },
   nodatatext: { type: String, default: '' },
 
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
   select: { type: [Boolean], default: null },
   modelValue: { type: Array, default: [] },
+  expand: { type: [Boolean], default: null },
 
   apiFn: { type: Object, default: {} }, // add:0/1, update:0/1, delete: fn
 });
@@ -248,6 +281,7 @@ const fieldsTitles = ref({
   createdTimestamp: 'timestamp',
   class: 'class',
   class: 'class.name',
+  details: 'details',
 });
 
 /**
@@ -273,8 +307,27 @@ const headers = computed(() => {
 
   // actions
   if (props.write && (props.apiFn.update || props.apiFn.delete)) {
-    h.push({ title: t('actions'), value: 'actions', sortable: false });
+    h.push({ width: 100, title: t('actions'), value: 'actions', sortable: false });
   }
+
+  // x-small width
+  const xsmallWidthFields = new Set(['status', 'actions', 'details']);
+  for (const hitem of h) {
+    if (
+      xsmallWidthFields.has(fieldsTitles.value[hitem.key]) ||
+      xsmallWidthFields.has(fieldsTitles.value[hitem.value])
+    ) {
+      hitem.width = 50;
+    }
+  }
+  // small width
+  const smallWidthFields = new Set(['credits', 'required', 'severity']);
+  for (const hitem of h) {
+    if (smallWidthFields.has(fieldsTitles.value[hitem.key]) || smallWidthFields.has(fieldsTitles.value[hitem.value])) {
+      hitem.width = 100;
+    }
+  }
+
   return h;
 });
 

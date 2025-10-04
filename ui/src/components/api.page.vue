@@ -14,10 +14,18 @@
       :read="read"
       :write="write"
       :details="props.details"
+      :expand="props.expand"
       @addItem="openAdd($event)"
       @editItem="openEdit($event)"
       @detailsItem="openDetails($event)"
-    ></ApiTableServer>
+    >
+      <!-- 
+        expose expanded content 
+      -->
+      <template v-slot:expanded-content="{ item, columns }">
+        <slot name="expanded-content" :item="item" :columns="columns"></slot>
+      </template>
+    </ApiTableServer>
 
     <!-- 
           edit dialog
@@ -54,6 +62,8 @@ const props = defineProps({
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
   details: { type: [Boolean, Number], default: null },
+  expand: { type: [Boolean], default: null },
+
   apiFn: { type: Object, default: {} }, // getall, add, delete, update
 });
 
