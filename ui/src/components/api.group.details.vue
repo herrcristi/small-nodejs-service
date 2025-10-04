@@ -7,7 +7,7 @@
       ref="detailsComponent"
       :itemID="props.itemID"
       :read="read"
-      :apifn="{
+      :apiFn="{
         get: Api.getGroup,
       }"
       @loading="loading"
@@ -90,8 +90,8 @@ const emit = defineEmits(['close']);
  * ApiDetails events after get details
  */
 async function onItemDetails(data) {
-  Object.keys(itemDetails).forEach((k) => delete itemDetails[k]);
-  Object.assign(itemDetails, data);
+  Object.keys(itemDetails.value).forEach((k) => delete itemDetails[k]);
+  Object.assign(itemDetails.value, data);
 
   fieldStudents.value = itemDetails.value.students || [];
 }
