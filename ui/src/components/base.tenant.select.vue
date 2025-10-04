@@ -28,7 +28,7 @@
 
 <script>
 import { ref, onMounted } from 'vue';
-import Api from '../api/api.js';
+import { getRolesPermissions } from '../auth.js';
 import { useAppStore, useAuthStore } from '../stores/stores.js';
 import { useRouter, useRoute } from 'vue-router';
 

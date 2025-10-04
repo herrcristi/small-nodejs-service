@@ -243,7 +243,7 @@ const snackbarColor = ref('');
 /**
  * emit
  */
-const emit = defineEmits(['addItem', 'editItem', 'deleteItem', 'detailsItem', 'update:modelValue']); // TODO on more info
+const emit = defineEmits(['addItem', 'editItem', 'deleteItem', 'detailsItem', 'update:modelValue']);
 
 /**
  * model-value selectedItems
