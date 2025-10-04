@@ -1,5 +1,20 @@
 <template>
   <v-card>
+    <!-- 
+        for details 
+    -->
+    <ApiDetails
+      ref="detailsComponent"
+      :itemID="userID"
+      :read="true"
+      :apiFn="{
+        get: Api.getUser,
+      }"
+      @loading="loading = $event"
+      @nodatatext="nodatatext = $event"
+      @item="onItemDetails($event)"
+    ></ApiDetails>
+
     <v-container>
       <v-row>
         <v-col cols="12" md="7">
@@ -9,7 +24,7 @@
           <v-card>
             <v-toolbar flat>
               <v-card-title class="d-flex justify-space-between align-center">
-                {{ $t('profile') }}
+                {{ t('profile') }}
                 <v-spacer />
                 <v-toolbar-items class="d-flex align-center">
                   <v-icon
@@ -17,9 +32,9 @@
                     class="mr-2"
                     color="primary"
                     @click="openEdit"
-                    :title="$t('edit')"
+                    :title="t('edit')"
                     size="small"
-                    v-if="!showLoading"
+                    v-if="!loading"
                     >mdi-pencil</v-icon
                   >
 
@@ -30,8 +45,8 @@
                     class="d-flex d-sm-none ml-2"
                     color="primary"
                     @click="openPasswordDialog"
-                    :title="$t('password.edit')"
-                    v-if="!showLoading"
+                    :title="t('password.edit')"
+                    v-if="!loading"
                   >
                     <v-icon>mdi-lock-reset</v-icon>
                   </v-btn>
@@ -42,9 +57,9 @@
                     class="ml-2 d-none d-sm-flex"
                     color="primary"
                     @click="openPasswordDialog"
-                    :title="$t('password.edit')"
-                    v-if="!showLoading"
-                    >{{ $t('password.change') }}</v-btn
+                    :title="t('password.edit')"
+                    v-if="!loading"
+                    >{{ t('password.change') }}</v-btn
                   >
 
                   <!-- icon-only button for extra-small screens -->
@@ -54,8 +69,8 @@
                     class="d-flex d-sm-none ml-2"
                     color="primary"
                     @click="openEmailDialog"
-                    :title="$t('email.edit')"
-                    v-if="!showLoading"
+                    :title="t('email.edit')"
+                    v-if="!loading"
                   >
                     <v-icon>mdi-email</v-icon>
                   </v-btn>
@@ -66,9 +81,9 @@
                     class="ml-2 d-none d-sm-flex"
                     color="primary"
                     @click="openEmailDialog"
-                    :title="$t('email.edit')"
-                    v-if="!showLoading"
-                    >{{ $t('email.change') }}</v-btn
+                    :title="t('email.edit')"
+                    v-if="!loading"
+                    >{{ t('email.change') }}</v-btn
                   >
 
                   <!-- email change buttons end -->
@@ -76,7 +91,14 @@
               </v-card-title>
             </v-toolbar>
 
-            <key-value :items="profileItems" :loading="showLoading"> </key-value>
+            <!-- 
+                key values 
+            -->
+            <key-value v-if="!nodatatext" :items="profileItems" :loading="loading"> </key-value>
+
+            <v-card v-if="!!nodatatext">
+              {{ nodatatext }}
+            </v-card>
           </v-card>
         </v-col>
 
@@ -84,15 +106,15 @@
           <!-- 
               schools 
           -->
-          <v-card>
+          <v-card v-if="!nodatatext">
             <v-toolbar flat>
               <v-card-title class="d-flex justify-space-between">
-                {{ $t('status') }}
+                {{ t('status') }}
                 <v-spacer />
               </v-card-title>
             </v-toolbar>
 
-            <key-value :items="schoolRolesItems" :loading="showLoading"> </key-value>
+            <key-value :items="schoolRolesItems" :loading="loading"> </key-value>
           </v-card>
         </v-col>
       </v-row>
@@ -102,13 +124,13 @@
       -->
       <v-dialog v-model="editDialog" max-width="600px">
         <v-card>
-          <v-card-title>{{ $t('edit') }}</v-card-title>
+          <v-card-title>{{ t('edit') }}</v-card-title>
           <v-card-text>
             <v-form ref="editForm" v-model="formValid">
               <v-text-field
                 v-model="edit.name"
-                :label="$t('name')"
-                :rules="[(v) => !!v || $t('name.required') || 'Name is required']"
+                :label="t('name')"
+                :rules="[(v) => !!v || t('name.required') || 'Name is required']"
                 required
               />
 
@@ -116,7 +138,7 @@
                 <template #activator>
                   <v-text-field
                     v-model="edit.birthday"
-                    :label="$t('birthday')"
+                    :label="t('birthday')"
                     readonly
                     append-icon="mdi-calendar"
                     @click:append="birthdaymenu = true"
@@ -125,14 +147,14 @@
                 <v-date-picker v-model="datePicker" show-adjacent-months @update:modelValue="onDatePicked" />
               </v-menu>
 
-              <v-text-field v-model="edit.phoneNumber" :label="$t('phoneNumber')" />
-              <v-text-field v-model="edit.address" :label="$t('address')" />
+              <v-text-field v-model="edit.phoneNumber" :label="t('phoneNumber')" />
+              <v-text-field v-model="edit.address" :label="t('address')" />
             </v-form>
           </v-card-text>
           <v-card-actions>
             <v-spacer />
-            <v-btn text @click="editDialog = false">{{ $t('cancel') }}</v-btn>
-            <v-btn color="primary" :disabled="!formValid" @click="onSave">{{ $t('save') }}</v-btn>
+            <v-btn text @click="editDialog = false">{{ t('cancel') }}</v-btn>
+            <v-btn color="primary" :disabled="!formValid" @click="onSave">{{ t('save') }}</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -140,463 +162,245 @@
       <!-- 
           Change password dialog 
       -->
-      <v-dialog v-model="passwordDialog" max-width="500px">
-        <v-card>
-          <v-card-title>{{ $t('password.change') }}</v-card-title>
-          <v-card-text>
-            <v-form ref="passwordFormRef" v-model="passwordFormValid">
-              <v-text-field
-                v-model="passwordOld"
-                :label="$t('password.current')"
-                type="password"
-                :rules="[(v) => !!v || $t('password.current.required')]"
-                required
-              />
-              <v-text-field
-                v-model="passwordNew"
-                :label="$t('password.new')"
-                type="password"
-                :rules="[(v) => !!v || $t('password.new.required')]"
-                required
-              />
-              <v-text-field
-                v-model="passwordConfirm"
-                :label="$t('password.confirm')"
-                type="password"
-                :rules="[(v) => v === passwordNew || $t('password.must.match')]"
-                required
-              />
-            </v-form>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer />
-            <v-btn text @click="passwordDialog = false">{{ $t('cancel') }}</v-btn>
-            <v-btn color="primary" :disabled="!passwordFormValid" @click="submitPassword">{{ $t('save') }}</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+      <PasswordChange ref="passwordChangeComponent" @close="" @password-changed=""></PasswordChange>
 
       <!-- 
           Change email dialog 
       -->
-      <v-dialog v-model="emailDialog" max-width="500px">
-        <v-card>
-          <v-card-title>{{ $t('email.change') }}</v-card-title>
-          <v-card-text>
-            <v-form ref="emailFormRef" v-model="emailFormValid">
-              <v-text-field
-                v-model="emailNew"
-                :label="$t('email.new')"
-                type="email"
-                :rules="[(v) => !!v || $t('email.required'), (v) => /.+@.+\..+/.test(v) || $t('email.invalid')]"
-                required
-              />
-              <v-text-field
-                v-model="emailPassword"
-                :label="$t('password.current')"
-                type="password"
-                :rules="[(v) => !!v || $t('password.current.required')]"
-                required
-              />
-            </v-form>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer />
-            <v-btn text @click="emailDialog = false">{{ $t('cancel') }}</v-btn>
-            <v-btn color="primary" :disabled="!emailFormValid" @click="submitEmail">{{ $t('save') }}</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
+      <EmailChange ref="emailChangeComponent" @close="" @email-changed="onEmailChanged($event)"></EmailChange>
 
       <!-- 
           snackbar for notifications
       -->
-      <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ $t(snackbarText) }}</v-snackbar>
+      <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ t(snackbarText) }}</v-snackbar>
     </v-container>
   </v-card>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
-import { useAuthStore } from '../stores/stores.js';
-import Api from '../api/api.js';
+import ApiDetails from './api.base.details.vue';
 import KeyValue from './base.keyvalue.vue';
+import PasswordChange from './api.user.change.password.vue';
+import EmailChange from './api.user.change.email.vue';
+import Api from '../api/api.js';
+import { useAuthStore } from '../stores/stores.js';
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
 
-export default {
-  name: 'Profile',
-  components: { KeyValue },
-  /**
-   * setup
-   */
-  setup() {
-    const profile = ref({});
-    let loadingTimer = null;
+/**
+ * props
+ */
+const userID = ref('');
+const profile = ref({});
+const loading = ref(false);
+const nodatatext = ref('');
 
-    // edit
-    const editDialog = ref(false);
-    const edit = ref({ ...profile.value });
-    const birthdaymenu = ref(false);
-    const formValid = ref(false);
-    const editForm = ref(null);
-    const showLoading = ref(false);
-    const datePicker = ref(null);
+const auth = useAuthStore();
 
-    // password
-    const passwordDialog = ref(false);
-    const passwordOld = ref('');
-    const passwordNew = ref('');
-    const passwordConfirm = ref('');
-    const passwordFormValid = ref(false);
-    const passwordFormRef = ref(null);
+// edit
+const editDialog = ref(false);
+const edit = ref({ ...profile.value });
+const birthdaymenu = ref(false);
+const formValid = ref(false);
+const editForm = ref(null);
+const datePicker = ref(null);
 
-    // email change
-    const emailDialog = ref(false);
-    const emailNew = ref('');
-    const emailPassword = ref('');
-    const emailFormValid = ref(false);
-    const emailFormRef = ref(null);
+// password
+const passwordChangeComponent = ref();
 
-    const snackbar = ref(false);
-    const snackbarText = ref('');
-    const snackbarColor = ref('');
+// email change
+const emailChangeComponent = ref();
 
-    // fetch fresh profile from server when component mounts
-    onMounted(async () => {
+const snackbar = ref(false);
+const snackbarText = ref('');
+const snackbarColor = ref('');
+
+// fetch fresh profile from server when component mounts
+onMounted(async () => {
+  userID.value = auth?.raw?.id;
+});
+
+/**
+ * profileItems
+ */
+const profileItems = computed(() => {
+  return [
+    { key: 'id', value: profile.value.id, translate: true },
+    { key: 'name', value: profile.value.name, translate: true },
+    { key: 'email', value: profile.value.email, translate: true },
+    {
+      key: 'birthday',
+      value: getDateString(profile.value.birthday),
+      translate: true,
+    },
+    { key: 'phoneNumber', value: profile.value.phoneNumber, translate: true },
+    { key: 'address', value: profile.value.address, translate: true },
+  ];
+});
+
+/**
+ * schoolRolesItems
+ */
+const schoolRolesItems = computed(() => {
+  return (
+    profile.value?.schools?.map((school) => {
+      return { key: school.name, value: school.roles.join(', ') };
+    }) || []
+  );
+});
+
+/**
+ * ApiDetails events after get details
+ */
+async function onItemDetails(data) {
+  if (data) {
+    auth.raw = { ...auth.raw, name: data.name, email: data.email };
+    useAuthStore()?.save(auth);
+    profile.value = { ...auth.raw, ...data };
+  }
+}
+
+/**
+ * openEdit
+ */
+function openEdit() {
+  if (loading.value) {
+    return;
+  }
+  edit.value = { ...profile.value };
+  if (edit.value.birthday) {
+    try {
+      // is in UTC format
+      // console.log('openEdit birthday:', edit.value.birthday);
+      datePicker.value = new Date(edit.value.birthday);
+      edit.value.birthday = getDateString(edit.value.birthday);
+    } catch (e) {
+      // leave as-is
+    }
+  } else {
+    datePicker.value = null;
+  }
+  editDialog.value = true;
+}
+
+async function onSave() {
+  // validate form
+  if (editForm.value && typeof editForm.value.validate === 'function') {
+    const ok = await editForm.value.validate();
+    if (!ok) {
+      return;
+    }
+  }
+  await saveEdit();
+}
+
+async function saveEdit() {
+  try {
+    if (profile.value?.id) {
+      // console.log('Saving profile, datePicker:', datePicker.value);
+      // console.log('datePicker as ISO:', datePicker.value ? getUTCISOString(datePicker.value) : null);
+
+      const payload = {
+        name: edit.value.name,
+        birthday: datePicker.value ? getUTCISOString(datePicker.value) : null,
+        phoneNumber: edit.value.phoneNumber,
+        address: edit.value.address,
+      };
+
+      await Api.updateUser(profile.value.id, payload);
+
+      // update store locally
       let auth = useAuthStore();
-      const userId = auth?.raw?.id;
-      if (!userId) {
-        return;
-      }
+      auth.raw = { ...auth.raw, name: payload.name, email: auth.raw.email };
+      useAuthStore()?.save(auth);
 
-      // start timer to show spinner after 300ms
-      loadingTimer = setTimeout(() => {
-        showLoading.value = true;
-      }, 300);
+      // update local profile and close dialog
+      profile.value = { ...profile.value, ...payload };
+      editDialog.value = false;
 
-      try {
-        const resp = await Api.getUser(userId);
-        const data = resp?.data || resp?.value || resp;
-        if (data) {
-          auth.raw = { ...auth.raw, name: data.name, email: data.email };
-          useAuthStore()?.save(auth);
-          profile.value = { ...auth.raw, ...data };
-        }
-      } catch (e) {
-        // ignore
-      } finally {
-        if (loadingTimer) {
-          clearTimeout(loadingTimer);
-          loadingTimer = null;
-        }
+      snackbarText.value = 'profile.update.success';
+      snackbarColor.value = 'success';
+      snackbar.value = true;
+    }
+  } catch (e) {
+    console.error('Error saving profile', e);
+    // keep dialog open and show error
+    snackbarText.value = 'profile.update.error';
+    snackbarColor.value = 'error';
+    snackbar.value = true;
+  }
+}
 
-        showLoading.value = false;
-      }
+function onDatePicked(value) {
+  // value is YYYY-MM-DD (date-picker v-model). Update display and close menu.
+  if (value) {
+    try {
+      // console.log('On date picked:', value);
+      edit.value.birthday = getDateString(getUTCISOString(value));
+      // console.log('On date picked set birthday:', edit.value.birthday);
+    } catch (e) {
+      console.log('Error parsing date:', e);
+      edit.value.birthday = '';
+    }
+  } else {
+    edit.value.birthday = '';
+  }
+  birthdaymenu.value = false;
+}
+
+/**
+ * date
+ */
+function getDateString(date) {
+  if (!date) {
+    return '';
+  }
+  try {
+    const d = new Date(date);
+    return d.toLocaleDateString(undefined, {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC',
     });
+  } catch (e) {
+    console.error('Error formatting date', e);
+    return '';
+  }
+}
 
-    /**
-     * onBeforeUnmount
-     */
-    onBeforeUnmount(() => {
-      if (loadingTimer) {
-        clearTimeout(loadingTimer);
-        loadingTimer = null;
-      }
-    });
+function getUTCISOString(date) {
+  if (!date) {
+    return '';
+  }
+  try {
+    const d = new Date(date);
+    return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
+  } catch (e) {
+    console.error('Error formatting date', e);
+    return '';
+  }
+}
 
-    /**
-     * openEdit
-     */
-    function openEdit() {
-      if (showLoading.value) {
-        return;
-      }
-      edit.value = { ...profile.value };
-      if (edit.value.birthday) {
-        try {
-          // is in UTC format
-          // console.log('openEdit birthday:', edit.value.birthday);
-          datePicker.value = new Date(edit.value.birthday);
-          edit.value.birthday = getDateString(edit.value.birthday);
-        } catch (e) {
-          // leave as-is
-        }
-      } else {
-        datePicker.value = null;
-      }
-      editDialog.value = true;
-    }
+/**
+ * password
+ */
+function openPasswordDialog() {
+  passwordChangeComponent.value.openDialog();
+}
 
-    async function onSave() {
-      // validate form
-      if (editForm.value && typeof editForm.value.validate === 'function') {
-        const ok = await editForm.value.validate();
-        if (!ok) {
-          return;
-        }
-      }
-      await saveEdit();
-    }
+/**
+ * email
+ */
+function openEmailDialog() {
+  emailChangeComponent.value.openDialog();
+}
 
-    async function saveEdit() {
-      try {
-        if (profile.value?.id) {
-          // console.log('Saving profile, datePicker:', datePicker.value);
-          // console.log('datePicker as ISO:', datePicker.value ? getUTCISOString(datePicker.value) : null);
-
-          const payload = {
-            name: edit.value.name,
-            birthday: datePicker.value ? getUTCISOString(datePicker.value) : null,
-            phoneNumber: edit.value.phoneNumber,
-            address: edit.value.address,
-          };
-
-          await Api.updateUser(profile.value.id, payload);
-
-          // update store locally
-          let auth = useAuthStore();
-          auth.raw = { ...auth.raw, name: payload.name, email: auth.raw.email };
-          useAuthStore()?.save(auth);
-
-          // update local profile and close dialog
-          profile.value = { ...profile.value, ...payload };
-          editDialog.value = false;
-
-          snackbarText.value = 'profile.update.success';
-          snackbarColor.value = 'success';
-          snackbar.value = true;
-        }
-      } catch (e) {
-        console.error('Error saving profile', e);
-        // keep dialog open and show error
-        snackbarText.value = 'profile.update.error';
-        snackbarColor.value = 'error';
-        snackbar.value = true;
-      }
-    }
-
-    function onDatePicked(value) {
-      // value is YYYY-MM-DD (date-picker v-model). Update display and close menu.
-      if (value) {
-        try {
-          // console.log('On date picked:', value);
-          edit.value.birthday = getDateString(getUTCISOString(value));
-          // console.log('On date picked set birthday:', edit.value.birthday);
-        } catch (e) {
-          console.log('Error parsing date:', e);
-          edit.value.birthday = '';
-        }
-      } else {
-        edit.value.birthday = '';
-      }
-      birthdaymenu.value = false;
-    }
-
-    /**
-     * password
-     */
-    function openPasswordDialog() {
-      if (showLoading.value) {
-        return;
-      }
-      passwordOld.value = '';
-      passwordNew.value = '';
-      passwordConfirm.value = '';
-      passwordDialog.value = true;
-    }
-
-    async function submitPassword() {
-      if (passwordFormRef.value && typeof passwordFormRef.value.validate === 'function') {
-        const ok = await passwordFormRef.value.validate();
-        if (!ok) {
-          return;
-        }
-      }
-
-      try {
-        const email = useAuthStore()?.raw?.email;
-        if (!email) {
-          throw new Error('No email found for current user');
-        }
-
-        await Api.updateUserPassword(useAuthStore()?.raw?.email, {
-          oldPassword: passwordOld.value,
-          newPassword: passwordNew.value,
-        });
-
-        passwordDialog.value = false;
-        passwordOld.value = '';
-        passwordNew.value = '';
-        passwordConfirm.value = '';
-
-        snackbarText.value = 'password.change.success';
-        snackbarColor.value = 'success';
-        snackbar.value = true;
-      } catch (e) {
-        console.error('Error changing password', e);
-
-        snackbarText.value = 'password.change.error';
-        snackbarColor.value = 'error';
-        snackbar.value = true;
-      }
-    }
-
-    /**
-     * email change
-     */
-    function openEmailDialog() {
-      if (showLoading.value) {
-        return;
-      }
-      emailNew.value = '';
-      emailPassword.value = '';
-      emailDialog.value = true;
-    }
-
-    async function submitEmail() {
-      if (emailFormRef.value && typeof emailFormRef.value.validate === 'function') {
-        const ok = await emailFormRef.value.validate();
-        if (!ok) {
-          return;
-        }
-      }
-
-      try {
-        const auth = useAuthStore();
-        const email = auth?.raw?.email;
-        if (!email) {
-          throw new Error('No current email');
-        }
-
-        await Api.updateUserEmail(email, {
-          id: emailNew.value,
-          password: emailPassword.value,
-        });
-
-        // update store and local profile
-        auth.raw = { ...auth.raw, email: emailNew.value };
-        useAuthStore()?.save(auth);
-        profile.value = { ...profile.value, email: emailNew.value };
-
-        emailDialog.value = false;
-        emailNew.value = '';
-        emailPassword.value = '';
-
-        snackbarText.value = 'email.change.success';
-        snackbarColor.value = 'success';
-        snackbar.value = true;
-      } catch (e) {
-        console.error('Error changing email', e);
-
-        snackbarText.value = 'email.change.error';
-        snackbarColor.value = 'error';
-        snackbar.value = true;
-      }
-    }
-
-    /**
-     * date
-     */
-    function getDateString(date) {
-      if (!date) {
-        return '';
-      }
-      try {
-        const d = new Date(date);
-        return d.toLocaleDateString(undefined, {
-          weekday: 'short',
-          year: 'numeric',
-          month: 'short',
-          day: 'numeric',
-          timeZone: 'UTC',
-        });
-      } catch (e) {
-        console.error('Error formatting date', e);
-        return '';
-      }
-    }
-
-    function getUTCISOString(date) {
-      if (!date) {
-        return '';
-      }
-      try {
-        const d = new Date(date);
-        return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
-      } catch (e) {
-        console.error('Error formatting date', e);
-        return '';
-      }
-    }
-
-    /**
-     * profileItems
-     */
-    const profileItems = computed(() => {
-      return [
-        { key: 'id', value: profile.value.id, translate: true },
-        { key: 'name', value: profile.value.name, translate: true },
-        { key: 'email', value: profile.value.email, translate: true },
-        {
-          key: 'birthday',
-          value: getDateString(profile.value.birthday),
-          translate: true,
-        },
-        { key: 'phoneNumber', value: profile.value.phoneNumber, translate: true },
-        { key: 'address', value: profile.value.address, translate: true },
-      ];
-    });
-
-    /**
-     * schoolRolesItems
-     */
-    const schoolRolesItems = computed(() => {
-      return (
-        profile.value?.schools?.map((school) => {
-          return { key: school.name, value: school.roles.join(', ') };
-        }) || []
-      );
-    });
-
-    return {
-      profile,
-      editDialog,
-      edit,
-      openEdit,
-      saveEdit,
-      birthdaymenu,
-      formValid,
-      editForm,
-      onSave,
-      datePicker,
-      onDatePicked,
-
-      openPasswordDialog,
-      passwordDialog,
-      submitPassword,
-      passwordOld,
-      passwordNew,
-      passwordConfirm,
-      passwordFormValid,
-      passwordFormRef,
-
-      openEmailDialog,
-      emailDialog,
-      submitEmail,
-      emailNew,
-      emailPassword,
-      emailFormValid,
-      emailFormRef,
-
-      snackbar,
-      snackbarText,
-      snackbarColor,
-
-      showLoading,
-      profileItems,
-      schoolRolesItems,
-    };
-  },
-};
+async function onEmailChanged(emailNew) {
+  profile.value = { ...profile.value, email: emailNew };
+}
 </script>
 
 <style scoped>

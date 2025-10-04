@@ -114,8 +114,11 @@ instance.interceptors.response.use(
       if (err.response?.status === 401) {
         const current = window.location.pathname + window.location.search;
         const tenantID = useAppStore()?.tenantID;
-        const loginUrl = `/login?tenantID=${encodeURIComponent(tenantID)}&next=${encodeURIComponent(current)}`;
-        window.location.href = loginUrl;
+
+        if (current.startsWith('/login') === -1) {
+          const loginUrl = `/login?tenantID=${encodeURIComponent(tenantID)}&next=${encodeURIComponent(current)}`;
+          window.location.href = loginUrl;
+        }
       }
     } catch (e) {}
     return Promise.reject(err);
