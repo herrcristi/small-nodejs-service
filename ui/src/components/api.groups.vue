@@ -14,13 +14,27 @@
     :read="read"
     :write="write"
     :details="true"
+    :expand="true"
     @openDetails="openDetails($event)"
     :style="detailsOpen ? 'width:48%;display:inline-block;vertical-align:top;' : ''"
-  ></ApiPage>
+  >
+    <!-- 
+      field students 
+    -->
+    <template v-slot:expanded-content="{ item, columns }">
+      <tr>
+        <td :colspan="columns.length" class="py-2">
+          <v-sheet rounded="lg" border>
+            <ApiGroupMoreInfo :itemID="item.id" type="table" />
+          </v-sheet>
+        </td>
+      </tr>
+    </template>
+  </ApiPage>
 
   <v-card v-if="read || write">
     <!-- drawer for details -->
-    <v-navigation-drawer v-model="detailsOpen" right temporary width="520">
+    <v-navigation-drawer v-model="detailsOpen" right temporary width="620">
       <ApiGroupDetails :itemID="selectedItemID" @close="closeDetails" />
     </v-navigation-drawer>
   </v-card>
@@ -31,8 +45,8 @@ import { ref, reactive, computed } from 'vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import ApiPage from './api.base.page.vue';
-import ApiTableData from './api.base.table.data.vue';
 import ApiGroupDetails from './api.group.details.vue';
+import ApiGroupMoreInfo from './api.group.moreinfo.vue';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
