@@ -10,6 +10,7 @@
     :search="filter"
     :custom-filter="customFilter"
     :no-data-text="props.nodatatext"
+    :sort-by="[{ key: props.sortFields[0], order: 'asc' }]"
     item-key="id"
     v-model="selectedItems"
     :show-select="props.select"
