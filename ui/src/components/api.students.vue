@@ -43,8 +43,8 @@ const { t } = useI18n();
  * props
  */
 const app = useAppStore();
-const read = app?.rolesPermissions?.groups?.read;
-const write = app?.rolesPermissions?.groups?.write;
+const read = app?.rolesPermissions?.students?.read;
+const write = app?.rolesPermissions?.students?.write;
 
 /**
  * mounted
