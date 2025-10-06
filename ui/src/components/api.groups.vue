@@ -19,7 +19,7 @@
     :style="detailsOpen ? 'width:48%;display:inline-block;vertical-align:top;' : ''"
   >
     <!-- 
-      field students 
+      more info
     -->
     <template v-slot:expanded-content="{ item, columns }">
       <tr>
