@@ -139,6 +139,19 @@ const Api = {
   createStudent: (data) => instance.post(`/students`, data),
   updateStudent: (id, data) => instance.put(`/students/${id}`, data),
   deleteStudent: (id) => instance.delete(`/students/${id}`),
+  updateStudentClasses: (id, newIds, removeIds) =>
+    instance.patch(`/students/${id}`, {
+      add: {
+        classes: (newIds || []).map((id) => {
+          return { id };
+        }),
+      },
+      remove: {
+        classes: (removeIds || []).map((id) => {
+          return { id };
+        }),
+      },
+    }),
 
   // Professors API
   getProfessors: (params) => instance.get(`/professors?${params}`),
@@ -146,6 +159,19 @@ const Api = {
   createProfessor: (data) => instance.post(`/professors`, data),
   updateProfessor: (id, data) => instance.put(`/professors/${id}`, data),
   deleteProfessor: (id) => instance.delete(`/professors/${id}`),
+  updateProfessorClasses: (id, newIds, removeIds) =>
+    instance.patch(`/professors/${id}`, {
+      add: {
+        classes: (newIds || []).map((id) => {
+          return { id };
+        }),
+      },
+      remove: {
+        classes: (removeIds || []).map((id) => {
+          return { id };
+        }),
+      },
+    }),
 
   // Groups API
   getGroups: (params) => instance.get(`/groups?${params}`),

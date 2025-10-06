@@ -18,52 +18,52 @@
     <!-- 
       field students 
     -->
-
-    <!-- list using v-chip -->
-    <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.students?.read">
-      <v-card-title class="d-flex justify-space-between">
-        <div>{{ t('students') }}</div>
-      </v-card-title>
-
-      <v-card-text>
-        <v-chip-group selected-class="text-primary" column text="chip">
-          <template v-for="s in fieldStudents" :key="s.id">
-            <v-chip>
-              {{ s.user.name }}
-            </v-chip>
-          </template>
-        </v-chip-group>
-      </v-card-text>
-    </div>
-
-    <!-- list using v-card -->
-
-    <v-container fluid v-if="type == 'v-card' && read && app?.rolesPermissions?.students?.read">
-      <v-card-title class="d-flex justify-space-between">
-        <div>{{ t('students') }}</div>
-      </v-card-title>
-
-      <v-row dense>
-        <template v-for="s in fieldStudents" :key="s.id" small>
-          <v-col cols="12" md="3">
-            <v-card>
-              <v-card-title>
-                {{ s.user.name }}
-              </v-card-title>
-              <v-card-subtitle>
-                {{ s.user.email }}
-              </v-card-subtitle>
-            </v-card>
-          </v-col>
-        </template>
-      </v-row>
-    </v-container>
-
-    <!-- list using table -->
     <v-card-text>
-      <v-row v-if="type == 'table'" class="d-flex justify-end">
+      <v-row class="d-flex justify-end">
         <v-col cols="12" md="8">
-          <v-card>
+          <!-- list using v-chip -->
+          <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.students?.read">
+            <v-card-title class="d-flex justify-space-between">
+              <div>{{ t('students') }}</div>
+            </v-card-title>
+
+            <v-card-text>
+              <v-chip-group selected-class="text-primary" column text="chip">
+                <template v-for="s in fieldStudents" :key="s.id">
+                  <v-chip>
+                    {{ s.user.name }}
+                  </v-chip>
+                </template>
+              </v-chip-group>
+            </v-card-text>
+          </div>
+
+          <!-- list using v-card -->
+
+          <v-container fluid v-if="type == 'v-card' && read && app?.rolesPermissions?.students?.read">
+            <v-card-title class="d-flex justify-space-between">
+              <div>{{ t('students') }}</div>
+            </v-card-title>
+
+            <v-row dense>
+              <template v-for="s in fieldStudents" :key="s.id" small>
+                <v-col cols="12" md="3">
+                  <v-card>
+                    <v-card-title>
+                      {{ s.user.name }}
+                    </v-card-title>
+                    <v-card-subtitle>
+                      {{ s.user.email }}
+                    </v-card-subtitle>
+                  </v-card>
+                </v-col>
+              </template>
+            </v-row>
+          </v-container>
+
+          <!-- list using table -->
+
+          <v-card v-if="type == 'table'">
             <ApiFieldDetails
               ref="fieldDetailsStudentsComponent"
               title="students"

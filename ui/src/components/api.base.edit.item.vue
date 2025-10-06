@@ -227,8 +227,9 @@ async function add() {
     return true;
   } catch (e) {
     console.error('Error adding:', e);
+    const errText = e.response?.data?.error?.toString() || e.toString();
 
-    snackbarText.value = (t('add.error') || 'Error adding') + ' ' + e.toString();
+    snackbarText.value = (t('add.error') || 'Error adding') + ' ' + errText;
     snackbarColor.value = 'error';
     snackbar.value = true;
 
@@ -250,8 +251,9 @@ async function update() {
     return true;
   } catch (e) {
     console.error('Error updating:', e);
+    const errText = e.response?.data?.error?.toString() || e.toString();
 
-    snackbarText.value = (t('update.error') || 'Error updating') + ' ' + e.toString();
+    snackbarText.value = (t('update.error') || 'Error updating') + ' ' + errText;
     snackbarColor.value = 'error';
     snackbar.value = true;
 

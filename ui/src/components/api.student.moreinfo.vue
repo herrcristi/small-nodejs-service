@@ -18,49 +18,48 @@
     <!-- 
       field groups 
     -->
+    <v-card-text class="d-flex justify-end">
+      <v-row>
+        <v-col cols="12" md="6">
+          <!-- list using v-chip -->
+          <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.groups?.read">
+            <v-card-title class="d-flex justify-space-between">
+              <div>{{ t('groups') }}</div>
+            </v-card-title>
 
-    <!-- list using v-chip -->
-    <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.groupss?.read">
-      <v-card-title class="d-flex justify-space-between">
-        <div>{{ t('groups') }}</div>
-      </v-card-title>
+            <v-card-text>
+              <v-chip-group selected-class="text-primary" column text="chip">
+                <template v-for="s in fieldGroups" :key="s.id">
+                  <v-chip>
+                    {{ s.name }}
+                  </v-chip>
+                </template>
+              </v-chip-group>
+            </v-card-text>
+          </div>
 
-      <v-card-text>
-        <v-chip-group selected-class="text-primary" column text="chip">
-          <template v-for="s in fieldGroups" :key="s.id">
-            <v-chip>
-              {{ s.name }}
-            </v-chip>
-          </template>
-        </v-chip-group>
-      </v-card-text>
-    </div>
+          <!-- list using v-card -->
 
-    <!-- list using v-card -->
+          <v-container fluid v-if="type == 'v-card' && read && app?.rolesPermissions?.groups?.read">
+            <v-card-title class="d-flex justify-space-between">
+              <div>{{ t('groups') }}</div>
+            </v-card-title>
 
-    <v-container fluid v-if="type == 'v-card' && read && app?.rolesPermissions?.groups?.read">
-      <v-card-title class="d-flex justify-space-between">
-        <div>{{ t('groups') }}</div>
-      </v-card-title>
+            <v-row dense>
+              <template v-for="s in fieldGroups" :key="s.id" small>
+                <v-col cols="12" md="3">
+                  <v-card>
+                    <v-card-title>
+                      {{ s.name }}
+                    </v-card-title>
+                  </v-card>
+                </v-col>
+              </template>
+            </v-row>
+          </v-container>
 
-      <v-row dense>
-        <template v-for="s in fieldGroups" :key="s.id" small>
-          <v-col cols="12" md="3">
-            <v-card>
-              <v-card-title>
-                {{ s.name }}
-              </v-card-title>
-            </v-card>
-          </v-col>
-        </template>
-      </v-row>
-    </v-container>
-
-    <!-- list using table -->
-    <v-card-text>
-      <v-row v-if="type == 'table'" class="d-flex justify-end">
-        <v-col cols="12" md="8">
-          <v-card>
+          <!-- list using table -->
+          <v-card v-if="type == 'table'">
             <ApiFieldDetails
               ref="fieldDetailsGroupsComponent"
               title="groups"
@@ -80,8 +79,76 @@
               :loading="loading"
               :nodatatext="nodatatext"
             ></ApiFieldDetails>
-          </v-card> </v-col
-      ></v-row>
+          </v-card>
+        </v-col>
+
+        <!-- 
+      field classes 
+    -->
+
+        <v-col cols="12" md="6">
+          <!-- list using v-chip -->
+          <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.classes?.read">
+            <v-card-title class="d-flex justify-space-between">
+              <div>{{ t('classes') }}</div>
+            </v-card-title>
+
+            <v-card-text>
+              <v-chip-group selected-class="text-primary" column text="chip">
+                <template v-for="s in fieldClasses" :key="s.id">
+                  <v-chip>
+                    {{ s.name }}
+                  </v-chip>
+                </template>
+              </v-chip-group>
+            </v-card-text>
+          </div>
+
+          <!-- list using v-card -->
+
+          <v-container fluid v-if="type == 'v-card' && read && app?.rolesPermissions?.classes?.read">
+            <v-card-title class="d-flex justify-space-between">
+              <div>{{ t('classes') }}</div>
+            </v-card-title>
+
+            <v-row dense>
+              <template v-for="s in fieldClasses" :key="s.id" small>
+                <v-col cols="12" md="3">
+                  <v-card>
+                    <v-card-title>
+                      {{ s.name }}
+                    </v-card-title>
+                  </v-card>
+                </v-col>
+              </template>
+            </v-row>
+          </v-container>
+
+          <!-- list using table -->
+
+          <v-card v-if="type == 'table'">
+            <ApiFieldDetails
+              ref="fieldDetailsClassesComponent"
+              title="classes"
+              :titleAdd="itemDetails.name"
+              :items="fieldClasses"
+              :fields="['name', 'status']"
+              :projectionFields="['name', 'status', 'description']"
+              :sortFields="['name', 'status']"
+              :filterFields="['name', '_lang_en.status', 'description']"
+              :apiFn="{
+                getAll: Api.getClasses,
+                updateField: updateFieldClasses,
+                deleteField: deleteFieldClass,
+              }"
+              :read="read && app?.rolesPermissions?.classes?.read"
+              :write="write && app?.rolesPermissions?.classes?.write"
+              :loading="loading"
+              :nodatatext="nodatatext"
+            ></ApiFieldDetails>
+          </v-card>
+        </v-col>
+      </v-row>
     </v-card-text>
   </v-card>
 </template>
@@ -119,6 +186,12 @@ const fieldDetailsGroupsComponent = ref();
 const fieldGroups = ref([]);
 
 /**
+ * field classes
+ */
+const fieldDetailsClassesComponent = ref();
+const fieldClasses = ref([]);
+
+/**
  * ApiDetails events after get details
  */
 async function onItemDetails(data) {
@@ -126,6 +199,7 @@ async function onItemDetails(data) {
   Object.assign(itemDetails.value, data);
 
   fieldGroups.value = itemDetails.value.groups || [];
+  fieldClasses.value = itemDetails.value.classes || [];
 }
 
 /**
@@ -150,6 +224,28 @@ async function updateFieldGroups(newIDs, removeIDs) {
   for (const groupID of removeIDs) {
     await Api.updateGroupStudents(groupID, [], [props.itemID]);
   }
+
+  // refresh
+  await detailsComponent.value.refresh();
+}
+
+/**
+ * ApiFieldDetails calling deleteField
+ */
+async function deleteFieldClass(classID) {
+  // if fail will throw error and be catch in ApiFieldDetails
+  await Api.updateStudentClasses(props.itemID, [], [classID]);
+
+  // no need for server call
+  fieldClasses.value = fieldClasses.value.filter((item) => item.id !== classID);
+}
+
+/**
+ * ApiFieldDetails calling updateField
+ */
+async function updateFieldClasses(newIDs, removeIDs) {
+  // if fail will throw error and be catch in ApiFieldDetails
+  await Api.updateStudentClasses(props.itemID, newIDs, removeIDs);
 
   // refresh
   await detailsComponent.value.refresh();
