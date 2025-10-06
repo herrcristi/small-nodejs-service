@@ -424,12 +424,13 @@ async function fetchAll({ page = 1, itemsPerPage = 50, sortBy = [] } = {}) {
     nodatatext.value = '';
   } catch (e) {
     console.error('Error fetching all', e);
+    const errText = e.response?.data?.error?.toString() || e.toString();
 
-    nodatatext.value = e.toString();
+    nodatatext.value = errText;
     totalItems.value = 0;
     items.value = [];
 
-    snackbarText.value = (t('fetch.error') || 'Error fetching') + ' ' + e.toString();
+    snackbarText.value = (t('fetch.error') || 'Error fetching') + ' ' + errText;
     snackbarColor.value = 'error';
     snackbar.value = true;
   } finally {
@@ -474,8 +475,9 @@ async function del(itemID) {
     await fetchAll(lastRequestParams.value);
   } catch (e) {
     console.error('Error deleting:', e);
+    const errText = e.response?.data?.error?.toString() || e.toString();
 
-    snackbarText.value = (t('delete.error') || 'Error deleting') + ' ' + e.toString();
+    snackbarText.value = (t('delete.error') || 'Error deleting') + ' ' + errText;
     snackbarColor.value = 'error';
     snackbar.value = true;
   }

@@ -13,8 +13,8 @@
     }"
     :read="read"
     :write="write"
-    :details="true"
     :expand="true"
+    :details="true"
     @openDetails="openDetails($event)"
     :style="detailsOpen ? 'width:48%;display:inline-block;vertical-align:top;' : ''"
   >

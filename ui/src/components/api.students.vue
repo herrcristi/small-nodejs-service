@@ -11,9 +11,23 @@
       update: Api.updateStudent,
       delete: Api.deleteStudent,
     }"
-    :read="app?.rolesPermissions?.students?.read"
-    :write="app?.rolesPermissions?.students?.write"
-  ></ApiPage>
+    :read="read"
+    :write="write"
+    :expand="true"
+  >
+    <!-- 
+      more info
+    -->
+    <template v-slot:expanded-content="{ item, columns }">
+      <tr>
+        <td :colspan="columns.length" class="py-2">
+          <v-sheet rounded="lg" border>
+            <ApiStudentMoreInfo :itemID="item.id" type="table" />
+          </v-sheet>
+        </td>
+      </tr>
+    </template>
+  </ApiPage>
 </template>
 
 <script setup>
@@ -21,13 +35,16 @@ import { ref, reactive, computed } from 'vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import ApiPage from './api.base.page.vue';
+import ApiStudentMoreInfo from './api.student.moreinfo.vue';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
 /**
- * state
+ * props
  */
 const app = useAppStore();
+const read = app?.rolesPermissions?.students?.read;
+const write = app?.rolesPermissions?.students?.write;
 
 /**
  * mounted
