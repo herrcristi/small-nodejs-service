@@ -115,7 +115,7 @@ instance.interceptors.response.use(
         const current = window.location.pathname + window.location.search;
         const tenantID = useAppStore()?.tenantID;
 
-        if (current.startsWith('/login') === -1) {
+        if (!current.startsWith('/login')) {
           const loginUrl = `/login?tenantID=${encodeURIComponent(tenantID)}&next=${encodeURIComponent(current)}`;
           window.location.href = loginUrl;
         }

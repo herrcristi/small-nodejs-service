@@ -49,7 +49,7 @@ const Schema = {
 const Validators = {
   Signup: Schema.Signup.fork(['email'], (x) => x.required() /*make required */),
 
-  Invite: Schema.Invite.fork(['email'], (x) => x.required() /*make required */),
+  Invite: Schema.Invite.fork(['email', 'school'], (x) => x.required() /*make required */),
 };
 
 const Private = {

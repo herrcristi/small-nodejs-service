@@ -1,5 +1,18 @@
 {
   "roles": {
+    "deny-not-current-user": {
+      "users-auth": {
+        "DELETE": ["/api/v1/users-auth/:id"],
+        "PUT": ["/api/v1/users-auth/:id/password", "/api/v1/users-auth/:id/id"],
+        "PATCH": ["/api/v1/users-auth/:id/password", "/api/v1/users-auth/:id/id"]
+      },
+      "users": {
+        "GET": ["/api/v1/users/:id"],
+        "PUT": ["/api/v1/users/:id"],
+        "PATCH": ["/api/v1/users/:id"]
+      }
+    },
+
     "all": {
       "users-auth": {
         "POST": ["/api/v1/users-auth/logout"],
@@ -17,6 +30,15 @@
     "portal-admin": {
       "users-auth": {
         "POST": ["/api/v1/users-auth/signup"]
+      }
+    },
+
+    "deny-not-current-school": {
+      "schools": {
+        "GET": ["/api/v1/schools/:id"],
+        "DELETE": ["/api/v1/schools/:id"],
+        "PUT": ["/api/v1/schools/:id"],
+        "PATCH": ["/api/v1/schools/:id"]
       }
     },
 
@@ -93,14 +115,10 @@
         "GET": ["/api/v1/schedules", "/api/v1/schedules/:id"]
       },
       "professors": {
-        "GET": ["/api/v1/professors", "/api/v1/professors/:id"],
-        "PUT": ["/api/v1/professors/:id"],
-        "PATCH": ["/api/v1/professors/:id"]
+        "GET": ["/api/v1/professors"]
       },
       "students": {
-        "GET": ["/api/v1/students", "/api/v1/students/:id"],
-        "PUT": ["/api/v1/students/:id"],
-        "PATCH": ["/api/v1/students/:id"]
+        "GET": ["/api/v1/students"]
       },
       "groups": {
         "GET": ["/api/v1/groups", "/api/v1/groups/:id"]
@@ -121,15 +139,28 @@
         "GET": ["/api/v1/schedules", "/api/v1/schedules/:id"]
       },
       "professors": {
-        "GET": ["/api/v1/professors", "/api/v1/professors/:id"]
+        "GET": ["/api/v1/professors"]
       },
       "students": {
-        "GET": ["/api/v1/students", "/api/v1/students/:id"],
-        "PUT": ["/api/v1/students/:id"],
-        "PATCH": ["/api/v1/students/:id"]
+        "GET": ["/api/v1/students"]
       },
       "groups": {
         "GET": ["/api/v1/groups", "/api/v1/groups/:id"]
+      }
+    },
+
+    "current-user": {
+      "professors": {
+        "GET": ["/api/v1/professors/:id"],
+        "DELETE": ["/api/v1/professors/:id"],
+        "PUT": ["/api/v1/professors/:id"],
+        "PATCH": ["/api/v1/professors/:id"]
+      },
+      "students": {
+        "GET": ["/api/v1/students/:id"],
+        "DELETE": ["/api/v1/students/:id"],
+        "PUT": ["/api/v1/students/:id"],
+        "PATCH": ["/api/v1/students/:id"]
       }
     }
   }

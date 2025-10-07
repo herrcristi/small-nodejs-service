@@ -99,7 +99,8 @@ const { t } = useI18n();
  */
 const props = defineProps({
   title: { type: [String], default: null },
-  fields: { type: Array, default: [] },
+  addFields: { type: Array, default: [] },
+  editFields: { type: Array, default: [] },
 
   write: { type: [Boolean, Number], default: null },
 
@@ -128,7 +129,7 @@ const emit = defineEmits(['cancel', 'save']);
 /**
  * fields
  */
-const fieldsSet = ref(new Set(props.fields));
+const fieldsSet = ref(new Set([]));
 
 /**
  * status items for the select
@@ -270,6 +271,7 @@ function openAdd() {
   }
 
   resetForm();
+  fieldsSet.value = new Set(props.addFields);
 
   // default status for new
   if (fieldsSet.value.has('status')) {
@@ -298,6 +300,7 @@ function openEdit(item) {
   }
 
   resetForm();
+  fieldsSet.value = new Set(props.editFields);
   Object.keys(itemData).forEach((k) => delete itemData[k]);
 
   // set
@@ -334,6 +337,7 @@ function openEdit(item) {
 function closeDialog() {
   dialog.value = false;
   resetForm();
+  fieldsSet.value = new Set([]);
 
   emit('cancel');
 }
