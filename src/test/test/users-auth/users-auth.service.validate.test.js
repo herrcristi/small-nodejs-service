@@ -448,6 +448,64 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
+   * fail validate GET user auth :id
+   */
+  it('should fail validate GET user auth :id', async () => {
+    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testAuthUser = testAuthUsers[0];
+
+    const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    const testInfoUser = testInfoUsers[0];
+    for (const school of testInfoUser.schools) {
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+
+    const testAuthData = testAuthUser._test_data;
+    delete testAuthUser._test_data;
+
+    // stub
+    let stubUsersGet = sinon.stub(UsersRest, 'getOneByEmail').callsFake((email) => {
+      console.log(`\nUsersRest.getOne called for ${JSON.stringify(email, null, 2)}\n`);
+
+      chai.expect(email).to.equal(testAuthUser.id);
+      return { status: 200, value: testInfoUser };
+    });
+
+    let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
+      console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
+
+      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+    });
+
+    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
+      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
+
+      return { status: 200, value: data };
+    });
+
+    // call
+    _ctx.tenantID = testInfoUser.schools[0].id;
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = `/api/v1/users-auth/${_ctx.username}`;
+    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users-auth/:id' }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubToken.callCount).to.equal(1);
+    chai.expect(stubDecrypt.callCount).to.equal(1);
+
+    chai.expect(res).to.deep.equal({
+      status: 403,
+      error: {
+        message: 'Route is not accesible: get /api/v1/users-auth/:id',
+        error: new Error('Route is not accesible: get /api/v1/users-auth/:id'),
+      },
+    });
+  }).timeout(10000);
+
+  /**
    * fail validate user auth :id
    */
   it('should fail validate user auth :id', async () => {
@@ -488,7 +546,11 @@ describe('Users Auth Service', function () {
     _ctx.userID = testInfoUser.id;
     _ctx.username = testAuthUser.id;
     _ctx.reqUrl = `/api/v1/users-auth/diffid`;
-    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users-auth/:id' }, _ctx);
+    // non get method
+    let res = await UsersAuthService.validate(
+      { token: 'token', method: 'delete', route: '/api/v1/users-auth/:id' },
+      _ctx
+    );
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -499,8 +561,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 403,
       error: {
-        message: ':id restriction applied',
-        error: new Error(':id restriction applied'),
+        message: 'user :id restriction applied',
+        error: new Error('user :id restriction applied'),
       },
     });
   }).timeout(10000);
@@ -547,7 +609,7 @@ describe('Users Auth Service', function () {
     _ctx.username = testAuthUser.id;
     _ctx.reqUrl = `/api/v1/users-auth/diffid/something`;
     let res = await UsersAuthService.validate(
-      { token: 'token', method: 'get', route: '/api/v1/users-auth/:id/something' },
+      { token: 'token', method: 'delete', route: '/api/v1/users-auth/:id/something' },
       _ctx
     );
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -557,11 +619,12 @@ describe('Users Auth Service', function () {
     chai.expect(stubToken.callCount).to.equal(1);
     chai.expect(stubDecrypt.callCount).to.equal(1);
 
+    // even if the prefix is for users-auth the route actually is not in the list
     chai.expect(res).to.deep.equal({
       status: 403,
       error: {
-        message: ':id restriction applied',
-        error: new Error(':id restriction applied'),
+        message: 'Route is not accesible: delete /api/v1/users-auth/:id/something',
+        error: new Error('Route is not accesible: delete /api/v1/users-auth/:id/something'),
       },
     });
   }).timeout(10000);
@@ -618,11 +681,12 @@ describe('Users Auth Service', function () {
     chai.expect(stubToken.callCount).to.equal(1);
     chai.expect(stubDecrypt.callCount).to.equal(1);
 
+    // even if the prefix is for users-auth the route actually is not in the list
     chai.expect(res).to.deep.equal({
       status: 403,
       error: {
-        message: ':id restriction applied',
-        error: new Error(':id restriction applied'),
+        message: 'Route is not accesible: get /api/v1/users/:id/something',
+        error: new Error('Route is not accesible: get /api/v1/users/:id/something'),
       },
     });
   }).timeout(10000);
@@ -679,8 +743,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 403,
       error: {
-        message: ':id restriction applied',
-        error: new Error(':id restriction applied'),
+        message: 'school :id restriction applied',
+        error: new Error('school :id restriction applied'),
       },
     });
   }).timeout(10000);
@@ -737,11 +801,12 @@ describe('Users Auth Service', function () {
     chai.expect(stubDecrypt.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
 
+    // even if the prefix is for users-auth the route actually is not in the list
     chai.expect(res).to.deep.equal({
       status: 403,
       error: {
-        message: ':id restriction applied',
-        error: new Error(':id restriction applied'),
+        message: 'Route is not accesible: get /api/v1/schools/:id/something',
+        error: new Error('Route is not accesible: get /api/v1/schools/:id/something'),
       },
     });
   }).timeout(10000);

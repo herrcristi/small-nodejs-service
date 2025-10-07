@@ -201,7 +201,6 @@ const Private = {
    * check if matching param
    */
   isValidRouteForParam: (route, paramID, _ctx) => {
-    let isValid = false;
     for (const checkid of [paramID, encodeURIComponent(paramID)]) {
       const expandRoute = `${route}`.replace(':id', checkid);
 

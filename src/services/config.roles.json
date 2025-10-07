@@ -2,7 +2,15 @@
   "roles": {
     "all": {
       "users-auth": {
-        "POST": ["/api/v1/users-auth/logout"]
+        "POST": ["/api/v1/users-auth/logout"],
+        "DELETE": ["/api/v1/users-auth/:id"],
+        "PUT": ["/api/v1/users-auth/:id/password", "/api/v1/users-auth/:id/id"],
+        "PATCH": ["/api/v1/users-auth/:id/password", "/api/v1/users-auth/:id/id"]
+      },
+      "users": {
+        "GET": ["/api/v1/users/:id"],
+        "PUT": ["/api/v1/users/:id"],
+        "PATCH": ["/api/v1/users/:id"]
       }
     },
 
