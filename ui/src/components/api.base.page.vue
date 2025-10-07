@@ -22,6 +22,15 @@
       <!-- 
         expose expanded content 
       -->
+      <template v-slot:data-table-expand="{ internalItem, isExpanded, toggleExpand }">
+        <slot
+          name="data-table-expand"
+          :internalItem="internalItem"
+          :isExpanded="isExpanded"
+          :toggleExpand="toggleExpand"
+        ></slot>
+      </template>
+
       <template v-slot:expanded-content="{ item, columns }">
         <slot name="expanded-content" :item="item" :columns="columns"></slot>
       </template>
@@ -33,7 +42,8 @@
     <ApiEditItem
       ref="editDialog"
       :title="props.title"
-      :fields="props.fields"
+      :addFields="props.addFields || props.fields"
+      :editFields="props.editFields || props.fields"
       :apiFn="props.apiFn"
       :write="write"
       @cancel="closeEdit($event)"
@@ -58,6 +68,8 @@ const props = defineProps({
   sortFields: { type: Array, default: [] },
   projectionFields: { type: Array, default: null },
   filterFields: { type: Array, default: null },
+  addFields: { type: Array, default: null },
+  editFields: { type: Array, default: null },
 
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },

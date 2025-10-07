@@ -127,18 +127,20 @@
         expand 
     -->
     <template v-slot:item.data-table-expand="{ internalItem, isExpanded, toggleExpand }">
-      <v-btn
-        :append-icon="isExpanded(internalItem) ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-        :text="isExpanded(internalItem) ? t('collapse') : t('more.info')"
-        class="text-none"
-        color="medium-emphasis"
-        size="small"
-        variant="text"
-        width="105"
-        border
-        slim
-        @click="toggleExpand(internalItem)"
-      ></v-btn>
+      <slot name="data-table-expand" :internalItem="internalItem" :isExpanded="isExpanded" :toggleExpand="toggleExpand">
+        <v-btn
+          :append-icon="isExpanded(internalItem) ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+          :text="isExpanded(internalItem) ? t('collapse') : t('more.info')"
+          class="text-none"
+          color="medium-emphasis"
+          size="small"
+          variant="text"
+          width="105"
+          border
+          slim
+          @click="toggleExpand(internalItem)"
+        ></v-btn>
+      </slot>
     </template>
 
     <template v-slot:expanded-row="{ columns, item }">

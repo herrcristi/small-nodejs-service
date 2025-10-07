@@ -198,43 +198,51 @@ const Private = {
   },
 
   /**
+   * check if matching param
+   */
+  isValidRouteForParam: (route, paramID, _ctx) => {
+    let isValid = false;
+    for (const checkid of [paramID, encodeURIComponent(paramID)]) {
+      const expandRoute = `${route}`.replace(':id', checkid);
+
+      // either is equal or it starts with expandedRoute/
+      if (new RegExp(`^${expandRoute}([/]|$)`).test(_ctx.reqUrl)) {
+        // valid route
+        return true;
+      }
+    }
+
+    return false;
+  },
+
+  /**
    * validate route
    * _ctx: { userID, username, tenantID }
    */
   validateRoute: (user, method, route, _ctx) => {
-    const restrictRouteID = {
-      // validate /api/v1/users-auth/:id/... is called only for loggedin user
-      [`${UsersAuthRest.Constants.ApiPath}/:id`]: _ctx.username,
-      // validate /api/v1/users/:id/... is called only for loggedin user
-      [`${UsersRest.Constants.ApiPath}/:id`]: _ctx.userID,
-      // !! even though school rest api doesnt require tenantID, tenantID is used to validate the current user role access
-      [`${SchoolsRest.Constants.ApiPath}/:id`]: _ctx.tenantID,
-    };
-
-    for (const checkRoute in restrictRouteID) {
-      if (!new RegExp(`^${checkRoute}`).test(route)) {
-        continue;
+    // some routes are only for current-user
+    const isCurrentUser = Private.isValidRouteForRoles(['current-user'], method, route);
+    if (isCurrentUser) {
+      let paramID = _ctx.userID;
+      if (new RegExp(`^${UsersAuthRest.Constants.ApiPath}/:id`).test(route)) {
+        paramID = _ctx.username;
       }
 
-      const restrictID = restrictRouteID[checkRoute];
-
-      let isValid = false;
-      for (const checkid of [restrictID, encodeURIComponent(restrictID)]) {
-        const expandRoute = `${checkRoute}`.replace(':id', checkid);
-
-        // either is equal or it starts with expandedRoute/
-        if (new RegExp(`^${expandRoute}([/]|$)`).test(_ctx.reqUrl)) {
-          // valid route
-          isValid = true;
-          break;
-        }
+      const isValid = Private.isValidRouteForParam(route, paramID, _ctx);
+      if (!isValid) {
+        const msg = 'user :id restriction applied';
+        return { status: 403, error: { message: msg, error: new Error(msg) } };
       }
-      if (isValid) {
-        continue;
-      }
+    }
 
-      const msg = ':id restriction applied';
-      return { status: 403, error: { message: msg, error: new Error(msg) } };
+    // some routes are only for current-school
+    const isCurrentSchool = Private.isValidRouteForRoles(['current-school'], method, route);
+    if (isCurrentSchool) {
+      const isValid = Private.isValidRouteForParam(route, _ctx.tenantID /* paramID */, _ctx);
+      if (!isValid) {
+        const msg = 'school :id restriction applied';
+        return { status: 403, error: { message: msg, error: new Error(msg) } };
+      }
     }
 
     // validate for all (non-tenant) route

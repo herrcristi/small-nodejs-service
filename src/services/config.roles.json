@@ -2,7 +2,12 @@
   "roles": {
     "all": {
       "users-auth": {
-        "POST": ["/api/v1/users-auth/logout"],
+        "POST": ["/api/v1/users-auth/logout"]
+      }
+    },
+
+    "current-user": {
+      "users-auth": {
         "DELETE": ["/api/v1/users-auth/:id"],
         "PUT": ["/api/v1/users-auth/:id/password", "/api/v1/users-auth/:id/id"],
         "PATCH": ["/api/v1/users-auth/:id/password", "/api/v1/users-auth/:id/id"]
@@ -11,6 +16,27 @@
         "GET": ["/api/v1/users/:id"],
         "PUT": ["/api/v1/users/:id"],
         "PATCH": ["/api/v1/users/:id"]
+      },
+      "professors": {
+        "GET": ["/api/v1/professors/:id"],
+        "DELETE": ["/api/v1/professors/:id"],
+        "PUT": ["/api/v1/professors/:id"],
+        "PATCH": ["/api/v1/professors/:id"]
+      },
+      "students": {
+        "GET": ["/api/v1/students/:id"],
+        "DELETE": ["/api/v1/students/:id"],
+        "PUT": ["/api/v1/students/:id"],
+        "PATCH": ["/api/v1/students/:id"]
+      }
+    },
+
+    "current-school": {
+      "schools": {
+        "GET": ["/api/v1/schools/:id"],
+        "DELETE": ["/api/v1/schools/:id"],
+        "PUT": ["/api/v1/schools/:id"],
+        "PATCH": ["/api/v1/schools/:id"]
       }
     },
 
