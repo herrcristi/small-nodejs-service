@@ -219,26 +219,18 @@ const Private = {
    * _ctx: { userID, username, tenantID }
    */
   validateRoute: (user, method, route, _ctx) => {
-    // some routes are only for current-user
-    const isCurrentUser = Private.isValidRouteForRoles(['current-user'], method, route);
-    if (isCurrentUser) {
+    // some routes are only for current user
+    const isDenyNotCurrentUser = Private.isValidRouteForRoles(['deny-not-current-user'], method, route);
+    if (isDenyNotCurrentUser) {
       let paramID = _ctx.userID;
       if (new RegExp(`^${UsersAuthRest.Constants.ApiPath}/:id`).test(route)) {
         paramID = _ctx.username;
       }
 
       const isValid = Private.isValidRouteForParam(route, paramID, _ctx);
-      if (isValid) {
-        return { status: 200, value: true };
-      }
-    }
-
-    // some routes are only for current-school
-    const isCurrentSchool = Private.isValidRouteForRoles(['current-school'], method, route);
-    if (isCurrentSchool) {
-      const isValid = Private.isValidRouteForParam(route, _ctx.tenantID /* paramID */, _ctx);
-      if (isValid) {
-        return { status: 200, value: true };
+      if (!isValid) {
+        const msg = 'user :id restriction applied';
+        return { status: 403, error: { message: msg, error: new Error(msg) } };
       }
     }
 
@@ -257,6 +249,16 @@ const Private = {
       }
     }
 
+    // some routes are only for current school
+    const isDenyNotCurrentSchool = Private.isValidRouteForRoles(['deny-not-current-school'], method, route);
+    if (isDenyNotCurrentSchool) {
+      const isValid = Private.isValidRouteForParam(route, _ctx.tenantID /* paramID */, _ctx);
+      if (!isValid) {
+        const msg = 'school :id restriction applied';
+        return { status: 403, error: { message: msg, error: new Error(msg) } };
+      }
+    }
+
     // validate per tenant
     const validSchool = user.schools.find((item) => item.id === _ctx.tenantID);
     if (!validSchool) {
@@ -272,13 +274,24 @@ const Private = {
 
     // validate also route
     const validRole = Private.isValidRouteForRoles(validSchool.roles, method, route);
-    if (!validRole) {
-      const msg = `Route is not accesible: ${method} ${route}`;
-      return { status: 403, error: { message: msg, error: new Error(msg) } };
+
+    // some routes are only for current-user
+    let validCurrentUser = Private.isValidRouteForRoles(['current-user'], method, route);
+    if (validCurrentUser) {
+      let paramID = _ctx.userID;
+      if (new RegExp(`^${UsersAuthRest.Constants.ApiPath}/:id`).test(route)) {
+        paramID = _ctx.username;
+      }
+      validCurrentUser = Private.isValidRouteForParam(route, paramID, _ctx);
     }
 
-    // valid
-    return { status: 200, value: true, tenantName: validSchool.name };
+    if (validRole || validCurrentUser) {
+      // valid
+      return { status: 200, value: true, tenantName: validSchool.name };
+    }
+
+    const msg = `Route is not accesible: ${method} ${route}`;
+    return { status: 403, error: { message: msg, error: new Error(msg) } };
   },
 };
 
