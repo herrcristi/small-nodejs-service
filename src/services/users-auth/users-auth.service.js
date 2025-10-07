@@ -228,9 +228,8 @@ const Private = {
       }
 
       const isValid = Private.isValidRouteForParam(route, paramID, _ctx);
-      if (!isValid) {
-        const msg = 'user :id restriction applied';
-        return { status: 403, error: { message: msg, error: new Error(msg) } };
+      if (isValid) {
+        return { status: 200, value: true };
       }
     }
 
@@ -238,9 +237,8 @@ const Private = {
     const isCurrentSchool = Private.isValidRouteForRoles(['current-school'], method, route);
     if (isCurrentSchool) {
       const isValid = Private.isValidRouteForParam(route, _ctx.tenantID /* paramID */, _ctx);
-      if (!isValid) {
-        const msg = 'school :id restriction applied';
-        return { status: 403, error: { message: msg, error: new Error(msg) } };
+      if (isValid) {
+        return { status: 200, value: true };
       }
     }
 
