@@ -439,8 +439,9 @@ async function del(itemID) {
     emit('deleteItem', toDeleteID.value);
   } catch (e) {
     console.error('Error deleting:', e);
+    const errText = e.response?.data?.error?.toString() || e.toString();
 
-    snackbarText.value = (t('delete.error') || 'Error deleting') + ' ' + e.toString();
+    snackbarText.value = (t('delete.error') || 'Error deleting') + ' - ' + errText;
     snackbarColor.value = 'error';
     snackbar.value = true;
   }

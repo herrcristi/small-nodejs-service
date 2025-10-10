@@ -42,7 +42,7 @@
   <!-- 
           snackbar for notifications
       -->
-  <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ t(snackbarText) }}</v-snackbar>
+  <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ snackbarText }}</v-snackbar>
 </template>
 
 <script setup>
@@ -102,13 +102,8 @@ async function submitPassword() {
   }
 
   try {
-    // use the existing email
-    const email = useAuthStore()?.raw?.email;
-    if (!email) {
-      throw new Error('No email found for current user');
-    }
-
-    await Api.updateUserPassword(email, {
+    // current user
+    await Api.updateUserPassword({
       oldPassword: passwordOld.value,
       newPassword: passwordNew.value,
     });
@@ -119,15 +114,16 @@ async function submitPassword() {
     passwordNew.value = '';
     passwordConfirm.value = '';
 
-    snackbarText.value = 'password.change.success';
+    snackbarText.value = t('password.change.success');
     snackbarColor.value = 'success';
     snackbar.value = true;
 
     emit('password-changed', true);
   } catch (e) {
     console.error('Error changing password', e);
+    const errText = e.response?.data?.error?.toString() || e.toString();
 
-    snackbarText.value = 'password.change.error';
+    snackbarText.value = t('password.change.error') + ' - ' + errText;
     snackbarColor.value = 'error';
     snackbar.value = true;
   }

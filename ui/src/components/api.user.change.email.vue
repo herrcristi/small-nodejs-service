@@ -34,7 +34,7 @@
   <!-- 
           snackbar for notifications
       -->
-  <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ t(snackbarText) }}</v-snackbar>
+  <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ snackbarText }}</v-snackbar>
 </template>
 
 <script setup>
@@ -47,9 +47,6 @@ const { t } = useI18n();
 /**
  * props
  */
-const userID = ref('');
-const profile = ref({});
-const loading = ref(false);
 
 // email change
 const emailDialog = ref(false);
@@ -96,20 +93,15 @@ async function submitEmail() {
   }
 
   try {
-    const auth = useAuthStore();
-    const email = auth?.raw?.email;
-    if (!email) {
-      throw new Error('No current email');
-    }
-
-    await Api.updateUserEmail(email, {
+    await Api.updateUserEmail({
       id: emailNew.value,
       password: emailPassword.value,
     });
 
     // update store and local profile
+    const auth = useAuthStore();
     auth.raw = { ...auth.raw, email: emailNew.value };
-    useAuthStore()?.save(auth);
+    auth?.save(auth);
 
     const emailChanged = emailNew.value;
 
@@ -118,15 +110,16 @@ async function submitEmail() {
     emailNew.value = '';
     emailPassword.value = '';
 
-    snackbarText.value = 'email.change.success';
+    snackbarText.value = t('email.change.success');
     snackbarColor.value = 'success';
     snackbar.value = true;
 
     emit('email-changed', emailChanged);
   } catch (e) {
     console.error('Error changing email', e);
+    const errText = e.response?.data?.error?.toString() || e.toString();
 
-    snackbarText.value = 'email.change.error';
+    snackbarText.value = t('email.change.error') + ' - ' + errText;
     snackbarColor.value = 'error';
     snackbar.value = true;
   }

@@ -172,7 +172,7 @@
       <!-- 
           snackbar for notifications
       -->
-      <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ t(snackbarText) }}</v-snackbar>
+      <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ snackbarText }}</v-snackbar>
     </v-container>
   </v-card>
 </template>
@@ -191,6 +191,7 @@ const { t } = useI18n();
 /**
  * props
  */
+const detailsComponent = ref();
 const userID = ref('');
 const profile = ref({});
 const loading = ref(false);
@@ -319,14 +320,16 @@ async function saveEdit() {
       profile.value = { ...profile.value, ...payload };
       editDialog.value = false;
 
-      snackbarText.value = 'profile.update.success';
+      snackbarText.value = t('profile.update.success');
       snackbarColor.value = 'success';
       snackbar.value = true;
     }
   } catch (e) {
     console.error('Error saving profile', e);
+    const errText = e.response?.data?.error?.toString() || e.toString();
+
     // keep dialog open and show error
-    snackbarText.value = 'profile.update.error';
+    snackbarText.value = t('profile.update.error') + ' - ' + errText;
     snackbarColor.value = 'error';
     snackbar.value = true;
   }
@@ -400,6 +403,11 @@ function openEmailDialog() {
 
 async function onEmailChanged(emailNew) {
   profile.value = { ...profile.value, email: emailNew };
+
+  // trigger a refresh
+  setTimeout(() => {
+    /* await */ detailsComponent.value.refresh();
+  }, 1000);
 }
 </script>
 

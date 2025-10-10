@@ -281,7 +281,13 @@ const Public = {
     if (e?.stack) {
       return e.stack;
     }
-    return typeof e === 'string' ? e : JSON.stringify(e);
+    if (typeof e === 'string') {
+      return e;
+    }
+    if (typeof e?.message === 'string') {
+      return e.message;
+    }
+    return JSON.stringify(e);
   },
 };
 
