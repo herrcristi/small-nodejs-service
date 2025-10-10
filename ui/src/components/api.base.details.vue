@@ -39,7 +39,7 @@ watch(
   () => props.itemID,
   (id) => {
     if (id) {
-      fetchDetails(id);
+      /* await */ fetchDetails(id);
     }
   },
   { immediate: true }
@@ -82,7 +82,7 @@ function mounted() {}
  * refresh
  */
 async function refresh() {
-  await fetchDetails(props.itemID);
+  return /* await */ fetchDetails(props.itemID);
 }
 
 /**

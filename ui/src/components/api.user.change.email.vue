@@ -34,7 +34,7 @@
   <!-- 
           snackbar for notifications
       -->
-  <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ t(snackbarText) }}</v-snackbar>
+  <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ snackbarText }}</v-snackbar>
 </template>
 
 <script setup>
@@ -99,8 +99,9 @@ async function submitEmail() {
     });
 
     // update store and local profile
+    const auth = useAuthStore();
     auth.raw = { ...auth.raw, email: emailNew.value };
-    useAuthStore()?.save(auth);
+    auth?.save(auth);
 
     const emailChanged = emailNew.value;
 
