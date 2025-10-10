@@ -167,8 +167,9 @@ async function saveAdd() {
     emit('deleteItems', removeIDs);
   } catch (e) {
     console.error('Error updating field:', e);
+    const errText = e.response?.data?.error?.toString() || e.toString();
 
-    snackbarText.value = (t('update.error') || 'Error updating field') + ' ' + e.toString();
+    snackbarText.value = (t('update.error') || 'Error updating field') + ' - ' + errText;
     snackbarColor.value = 'error';
     snackbar.value = true;
   }

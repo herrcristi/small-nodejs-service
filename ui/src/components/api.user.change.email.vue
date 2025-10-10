@@ -47,9 +47,6 @@ const { t } = useI18n();
 /**
  * props
  */
-const userID = ref('');
-const profile = ref({});
-const loading = ref(false);
 
 // email change
 const emailDialog = ref(false);
@@ -112,15 +109,16 @@ async function submitEmail() {
     emailNew.value = '';
     emailPassword.value = '';
 
-    snackbarText.value = 'email.change.success';
+    snackbarText.value = t('email.change.success');
     snackbarColor.value = 'success';
     snackbar.value = true;
 
     emit('email-changed', emailChanged);
   } catch (e) {
     console.error('Error changing email', e);
+    const errText = e.response?.data?.error?.toString() || e.toString();
 
-    snackbarText.value = 'email.change.error';
+    snackbarText.value = t('email.change.error') + ' - ' + errText;
     snackbarColor.value = 'error';
     snackbar.value = true;
   }

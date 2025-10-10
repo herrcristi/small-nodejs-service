@@ -114,15 +114,16 @@ async function submitPassword() {
     passwordNew.value = '';
     passwordConfirm.value = '';
 
-    snackbarText.value = 'password.change.success';
+    snackbarText.value = t('password.change.success');
     snackbarColor.value = 'success';
     snackbar.value = true;
 
     emit('password-changed', true);
   } catch (e) {
     console.error('Error changing password', e);
+    const errText = e.response?.data?.error?.toString() || e.toString();
 
-    snackbarText.value = 'password.change.error';
+    snackbarText.value = t('password.change.error') + ' - ' + errText;
     snackbarColor.value = 'error';
     snackbar.value = true;
   }

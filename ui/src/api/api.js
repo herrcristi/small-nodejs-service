@@ -240,19 +240,20 @@ const Api = {
 
   currentUserEmailID: () => useAuthStore()?.raw?.email /*current user email*/,
 
-  updateUserPassword: (data) => instance.put(`/users-auth/${encodeURIComponent(currentUserEmailID())}/password`, data),
-  updateUserEmail: (data) => instance.put(`/users-auth/${encodeURIComponent(currentUserEmailID())}/id`, data),
+  updateUserPassword: (data) =>
+    instance.put(`/users-auth/${encodeURIComponent(Api.currentUserEmailID())}/password`, data),
+  updateUserEmail: (data) => instance.put(`/users-auth/${encodeURIComponent(Api.currentUserEmailID())}/id`, data),
 
-  deleteUser: () => instance.delete(`/users-auth/${encodeURIComponent(currentUserEmailID())}`),
+  deleteUser: () => instance.delete(`/users-auth/${encodeURIComponent(Api.currentUserEmailID())}`),
 
-  invite: (data) => instance.post(`/users-auth/${encodeURIComponent(currentUserEmailID())}/invite`, data),
+  invite: (data) => instance.post(`/users-auth/${encodeURIComponent(Api.currentUserEmailID())}/invite`, data),
 
   updateUserSchool: (uid, data) =>
-    instance.patch(`/users-auth/${encodeURIComponent(currentUserEmailID())}/school/user/${uid}`, data),
+    instance.patch(`/users-auth/${encodeURIComponent(Api.currentUserEmailID())}/school/user/${uid}`, data),
 
   // Auth for portal admin
   // signup new school
-  signup: (data) => instance.post(`/users-auth/${encodeURIComponent(currentUserEmailID())}/invite`, data),
+  signup: (data) => instance.post(`/users-auth/${encodeURIComponent(Api.currentUserEmailID())}/invite`, data),
 };
 
 export default Api;

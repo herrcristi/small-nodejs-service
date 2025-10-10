@@ -47,6 +47,20 @@ describe('Common Utils', function () {
   }).timeout(10000);
 
   /**
+   * getLogError message
+   */
+  it('should getLogError message string', async () => {
+    let e = { message: 'string' };
+
+    // call
+    let res = CommonUtils.getLogError(e);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.equal(e.message);
+  }).timeout(10000);
+
+  /**
    * getLogError object
    */
   it('should getLogError object', async () => {
