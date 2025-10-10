@@ -136,7 +136,11 @@ const Api = {
   // Students API
   getStudents: (params) => instance.get(`/students?${params}`),
   getStudent: (id) => instance.get(`/students/${id}`),
-  createStudent: (data) => instance.post(`/students`, data),
+  createStudent: (data) =>
+    Api.invite({
+      email: data.email /*new user email*/,
+      school: { role: 'student' },
+    }),
   updateStudent: (id, data) => instance.put(`/students/${id}`, data),
   deleteStudent: (id) => instance.delete(`/students/${id}`),
   updateStudentClasses: (id, newIds, removeIds) =>
@@ -156,7 +160,11 @@ const Api = {
   // Professors API
   getProfessors: (params) => instance.get(`/professors?${params}`),
   getProfessor: (id) => instance.get(`/professors/${id}`),
-  createProfessor: (data) => instance.post(`/professors`, data),
+  createProfessor: (data) =>
+    Api.invite({
+      email: data.email /*new user email*/,
+      school: { role: 'professor' },
+    }),
   updateProfessor: (id, data) => instance.put(`/professors/${id}`, data),
   deleteProfessor: (id) => instance.delete(`/professors/${id}`),
   updateProfessorClasses: (id, newIds, removeIds) =>
@@ -229,18 +237,22 @@ const Api = {
   logout: (withCreds = false) => instance.post('/users-auth/logout', {}, { withCredentials: withCreds }),
 
   resetUserPassword: (data) => instance.post(`/users-auth/reset-password`, data),
-  updateUserPassword: (emailID, data) => instance.put(`/users-auth/${encodeURIComponent(emailID)}/password`, data),
-  updateUserEmail: (emailID, data) => instance.put(`/users-auth/${encodeURIComponent(emailID)}/id`, data),
 
-  deleteUser: (emailID) => instance.delete(`/users-auth/${encodeURIComponent(emailID)}`),
+  currentUserEmailID: () => useAuthStore()?.raw?.email /*current user email*/,
 
-  invite: (emailID, data) => instance.post(`/users-auth/${encodeURIComponent(emailID)}/invite`, data),
-  updateUserSchool: (emailID, uid, data) =>
-    instance.patch(`/users-auth/${encodeURIComponent(emailID)}/school/user/${uid}`, data),
+  updateUserPassword: (data) => instance.put(`/users-auth/${encodeURIComponent(currentUserEmailID())}/password`, data),
+  updateUserEmail: (data) => instance.put(`/users-auth/${encodeURIComponent(currentUserEmailID())}/id`, data),
+
+  deleteUser: () => instance.delete(`/users-auth/${encodeURIComponent(currentUserEmailID())}`),
+
+  invite: (data) => instance.post(`/users-auth/${encodeURIComponent(currentUserEmailID())}/invite`, data),
+
+  updateUserSchool: (uid, data) =>
+    instance.patch(`/users-auth/${encodeURIComponent(currentUserEmailID())}/school/user/${uid}`, data),
 
   // Auth for portal admin
   // signup new school
-  signup: () => instance.delete(`/users-auth/signup`),
+  signup: (data) => instance.post(`/users-auth/${encodeURIComponent(currentUserEmailID())}/invite`, data),
 };
 
 export default Api;

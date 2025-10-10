@@ -96,13 +96,7 @@ async function submitEmail() {
   }
 
   try {
-    const auth = useAuthStore();
-    const email = auth?.raw?.email;
-    if (!email) {
-      throw new Error('No current email');
-    }
-
-    await Api.updateUserEmail(email, {
+    await Api.updateUserEmail({
       id: emailNew.value,
       password: emailPassword.value,
     });

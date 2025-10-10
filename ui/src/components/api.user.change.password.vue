@@ -102,13 +102,8 @@ async function submitPassword() {
   }
 
   try {
-    // use the existing email
-    const email = useAuthStore()?.raw?.email;
-    if (!email) {
-      throw new Error('No email found for current user');
-    }
-
-    await Api.updateUserPassword(email, {
+    // current user
+    await Api.updateUserPassword({
       oldPassword: passwordOld.value,
       newPassword: passwordNew.value,
     });
