@@ -20,7 +20,7 @@
         <!-- 
           field classes 
          -->
-        <v-col cols="12" md="6">
+        <v-col cols="12" md="10">
           <!-- list using v-chip -->
           <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.classes?.read">
             <v-card-title class="d-flex justify-space-between">
@@ -75,11 +75,13 @@
             ></ApiFieldDetails>
           </v-card>
         </v-col>
+      </v-row>
 
+      <v-row class="d-flex justify-end">
         <!-- 
           field professors 
         -->
-        <v-col cols="12" md="6">
+        <v-col cols="12" md="10">
           <!-- list using v-chip -->
           <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.professors?.read">
             <v-card-title class="d-flex justify-space-between">
@@ -218,7 +220,7 @@
         <!-- 
             field groups 
           -->
-        <v-col cols="12" md="6">
+        <v-col cols="12" md="10">
           <!-- list using v-chip -->
           <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.groups?.read">
             <v-card-title class="d-flex justify-space-between">
@@ -279,11 +281,13 @@
             ></ApiFieldDetails>
           </v-card>
         </v-col>
+      </v-row>
 
+      <v-row class="d-flex justify-end">
         <!-- 
           field students from groups
         -->
-        <v-col cols="12" md="6">
+        <v-col cols="12" md="10">
           <!-- list using v-chip -->
           <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.students?.read">
             <v-card-title class="d-flex justify-space-between">
@@ -346,11 +350,11 @@
         </v-col>
       </v-row>
 
-      <v-row class="d-flex">
+      <v-row class="d-flex justify-end">
         <!-- 
           field students extra
         -->
-        <v-col cols="12" md="6">
+        <v-col cols="12" md="10">
           <!-- list using v-chip -->
           <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.students?.read">
             <v-card-title class="d-flex justify-space-between">
@@ -474,8 +478,9 @@ async function onItemDetails(data) {
   Object.assign(itemDetails.value, data);
 
   fieldClasses.value = [itemDetails.value.class];
-  fieldInnerSchedules.value = itemDetails.value.schedules || [];
   fieldProfessors.value = itemDetails.value.professors || [];
+  fieldInnerSchedules.value = itemDetails.value.schedules || [];
+
   fieldGroups.value = itemDetails.value.groups || [];
   fieldGroupsStudents.value = getGroupsStudents(fieldGroups.value);
   fieldExtraStudents.value = itemDetails.value.students || [];
@@ -509,6 +514,8 @@ function getInnerScheduleTime(timestamp) {
     year: 'numeric',
     month: 'short',
     day: 'numeric',
+    hour: 'numeric',
+    minute: 'numeric',
     timeZone: 'UTC',
   });
 }
