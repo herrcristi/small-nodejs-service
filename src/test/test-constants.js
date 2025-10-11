@@ -597,6 +597,7 @@ const Public = {
           name: 'Group 1A',
           type: 'group',
           status: 'active',
+          description: 'Group 1A. First year',
         },
       ],
       students: [

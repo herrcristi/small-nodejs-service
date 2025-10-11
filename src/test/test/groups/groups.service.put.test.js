@@ -92,6 +92,7 @@ describe('Groups Service', function () {
         name: testGroup.name,
         type: testGroup.type,
         status: testGroup.status,
+        description: testGroup.description,
       },
     });
   }).timeout(10000);
@@ -150,6 +151,7 @@ describe('Groups Service', function () {
           name: testGroup.name,
           type: testGroup.type,
           status: testGroup.status,
+          description: testGroup.description,
           students: putReq.students,
         },
       ]);
@@ -166,6 +168,7 @@ describe('Groups Service', function () {
           name: testGroup.name,
           type: testGroup.type,
           status: testGroup.status,
+          description: testGroup.description,
           students: [testGroup.students[0]],
         },
       ]);
@@ -188,6 +191,7 @@ describe('Groups Service', function () {
         name: testGroup.name,
         type: testGroup.type,
         status: testGroup.status,
+        description: testGroup.description,
       },
     });
   }).timeout(10000);
