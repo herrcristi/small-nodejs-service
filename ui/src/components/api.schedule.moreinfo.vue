@@ -47,7 +47,7 @@
 
             <v-row dense>
               <template v-for="s in fieldClasses" :key="s.id" small>
-                <v-col cols="12" md="3">
+                <v-col cols="12" md="10">
                   <v-card>
                     <v-card-title>
                       {{ s.name }}
@@ -66,17 +66,10 @@
               title="classes"
               :titleAdd="itemDetails.name"
               :items="fieldClasses"
-              :fields="['name', 'status']"
-              :projectionFields="['name', 'status', 'description']"
-              :sortFields="['name', 'status']"
-              :filterFields="['name', '_lang_en.status', 'description']"
-              :apiFn="{
-                getAll: Api.getClasses,
-                updateField: updateFieldClasses,
-                deleteField: deleteFieldClass,
-              }"
+              :fields="['name', 'status', 'description']"
+              :apiFn="{}"
               :read="read && app?.rolesPermissions?.classes?.read"
-              :write="write && app?.rolesPermissions?.classes?.write"
+              :write="false"
               :loading="loading"
               :nodatatext="nodatatext"
             ></ApiFieldDetails>
@@ -113,7 +106,7 @@
 
             <v-row dense>
               <template v-for="s in fieldGroups" :key="s.id" small>
-                <v-col cols="12" md="3">
+                <v-col cols="12" md="10">
                   <v-card>
                     <v-card-title>
                       {{ s.name }}
@@ -136,7 +129,7 @@
               :sortFields="['name', 'status']"
               :filterFields="['name', '_lang_en.status', 'description']"
               :apiFn="{
-                getAll: Api.getGroups,
+                getAll: getAllFieldGroups,
                 updateField: updateFieldGroups,
                 deleteField: deleteFieldGroup,
               }"
@@ -180,7 +173,7 @@
 
             <v-row dense>
               <template v-for="s in fieldProfessors" :key="s.id" small>
-                <v-col cols="12" md="3">
+                <v-col cols="12" md="10">
                   <v-card>
                     <v-card-title>
                       {{ s.user.name }}
@@ -207,7 +200,7 @@
               :sortFields="['user.name', 'user.status', 'user.email']"
               :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
               :apiFn="{
-                getAll: Api.getProfessors,
+                getAll: getAllFieldProfessors,
                 updateField: updateFieldProfessors,
                 deleteField: deleteFieldProfessor,
               }"
@@ -226,7 +219,7 @@
           <!-- list using v-chip -->
           <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.students?.read">
             <v-card-title class="d-flex justify-space-between">
-              <div>{{ t('students') }}</div>
+              <div>{{ t('schedules.students') }}</div>
             </v-card-title>
 
             <v-card-text>
@@ -244,12 +237,12 @@
 
           <v-container fluid v-if="type == 'v-card' && read && app?.rolesPermissions?.students?.read">
             <v-card-title class="d-flex justify-space-between">
-              <div>{{ t('students') }}</div>
+              <div>{{ t('schedules.students') }}</div>
             </v-card-title>
 
             <v-row dense>
               <template v-for="s in fieldStudents" :key="s.id" small>
-                <v-col cols="12" md="3">
+                <v-col cols="12" md="10">
                   <v-card>
                     <v-card-title>
                       {{ s.user.name }}
@@ -268,7 +261,7 @@
           <v-card v-if="type == 'v-table'">
             <ApiFieldDetails
               ref="fieldDetailsStudentsComponent"
-              title="students"
+              title="schedules.students"
               :titleAdd="itemDetails.name"
               :items="fieldStudents"
               :fields="['user.name', 'user.status', 'user.email']"
@@ -276,7 +269,7 @@
               :sortFields="['user.name', 'user.status', 'user.email']"
               :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
               :apiFn="{
-                getAll: Api.getStudents,
+                getAll: getAllFieldStudents,
                 updateField: updateFieldStudents,
                 deleteField: deleteFieldStudent,
               }"
@@ -339,37 +332,21 @@ async function onItemDetails(data) {
   Object.keys(itemDetails.value).forEach((k) => delete itemDetails[k]);
   Object.assign(itemDetails.value, data);
 
-  fieldClasses.value = itemDetails.value.class ? [itemDetails.value.class] : null;
+  fieldClasses.value = [itemDetails.value.class];
   fieldGroups.value = itemDetails.value.groups || [];
   fieldProfessors.value = itemDetails.value.professors || [];
   fieldStudents.value = itemDetails.value.students || [];
 }
 
 /**
- * ApiFieldDetails calling deleteField
+ * * ApiFieldDetails calling professors getAll / deleteField / updateField
  */
-async function deleteFieldClass(classID) {
+async function getAllFieldGroups() {
   // if fail will throw error and be catch in ApiFieldDetails
-  await Api.updateScheduleClasses(props.itemID, [], [classID]);
-
-  // no need for server call
-  fieldClasses.value = fieldClasses.value.filter((item) => item.id !== classID);
+  // return /* await */ Api.getGroups(`classes.id=${itemDetails.value.class.id}`);
+  return /* await */ Api.getGroups('');
 }
 
-/**
- * ApiFieldDetails calling updateField
- */
-async function updateFieldClasses(newIDs, removeIDs) {
-  // if fail will throw error and be catch in ApiFieldDetails
-  await Api.updateScheduleClasses(props.itemID, newIDs, removeIDs);
-
-  // refresh
-  await detailsComponent.value.refresh();
-}
-
-/**
- * ApiFieldDetails calling deleteField
- */
 async function deleteFieldGroup(groupID) {
   // if fail will throw error and be catch in ApiFieldDetails
   await Api.updateScheduleGroups(props.itemID, [], [groupID]);
@@ -378,9 +355,6 @@ async function deleteFieldGroup(groupID) {
   fieldGroups.value = fieldGroups.value.filter((item) => item.id !== groupID);
 }
 
-/**
- * ApiFieldDetails calling updateField
- */
 async function updateFieldGroups(newIDs, removeIDs) {
   // if fail will throw error and be catch in ApiFieldDetails
   await Api.updateScheduleGroups(props.itemID, newIDs, removeIDs);
@@ -388,9 +362,15 @@ async function updateFieldGroups(newIDs, removeIDs) {
   // refresh
   await detailsComponent.value.refresh();
 }
+
 /**
- * ApiFieldDetails calling deleteField
+ * ApiFieldDetails calling professors getAll / deleteField / updateField
  */
+async function getAllFieldProfessors() {
+  // if fail will throw error and be catch in ApiFieldDetails
+  return /* await */ Api.getProfessors(`classes.id=${itemDetails.value.class.id}`);
+}
+
 async function deleteFieldProfessor(professorID) {
   // if fail will throw error and be catch in ApiFieldDetails
   await Api.updateScheduleProfessors(props.itemID, [], [professorID]);
@@ -399,9 +379,6 @@ async function deleteFieldProfessor(professorID) {
   fieldProfessors.value = fieldProfessors.value.filter((item) => item.id !== professorID);
 }
 
-/**
- * ApiFieldDetails calling updateField
- */
 async function updateFieldProfessors(newIDs, removeIDs) {
   // if fail will throw error and be catch in ApiFieldDetails
   await Api.updateScheduleProfessors(props.itemID, newIDs, removeIDs);
@@ -409,9 +386,15 @@ async function updateFieldProfessors(newIDs, removeIDs) {
   // refresh
   await detailsComponent.value.refresh();
 }
+
 /**
- * ApiFieldDetails calling deleteField
+ * ApiFieldDetails calling students getAll / deleteField / updateField
  */
+async function getAllFieldStudents() {
+  // if fail will throw error and be catch in ApiFieldDetails
+  return /* await */ Api.getStudents(`classes.id=${itemDetails.value.class.id}`);
+}
+
 async function deleteFieldStudent(studentID) {
   // if fail will throw error and be catch in ApiFieldDetails
   await Api.updateScheduleStudents(props.itemID, [], [studentID]);
@@ -420,9 +403,6 @@ async function deleteFieldStudent(studentID) {
   fieldStudents.value = fieldStudents.value.filter((item) => item.id !== studentID);
 }
 
-/**
- * ApiFieldDetails calling updateField
- */
 async function updateFieldStudents(newIDs, removeIDs) {
   // if fail will throw error and be catch in ApiFieldDetails
   await Api.updateScheduleStudents(props.itemID, newIDs, removeIDs);
