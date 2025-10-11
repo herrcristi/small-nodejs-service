@@ -304,26 +304,26 @@ function openEdit(item) {
   Object.keys(itemData).forEach((k) => delete itemData[k]);
 
   // set
-  if (item.name || item.user?.name) {
-    itemData.name = item.name || item.user?.name;
+  if (fieldsSet.value.has('name') || fieldsSet.value.has('user.name')) {
+    itemData.name = item.name || item.user?.name || '';
   }
-  if (item.email || item.user?.email) {
-    itemData.email = item.email || item.user?.email;
+  if (fieldsSet.value.has('email') || fieldsSet.value.has('user.email')) {
+    itemData.email = item.email || item.user?.email || '';
   }
-  if (item.status || item.user?.status) {
+  if (fieldsSet.value.has('status') || fieldsSet.value.has('user.status')) {
     itemData.status = item.status || item.user?.status || 'active';
   }
-  if (item.description) {
-    itemData.description = item.description;
+  if (fieldsSet.value.has('description')) {
+    itemData.description = item.description || '';
   }
-  if (item.credits) {
-    itemData.credits = Number(item.credits);
+  if (fieldsSet.value.has('credits')) {
+    itemData.credits = Number(item.credits || 0);
   }
-  if (item.required) {
+  if (fieldsSet.value.has('required')) {
     itemData.required = item.required || 'required';
   }
-  if (item.address) {
-    itemData.address = item.address;
+  if (fieldsSet.value.has('address')) {
+    itemData.address = item.address || '';
   }
 
   editing.value = true;

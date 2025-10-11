@@ -10,7 +10,7 @@
     :apiFn="{
       getAll: Api.getProfessors,
       create: Api.createProfessor,
-      // update: Api.updateProfessor,
+      update: Api.updateProfessor,
       delete: Api.deleteProfessor,
     }"
     :read="read"

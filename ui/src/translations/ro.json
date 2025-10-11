@@ -102,6 +102,8 @@
   "tenants.description": "Alege școala",
   "tenants.select": "Selectează",
   "timestamp": "Timp",
+  "update.error": "Eroare la actualizare",
+  "update.success": "Actualizare reusită",
   "user": "Utilizator",
   "users": "Utilizatori",
   "value": "Valoare",

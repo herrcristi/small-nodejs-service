@@ -102,6 +102,8 @@
   "tenants.description": "Choose the school",
   "tenants.select": "Select",
   "timestamp": "Timestamp",
+  "update.error": "Error updating",
+  "update.success": "Update succeeded",
   "user": "User",
   "users": "Users",
   "value": "Value",
