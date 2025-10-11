@@ -366,7 +366,7 @@ const Public = {
     ///
     // get user details (by email)
     ///
-    const userProjection = { id: 1, status: 1, email: 1, schools: 1 };
+    const userProjection = { id: 1, status: 1, name: 1, email: 1, schools: 1 };
     const rUserDetails = await UsersRest.getOneByEmail(objInfo.id, userProjection, _ctx);
     if (rUserDetails.error) {
       // raise event

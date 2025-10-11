@@ -125,6 +125,7 @@ describe('Users Auth Service', function () {
       value: {
         id: testInfoUser.id,
         status: testInfoUser.status,
+        name: testInfoUser.name,
         email: testInfoUser.email,
         schools: testInfoUser.schools,
       },
@@ -229,6 +230,7 @@ describe('Users Auth Service', function () {
       value: {
         id: testInfoUser.id,
         status: testInfoUser.status,
+        name: testInfoUser.name,
         email: testInfoUser.email,
         schools: testInfoUser.schools,
       },
