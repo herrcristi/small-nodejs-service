@@ -25,7 +25,7 @@
       <tr v-if="!detailsOpen">
         <td :colspan="columns.length" class="py-2">
           <v-sheet rounded="lg" border>
-            <ApiScheduleMoreInfo :itemID="item.id" type="table" />
+            <ApiScheduleMoreInfo :itemID="item.id" type="v-table" />
           </v-sheet>
         </td>
       </tr>

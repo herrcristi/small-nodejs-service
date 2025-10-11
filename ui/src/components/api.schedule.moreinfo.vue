@@ -60,7 +60,7 @@
 
           <!-- list using table -->
 
-          <v-card v-if="type == 'table'">
+          <v-card v-if="type == 'v-table'">
             <ApiFieldDetails
               ref="fieldDetailsClassesComponent"
               title="classes"
@@ -125,7 +125,7 @@
           </v-container>
 
           <!-- list using table -->
-          <v-card v-if="type == 'table'">
+          <v-card v-if="type == 'v-table'">
             <ApiFieldDetails
               ref="fieldDetailsGroupsComponent"
               title="groups"
@@ -196,7 +196,7 @@
 
           <!-- list using table -->
 
-          <v-card v-if="type == 'table'">
+          <v-card v-if="type == 'v-table'">
             <ApiFieldDetails
               ref="fieldDetailsProfessorsComponent"
               title="professors"
@@ -265,7 +265,7 @@
 
           <!-- list using table -->
 
-          <v-card v-if="type == 'table'">
+          <v-card v-if="type == 'v-table'">
             <ApiFieldDetails
               ref="fieldDetailsStudentsComponent"
               title="students"
@@ -305,7 +305,7 @@ const { t } = useI18n();
  */
 const props = defineProps({
   itemID: { type: String, default: null },
-  type: { type: String, default: 'table' }, // table, v-chip, v-card
+  type: { type: String, default: 'v-table' }, // v-table, v-chip, v-card
 });
 
 const detailsComponent = ref();
