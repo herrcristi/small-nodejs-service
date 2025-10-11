@@ -17,7 +17,7 @@
 
     <v-card-text>
       <v-row class="d-flex justify-end">
-        <v-col cols="12" md="6">
+        <v-col cols="12" md="10">
           <!-- 
             field groups 
           -->
@@ -48,7 +48,7 @@
 
             <v-row dense>
               <template v-for="s in fieldGroups" :key="s.id" small>
-                <v-col cols="12" md="3">
+                <v-col cols="12" md="6">
                   <v-card>
                     <v-card-title>
                       {{ s.name }}
@@ -82,11 +82,13 @@
             ></ApiFieldDetails>
           </v-card>
         </v-col>
+      </v-row>
 
+      <v-row class="d-flex justify-end">
         <!-- 
           field classes 
          -->
-        <v-col cols="12" md="6">
+        <v-col cols="12" md="10">
           <!-- list using v-chip -->
           <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.classes?.read">
             <v-card-title class="d-flex justify-space-between">
@@ -113,7 +115,7 @@
 
             <v-row dense>
               <template v-for="s in fieldClasses" :key="s.id" small>
-                <v-col cols="12" md="3">
+                <v-col cols="12" md="6">
                   <v-card>
                     <v-card-title>
                       {{ s.name }}
@@ -132,7 +134,7 @@
               title="classes"
               :titleAdd="itemDetails.name"
               :items="fieldClasses"
-              :fields="['name', 'status']"
+              :fields="['name', 'status', 'description', 'required']"
               :projectionFields="['name', 'status', 'description']"
               :sortFields="['name', 'status']"
               :filterFields="['name', '_lang_en.status', 'description']"

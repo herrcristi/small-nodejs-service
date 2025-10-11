@@ -77,74 +77,6 @@
         </v-col>
 
         <!-- 
-          field (inner) schedules 
-        -->
-        <v-col cols="12" md="6">
-          <!-- list using v-chip -->
-          <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.locations?.read">
-            <v-card-title class="d-flex justify-space-between">
-              <div>{{ t('schedules') }}</div>
-            </v-card-title>
-
-            <v-card-text>
-              <v-chip-group selected-class="text-primary" column text="chip">
-                <template v-for="s in fieldInnerSchedules" :key="s.id">
-                  <v-chip> {{ s.frequency }}, {{ getInnerScheduleTime(s.timestamp) }}, {{ s.location.name }}</v-chip>
-                </template>
-              </v-chip-group>
-            </v-card-text>
-          </div>
-
-          <!-- list using v-card -->
-
-          <v-container fluid v-if="type == 'v-card' && read && app?.rolesPermissions?.locations?.read">
-            <v-card-title class="d-flex justify-space-between">
-              <div>{{ t('schedules') }}</div>
-            </v-card-title>
-
-            <v-row dense>
-              <template v-for="s in fieldInnerSchedules" :key="s.id" small>
-                <v-col cols="12" md="10">
-                  <v-card>
-                    <v-card-title> {{ s.location.name }} </v-card-title>
-                    <v-card-subtitle> {{ s.frequency }}, {{ getInnerScheduleTime(s.timestamp) }} </v-card-subtitle>
-                    <v-card-subtitle>
-                      {{ s.location.address }}
-                    </v-card-subtitle>
-                  </v-card>
-                </v-col>
-              </template>
-            </v-row>
-          </v-container>
-
-          <!-- list using table -->
-
-          <v-card v-if="type == 'v-table'">
-            <ApiFieldDetails
-              ref="fieldDetailsInnerSchedulesComponent"
-              title="schedules"
-              :titleAdd="itemDetails.name"
-              :items="fieldInnerSchedules"
-              :fields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
-              :projectionFields="['frequency', 'status', 'timestamp', 'location']"
-              :sortFields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
-              :filterFields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
-              :apiFn="{
-                getAll: getAllFieldInnerSchedules,
-                updateField: updateFieldInnerSchedules,
-                deleteField: deleteFieldInnerSchedule,
-              }"
-              :read="read && app?.rolesPermissions?.locations?.read"
-              :write="write && app?.rolesPermissions?.locations?.write"
-              :loading="loading"
-              :nodatatext="nodatatext"
-            ></ApiFieldDetails>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <v-row class="d-flex justify-end">
-        <!-- 
           field professors 
         -->
         <v-col cols="12" md="6">
@@ -212,7 +144,77 @@
             ></ApiFieldDetails>
           </v-card>
         </v-col>
+      </v-row>
 
+      <v-row class="d-flex justify-end">
+        <!-- 
+          field (inner) schedules 
+        -->
+        <v-col cols="12" md="10">
+          <!-- list using v-chip -->
+          <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.locations?.read">
+            <v-card-title class="d-flex justify-space-between">
+              <div>{{ t('schedules') }}</div>
+            </v-card-title>
+
+            <v-card-text>
+              <v-chip-group selected-class="text-primary" column text="chip">
+                <template v-for="s in fieldInnerSchedules" :key="s.id">
+                  <v-chip> {{ s.frequency }}, {{ getInnerScheduleTime(s.timestamp) }}, {{ s.location.name }}</v-chip>
+                </template>
+              </v-chip-group>
+            </v-card-text>
+          </div>
+
+          <!-- list using v-card -->
+
+          <v-container fluid v-if="type == 'v-card' && read && app?.rolesPermissions?.locations?.read">
+            <v-card-title class="d-flex justify-space-between">
+              <div>{{ t('schedules') }}</div>
+            </v-card-title>
+
+            <v-row dense>
+              <template v-for="s in fieldInnerSchedules" :key="s.id" small>
+                <v-col cols="12" md="10">
+                  <v-card>
+                    <v-card-title> {{ s.location.name }} </v-card-title>
+                    <v-card-subtitle> {{ s.frequency }}, {{ getInnerScheduleTime(s.timestamp) }} </v-card-subtitle>
+                    <v-card-subtitle>
+                      {{ s.location.address }}
+                    </v-card-subtitle>
+                  </v-card>
+                </v-col>
+              </template>
+            </v-row>
+          </v-container>
+
+          <!-- list using table -->
+
+          <v-card v-if="type == 'v-table'">
+            <ApiFieldDetails
+              ref="fieldDetailsInnerSchedulesComponent"
+              title="schedules"
+              :titleAdd="itemDetails.name"
+              :items="fieldInnerSchedules"
+              :fields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
+              :projectionFields="['frequency', 'status', 'timestamp', 'location']"
+              :sortFields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
+              :filterFields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
+              :apiFn="{
+                getAll: getAllFieldInnerSchedules,
+                updateField: updateFieldInnerSchedules,
+                deleteField: deleteFieldInnerSchedule,
+              }"
+              :read="read && app?.rolesPermissions?.locations?.read"
+              :write="write && app?.rolesPermissions?.locations?.write"
+              :loading="loading"
+              :nodatatext="nodatatext"
+            ></ApiFieldDetails>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <v-row class="d-flex justify-end">
         <!-- 
             field groups 
           -->
@@ -277,9 +279,7 @@
             ></ApiFieldDetails>
           </v-card>
         </v-col>
-      </v-row>
 
-      <v-row class="d-flex justify-end">
         <!-- 
           field students from groups
         -->
@@ -344,7 +344,9 @@
             ></ApiFieldDetails>
           </v-card>
         </v-col>
+      </v-row>
 
+      <v-row class="d-flex">
         <!-- 
           field students extra
         -->

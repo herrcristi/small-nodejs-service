@@ -20,7 +20,7 @@
         <!-- 
           field classes 
         -->
-        <v-col cols="12" md="8">
+        <v-col cols="12" md="10">
           <!-- list using v-chip -->
           <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.classes?.read">
             <v-card-title class="d-flex justify-space-between">
@@ -47,7 +47,7 @@
 
             <v-row dense>
               <template v-for="s in fieldClasses" :key="s.id" small>
-                <v-col cols="12" md="3">
+                <v-col cols="12" md="6">
                   <v-card>
                     <v-card-title>
                       {{ s.name }}
