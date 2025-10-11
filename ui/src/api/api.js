@@ -141,7 +141,7 @@ const Api = {
       email: data.email /*new user email*/,
       school: { role: 'student' },
     }),
-  updateStudent: (id, data) => instance.put(`/students/${id}`, data),
+  updateStudent: (id, data) => Api.updateUser(id, data),
   deleteStudent: (id) => instance.delete(`/students/${id}`),
   updateStudentClasses: (id, newIds, removeIds) =>
     instance.patch(`/students/${id}`, {
@@ -165,7 +165,7 @@ const Api = {
       email: data.email /*new user email*/,
       school: { role: 'professor' },
     }),
-  updateProfessor: (id, data) => instance.put(`/professors/${id}`, data),
+  updateProfessor: (id, data) => Api.updateUser(id, data),
   deleteProfessor: (id) => instance.delete(`/professors/${id}`),
   updateProfessorClasses: (id, newIds, removeIds) =>
     instance.patch(`/professors/${id}`, {

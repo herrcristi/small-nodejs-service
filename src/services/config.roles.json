@@ -10,11 +10,6 @@
           "/api/v1/users-auth/:id/id",
           "/api/v1/users-auth/:id/school/user/:uid"
         ]
-      },
-      "users": {
-        "GET": ["/api/v1/users/:id"],
-        "PUT": ["/api/v1/users/:id"],
-        "PATCH": ["/api/v1/users/:id"]
       }
     },
 
@@ -24,11 +19,6 @@
         "DELETE": ["/api/v1/users-auth/:id"],
         "PUT": ["/api/v1/users-auth/:id/password", "/api/v1/users-auth/:id/id"],
         "PATCH": ["/api/v1/users-auth/:id/password", "/api/v1/users-auth/:id/id"]
-      },
-      "users": {
-        "GET": ["/api/v1/users/:id"],
-        "PUT": ["/api/v1/users/:id"],
-        "PATCH": ["/api/v1/users/:id"]
       }
     },
 
@@ -58,7 +48,11 @@
         "POST": ["/api/v1/users-auth/:id/invite"],
         "PATCH": ["/api/v1/users-auth/:id/school/user/:uid"]
       },
-      "users": {},
+      "users": {
+        "GET": ["/api/v1/users/:id"],
+        "PUT": ["/api/v1/users/:id"],
+        "PATCH": ["/api/v1/users/:id"]
+      },
       "events": {
         "GET": ["/api/v1/events", "/api/v1/events/:id"]
       },
@@ -155,6 +149,11 @@
     },
 
     "current-user": {
+      "users": {
+        "GET": ["/api/v1/users/:id"],
+        "PUT": ["/api/v1/users/:id"],
+        "PATCH": ["/api/v1/users/:id"]
+      },
       "professors": {
         "GET": ["/api/v1/professors/:id"],
         "DELETE": ["/api/v1/professors/:id"],
