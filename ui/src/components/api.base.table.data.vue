@@ -282,8 +282,11 @@ const fieldsTitles = ref({
   timestamp: 'timestamp',
   createdTimestamp: 'timestamp',
   class: 'class',
-  class: 'class.name',
+  'class.name': 'class',
   details: 'details',
+  frequency: 'frequency',
+  'location.name': 'name',
+  'location.address': 'address',
 });
 
 /**
