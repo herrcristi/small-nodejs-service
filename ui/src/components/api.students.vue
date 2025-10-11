@@ -29,7 +29,7 @@
       <tr v-if="item.user?.status != 'pending'">
         <td :colspan="columns.length" class="py-2">
           <v-sheet rounded="lg" border>
-            <ApiStudentMoreInfo :itemID="item.id" type="table" />
+            <ApiStudentMoreInfo :itemID="item.id" type="v-table" />
           </v-sheet>
         </td>
       </tr>
