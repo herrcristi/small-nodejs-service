@@ -43,31 +43,6 @@
 
     <v-card-text>
       <!-- 
-          field groups 
-      -->
-      <ApiFieldDetails
-        ref="fieldDetailsGroupsComponent"
-        title="groups"
-        :titleAdd="itemDetails.name"
-        :items="fieldGroups"
-        :fields="['name', 'status', 'description']"
-        :projectionFields="['name', 'status', 'description']"
-        :sortFields="['name', 'status']"
-        :filterFields="['name', '_lang_en.status', 'description']"
-        :apiFn="{
-          getAll: getAllFieldGroups,
-          updateField: updateFieldGroups,
-          deleteField: deleteFieldGroup,
-        }"
-        :read="read && app?.rolesPermissions?.groups?.read"
-        :write="write && app?.rolesPermissions?.groups?.write"
-        :loading="loading"
-        :nodatatext="nodatatext"
-      ></ApiFieldDetails>
-    </v-card-text>
-
-    <v-card-text>
-      <!-- 
           field professors 
       -->
       <ApiFieldDetails
@@ -93,21 +68,67 @@
 
     <v-card-text>
       <!-- 
-          field students 
+          field groups 
       -->
       <ApiFieldDetails
-        ref="fieldDetailsStudentsComponent"
-        title="schedules.students"
+        ref="fieldDetailsGroupsComponent"
+        title="groups"
         :titleAdd="itemDetails.name"
-        :items="fieldStudents"
+        :items="fieldGroups"
+        :fields="['name', 'status', 'description']"
+        :projectionFields="['name', 'status', 'description']"
+        :sortFields="['name', 'status']"
+        :filterFields="['name', '_lang_en.status', 'description']"
+        :apiFn="{
+          getAll: getAllFieldGroups,
+          updateField: updateFieldGroups,
+          deleteField: deleteFieldGroup,
+        }"
+        :read="read && app?.rolesPermissions?.groups?.read"
+        :write="write && app?.rolesPermissions?.groups?.write"
+        :loading="loading"
+        :nodatatext="nodatatext"
+      ></ApiFieldDetails>
+    </v-card-text>
+
+    <v-card-text>
+      <!-- 
+          field students from groups
+      -->
+      <ApiFieldDetails
+        ref="fieldDetailsGroupsStudentsComponent"
+        title="schedules.groups.students"
+        :titleAdd="itemDetails.name"
+        :items="fieldGroupsStudents"
+        :fields="['user.name', 'user.status', 'user.email']"
+        :projectionFields="['user.name', 'user.status', 'user.email']"
+        :sortFields="['user.name', 'user.status', 'user.email']"
+        :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
+        :apiFn="{}"
+        :read="read && app?.rolesPermissions?.students?.read"
+        :write="false"
+        :loading="loading"
+        :nodatatext="nodatatext"
+      ></ApiFieldDetails>
+    </v-card-text>
+
+    <v-card-text>
+      <!-- 
+          field students extra
+      -->
+      <ApiFieldDetails
+        ref="fieldDetailsExtraStudentsComponent"
+        title="schedules.extra.students"
+        :titleAdd="itemDetails.name"
+        :items="fieldExtraStudents"
         :fields="['user.name', 'user.status', 'user.email']"
         :projectionFields="['user.name', 'user.status', 'user.email']"
         :sortFields="['user.name', 'user.status', 'user.email']"
         :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
         :apiFn="{
-          getAll: getAllFieldStudents,
-          updateField: updateFieldStudents,
-          deleteField: deleteFieldStudent,
+          getAll: getAllFieldExtraStudents,
+          updateField: updateFieldExtraStudents,
+          deleteField: deleteFieldExtraStudent,
         }"
         :read="read && app?.rolesPermissions?.students?.read"
         :write="write && app?.rolesPermissions?.students?.write"
@@ -115,6 +136,14 @@
         :nodatatext="nodatatext"
       ></ApiFieldDetails>
     </v-card-text>
+  </v-card>
+
+  <!-- add extra space -->
+  <v-card>
+    <v-card-text> &nbsp; </v-card-text>
+  </v-card>
+  <v-card>
+    <v-card-text> &nbsp; </v-card-text>
   </v-card>
 </template>
 
@@ -155,8 +184,10 @@ const fieldGroups = ref([]);
 const fieldDetailsProfessorsComponent = ref();
 const fieldProfessors = ref([]);
 
-const fieldDetailsStudentsComponent = ref();
-const fieldStudents = ref([]);
+const fieldDetailsGroupsStudentsComponent = ref();
+const fieldGroupsStudents = ref([]);
+const fieldDetailsExtraStudentsComponent = ref();
+const fieldExtraStudents = ref([]);
 
 /**
  * emit
@@ -171,9 +202,27 @@ async function onItemDetails(data) {
   Object.assign(itemDetails.value, data);
 
   fieldClasses.value = [itemDetails.value.class];
-  fieldGroups.value = itemDetails.value.groups || [];
   fieldProfessors.value = itemDetails.value.professors || [];
-  fieldStudents.value = itemDetails.value.students || [];
+  fieldGroups.value = itemDetails.value.groups || [];
+  fieldGroupsStudents.value = getGroupsStudents(fieldGroups.value);
+  fieldExtraStudents.value = itemDetails.value.students || [];
+}
+
+function getGroupsStudents(groups) {
+  let students = [];
+  groups.forEach((group) => students.push(...group.students));
+
+  // eliminate duplicates
+  let studentsIDs = new Set(students.map((item) => item.id));
+  let uniqueStudents = [];
+  for (const student of students) {
+    if (studentsIDs.has(student.id)) {
+      uniqueStudents.push(student);
+      studentsIDs.delete(student.id);
+    }
+  }
+
+  return uniqueStudents;
 }
 
 /**
@@ -183,7 +232,8 @@ function closeDialog() {
   fieldDetailsClassesComponent.value.clear();
   fieldDetailsGroupsComponent.value.clear();
   fieldDetailsProfessorsComponent.value.clear();
-  fieldDetailsStudentsComponent.value.clear();
+  fieldDetailsGroupsStudentsComponent.value.clear();
+  fieldDetailsExtraStudentsComponent.value.clear();
   emit('close');
 }
 
@@ -202,6 +252,7 @@ async function deleteFieldGroup(groupID) {
 
   // no need for server call
   fieldGroups.value = fieldGroups.value.filter((item) => item.id !== groupID);
+  fieldGroupsStudents.value = getGroupsStudents(fieldGroups.value);
 }
 
 async function updateFieldGroups(newIDs, removeIDs) {
@@ -239,20 +290,20 @@ async function updateFieldProfessors(newIDs, removeIDs) {
 /**
  * ApiFieldDetails calling students getAll / deleteField / updateField
  */
-async function getAllFieldStudents() {
+async function getAllFieldExtraStudents() {
   // if fail will throw error and be catch in ApiFieldDetails
   return /* await */ Api.getStudents(`classes.id=${itemDetails.value.class.id}`);
 }
 
-async function deleteFieldStudent(studentID) {
+async function deleteFieldExtraStudent(studentID) {
   // if fail will throw error and be catch in ApiFieldDetails
   await Api.updateScheduleStudents(props.itemID, [], [studentID]);
 
   // no need for server call
-  fieldStudents.value = fieldStudents.value.filter((item) => item.id !== studentID);
+  fieldExtraStudents.value = fieldExtraStudents.value.filter((item) => item.id !== studentID);
 }
 
-async function updateFieldStudents(newIDs, removeIDs) {
+async function updateFieldExtraStudents(newIDs, removeIDs) {
   // if fail will throw error and be catch in ApiFieldDetails
   await Api.updateScheduleStudents(props.itemID, newIDs, removeIDs);
 
