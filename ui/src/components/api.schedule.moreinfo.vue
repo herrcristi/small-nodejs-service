@@ -77,73 +77,6 @@
         </v-col>
 
         <!-- 
-            field groups 
-          -->
-        <v-col cols="12" md="6">
-          <!-- list using v-chip -->
-          <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.groups?.read">
-            <v-card-title class="d-flex justify-space-between">
-              <div>{{ t('groups') }}</div>
-            </v-card-title>
-
-            <v-card-text>
-              <v-chip-group selected-class="text-primary" column text="chip">
-                <template v-for="s in fieldGroups" :key="s.id">
-                  <v-chip>
-                    {{ s.name }}
-                  </v-chip>
-                </template>
-              </v-chip-group>
-            </v-card-text>
-          </div>
-
-          <!-- list using v-card -->
-
-          <v-container fluid v-if="type == 'v-card' && read && app?.rolesPermissions?.groups?.read">
-            <v-card-title class="d-flex justify-space-between">
-              <div>{{ t('groups') }}</div>
-            </v-card-title>
-
-            <v-row dense>
-              <template v-for="s in fieldGroups" :key="s.id" small>
-                <v-col cols="12" md="10">
-                  <v-card>
-                    <v-card-title>
-                      {{ s.name }}
-                    </v-card-title>
-                  </v-card>
-                </v-col>
-              </template>
-            </v-row>
-          </v-container>
-
-          <!-- list using table -->
-          <v-card v-if="type == 'v-table'">
-            <ApiFieldDetails
-              ref="fieldDetailsGroupsComponent"
-              title="groups"
-              :titleAdd="itemDetails.name"
-              :items="fieldGroups"
-              :fields="['name', 'status', 'description']"
-              :projectionFields="['name', 'status', 'description']"
-              :sortFields="['name', 'status']"
-              :filterFields="['name', '_lang_en.status', 'description']"
-              :apiFn="{
-                getAll: getAllFieldGroups,
-                updateField: updateFieldGroups,
-                deleteField: deleteFieldGroup,
-              }"
-              :read="read && app?.rolesPermissions?.groups?.read"
-              :write="write && app?.rolesPermissions?.groups?.write"
-              :loading="loading"
-              :nodatatext="nodatatext"
-            ></ApiFieldDetails>
-          </v-card>
-        </v-col>
-      </v-row>
-
-      <v-row class="d-flex justify-end">
-        <!-- 
           field professors 
         -->
         <v-col cols="12" md="6">
@@ -211,20 +144,87 @@
             ></ApiFieldDetails>
           </v-card>
         </v-col>
+      </v-row>
+
+      <v-row class="d-flex justify-end">
+        <!-- 
+            field groups 
+          -->
+        <v-col cols="12" md="6">
+          <!-- list using v-chip -->
+          <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.groups?.read">
+            <v-card-title class="d-flex justify-space-between">
+              <div>{{ t('groups') }}</div>
+            </v-card-title>
+
+            <v-card-text>
+              <v-chip-group selected-class="text-primary" column text="chip">
+                <template v-for="s in fieldGroups" :key="s.id">
+                  <v-chip>
+                    {{ s.name }}
+                  </v-chip>
+                </template>
+              </v-chip-group>
+            </v-card-text>
+          </div>
+
+          <!-- list using v-card -->
+
+          <v-container fluid v-if="type == 'v-card' && read && app?.rolesPermissions?.groups?.read">
+            <v-card-title class="d-flex justify-space-between">
+              <div>{{ t('groups') }}</div>
+            </v-card-title>
+
+            <v-row dense>
+              <template v-for="s in fieldGroups" :key="s.id" small>
+                <v-col cols="12" md="10">
+                  <v-card>
+                    <v-card-title>
+                      {{ s.name }}
+                    </v-card-title>
+                  </v-card>
+                </v-col>
+              </template>
+            </v-row>
+          </v-container>
+
+          <!-- list using table -->
+          <v-card v-if="type == 'v-table'">
+            <ApiFieldDetails
+              ref="fieldDetailsGroupsComponent"
+              title="groups"
+              :titleAdd="itemDetails.name"
+              :items="fieldGroups"
+              :fields="['name', 'status', 'description']"
+              :projectionFields="['name', 'status', 'description']"
+              :sortFields="['name', 'status']"
+              :filterFields="['name', '_lang_en.status', 'description']"
+              :apiFn="{
+                getAll: getAllFieldGroups,
+                updateField: updateFieldGroups,
+                deleteField: deleteFieldGroup,
+              }"
+              :read="read && app?.rolesPermissions?.groups?.read"
+              :write="write && app?.rolesPermissions?.groups?.write"
+              :loading="loading"
+              :nodatatext="nodatatext"
+            ></ApiFieldDetails>
+          </v-card>
+        </v-col>
 
         <!-- 
-          field students 
+          field students from groups
         -->
         <v-col cols="12" md="6">
           <!-- list using v-chip -->
           <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.students?.read">
             <v-card-title class="d-flex justify-space-between">
-              <div>{{ t('schedules.students') }}</div>
+              <div>{{ t('schedules.groups.students') }}</div>
             </v-card-title>
 
             <v-card-text>
               <v-chip-group selected-class="text-primary" column text="chip">
-                <template v-for="s in fieldStudents" :key="s.id">
+                <template v-for="s in fieldGroupsStudents" :key="s.id">
                   <v-chip>
                     {{ s.user.name }}
                   </v-chip>
@@ -237,11 +237,11 @@
 
           <v-container fluid v-if="type == 'v-card' && read && app?.rolesPermissions?.students?.read">
             <v-card-title class="d-flex justify-space-between">
-              <div>{{ t('schedules.students') }}</div>
+              <div>{{ t('schedules.groups.students') }}</div>
             </v-card-title>
 
             <v-row dense>
-              <template v-for="s in fieldStudents" :key="s.id" small>
+              <template v-for="s in fieldGroupsStudents" :key="s.id" small>
                 <v-col cols="12" md="10">
                   <v-card>
                     <v-card-title>
@@ -260,26 +260,93 @@
 
           <v-card v-if="type == 'v-table'">
             <ApiFieldDetails
-              ref="fieldDetailsStudentsComponent"
-              title="schedules.students"
+              ref="fieldDetailsGroupsStudentsComponent"
+              title="schedules.groups.students"
               :titleAdd="itemDetails.name"
-              :items="fieldStudents"
+              :items="fieldGroupsStudents"
+              :fields="['user.name', 'user.status', 'user.email']"
+              :projectionFields="['user.name', 'user.status', 'user.email']"
+              :sortFields="['user.name', 'user.status', 'user.email']"
+              :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
+              :apiFn="{}"
+              :read="read && app?.rolesPermissions?.students?.read"
+              :write="false"
+              :loading="loading"
+              :nodatatext="nodatatext"
+            ></ApiFieldDetails>
+          </v-card> </v-col
+      ></v-row>
+
+      <v-row class="d-flex">
+        <!-- 
+          field students extra
+        -->
+        <v-col cols="12" md="6">
+          <!-- list using v-chip -->
+          <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.students?.read">
+            <v-card-title class="d-flex justify-space-between">
+              <div>{{ t('schedules.extra.students') }}</div>
+            </v-card-title>
+
+            <v-card-text>
+              <v-chip-group selected-class="text-primary" column text="chip">
+                <template v-for="s in fieldExtraStudents" :key="s.id">
+                  <v-chip>
+                    {{ s.user.name }}
+                  </v-chip>
+                </template>
+              </v-chip-group>
+            </v-card-text>
+          </div>
+
+          <!-- list using v-card -->
+
+          <v-container fluid v-if="type == 'v-card' && read && app?.rolesPermissions?.students?.read">
+            <v-card-title class="d-flex justify-space-between">
+              <div>{{ t('schedules.extra.students') }}</div>
+            </v-card-title>
+
+            <v-row dense>
+              <template v-for="s in fieldExtraStudents" :key="s.id" small>
+                <v-col cols="12" md="10">
+                  <v-card>
+                    <v-card-title>
+                      {{ s.user.name }}
+                    </v-card-title>
+                    <v-card-subtitle>
+                      {{ s.user.email }}
+                    </v-card-subtitle>
+                  </v-card>
+                </v-col>
+              </template>
+            </v-row>
+          </v-container>
+
+          <!-- list using table -->
+
+          <v-card v-if="type == 'v-table'">
+            <ApiFieldDetails
+              ref="fieldDetailsExtraStudentsComponent"
+              title="schedules.extra.students"
+              :titleAdd="itemDetails.name"
+              :items="fieldExtraStudents"
               :fields="['user.name', 'user.status', 'user.email']"
               :projectionFields="['user.name', 'user.status', 'user.email']"
               :sortFields="['user.name', 'user.status', 'user.email']"
               :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
               :apiFn="{
-                getAll: getAllFieldStudents,
-                updateField: updateFieldStudents,
-                deleteField: deleteFieldStudent,
+                getAll: getAllFieldExtraStudents,
+                updateField: updateFieldExtraStudents,
+                deleteField: deleteFieldExtraStudent,
               }"
               :read="read && app?.rolesPermissions?.students?.read"
               :write="write && app?.rolesPermissions?.students?.write"
               :loading="loading"
               :nodatatext="nodatatext"
             ></ApiFieldDetails>
-          </v-card> </v-col
-      ></v-row>
+          </v-card>
+        </v-col>
+      </v-row>
     </v-card-text>
   </v-card>
 </template>
@@ -322,8 +389,10 @@ const fieldGroups = ref([]);
 const fieldDetailsProfessorsComponent = ref();
 const fieldProfessors = ref([]);
 
-const fieldDetailsStudentsComponent = ref();
-const fieldStudents = ref([]);
+const fieldDetailsGroupsStudentsComponent = ref();
+const fieldGroupsStudents = ref([]);
+const fieldDetailsExtraStudentsComponent = ref();
+const fieldExtraStudents = ref([]);
 
 /**
  * ApiDetails events after get details
@@ -333,9 +402,27 @@ async function onItemDetails(data) {
   Object.assign(itemDetails.value, data);
 
   fieldClasses.value = [itemDetails.value.class];
-  fieldGroups.value = itemDetails.value.groups || [];
   fieldProfessors.value = itemDetails.value.professors || [];
-  fieldStudents.value = itemDetails.value.students || [];
+  fieldGroups.value = itemDetails.value.groups || [];
+  fieldGroupsStudents.value = getGroupsStudents(fieldGroups.value);
+  fieldExtraStudents.value = itemDetails.value.students || [];
+}
+
+function getGroupsStudents(groups) {
+  let students = [];
+  groups.forEach((group) => students.push(...group.students));
+
+  // eliminate duplicates
+  let studentsIDs = new Set(students.map((item) => item.id));
+  let uniqueStudents = [];
+  for (const student of students) {
+    if (studentsIDs.has(student.id)) {
+      uniqueStudents.push(student);
+      studentsIDs.delete(student.id);
+    }
+  }
+
+  return uniqueStudents;
 }
 
 /**
@@ -353,6 +440,7 @@ async function deleteFieldGroup(groupID) {
 
   // no need for server call
   fieldGroups.value = fieldGroups.value.filter((item) => item.id !== groupID);
+  fieldGroupsStudents.value = getGroupsStudents(fieldGroups.value);
 }
 
 async function updateFieldGroups(newIDs, removeIDs) {
@@ -390,20 +478,20 @@ async function updateFieldProfessors(newIDs, removeIDs) {
 /**
  * ApiFieldDetails calling students getAll / deleteField / updateField
  */
-async function getAllFieldStudents() {
+async function getAllFieldExtraStudents() {
   // if fail will throw error and be catch in ApiFieldDetails
   return /* await */ Api.getStudents(`classes.id=${itemDetails.value.class.id}`);
 }
 
-async function deleteFieldStudent(studentID) {
+async function deleteFieldExtraStudent(studentID) {
   // if fail will throw error and be catch in ApiFieldDetails
   await Api.updateScheduleStudents(props.itemID, [], [studentID]);
 
   // no need for server call
-  fieldStudents.value = fieldStudents.value.filter((item) => item.id !== studentID);
+  fieldExtraStudents.value = fieldExtraStudents.value.filter((item) => item.id !== studentID);
 }
 
-async function updateFieldStudents(newIDs, removeIDs) {
+async function updateFieldExtraStudents(newIDs, removeIDs) {
   // if fail will throw error and be catch in ApiFieldDetails
   await Api.updateScheduleStudents(props.itemID, newIDs, removeIDs);
 
