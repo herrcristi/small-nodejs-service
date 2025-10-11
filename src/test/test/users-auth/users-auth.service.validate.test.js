@@ -84,7 +84,7 @@ describe('Users Auth Service', function () {
       value: {
         userID: testInfoUser.id,
         username: testAuthUser.id,
-        tenantName: undefined,
+        tenantName: testInfoUser.schools[0].name,
       },
     });
   }).timeout(10000);

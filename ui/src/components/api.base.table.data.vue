@@ -20,6 +20,7 @@
     striped="even"
     density="compact"
     hide-default-header
+    :hide-default-footer="props.items.length <= 10"
     items-per-page="50"
   >
     <!-- 
@@ -204,7 +205,7 @@ const props = defineProps({
 
   fields: { type: Array, default: [] },
   sortFields: { type: Array, default: [] },
-  filterFields: { type: Array, default: [] },
+  filterFields: { type: Array, default: null },
 
   loading: { type: [Boolean, Number], default: false },
   nodatatext: { type: String, default: '' },
@@ -386,7 +387,7 @@ function customFilter(value, query, item) {
     return false;
   }
 
-  for (const field of props.filterFields) {
+  for (const field of props.filterFields || []) {
     let value = item?.raw;
 
     const subFields = field.split('.');

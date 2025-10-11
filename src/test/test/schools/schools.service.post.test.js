@@ -79,6 +79,7 @@ describe('Schools Service', function () {
         name: testSchool.name,
         type: testSchool.type,
         status: testSchool.status,
+        description: testSchool.description,
       },
     });
   }).timeout(10000);
@@ -135,6 +136,7 @@ describe('Schools Service', function () {
         name: testSchool.name,
         type: testSchool.type,
         status: SchoolsConstants.Status.Pending,
+        description: testSchool.description,
       },
     });
   }).timeout(10000);

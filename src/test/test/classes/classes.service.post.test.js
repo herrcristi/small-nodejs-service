@@ -80,6 +80,7 @@ describe('Classes Service', function () {
         name: testClass.name,
         type: testClass.type,
         status: testClass.status,
+        description: testClass.description,
       },
     });
   }).timeout(10000);
@@ -138,6 +139,7 @@ describe('Classes Service', function () {
         name: testClass.name,
         type: testClass.type,
         status: ClassesConstants.Status.Pending,
+        description: testClass.description,
       },
     });
   }).timeout(10000);

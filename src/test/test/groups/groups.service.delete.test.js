@@ -70,6 +70,7 @@ describe('Groups Service', function () {
         name: testGroup.name,
         type: testGroup.type,
         status: testGroup.status,
+        description: testGroup.description,
       },
     });
   }).timeout(10000);
