@@ -280,7 +280,7 @@ const fieldsTitles = ref({
   timestamp: 'timestamp',
   createdTimestamp: 'timestamp',
   class: 'class',
-  class: 'class.name',
+  'class.name': 'class',
   details: 'details',
 });
 

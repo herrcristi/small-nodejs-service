@@ -225,6 +225,45 @@ const Api = {
   createSchedule: (data) => instance.post(`/schedules`, data),
   updateSchedule: (id, data) => instance.put(`/schedules/${id}`, data),
   deleteSchedule: (id) => instance.delete(`/schedules/${id}`),
+  updateScheduleGroups: (id, newIds, removeIds) =>
+    instance.patch(`/schedules/${id}`, {
+      add: {
+        groups: (newIds || []).map((id) => {
+          return { id };
+        }),
+      },
+      remove: {
+        groups: (removeIds || []).map((id) => {
+          return { id };
+        }),
+      },
+    }),
+  updateScheduleProfessors: (id, newIds, removeIds) =>
+    instance.patch(`/schedules/${id}`, {
+      add: {
+        professors: (newIds || []).map((id) => {
+          return { id };
+        }),
+      },
+      remove: {
+        professors: (removeIds || []).map((id) => {
+          return { id };
+        }),
+      },
+    }),
+  updateScheduleStudents: (id, newIds, removeIds) =>
+    instance.patch(`/schedules/${id}`, {
+      add: {
+        students: (newIds || []).map((id) => {
+          return { id };
+        }),
+      },
+      remove: {
+        students: (removeIds || []).map((id) => {
+          return { id };
+        }),
+      },
+    }),
 
   // Users API
   getUser: (id) => instance.get(`/users/${id}`),

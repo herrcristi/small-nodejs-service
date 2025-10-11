@@ -22,7 +22,7 @@
       more info
     -->
     <template v-slot:expanded-content="{ item, columns }">
-      <tr>
+      <tr v-if="!detailsOpen">
         <td :colspan="columns.length" class="py-2">
           <v-sheet rounded="lg" border>
             <ApiGroupMoreInfo :itemID="item.id" type="table" />
