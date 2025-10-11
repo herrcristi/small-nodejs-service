@@ -82,7 +82,7 @@ const props = defineProps({
   fields: { type: Array, default: [] },
   sortFields: { type: Array, default: [] },
   projectionFields: { type: Array, default: null },
-  filterFields: { type: Array, default: [] },
+  filterFields: { type: Array, default: null },
 
   loading: { type: [Boolean, Number], default: true },
   nodatatext: { type: String, default: '' },

@@ -151,7 +151,7 @@ const Private = {
         {
           fieldName: 'groups[]',
           service: GroupsRest,
-          projection: { id: 1, name: 1, type: 1, status: 1, students: 1 },
+          projection: { id: 1, name: 1, type: 1, status: 1, description: 1, students: 1 },
         },
         {
           fieldName: 'students[]',

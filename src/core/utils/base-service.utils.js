@@ -36,6 +36,7 @@ const Constants = {
     name: 1,
     type: 1,
     status: 1,
+    description: 1,
     createdTimestamp: 1,
     lastModifiedTimestamp: 1,
     modifiedCount: 1,

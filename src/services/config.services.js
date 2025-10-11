@@ -2,6 +2,7 @@
  * Services Config
  */
 const RestCommsUtils = require('../core/utils/rest-communications.utils.js');
+const BaseServiceUtils = require('../core/utils/base-service.utils.js');
 
 const WebConstants = require('../web-server/web-server.constants.js');
 
@@ -105,7 +106,7 @@ const Public = {
     }
 
     // add sync subscribers
-    const notifyProjection = { id: 1, name: 1, type: 1, status: 1 };
+    const notifyProjection = { ...BaseServiceUtils.Constants.DefaultProjection };
 
     // schools
     for (const rest of [UsersRest]) {
