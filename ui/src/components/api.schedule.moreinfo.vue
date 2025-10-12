@@ -199,7 +199,6 @@
               :titleAdd="itemDetails.name"
               :items="fieldInnerSchedules"
               :fields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
-              :projectionFields="['frequency', 'status', 'timestamp', 'location']"
               :sortFields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
               :filterFields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
               :apiFn="{

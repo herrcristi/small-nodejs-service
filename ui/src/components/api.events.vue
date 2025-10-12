@@ -15,7 +15,7 @@
     <!-- 
       more info
     -->
-    <template v-slot:expanded-content="{ item, columns }">
+    <template v-slot:expanded-row="{ item, columns }">
       <tr>
         <td :colspan="columns.length" class="py-2">
           <v-row class="d-flex justify-end">

@@ -20,19 +20,71 @@
       @detailsItem="openDetails($event)"
     >
       <!-- 
-        expose expanded content 
+          expose slots
       -->
-      <template v-slot:data-table-expand="{ internalItem, isExpanded, toggleExpand }">
+
+      <!-- top of the table, title + add + filter -->
+      <template v-slot:top>
+        <slot name="top"> </slot>
+      </template>
+      <template v-slot:top.title>
+        <slot name="top.title"> </slot>
+      </template>
+      <template v-slot:top.add>
+        <slot name="top.add"> </slot>
+      </template>
+      <template v-slot:top.filter>
+        <slot name="top.filter"> </slot>
+      </template>
+
+      <!-- loading-->
+      <template v-slot:loading>
+        <slot name="loading"> </slot>
+      </template>
+
+      <!-- details column (icon) -->
+      <template v-slot:item.details="{ item }">
+        <slot name="item.details" :item="item"> </slot>
+      </template>
+
+      <!-- status -->
+      <template v-slot:item.status="{ item }">
+        <slot name="item.status" :item="item"> </slot>
+      </template>
+
+      <!-- severity -->
+      <template v-slot:item.severity="{ item }">
+        <slot name="item.severity" :item="item"> </slot>
+      </template>
+
+      <!-- required -->
+      <template v-slot:item.required="{ item }">
+        <slot name="item.required" :item="item"> </slot>
+      </template>
+
+      <!-- message -->
+      <template v-slot:item.message="{ item }">
+        <slot name="item.message" :item="item"> </slot>
+      </template>
+
+      <!-- expand -->
+      <template v-slot:item.data-table-expand="{ internalItem, isExpanded, toggleExpand }">
         <slot
-          name="data-table-expand"
+          name="item.data-table-expand"
           :internalItem="internalItem"
           :isExpanded="isExpanded"
           :toggleExpand="toggleExpand"
-        ></slot>
+        >
+        </slot>
       </template>
 
-      <template v-slot:expanded-content="{ item, columns }">
-        <slot name="expanded-content" :item="item" :columns="columns"></slot>
+      <template v-slot:expanded-row="{ columns, item }">
+        <slot name="expanded-row" :item="item" :columns="columns"> </slot>
+      </template>
+
+      <!-- actions -->
+      <template #item.actions="{ item }">
+        <slot name="item.actions" :item="item"> </slot>
       </template>
     </ApiTableServer>
 

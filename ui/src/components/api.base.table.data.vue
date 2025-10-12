@@ -27,121 +27,147 @@
           top of the table, title + add + filter 
       -->
     <template v-slot:top>
-      <v-toolbar flat density="compact">
-        <v-card-title class="d-flex justify-space-between">
-          {{ $t(props.title) }}
-        </v-card-title>
+      <slot name="top">
+        <v-toolbar flat density="compact">
+          <v-card-title class="d-flex justify-space-between">
+            <slot name="top-title">
+              {{ $t(props.title) }}
+            </slot>
+          </v-card-title>
 
-        <v-btn
-          class="me-2 left"
-          color="primary"
-          prepend-icon="mdi-plus"
-          rounded="lg"
-          text=""
-          border
-          small
-          @click="openAdd"
-          v-if="props.write && props.apiFn?.add"
-        ></v-btn>
+          <slot name="top.add">
+            <v-btn
+              class="me-2 left"
+              color="primary"
+              prepend-icon="mdi-plus"
+              rounded="lg"
+              text=""
+              border
+              small
+              @click="openAdd"
+              v-if="props.write && props.apiFn?.add"
+            ></v-btn>
+          </slot>
 
-        <v-toolbar-title> </v-toolbar-title>
+          <v-toolbar-title> </v-toolbar-title>
 
-        <v-text-field
-          v-if="Array.isArray(props.filterFields)"
-          v-model="filter"
-          :label="t('filter')"
-          class="me-2"
-          rounded="lg"
-          prepend-inner-icon="mdi-magnify"
-          variant="outlined"
-          hide-details
-          single-line
-          dense
-          clearable
-          density="compact"
-        ></v-text-field>
-      </v-toolbar>
+          <slot name="top.filter">
+            <v-text-field
+              v-if="Array.isArray(props.filterFields)"
+              v-model="filter"
+              :label="t('filter')"
+              class="me-2"
+              rounded="lg"
+              prepend-inner-icon="mdi-magnify"
+              variant="outlined"
+              hide-details
+              single-line
+              dense
+              clearable
+              density="compact"
+            ></v-text-field>
+          </slot>
+        </v-toolbar>
+      </slot>
     </template>
 
     <!-- 
           loading
       -->
     <template v-slot:loading>
-      <v-skeleton-loader type="table-row@1"></v-skeleton-loader>
+      <slot name="loading">
+        <v-skeleton-loader type="table-row@1"></v-skeleton-loader>
+      </slot>
     </template>
 
     <!-- 
         status 
         -->
     <template v-slot:item.status="{ item }">
-      <div class="">
-        <v-chip
-          :color="getStatusColor(item.status)"
-          :text="item._lang_en?.status || item._lang_en?.user?.status || item.status || item.user?.status"
-          size="small"
-          label
-        ></v-chip>
-      </div>
+      <slot name="item.status" :item="item">
+        <div class="">
+          <v-chip
+            :color="getStatusColor(item.status)"
+            :text="item._lang_en?.status || item._lang_en?.user?.status || item.status || item.user?.status"
+            size="small"
+            label
+          ></v-chip>
+        </div>
+      </slot>
     </template>
 
     <!-- 
         severity 
       -->
     <template v-slot:item.severity="{ item }">
-      <div class="">
-        <v-chip
-          :color="getSeverityColor(item.severity)"
-          :text="item._lang_en?.severity || item.severity"
-          class="text-uppercase"
-          size="small"
-          label
-        ></v-chip>
-      </div>
+      <slot name="item.severity" :item="item">
+        <div class="">
+          <v-chip
+            :color="getSeverityColor(item.severity)"
+            :text="item._lang_en?.severity || item.severity"
+            class="text-uppercase"
+            size="small"
+            label
+          ></v-chip>
+        </div>
+      </slot>
     </template>
 
     <!-- 
         required
         -->
     <template v-slot:item.required="{ item }">
-      <div class="">
-        <v-chip
-          :color="getRequiredColor(item.required)"
-          :text="item._lang_en?.required || item.required"
-          size="small"
-          label
-        ></v-chip>
-      </div>
+      <slot name="item.required" :item="item">
+        <div class="">
+          <v-chip
+            :color="getRequiredColor(item.required)"
+            :text="item._lang_en?.required || item.required"
+            size="small"
+            label
+          ></v-chip>
+        </div>
+      </slot>
     </template>
 
     <!-- 
         message
         -->
     <template v-slot:item.message="{ item }">
-      <div class="">
-        {{ item._lang_en?.message || item.message }}
-      </div>
+      <slot name="item.message" :item="item">
+        <div class="">
+          {{ item._lang_en?.message || item.message }}
+        </div>
+      </slot>
     </template>
 
     <!-- 
         expand 
     -->
     <template v-slot:item.data-table-expand="{ internalItem, isExpanded, toggleExpand }">
-      <v-btn
-        :append-icon="isExpanded(internalItem) ? 'mdi-chevron-up' : 'mdi-chevron-down'"
-        :text="isExpanded(internalItem) ? t('collapse') : t('more.info')"
-        class="text-none"
-        color="medium-emphasis"
-        size="small"
-        variant="text"
-        width="105"
-        border
-        slim
-        @click="toggleExpand(internalItem)"
-      ></v-btn>
+      <slot
+        name="item.data-table-expand"
+        :internalItem="internalItem"
+        :isExpanded="isExpanded"
+        :toggleExpand="toggleExpand"
+      >
+        <v-btn
+          :append-icon="isExpanded(internalItem) ? 'mdi-chevron-up' : 'mdi-chevron-down'"
+          :text="isExpanded(internalItem) ? t('collapse') : t('more.info')"
+          class="text-none"
+          color="medium-emphasis"
+          size="small"
+          variant="text"
+          width="105"
+          border
+          slim
+          @click="toggleExpand(internalItem)"
+        >
+        </v-btn>
+      </slot>
     </template>
 
     <template v-slot:expanded-row="{ columns, item }">
-      <slot name="expanded-content" :item="item" :columns="columns">
+      <slot name="expanded-row" :item="item" :columns="columns">
         <tr>
           <td :colspan="columns.length" class="py-2">
             <v-sheet rounded="lg" border>
@@ -155,19 +181,27 @@
     <!-- 
           actions
       -->
-    <template #item.actions="{ item }" v-if="props.write">
-      <v-icon v-if="props.apiFn?.update" small class="mr-2" @click="openEdit(item)" :title="$t('edit')" size="small"
-        >mdi-pencil</v-icon
-      >
-      <v-icon
-        v-if="props.apiFn?.delete"
-        small
-        color="mr-2"
-        @click="confirmDelete(item.id)"
-        :title="$t('delete')"
-        size="small"
-        >mdi-delete</v-icon
-      >
+    <template #item.actions="{ item }">
+      <slot name="item.actions" :item="item">
+        <v-icon
+          v-if="props.write && props.apiFn?.update"
+          small
+          class="mr-2"
+          @click="openEdit(item)"
+          :title="$t('edit')"
+          size="small"
+          >mdi-pencil</v-icon
+        >
+        <v-icon
+          v-if="props.write && props.apiFn?.delete"
+          small
+          color="mr-2"
+          @click="confirmDelete(item.id)"
+          :title="$t('delete')"
+          size="small"
+          >mdi-delete</v-icon
+        >
+      </slot>
     </template>
   </v-data-table>
 
