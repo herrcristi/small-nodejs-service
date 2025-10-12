@@ -5,7 +5,7 @@
     -->
     <v-dialog v-model="dialog" max-width="800px" v-if="props.write && (props.apiFn?.create || props.apiFn?.update)">
       <v-card>
-        <v-card-title>{{ editing ? $t('edit') : $t('add') }}</v-card-title>
+        <v-card-title>{{ editing ? t('edit') : t('add') }}</v-card-title>
 
         <v-card-text>
           <v-form ref="editForm" v-model="formValid">
@@ -13,7 +13,7 @@
               <v-text-field
                 v-if="fieldsSet.has('name') || fieldsSet.has('user.name')"
                 v-model="itemData.name"
-                :label="$t('name')"
+                :label="t('name')"
                 :rules="[nameRule]"
                 required
               />
@@ -26,7 +26,7 @@
                 :items="statusItems"
                 item-title="title"
                 item-value="value"
-                :label="$t('status')"
+                :label="t('status')"
                 :rules="[statusRule]"
                 required
               />
@@ -36,7 +36,7 @@
               <v-text-field
                 v-if="fieldsSet.has('email') || fieldsSet.has('user.email')"
                 v-model="itemData.email"
-                :label="$t('email')"
+                :label="t('email')"
                 :rules="[emailRule]"
                 required
               />
@@ -47,7 +47,7 @@
                 v-if="fieldsSet.has('credits')"
                 v-model.number="itemData.credits"
                 type="number"
-                :label="$t('credits')"
+                :label="t('credits')"
                 :rules="[creditsRule]"
                 min="1"
                 required
@@ -61,7 +61,7 @@
                 :items="requiredItems"
                 item-title="title"
                 item-value="value"
-                :label="$t('required')"
+                :label="t('required')"
                 :rules="[requiredRule]"
                 required
               />
@@ -71,7 +71,7 @@
               <v-text-field
                 v-if="fieldsSet.has('address')"
                 v-model="itemData.address"
-                :label="$t('address')"
+                :label="t('address')"
                 :rules="[addressRule]"
                 required
               />
@@ -81,7 +81,7 @@
               <v-text-field
                 v-if="fieldsSet.has('description')"
                 v-model="itemData.description"
-                :label="$t('description')"
+                :label="t('description')"
                 required
               />
             </slot>
@@ -90,8 +90,8 @@
 
         <v-card-actions>
           <v-spacer />
-          <v-btn text @click="closeDialog">{{ $t('cancel') }}</v-btn>
-          <v-btn color="primary" :disabled="!formValid" @click="handleSubmit">{{ $t('save') }}</v-btn>
+          <v-btn text @click="closeDialog">{{ t('cancel') }}</v-btn>
+          <v-btn color="primary" :disabled="!formValid" @click="handleSubmit">{{ t('save') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>

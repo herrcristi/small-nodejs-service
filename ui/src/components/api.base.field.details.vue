@@ -166,7 +166,7 @@
     -->
   <v-dialog v-model="addDialog" max-width="900px" v-if="props.write">
     <v-card>
-      <v-card-title>{{ props.titleAdd || (props.title ? $t(props.title) : 'Add') }}</v-card-title>
+      <v-card-title>{{ props.titleAdd || (props.title ? t(props.title) : 'Add') }}</v-card-title>
 
       <v-card-text>
         <!-- 

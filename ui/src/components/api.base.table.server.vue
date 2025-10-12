@@ -27,7 +27,7 @@
         <v-toolbar flat>
           <v-card-title class="d-flex justify-space-between">
             <slot name="top.title">
-              {{ $t(props.title) }}
+              {{ t(props.title) }}
             </slot>
           </v-card-title>
 
@@ -74,7 +74,7 @@
     <!-- details column (icon) -->
     <template v-slot:item.details="{ item }">
       <slot name="item.details" :item="item">
-        <v-btn v-if="props.details" icon small @click.stop="openDetails(item.id)" :title="$t('details')">
+        <v-btn v-if="props.details" icon small @click.stop="openDetails(item.id)" :title="t('details')">
           <v-icon color="primary" class="mr-2" size="small">mdi-information-outline</v-icon>
           <!-- <v-icon color="primary">mdi-chevron-right</v-icon> -->
         </v-btn>
@@ -279,7 +279,7 @@
           small
           class="mr-2"
           @click="openEdit(item)"
-          :title="$t('edit')"
+          :title="t('edit')"
           size="small"
           >mdi-pencil</v-icon
         >
@@ -288,7 +288,7 @@
           small
           color="mr-2"
           @click="confirmDelete(item.id)"
-          :title="$t('delete')"
+          :title="t('delete')"
           size="small"
           >mdi-delete</v-icon
         >

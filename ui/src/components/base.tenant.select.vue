@@ -2,7 +2,7 @@
   <v-container>
     <v-row>
       <v-col cols="6">
-        <h2>{{ $t('tenants') || 'Select Tenant' }}</h2>
+        <h2>{{ t('tenants') || 'Select Tenant' }}</h2>
       </v-col>
     </v-row>
 
@@ -26,62 +26,59 @@
   </v-container>
 </template>
 
-<script>
+<script setup>
 import { ref, onMounted } from 'vue';
 import { getRolesPermissions } from '../auth.js';
 import { useAppStore, useAuthStore } from '../stores/stores.js';
 import { useRouter, useRoute } from 'vue-router';
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
 
-export default {
-  name: 'TenantSelect',
-  setup() {
-    const tenants = ref([]);
-    const appStore = useAppStore();
-    const router = useRouter();
-    const route = useRoute();
+/**
+ * props
+ */
+const tenants = ref([]);
+const appStore = useAppStore();
+const router = useRouter();
+const route = useRoute();
+const selected = ref(appStore.tenantID || null);
 
-    async function loadTenants() {
-      tenants.value =
-        useAuthStore()?.raw?.schools?.map((tenant) => {
-          return {
-            id: tenant.id,
-            name: tenant.name,
-            status: tenant.status,
-            description: tenant.description,
-          };
-        }) || [];
+async function loadTenants() {
+  tenants.value =
+    useAuthStore()?.raw?.schools?.map((tenant) => {
+      return {
+        id: tenant.id,
+        name: tenant.name,
+        status: tenant.status,
+        description: tenant.description,
+      };
+    }) || [];
 
-      // only active tenants
-      tenants.value = tenants.value.filter((t) => t.status === 'active');
-      // sort by name
-      tenants.value.sort((a, b) => a.name.localeCompare(b.name));
-    }
+  // only active tenants
+  tenants.value = tenants.value.filter((t) => t.status === 'active');
+  // sort by name
+  tenants.value.sort((a, b) => a.name.localeCompare(b.name));
+}
 
-    const selected = ref(appStore.tenantID || null);
+function selectTenant(t) {
+  selected.value = t.id;
 
-    function selectTenant(t) {
-      selected.value = t.id;
+  // persist via store helper
+  appStore.saveTenant(t.id, getRolesPermissions(t.id, useAuthStore()?.raw));
 
-      // persist via store helper
-      appStore.saveTenant(t.id, getRolesPermissions(t.id, useAuthStore()?.raw));
+  // reset next if tenantID changed
+  if (route.query.tenantID && route.query.tenantID !== t.id) {
+    route.query.next = '/';
+  }
 
-      // reset next if tenantID changed
-      if (route.query.tenantID && route.query.tenantID !== t.id) {
-        route.query.next = '/';
-      }
+  // redirect
+  const next = route.query.next ? decodeURIComponent(route.query.next) : '/';
+  router.push(next || '/');
+}
 
-      // redirect
-      const next = route.query.next ? decodeURIComponent(route.query.next) : '/';
-      router.push(next || '/');
-    }
-
-    onMounted(() => {
-      loadTenants();
-    });
-
-    return { tenants, selectTenant, selected };
-  },
-};
+onMounted(() => {
+  loadTenants();
+});
 </script>
 
 <style scoped>

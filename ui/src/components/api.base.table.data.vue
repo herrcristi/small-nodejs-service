@@ -31,7 +31,7 @@
         <v-toolbar flat density="compact">
           <v-card-title class="d-flex justify-space-between">
             <slot name="top-title">
-              {{ $t(props.title) }}
+              {{ t(props.title) }}
             </slot>
           </v-card-title>
 
@@ -281,7 +281,7 @@
           small
           class="mr-2"
           @click="openEdit(item)"
-          :title="$t('edit')"
+          :title="t('edit')"
           size="small"
           >mdi-pencil</v-icon
         >
@@ -290,7 +290,7 @@
           small
           color="mr-2"
           @click="confirmDelete(item.id)"
-          :title="$t('delete')"
+          :title="t('delete')"
           size="small"
           >mdi-delete</v-icon
         >
