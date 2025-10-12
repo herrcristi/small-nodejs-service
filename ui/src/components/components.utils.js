@@ -37,10 +37,16 @@ const Utils = {
 
   /**
    * headers as each value
+   * options: { actions?, details? }
    *  { title, key?, value?, sortable?, width? }
    */
-  getHeaders: (fields, sortFields, addActions, t) => {
+  getHeaders: (fields, sortFields, options, t) => {
     const h = [];
+
+    // details
+    if (options?.details) {
+      h.push({ title: '', key: 'details', value: 'details', sortable: false });
+    }
 
     const sortFildsSet = new Set(sortFields);
 
@@ -58,7 +64,7 @@ const Utils = {
     }
 
     // actions
-    if (addActions) {
+    if (options?.actions) {
       h.push({ width: 100, title: t('actions'), value: 'actions', sortable: false });
     }
 

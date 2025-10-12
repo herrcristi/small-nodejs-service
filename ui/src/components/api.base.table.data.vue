@@ -389,8 +389,10 @@ const totalItems = computed({
  * headers
  */
 const headers = computed(() => {
-  const addActions = props.write && (props.apiFn.update || props.apiFn.delete);
-  return ComponentUtils.getHeaders(props.fields, props.sortFields, addActions, t);
+  const options = {
+    actions: props.write && (props.apiFn.update || props.apiFn.delete),
+  };
+  return ComponentUtils.getHeaders(props.fields, props.sortFields, options, t);
 });
 
 /**
