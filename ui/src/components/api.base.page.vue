@@ -47,9 +47,24 @@
         <slot name="item.details" :item="item"> </slot>
       </template>
 
+      <!-- name -->
+      <template v-slot:item.name="{ item }">
+        <slot name="item.name" :item="item"> </slot>
+      </template>
+
+      <!-- user.name -->
+      <template v-slot:item.user.name="{ item }">
+        <slot name="item.user.name" :item="item"> </slot>
+      </template>
+
       <!-- status -->
       <template v-slot:item.status="{ item }">
         <slot name="item.status" :item="item"> </slot>
+      </template>
+
+      <!-- user.status -->
+      <template v-slot:item.user.status="{ item }">
+        <slot name="item.user.status" :item="item"> </slot>
       </template>
 
       <!-- severity -->
@@ -65,6 +80,11 @@
       <!-- message -->
       <template v-slot:item.message="{ item }">
         <slot name="item.message" :item="item"> </slot>
+      </template>
+
+      <!-- description -->
+      <template v-slot:item.description="{ item }">
+        <slot name="item.description" :item="item"> </slot>
       </template>
 
       <!-- expand -->

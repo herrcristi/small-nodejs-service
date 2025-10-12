@@ -84,6 +84,20 @@
     </template>
 
     <!-- 
+        name
+        -->
+    <template v-slot:item.name="{ item }">
+      <slot name="item.name" :item="item"> {{ item.name }} </slot>
+    </template>
+
+    <!-- 
+        user.name
+        -->
+    <template v-slot:item.user.name="{ item }">
+      <slot name="item.user.name" :item="item"> {{ item.user.name }} </slot>
+    </template>
+
+    <!-- 
         status 
         -->
     <template v-slot:item.status="{ item }">
@@ -91,7 +105,23 @@
         <div class="">
           <v-chip
             :color="ComponentUtils.getStatusColor(item.status)"
-            :text="item._lang_en?.status || item._lang_en?.user?.status || item.status || item.user?.status"
+            :text="item._lang_en?.status || item.status"
+            size="small"
+            label
+          ></v-chip>
+        </div>
+      </slot>
+    </template>
+
+    <!-- 
+        user.status 
+        -->
+    <template v-slot:item.user.status="{ item }">
+      <slot name="item.user.status" :item="item">
+        <div class="">
+          <v-chip
+            :color="ComponentUtils.getStatusColor(item.user?.status)"
+            :text="item._lang_en?.user?.status || item.user?.status"
             size="small"
             label
           ></v-chip>
@@ -141,6 +171,13 @@
           {{ item._lang_en?.message || item.message }}
         </div>
       </slot>
+    </template>
+
+    <!-- 
+        description
+        -->
+    <template v-slot:item.description="{ item }">
+      <slot name="item.description" :item="item"> </slot>
     </template>
 
     <!-- 
