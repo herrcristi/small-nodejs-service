@@ -1,7 +1,7 @@
 <template>
   <v-dialog v-model="visible" max-width="500px">
     <v-card>
-      <v-card-title>{{ $t(titleKey) }}</v-card-title>
+      <v-card-title>{{ t(titleKey) }}</v-card-title>
 
       <v-spacer />
 
@@ -13,8 +13,8 @@
 
       <v-card-actions>
         <v-spacer />
-        <v-btn text @click="onCancel">{{ $t(cancelKey) }}</v-btn>
-        <v-btn :color="okColor" @click="onConfirm">{{ $t(okKey) }}</v-btn>
+        <v-btn text @click="onCancel">{{ t(cancelKey) }}</v-btn>
+        <v-btn :color="okColor" @click="onConfirm">{{ t(okKey) }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>

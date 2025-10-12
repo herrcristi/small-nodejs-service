@@ -20,12 +20,12 @@
     <!-- 
       more info
     -->
-    <template v-slot:data-table-expand="{ internalItem, isExpanded, toggleExpand }">
+    <template v-slot:item.data-table-expand="{ internalItem, isExpanded, toggleExpand }">
       <!-- if admin or current user hide this to default to base class implementation -->
       <div v-if="!(write || currentUserID == internalItem.key)"></div>
     </template>
 
-    <template v-slot:expanded-content="{ item, columns }">
+    <template v-slot:expanded-row="{ item, columns }">
       <tr v-if="item.user?.status != 'pending'">
         <td :colspan="columns.length" class="py-2">
           <v-sheet rounded="lg" border>

@@ -12,19 +12,19 @@
               <v-avatar class="me-2" size="32" color="secondary">
                 <span class="avatar-initials">{{ initials }}</span>
               </v-avatar>
-              <div class="me-2">{{ $t('hi_user', { user: userName }) }}</div>
+              <div class="me-2">{{ t('hi_user', { user: userName }) }}</div>
             </v-btn>
           </template>
 
           <v-list>
             <v-list-item link @click="goProfile">
-              <v-list-item-title>{{ $t('profile') }}</v-list-item-title>
+              <v-list-item-title>{{ t('profile') }}</v-list-item-title>
             </v-list-item>
             <v-list-item link @click="goTenants">
-              <v-list-item-title>{{ $t('tenants') }}</v-list-item-title>
+              <v-list-item-title>{{ t('tenants') }}</v-list-item-title>
             </v-list-item>
             <v-list-item @click="doLogout">
-              <v-list-item-title>{{ $t('logout') }}</v-list-item-title>
+              <v-list-item-title>{{ t('logout') }}</v-list-item-title>
             </v-list-item>
           </v-list>
         </v-menu>
@@ -34,31 +34,31 @@
     <v-navigation-drawer app permanent color="primary" dark>
       <v-list dense>
         <v-list-item link to="/">
-          <v-list-item-title>{{ $t('home') }} </v-list-item-title>
+          <v-list-item-title>{{ t('home') }} </v-list-item-title>
         </v-list-item>
         <v-list-item link to="/schools" v-if="permissions.schools?.read">
-          <v-list-item-title>{{ $t('schools') }}</v-list-item-title>
+          <v-list-item-title>{{ t('schools') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/students" v-if="permissions.students?.read">
-          <v-list-item-title>{{ $t('students') }}</v-list-item-title>
+          <v-list-item-title>{{ t('students') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/professors" v-if="permissions.professors?.read">
-          <v-list-item-title>{{ $t('professors') }}</v-list-item-title>
+          <v-list-item-title>{{ t('professors') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/groups" v-if="permissions.groups?.read">
-          <v-list-item-title>{{ $t('groups') }}</v-list-item-title>
+          <v-list-item-title>{{ t('groups') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/locations" v-if="permissions.locations?.read">
-          <v-list-item-title>{{ $t('locations') }}</v-list-item-title>
+          <v-list-item-title>{{ t('locations') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/events" v-if="permissions.events?.read">
-          <v-list-item-title>{{ $t('events') }}</v-list-item-title>
+          <v-list-item-title>{{ t('events') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/classes" v-if="permissions.classes?.read">
-          <v-list-item-title>{{ $t('classes') }}</v-list-item-title>
+          <v-list-item-title>{{ t('classes') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/schedules" v-if="permissions.schedules?.read">
-          <v-list-item-title>{{ $t('schedules') }}</v-list-item-title>
+          <v-list-item-title>{{ t('schedules') }}</v-list-item-title>
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
@@ -82,101 +82,99 @@
   </v-app>
 </template>
 
-<script>
+<script setup>
 import { computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore, useAppStore } from '../stores/stores.js';
 import Api from '../api/api.js';
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
 
-export default {
-  name: 'Layout',
-  setup() {
-    const route = useRoute();
-    const router = useRouter();
-    const authStore = useAuthStore();
-    const appStore = useAppStore();
+/**
+ * props
+ */
+const route = useRoute();
+const router = useRouter();
+const authStore = useAuthStore();
+const appStore = useAppStore();
 
-    /**
-     * breadcrumbs
-     */
-    const breadcrumbs = computed(() => {
-      // Prefer route.meta.breadcrumbs when provided as an array of { text, to }
-      if (Array.isArray(route.meta?.breadcrumbs) && route.meta.breadcrumbs.length) {
-        return route.meta.breadcrumbs;
-      }
+/**
+ * breadcrumbs
+ */
+const breadcrumbs = computed(() => {
+  // Prefer route.meta.breadcrumbs when provided as an array of { text, to }
+  if (Array.isArray(route.meta?.breadcrumbs) && route.meta.breadcrumbs.length) {
+    return route.meta.breadcrumbs;
+  }
 
-      // Fallback: build from path segments
-      const parts = route.path.split('/').filter(Boolean);
-      let accPath = '';
-      return parts.map((p) => {
-        accPath += `/${p}`;
-        return { text: p.charAt(0).toUpperCase() + p.slice(1), to: accPath };
-      });
-    });
+  // Fallback: build from path segments
+  const parts = route.path.split('/').filter(Boolean);
+  let accPath = '';
+  return parts.map((p) => {
+    accPath += `/${p}`;
+    return { text: p.charAt(0).toUpperCase() + p.slice(1), to: accPath };
+  });
+});
 
-    /**
-     * userName
-     */
-    const userName = computed(() => {
-      return authStore?.raw?.name || authStore?.raw?.email || 'User';
-    });
+/**
+ * userName
+ */
+const userName = computed(() => {
+  return authStore?.raw?.name || authStore?.raw?.email || 'User';
+});
 
-    /**
-     * initials
-     */
-    const initials = computed(() => {
-      const n = userName.value || '';
-      return n
-        .split(' ')
-        .map((p) => p.charAt(0).toUpperCase())
-        .slice(0, 2)
-        .join('');
-    });
+/**
+ * initials
+ */
+const initials = computed(() => {
+  const n = userName.value || '';
+  return n
+    .split(' ')
+    .map((p) => p.charAt(0).toUpperCase())
+    .slice(0, 2)
+    .join('');
+});
 
-    /**
-     * permissions
-     */
-    const permissions = computed(() => {
-      const p = appStore?.rolesPermissions || {};
-      return p;
-    });
+/**
+ * permissions
+ */
+const permissions = computed(() => {
+  const p = appStore?.rolesPermissions || {};
+  return p;
+});
 
-    /**
-     * profile
-     */
-    function goProfile() {
-      router.push('/profile');
-    }
+/**
+ * profile
+ */
+function goProfile() {
+  router.push('/profile');
+}
 
-    /**
-     * tenants
-     */
-    function goTenants() {
-      const current = window.location.pathname + window.location.search;
-      const tenantID = appStore?.tenantID;
-      router.push(`/tenants?tenantID=${encodeURIComponent(tenantID || '')}&next=${encodeURIComponent(current)}`);
-    }
+/**
+ * tenants
+ */
+function goTenants() {
+  const current = window.location.pathname + window.location.search;
+  const tenantID = appStore?.tenantID;
+  router.push(`/tenants?tenantID=${encodeURIComponent(tenantID || '')}&next=${encodeURIComponent(current)}`);
+}
 
-    /**
-     * logout
-     */
-    async function doLogout() {
-      // save next and tenant to re-use after logout redirect
-      const current = window.location.pathname + window.location.search;
-      const tenantID = appStore?.tenantID;
-      try {
-        await Api.logout(false);
-      } catch (e) {
-        // ignore logout errors
-      } finally {
-        authStore.clear();
-        router.push(`/login?tenantID=${encodeURIComponent(tenantID || '')}&next=${encodeURIComponent(current)}`);
-      }
-    }
-
-    return { breadcrumbs, userName, permissions, initials, goProfile, goTenants, doLogout };
-  },
-};
+/**
+ * logout
+ */
+async function doLogout() {
+  // save next and tenant to re-use after logout redirect
+  const current = window.location.pathname + window.location.search;
+  const tenantID = appStore?.tenantID;
+  try {
+    await Api.logout(false);
+  } catch (e) {
+    // ignore logout errors
+  } finally {
+    authStore.clear();
+    router.push(`/login?tenantID=${encodeURIComponent(tenantID || '')}&next=${encodeURIComponent(current)}`);
+  }
+}
 </script>
 
 <style scoped>

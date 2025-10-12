@@ -21,14 +21,152 @@
     @addItem="openAdd"
     @editItem="emit('editItem', $event)"
     @deleteItem="emit('deleteItem', $event)"
-  ></ApiTableData>
+  >
+    <!-- 
+          expose slots
+      -->
+
+    <!-- top of the table, title + add + filter -->
+    <template v-slot:top>
+      <slot name="top"> </slot>
+    </template>
+    <template v-slot:top.title>
+      <slot name="top.title"> </slot>
+    </template>
+    <template v-slot:top.add>
+      <slot name="top.add"> </slot>
+    </template>
+    <template v-slot:top.filter>
+      <slot name="top.filter"> </slot>
+    </template>
+
+    <!-- loading-->
+    <template v-slot:loading>
+      <slot name="loading"> </slot>
+    </template>
+
+    <!-- details column (icon) -->
+    <template v-slot:item.details="{ item }">
+      <slot name="item.details" :item="item"> </slot>
+    </template>
+
+    <!-- name -->
+    <template v-slot:item.name="{ item }">
+      <slot name="item.name" :item="item"> </slot>
+    </template>
+
+    <!-- user.name -->
+    <template v-slot:item.user.name="{ item }">
+      <slot name="item.user.name" :item="item"> </slot>
+    </template>
+
+    <!-- status -->
+    <template v-slot:item.status="{ item }">
+      <slot name="item.status" :item="item"> </slot>
+    </template>
+
+    <!-- user.status -->
+    <template v-slot:item.user.status="{ item }">
+      <slot name="item.user.status" :item="item"> </slot>
+    </template>
+
+    <!-- email -->
+    <template v-slot:item.email="{ item }">
+      <slot name="item.email" :item="item"> </slot>
+    </template>
+
+    <!-- user.email -->
+    <template v-slot:item.user.email="{ item }">
+      <slot name="item.user.email" :item="item"> </slot>
+    </template>
+
+    <!-- severity -->
+    <template v-slot:item.severity="{ item }">
+      <slot name="item.severity" :item="item"> </slot>
+    </template>
+
+    <!-- credits -->
+    <template v-slot:item.credits="{ item }">
+      <slot name="item.credits" :item="item"> </slot>
+    </template>
+
+    <!-- required -->
+    <template v-slot:item.required="{ item }">
+      <slot name="item.required" :item="item"> </slot>
+    </template>
+
+    <!-- message -->
+    <template v-slot:item.message="{ item }">
+      <slot name="item.message" :item="item"> </slot>
+    </template>
+
+    <!-- address -->
+    <template v-slot:item.address="{ item }">
+      <slot name="item.address" :item="item"> </slot>
+    </template>
+
+    <!-- createdTimestamp-->
+    <template v-slot:item.createdTimestamp="{ item }">
+      <slot name="item.createdTimestamp" :item="item"> </slot>
+    </template>
+
+    <!-- timestamp-->
+    <template v-slot:item.timestamp="{ item }">
+      <slot name="item.timestamp" :item="item"> </slot>
+    </template>
+
+    <!-- description -->
+    <template v-slot:item.description="{ item }">
+      <slot name="item.description" :item="item"> </slot>
+    </template>
+
+    <!-- class.name -->
+    <template v-slot:item.class.name="{ item }">
+      <slot name="item.class.name" :item="item"> </slot>
+    </template>
+
+    <!-- frequency -->
+    <template v-slot:item.frequency="{ item }">
+      <slot name="item.frequency" :item="item"> </slot>
+    </template>
+
+    <!-- location.name -->
+    <template v-slot:item.location.name="{ item }">
+      <slot name="item.location.name" :item="item"> </slot>
+    </template>
+
+    <!-- location.address -->
+    <template v-slot:item.location.address="{ item }">
+      <slot name="item.location.address" :item="item"> </slot>
+    </template>
+
+    <!-- expand -->
+    <template v-slot:item.data-table-expand="{ internalItem, isExpanded, toggleExpand }">
+      <slot
+        name="item.data-table-expand"
+        :internalItem="internalItem"
+        :isExpanded="isExpanded"
+        :toggleExpand="toggleExpand"
+      >
+      </slot>
+    </template>
+
+    <template v-slot:expanded-row="{ columns, item }">
+      <slot name="expanded-row" :item="item" :columns="columns"> </slot>
+    </template>
+
+    <!-- actions -->
+    <template #item.actions="{ item }">
+      <slot name="item.actions" :item="item"> </slot>
+    </template>
+  </ApiTableData>
 
   <!-- 
         Add modal     
     -->
   <v-dialog v-model="addDialog" max-width="900px" v-if="props.write">
     <v-card>
-      <v-card-title>{{ props.titleAdd || (props.title ? $t(props.title) : 'Add') }}</v-card-title>
+      <v-card-title>{{ props.titleAdd || (props.title ? t(props.title) : 'Add') }}</v-card-title>
 
       <v-card-text>
         <!-- 
@@ -47,7 +185,145 @@
           :write="false"
           :select="true"
           v-model="selectedItems"
-        ></ApiTableServer>
+        >
+          <!-- 
+          expose slots
+      -->
+
+          <!-- top of the table, title + add + filter -->
+          <template v-slot:top>
+            <slot name="server.top"> </slot>
+          </template>
+          <template v-slot:top.title>
+            <slot name="server.top.title"> </slot>
+          </template>
+          <template v-slot:top.add>
+            <slot name="server.top.add"> </slot>
+          </template>
+          <template v-slot:top.filter>
+            <slot name="server.top.filter"> </slot>
+          </template>
+
+          <!-- loading-->
+          <template v-slot:loading>
+            <slot name="server.loading"> </slot>
+          </template>
+
+          <!-- details column (icon) -->
+          <template v-slot:item.details="{ item }">
+            <slot name="server.item.details" :item="item"> </slot>
+          </template>
+
+          <!-- name -->
+          <template v-slot:item.name="{ item }">
+            <slot name="server.item.name" :item="item"> </slot>
+          </template>
+
+          <!-- user.name -->
+          <template v-slot:item.user.name="{ item }">
+            <slot name="server.item.user.name" :item="item"> </slot>
+          </template>
+
+          <!-- status -->
+          <template v-slot:item.status="{ item }">
+            <slot name="server.item.status" :item="item"> </slot>
+          </template>
+
+          <!-- user.status -->
+          <template v-slot:item.user.status="{ item }">
+            <slot name="server.item.user.status" :item="item"> </slot>
+          </template>
+
+          <!-- email -->
+          <template v-slot:item.email="{ item }">
+            <slot name="server.item.email" :item="item"> </slot>
+          </template>
+
+          <!-- user.email -->
+          <template v-slot:item.user.email="{ item }">
+            <slot name="server.item.user.email" :item="item"> </slot>
+          </template>
+
+          <!-- severity -->
+          <template v-slot:item.severity="{ item }">
+            <slot name="server.item.severity" :item="item"> </slot>
+          </template>
+
+          <!-- credits-->
+          <template v-slot:item.credits="{ item }">
+            <slot name="server.item.credits" :item="item"> </slot>
+          </template>
+
+          <!-- required -->
+          <template v-slot:item.required="{ item }">
+            <slot name="server.item.required" :item="item"> </slot>
+          </template>
+
+          <!-- message -->
+          <template v-slot:item.message="{ item }">
+            <slot name="server.item.message" :item="item"> </slot>
+          </template>
+
+          <!-- address -->
+          <template v-slot:item.address="{ item }">
+            <slot name="server.item.address" :item="item"> </slot>
+          </template>
+
+          <!-- createdTimestamp-->
+          <template v-slot:item.createdTimestamp="{ item }">
+            <slot name="server.item.createdTimestamp" :item="item"> </slot>
+          </template>
+
+          <!-- timestamp-->
+          <template v-slot:item.timestamp="{ item }">
+            <slot name="server.item.timestamp" :item="item"> </slot>
+          </template>
+
+          <!-- description -->
+          <template v-slot:item.description="{ item }">
+            <slot name="server.item.description" :item="item"> </slot>
+          </template>
+
+          <!-- class.name -->
+          <template v-slot:item.class.name="{ item }">
+            <slot name="server.item.class.name" :item="item"> </slot>
+          </template>
+
+          <!-- frequency -->
+          <template v-slot:item.frequency="{ item }">
+            <slot name="server.item.frequency" :item="item"> </slot>
+          </template>
+
+          <!-- location.name -->
+          <template v-slot:item.location.name="{ item }">
+            <slot name="server.item.location.name" :item="item"> </slot>
+          </template>
+
+          <!-- location.address -->
+          <template v-slot:item.location.address="{ item }">
+            <slot name="server.item.location.address" :item="item"> </slot>
+          </template>
+
+          <!-- expand -->
+          <template v-slot:item.data-table-expand="{ internalItem, isExpanded, toggleExpand }">
+            <slot
+              name="server.item.data-table-expand"
+              :internalItem="internalItem"
+              :isExpanded="isExpanded"
+              :toggleExpand="toggleExpand"
+            >
+            </slot>
+          </template>
+
+          <template v-slot:expanded-row="{ columns, item }">
+            <slot name="server.expanded-row" :item="item" :columns="columns"> </slot>
+          </template>
+
+          <!-- actions -->
+          <template #item.actions="{ item }">
+            <slot name="server.item.actions" :item="item"> </slot>
+          </template>
+        </ApiTableServer>
       </v-card-text>
 
       <v-card-actions>

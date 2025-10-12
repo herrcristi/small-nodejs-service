@@ -20,7 +20,7 @@
         <!-- 
           field classes 
          -->
-        <v-col cols="12" md="6">
+        <v-col cols="12" md="10">
           <!-- list using v-chip -->
           <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.classes?.read">
             <v-card-title class="d-flex justify-space-between">
@@ -72,14 +72,17 @@
               :write="false"
               :loading="loading"
               :nodatatext="nodatatext"
-            ></ApiFieldDetails>
+            >
+            </ApiFieldDetails>
           </v-card>
         </v-col>
+      </v-row>
 
+      <v-row class="d-flex justify-end">
         <!-- 
           field professors 
         -->
-        <v-col cols="12" md="6">
+        <v-col cols="12" md="10">
           <!-- list using v-chip -->
           <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.professors?.read">
             <v-card-title class="d-flex justify-space-between">
@@ -141,7 +144,81 @@
               :write="write && app?.rolesPermissions?.professors?.write"
               :loading="loading"
               :nodatatext="nodatatext"
-            ></ApiFieldDetails>
+            >
+            </ApiFieldDetails>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <v-row class="d-flex justify-end">
+        <!-- 
+          field (inner) schedules 
+        -->
+        <v-col cols="12" md="10">
+          <!-- list using v-chip -->
+          <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.locations?.read">
+            <v-card-title class="d-flex justify-space-between">
+              <div>{{ t('schedules') }}</div>
+            </v-card-title>
+
+            <v-card-text>
+              <v-chip-group selected-class="text-primary" column text="chip">
+                <template v-for="s in fieldInnerSchedules" :key="s.id">
+                  <v-chip> {{ s.frequency }}, {{ getInnerScheduleTime(s.timestamp) }}, {{ s.location.name }}</v-chip>
+                </template>
+              </v-chip-group>
+            </v-card-text>
+          </div>
+
+          <!-- list using v-card -->
+
+          <v-container fluid v-if="type == 'v-card' && read && app?.rolesPermissions?.locations?.read">
+            <v-card-title class="d-flex justify-space-between">
+              <div>{{ t('schedules') }}</div>
+            </v-card-title>
+
+            <v-row dense>
+              <template v-for="s in fieldInnerSchedules" :key="s.id" small>
+                <v-col cols="12" md="10">
+                  <v-card>
+                    <v-card-title> {{ s.location.name }} </v-card-title>
+                    <v-card-subtitle> {{ s.frequency }}, {{ getInnerScheduleTime(s.timestamp) }} </v-card-subtitle>
+                    <v-card-subtitle>
+                      {{ s.location.address }}
+                    </v-card-subtitle>
+                  </v-card>
+                </v-col>
+              </template>
+            </v-row>
+          </v-container>
+
+          <!-- list using table -->
+
+          <v-card v-if="type == 'v-table'">
+            <ApiFieldDetails
+              ref="fieldDetailsInnerSchedulesComponent"
+              title="schedules"
+              :titleAdd="itemDetails.name"
+              :items="fieldInnerSchedules"
+              :fields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
+              :projectionFields="['frequency', 'status', 'timestamp', 'location']"
+              :sortFields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
+              :filterFields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
+              :apiFn="{
+                getAll: getAllFieldInnerSchedules,
+                updateField: updateFieldInnerSchedules,
+                deleteField: deleteFieldInnerSchedule,
+              }"
+              :read="read && app?.rolesPermissions?.locations?.read"
+              :write="write && app?.rolesPermissions?.locations?.write"
+              :loading="loading"
+              :nodatatext="nodatatext"
+            >
+              <!-- timestamp -->
+              <template v-slot:item.timestamp="{ item }">
+                {{ getInnerScheduleTime(item.timestamp) }}
+              </template>
+            </ApiFieldDetails>
           </v-card>
         </v-col>
       </v-row>
@@ -150,7 +227,7 @@
         <!-- 
             field groups 
           -->
-        <v-col cols="12" md="6">
+        <v-col cols="12" md="10">
           <!-- list using v-chip -->
           <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.groups?.read">
             <v-card-title class="d-flex justify-space-between">
@@ -211,11 +288,13 @@
             ></ApiFieldDetails>
           </v-card>
         </v-col>
+      </v-row>
 
+      <v-row class="d-flex justify-end">
         <!-- 
           field students from groups
         -->
-        <v-col cols="12" md="6">
+        <v-col cols="12" md="10">
           <!-- list using v-chip -->
           <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.students?.read">
             <v-card-title class="d-flex justify-space-between">
@@ -274,14 +353,15 @@
               :loading="loading"
               :nodatatext="nodatatext"
             ></ApiFieldDetails>
-          </v-card> </v-col
-      ></v-row>
+          </v-card>
+        </v-col>
+      </v-row>
 
-      <v-row class="d-flex">
+      <v-row class="d-flex justify-end">
         <!-- 
           field students extra
         -->
-        <v-col cols="12" md="6">
+        <v-col cols="12" md="10">
           <!-- list using v-chip -->
           <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.students?.read">
             <v-card-title class="d-flex justify-space-between">
@@ -383,6 +463,9 @@ const write = app?.rolesPermissions?.schedules?.write || 0;
 const fieldDetailsClassesComponent = ref();
 const fieldClasses = ref([]);
 
+const fieldDetailsInnerSchedulesComponent = ref();
+const fieldInnerSchedules = ref([]);
+
 const fieldDetailsGroupsComponent = ref();
 const fieldGroups = ref([]);
 
@@ -403,6 +486,8 @@ async function onItemDetails(data) {
 
   fieldClasses.value = [itemDetails.value.class];
   fieldProfessors.value = itemDetails.value.professors || [];
+  fieldInnerSchedules.value = itemDetails.value.schedules || [];
+
   fieldGroups.value = itemDetails.value.groups || [];
   fieldGroupsStudents.value = getGroupsStudents(fieldGroups.value);
   fieldExtraStudents.value = itemDetails.value.students || [];
@@ -426,12 +511,55 @@ function getGroupsStudents(groups) {
 }
 
 /**
- * * ApiFieldDetails calling professors getAll / deleteField / updateField
+ * ApiFieldDetails calling inner schedules getAll / deleteField / updateField
  */
-async function getAllFieldGroups() {
+function getInnerScheduleTime(timestamp) {
+  try {
+    const d = new Date(timestamp);
+    const time = d.toLocaleDateString(undefined, {
+      weekday: 'short',
+      // year: 'numeric',
+      // month: 'short',
+      // day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      timeZone: 'UTC',
+    });
+    return time;
+  } catch (e) {
+    console.log('Error getting timestamp', e);
+    return '';
+  }
+}
+
+async function getAllFieldInnerSchedules(params) {
   // if fail will throw error and be catch in ApiFieldDetails
-  // return /* await */ Api.getGroups(`classes.id=${itemDetails.value.class.id}`);
-  return /* await */ Api.getGroups('');
+  return /* await */ Api.getLocations(params);
+}
+
+async function deleteFieldInnerSchedule(innerScheduleID) {
+  // if fail will throw error and be catch in ApiFieldDetails
+  await Api.updateScheduleInnerSchedules(props.itemID, [], [innerScheduleID]);
+
+  // no need for server call
+  fieldInnerSchedules.value = fieldInnerSchedules.value.filter((item) => item.id !== innerScheduleID);
+}
+
+async function updateFieldInnerSchedules(newIDs, removeIDs) {
+  // if fail will throw error and be catch in ApiFieldDetails
+  await Api.updateScheduleInnerSchedules(props.itemID, newIDs, removeIDs);
+
+  // refresh
+  await detailsComponent.value.refresh();
+}
+
+/**
+ * * ApiFieldDetails calling groups getAll / deleteField / updateField
+ */
+async function getAllFieldGroups(params) {
+  // if fail will throw error and be catch in ApiFieldDetails
+  // return /* await */ Api.getGroups(`${params ? params + '&' : ''}classes.id=${itemDetails.value.class.id}`);
+  return /* await */ Api.getGroups(params);
 }
 
 async function deleteFieldGroup(groupID) {
@@ -454,9 +582,9 @@ async function updateFieldGroups(newIDs, removeIDs) {
 /**
  * ApiFieldDetails calling professors getAll / deleteField / updateField
  */
-async function getAllFieldProfessors() {
+async function getAllFieldProfessors(params) {
   // if fail will throw error and be catch in ApiFieldDetails
-  return /* await */ Api.getProfessors(`classes.id=${itemDetails.value.class.id}`);
+  return /* await */ Api.getProfessors(`${params ? params + '&' : ''}classes.id=${itemDetails.value.class.id}`);
 }
 
 async function deleteFieldProfessor(professorID) {
@@ -478,9 +606,9 @@ async function updateFieldProfessors(newIDs, removeIDs) {
 /**
  * ApiFieldDetails calling students getAll / deleteField / updateField
  */
-async function getAllFieldExtraStudents() {
+async function getAllFieldExtraStudents(params) {
   // if fail will throw error and be catch in ApiFieldDetails
-  return /* await */ Api.getStudents(`classes.id=${itemDetails.value.class.id}`);
+  return /* await */ Api.getStudents(`${params ? params + '&' : ''}classes.id=${itemDetails.value.class.id}`);
 }
 
 async function deleteFieldExtraStudent(studentID) {

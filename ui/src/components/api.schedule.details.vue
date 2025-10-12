@@ -67,6 +67,32 @@
     </v-card-text>
 
     <v-card-text>
+      <ApiFieldDetails
+        ref="fieldDetailsInnerSchedulesComponent"
+        title="schedules"
+        :titleAdd="itemDetails.name"
+        :items="fieldInnerSchedules"
+        :fields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
+        :projectionFields="['frequency', 'status', 'timestamp', 'location']"
+        :filterFields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
+        :apiFn="{
+          getAll: getAllFieldInnerSchedules,
+          updateField: updateFieldInnerSchedules,
+          deleteField: deleteFieldInnerSchedule,
+        }"
+        :read="read && app?.rolesPermissions?.locations?.read"
+        :write="write && app?.rolesPermissions?.locations?.write"
+        :loading="loading"
+        :nodatatext="nodatatext"
+      >
+        <!-- timestamp -->
+        <template v-slot:item.timestamp="{ item }">
+          {{ getInnerScheduleTime(item.timestamp) }}
+        </template>
+      </ApiFieldDetails>
+    </v-card-text>
+
+    <v-card-text>
       <!-- 
           field groups 
       -->
@@ -178,11 +204,14 @@ const write = app?.rolesPermissions?.schedules?.write || 0;
 const fieldDetailsClassesComponent = ref();
 const fieldClasses = ref([]);
 
-const fieldDetailsGroupsComponent = ref();
-const fieldGroups = ref([]);
-
 const fieldDetailsProfessorsComponent = ref();
 const fieldProfessors = ref([]);
+
+const fieldDetailsInnerSchedulesComponent = ref();
+const fieldInnerSchedules = ref([]);
+
+const fieldDetailsGroupsComponent = ref();
+const fieldGroups = ref([]);
 
 const fieldDetailsGroupsStudentsComponent = ref();
 const fieldGroupsStudents = ref([]);
@@ -203,6 +232,8 @@ async function onItemDetails(data) {
 
   fieldClasses.value = [itemDetails.value.class];
   fieldProfessors.value = itemDetails.value.professors || [];
+  fieldInnerSchedules.value = itemDetails.value.schedules || [];
+
   fieldGroups.value = itemDetails.value.groups || [];
   fieldGroupsStudents.value = getGroupsStudents(fieldGroups.value);
   fieldExtraStudents.value = itemDetails.value.students || [];
@@ -238,12 +269,55 @@ function closeDialog() {
 }
 
 /**
- * * ApiFieldDetails calling professors getAll / deleteField / updateField
+ * ApiFieldDetails calling inner schedules getAll / deleteField / updateField
  */
-async function getAllFieldGroups() {
+function getInnerScheduleTime(timestamp) {
+  try {
+    const d = new Date(timestamp);
+    const time = d.toLocaleDateString(undefined, {
+      weekday: 'short',
+      // year: 'numeric',
+      // month: 'short',
+      // day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      timeZone: 'UTC',
+    });
+    return time;
+  } catch (e) {
+    console.log('Error getting timestamp', e);
+    return '';
+  }
+}
+
+async function getAllFieldInnerSchedules(params) {
   // if fail will throw error and be catch in ApiFieldDetails
-  // return /* await */ Api.getGroups(`classes.id=${itemDetails.value.class.id}`);
-  return /* await */ Api.getGroups('');
+  return /* await */ Api.getLocations(params);
+}
+
+async function deleteFieldInnerSchedule(innerScheduleID) {
+  // if fail will throw error and be catch in ApiFieldDetails
+  await Api.updateScheduleInnerSchedules(props.itemID, [], [innerScheduleID]);
+
+  // no need for server call
+  fieldInnerSchedules.value = fieldInnerSchedules.value.filter((item) => item.id !== innerScheduleID);
+}
+
+async function updateFieldInnerSchedules(newIDs, removeIDs) {
+  // if fail will throw error and be catch in ApiFieldDetails
+  await Api.updateScheduleInnerSchedules(props.itemID, newIDs, removeIDs);
+
+  // refresh
+  await detailsComponent.value.refresh();
+}
+
+/**
+ * * ApiFieldDetails calling groups getAll / deleteField / updateField
+ */
+async function getAllFieldGroups(params) {
+  // if fail will throw error and be catch in ApiFieldDetails
+  // return /* await */ Api.getGroups(`${params ? params + '&' : ''}classes.id=${itemDetails.value.class.id}`);
+  return /* await */ Api.getGroups(params);
 }
 
 async function deleteFieldGroup(groupID) {
@@ -266,9 +340,9 @@ async function updateFieldGroups(newIDs, removeIDs) {
 /**
  * ApiFieldDetails calling professors getAll / deleteField / updateField
  */
-async function getAllFieldProfessors() {
+async function getAllFieldProfessors(params) {
   // if fail will throw error and be catch in ApiFieldDetails
-  return /* await */ Api.getProfessors(`classes.id=${itemDetails.value.class.id}`);
+  return /* await */ Api.getProfessors(`${params ? params + '&' : ''}classes.id=${itemDetails.value.class.id}`);
 }
 
 async function deleteFieldProfessor(professorID) {
@@ -290,9 +364,9 @@ async function updateFieldProfessors(newIDs, removeIDs) {
 /**
  * ApiFieldDetails calling students getAll / deleteField / updateField
  */
-async function getAllFieldExtraStudents() {
+async function getAllFieldExtraStudents(params) {
   // if fail will throw error and be catch in ApiFieldDetails
-  return /* await */ Api.getStudents(`classes.id=${itemDetails.value.class.id}`);
+  return /* await */ Api.getStudents(`${params ? params + '&' : ''}classes.id=${itemDetails.value.class.id}`);
 }
 
 async function deleteFieldExtraStudent(studentID) {

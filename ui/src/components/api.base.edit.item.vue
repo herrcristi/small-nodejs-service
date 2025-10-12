@@ -5,79 +5,93 @@
     -->
     <v-dialog v-model="dialog" max-width="800px" v-if="props.write && (props.apiFn?.create || props.apiFn?.update)">
       <v-card>
-        <v-card-title>{{ editing ? $t('edit') : $t('add') }}</v-card-title>
+        <v-card-title>{{ editing ? t('edit') : t('add') }}</v-card-title>
 
         <v-card-text>
           <v-form ref="editForm" v-model="formValid">
-            <v-text-field
-              v-if="fieldsSet.has('name') || fieldsSet.has('user.name')"
-              v-model="itemData.name"
-              :label="$t('name')"
-              :rules="[nameRule]"
-              required
-            />
+            <slot name="edit.name" :itemData="itemData">
+              <v-text-field
+                v-if="fieldsSet.has('name') || fieldsSet.has('user.name')"
+                v-model="itemData.name"
+                :label="t('name')"
+                :rules="[nameRule]"
+                required
+              />
+            </slot>
 
-            <v-select
-              v-if="fieldsSet.has('status') || fieldsSet.has('user.status')"
-              v-model="itemData.status"
-              :items="statusItems"
-              item-title="title"
-              item-value="value"
-              :label="$t('status')"
-              :rules="[statusRule]"
-              required
-            />
+            <slot name="edit.status" :itemData="itemData">
+              <v-select
+                v-if="fieldsSet.has('status') || fieldsSet.has('user.status')"
+                v-model="itemData.status"
+                :items="statusItems"
+                item-title="title"
+                item-value="value"
+                :label="t('status')"
+                :rules="[statusRule]"
+                required
+              />
+            </slot>
 
-            <v-text-field
-              v-if="fieldsSet.has('email') || fieldsSet.has('user.email')"
-              v-model="itemData.email"
-              :label="$t('email')"
-              :rules="[emailRule]"
-              required
-            />
+            <slot name="edit.email" :itemData="itemData">
+              <v-text-field
+                v-if="fieldsSet.has('email') || fieldsSet.has('user.email')"
+                v-model="itemData.email"
+                :label="t('email')"
+                :rules="[emailRule]"
+                required
+              />
+            </slot>
 
-            <v-text-field
-              v-if="fieldsSet.has('credits')"
-              v-model.number="itemData.credits"
-              type="number"
-              :label="$t('credits')"
-              :rules="[creditsRule]"
-              min="1"
-              required
-            />
+            <slot name="edit.credits" :itemData="itemData">
+              <v-text-field
+                v-if="fieldsSet.has('credits')"
+                v-model.number="itemData.credits"
+                type="number"
+                :label="t('credits')"
+                :rules="[creditsRule]"
+                min="1"
+                required
+              />
+            </slot>
 
-            <v-select
-              v-if="fieldsSet.has('required')"
-              v-model="itemData.required"
-              :items="requiredItems"
-              item-title="title"
-              item-value="value"
-              :label="$t('required')"
-              :rules="[requiredRule]"
-              required
-            />
+            <slot name="edit.required" :itemData="itemData">
+              <v-select
+                v-if="fieldsSet.has('required')"
+                v-model="itemData.required"
+                :items="requiredItems"
+                item-title="title"
+                item-value="value"
+                :label="t('required')"
+                :rules="[requiredRule]"
+                required
+              />
+            </slot>
 
-            <v-text-field
-              v-if="fieldsSet.has('address')"
-              v-model="itemData.address"
-              :label="$t('address')"
-              :rules="[addressRule]"
-              required
-            />
+            <slot name="edit.address" :itemData="itemData">
+              <v-text-field
+                v-if="fieldsSet.has('address')"
+                v-model="itemData.address"
+                :label="t('address')"
+                :rules="[addressRule]"
+                required
+              />
+            </slot>
 
-            <v-text-field
-              v-if="fieldsSet.has('description')"
-              v-model="itemData.description"
-              :label="$t('description')"
-              required
-            />
+            <slot name="edit.description" :itemData="itemData">
+              <v-text-field
+                v-if="fieldsSet.has('description')"
+                v-model="itemData.description"
+                :label="t('description')"
+                required
+              />
+            </slot>
           </v-form>
         </v-card-text>
 
         <v-card-actions>
           <v-spacer />
-          <v-btn text @click="closeDialog">{{ $t('cancel') }}</v-btn>
-          <v-btn color="primary" :disabled="!formValid" @click="handleSubmit">{{ $t('save') }}</v-btn>
+          <v-btn text @click="closeDialog">{{ t('cancel') }}</v-btn>
+          <v-btn color="primary" :disabled="!formValid" @click="handleSubmit">{{ t('save') }}</v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
