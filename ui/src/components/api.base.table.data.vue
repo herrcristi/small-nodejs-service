@@ -87,7 +87,7 @@
       <slot name="item.status" :item="item">
         <div class="">
           <v-chip
-            :color="getStatusColor(item.status)"
+            :color="ComponentUtils.getStatusColor(item.status)"
             :text="item._lang_en?.status || item._lang_en?.user?.status || item.status || item.user?.status"
             size="small"
             label
@@ -103,7 +103,7 @@
       <slot name="item.severity" :item="item">
         <div class="">
           <v-chip
-            :color="getSeverityColor(item.severity)"
+            :color="ComponentUtils.getSeverityColor(item.severity)"
             :text="item._lang_en?.severity || item.severity"
             class="text-uppercase"
             size="small"
@@ -120,7 +120,7 @@
       <slot name="item.required" :item="item">
         <div class="">
           <v-chip
-            :color="getRequiredColor(item.required)"
+            :color="ComponentUtils.getRequiredColor(item.required)"
             :text="item._lang_en?.required || item.required"
             size="small"
             label
@@ -227,6 +227,7 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
 import ConfirmDialog from './base.confirm.dialog.vue';
+import ComponentUtils from './components.utils.js';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
@@ -292,155 +293,18 @@ const totalItems = computed({
 });
 
 /**
- * fields titles
- */
-
-const fieldsTitles = ref({
-  name: 'name',
-  'user.name': 'name',
-  'user.username': 'name',
-  status: 'status',
-  '_lang_en.status': 'status',
-  'user.status': 'status',
-  '_lang_en.user.status': 'status',
-  email: 'email',
-  'user.email': 'email',
-  description: 'description',
-  credits: 'credits',
-  required: 'required',
-  address: 'address',
-  severity: 'severity',
-  'target.name': 'target',
-  message: 'message',
-  '_lang_end.message': 'message',
-  timestamp: 'timestamp',
-  createdTimestamp: 'timestamp',
-  class: 'class',
-  'class.name': 'class',
-  details: 'details',
-  frequency: 'frequency',
-  'location.name': 'name',
-  'location.address': 'address',
-});
-
-/**
  * headers
  */
 const headers = computed(() => {
-  const h = [];
-
-  const sortFildsSet = new Set(props.sortFields);
-
-  for (const field of props.fields) {
-    const title = fieldsTitles.value[field];
-    if (!title) {
-      continue;
-    }
-
-    if (sortFildsSet.has(field)) {
-      h.push({ title: t(title), key: field });
-    } else {
-      h.push({ title: t(title), value: field });
-    }
-  }
-
-  // actions
-  if (props.write && (props.apiFn.update || props.apiFn.delete)) {
-    h.push({ width: 100, title: t('actions'), value: 'actions', sortable: false });
-  }
-
-  // x-small width
-  const xsmallWidthFields = new Set(['status', 'actions', 'details']);
-  for (const hitem of h) {
-    if (
-      xsmallWidthFields.has(fieldsTitles.value[hitem.key]) ||
-      xsmallWidthFields.has(fieldsTitles.value[hitem.value])
-    ) {
-      hitem.width = 50;
-    }
-  }
-  // small width
-  const smallWidthFields = new Set(['credits', 'required', 'severity']);
-  for (const hitem of h) {
-    if (smallWidthFields.has(fieldsTitles.value[hitem.key]) || smallWidthFields.has(fieldsTitles.value[hitem.value])) {
-      hitem.width = 100;
-    }
-  }
-
-  return h;
+  const addActions = props.write && (props.apiFn.update || props.apiFn.delete);
+  return ComponentUtils.getHeaders(props.fields, props.sortFields, addActions, t);
 });
-
-/**
- * color for status
- */
-function getStatusColor(status) {
-  switch (status) {
-    case 'pending':
-      return 'none';
-    case 'active':
-      return 'green';
-    case 'disabled':
-      return 'grey';
-    default:
-      return 'grey'; // for any other values
-  }
-}
-
-/**
- * color for required
- */
-function getRequiredColor(status) {
-  switch (status) {
-    case 'required':
-      return 'indigo';
-    case 'optional':
-    default:
-      return 'grey';
-  }
-}
-
-/**
- * color for severity
- */
-function getSeverityColor(severity) {
-  switch (severity) {
-    case 'critical':
-      return 'red';
-    case 'warning':
-      return 'orange';
-    case 'info':
-      return 'green';
-    default:
-      return 'grey';
-  }
-}
 
 /**
  * custom filter
  */
 function customFilter(value, query, item) {
-  let q = query?.toLocaleUpperCase();
-  if (q == null) {
-    return false;
-  }
-
-  for (const field of props.filterFields || []) {
-    let value = item?.raw;
-
-    const subFields = field.split('.');
-    for (const subField of subFields) {
-      if (value == null) {
-        break;
-      }
-      value = value[subField];
-    }
-
-    value = value?.toString().toLocaleUpperCase();
-    if (value && value.indexOf(q) !== -1) {
-      return true;
-    }
-  }
-  return false;
+  return findValue(props.filterFields, value, query, item);
 }
 
 /**
