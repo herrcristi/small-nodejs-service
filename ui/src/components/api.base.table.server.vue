@@ -218,7 +218,7 @@
     <!-- frequency -->
     <template v-slot:item.frequency="{ item }">
       <slot name="item.frequency" :item="item">
-        <div class="">{{ item.frequency }}</div>
+        <div class="">{{ item._lang_en?.frequency || item.frequency }}</div>
       </slot>
     </template>
 

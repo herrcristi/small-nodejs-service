@@ -215,7 +215,7 @@
               :nodatatext="nodatatext"
             >
               <!-- timestamp -->
-              <template v-slot:item.timstamp="{ item }">
+              <template v-slot:item.timestamp="{ item }">
                 {{ getInnerScheduleTime(item.timestamp) }}
               </template>
             </ApiFieldDetails>
@@ -518,14 +518,13 @@ function getInnerScheduleTime(timestamp) {
     const d = new Date(timestamp);
     const time = d.toLocaleDateString(undefined, {
       weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
+      // year: 'numeric',
+      // month: 'short',
+      // day: 'numeric',
       hour: 'numeric',
       minute: 'numeric',
       timeZone: 'UTC',
     });
-
     return time;
   } catch (e) {
     console.log('Error getting timestamp', e);
