@@ -83,7 +83,7 @@ export function getRolesPermissions(tenantID, loginData) {
       classes: { read: isAtLeast.student, write: isAtLeast.admin },
       schedules: { read: isAtLeast.student, write: isAtLeast.admin },
 
-      events: { read: isAtLeast.student, write: 0 },
+      events: { read: isAtLeast.admin, write: 0 },
     };
 
     return permissions;
