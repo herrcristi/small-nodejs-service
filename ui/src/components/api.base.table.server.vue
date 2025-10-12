@@ -64,9 +64,7 @@
       </slot>
     </template>
 
-    <!-- 
-          loading
-      -->
+    <!-- loading -->
     <template v-slot:loading>
       <slot name="loading">
         <v-skeleton-loader type="table-row@1"></v-skeleton-loader>
@@ -83,23 +81,17 @@
       </slot>
     </template>
 
-    <!-- 
-        name
-        -->
+    <!-- name -->
     <template v-slot:item.name="{ item }">
       <slot name="item.name" :item="item"> {{ item.name }} </slot>
     </template>
 
-    <!-- 
-        user.name
-        -->
+    <!-- user.name -->
     <template v-slot:item.user.name="{ item }">
       <slot name="item.user.name" :item="item"> {{ item.user.name }} </slot>
     </template>
 
-    <!-- 
-        status 
-        -->
+    <!-- status -->
     <template v-slot:item.status="{ item }">
       <slot name="item.status" :item="item">
         <div class="">
@@ -113,9 +105,7 @@
       </slot>
     </template>
 
-    <!-- 
-        user.status 
-        -->
+    <!-- user.status -->
     <template v-slot:item.user.status="{ item }">
       <slot name="item.user.status" :item="item">
         <div class="">
@@ -129,27 +119,21 @@
       </slot>
     </template>
 
-    <!-- 
-        email 
-    -->
+    <!-- email -->
     <template v-slot:item.email="{ item }">
       <slot name="item.email" :item="item">
         {{ item.email }}
       </slot>
     </template>
 
-    <!-- 
-        user.email 
-    -->
+    <!-- user.email -->
     <template v-slot:item.user.email="{ item }">
       <slot name="item.user.email" :item="item">
         {{ item.user?.email }}
       </slot>
     </template>
 
-    <!-- 
-        severity 
-      -->
+    <!-- severity -->
     <template v-slot:item.severity="{ item }">
       <slot name="item.severity" :item="item">
         <div class="">
@@ -164,18 +148,14 @@
       </slot>
     </template>
 
-    <!-- 
-        credits
-        -->
+    <!-- credits -->
     <template v-slot:item.credits="{ item }">
       <slot name="item.credits" :item="item">
         <div class="">{{ item.credits }}</div>
       </slot>
     </template>
 
-    <!-- 
-        required
-        -->
+    <!-- required -->
     <template v-slot:item.required="{ item }">
       <slot name="item.required" :item="item">
         <div class="">
@@ -189,9 +169,7 @@
       </slot>
     </template>
 
-    <!-- 
-        message
-        -->
+    <!-- message -->
     <template v-slot:item.message="{ item }">
       <slot name="item.message" :item="item">
         <div class="">
@@ -200,25 +178,65 @@
       </slot>
     </template>
 
-    <!-- 
-        createdTimestamp
-        -->
+    <!-- address -->
+    <template v-slot:item.address="{ item }">
+      <slot name="item.address" :item="item">
+        <div class="">
+          {{ item.address }}
+        </div>
+      </slot>
+    </template>
+
+    <!-- createdTimestamp -->
     <template v-slot:item.createdTimestamp="{ item }">
       <slot name="item.createdTimestamp" :item="item">
         <div class="">{{ item.createdTimestamp }}</div>
       </slot>
     </template>
 
-    <!-- 
-        description
-        -->
-    <template v-slot:item.description="{ item }">
-      <slot name="item.description" :item="item"> {{ item.description }}</slot>
+    <!-- timestamp-->
+    <template v-slot:item.timestamp="{ item }">
+      <slot name="item.timestamp" :item="item">
+        <div class="">{{ item.timestamp }}</div>
+      </slot>
     </template>
 
-    <!-- 
-        expand 
-    -->
+    <!-- description -->
+    <template v-slot:item.description="{ item }">
+      <slot name="item.description" :item="item">
+        <div class="">{{ item.description }}</div>
+      </slot>
+    </template>
+
+    <!-- class.name -->
+    <template v-slot:item.class.name="{ item }">
+      <slot name="item.class.name" :item="item">
+        <div class="">{{ item.class?.name }}</div>
+      </slot>
+    </template>
+
+    <!-- frequency -->
+    <template v-slot:item.frequency="{ item }">
+      <slot name="item.frequency" :item="item">
+        <div class="">{{ item.frequency }}</div>
+      </slot>
+    </template>
+
+    <!-- location.name -->
+    <template v-slot:item.location.name="{ item }">
+      <slot name="item.location.name" :item="item">
+        <div class="">{{ item.location?.name }}</div>
+      </slot>
+    </template>
+
+    <!-- location.address -->
+    <template v-slot:item.location.address="{ item }">
+      <slot name="item.location.address" :item="item">
+        <div class="">{{ item.location?.address }}</div>
+      </slot>
+    </template>
+
+    <!-- expand -->
     <template v-slot:item.data-table-expand="{ internalItem, isExpanded, toggleExpand }">
       <slot
         name="item.data-table-expand"
@@ -253,9 +271,7 @@
       </slot>
     </template>
 
-    <!-- 
-          actions
-      -->
+    <!-- actions -->
     <template #item.actions="{ item }">
       <slot name="item.actions" :item="item">
         <v-icon

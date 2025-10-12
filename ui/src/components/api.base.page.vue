@@ -97,14 +97,44 @@
         <slot name="item.message" :item="item"> </slot>
       </template>
 
+      <!-- address -->
+      <template v-slot:item.address="{ item }">
+        <slot name="item.address" :item="item"> </slot>
+      </template>
+
       <!-- createdTimestamp-->
       <template v-slot:item.createdTimestamp="{ item }">
         <slot name="item.createdTimestamp" :item="item"> </slot>
       </template>
 
+      <!-- timestamp-->
+      <template v-slot:item.timestamp="{ item }">
+        <slot name="item.timestamp" :item="item"> </slot>
+      </template>
+
       <!-- description -->
       <template v-slot:item.description="{ item }">
         <slot name="item.description" :item="item"> </slot>
+      </template>
+
+      <!-- class.name -->
+      <template v-slot:item.class.name="{ item }">
+        <slot name="item.class.name" :item="item"> </slot>
+      </template>
+
+      <!-- frequency -->
+      <template v-slot:item.frequency="{ item }">
+        <slot name="item.frequency" :item="item"> </slot>
+      </template>
+
+      <!-- location.name -->
+      <template v-slot:item.location.name="{ item }">
+        <slot name="item.location.name" :item="item"> </slot>
+      </template>
+
+      <!-- location.address -->
+      <template v-slot:item.location.address="{ item }">
+        <slot name="item.location.address" :item="item"> </slot>
       </template>
 
       <!-- expand -->

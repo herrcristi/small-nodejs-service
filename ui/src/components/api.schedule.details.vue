@@ -84,7 +84,12 @@
         :write="write && app?.rolesPermissions?.locations?.write"
         :loading="loading"
         :nodatatext="nodatatext"
-      ></ApiFieldDetails>
+      >
+        <!-- timestamp -->
+        <template v-slot:item.timstamp="{ item }">
+          {{ getInnerScheduleTime(item.timestamp) }}
+        </template>
+      </ApiFieldDetails>
     </v-card-text>
 
     <v-card-text>
@@ -267,22 +272,27 @@ function closeDialog() {
  * ApiFieldDetails calling inner schedules getAll / deleteField / updateField
  */
 function getInnerScheduleTime(timestamp) {
-  // TODO
-  const d = new Date(timestamp);
-  return d.toLocaleDateString(undefined, {
-    weekday: 'short',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-    timeZone: 'UTC',
-  });
+  try {
+    const d = new Date(timestamp);
+    const time = d.toLocaleDateString(undefined, {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      timeZone: 'UTC',
+    });
+    return time;
+  } catch (e) {
+    console.log('Error getting timestamp', e);
+    return '';
+  }
 }
 
-async function getAllFieldInnerSchedules() {
+async function getAllFieldInnerSchedules(params) {
   // if fail will throw error and be catch in ApiFieldDetails
-  return /* await */ Api.getLocations('');
+  return /* await */ Api.getLocations(params);
 }
 
 async function deleteFieldInnerSchedule(innerScheduleID) {
@@ -304,10 +314,10 @@ async function updateFieldInnerSchedules(newIDs, removeIDs) {
 /**
  * * ApiFieldDetails calling groups getAll / deleteField / updateField
  */
-async function getAllFieldGroups() {
+async function getAllFieldGroups(params) {
   // if fail will throw error and be catch in ApiFieldDetails
-  // return /* await */ Api.getGroups(`classes.id=${itemDetails.value.class.id}`);
-  return /* await */ Api.getGroups('');
+  // return /* await */ Api.getGroups(`${params ? params + '&' : ''}classes.id=${itemDetails.value.class.id}`);
+  return /* await */ Api.getGroups(params);
 }
 
 async function deleteFieldGroup(groupID) {
@@ -330,9 +340,9 @@ async function updateFieldGroups(newIDs, removeIDs) {
 /**
  * ApiFieldDetails calling professors getAll / deleteField / updateField
  */
-async function getAllFieldProfessors() {
+async function getAllFieldProfessors(params) {
   // if fail will throw error and be catch in ApiFieldDetails
-  return /* await */ Api.getProfessors(`classes.id=${itemDetails.value.class.id}`);
+  return /* await */ Api.getProfessors(`${params ? params + '&' : ''}classes.id=${itemDetails.value.class.id}`);
 }
 
 async function deleteFieldProfessor(professorID) {
@@ -354,9 +364,9 @@ async function updateFieldProfessors(newIDs, removeIDs) {
 /**
  * ApiFieldDetails calling students getAll / deleteField / updateField
  */
-async function getAllFieldExtraStudents() {
+async function getAllFieldExtraStudents(params) {
   // if fail will throw error and be catch in ApiFieldDetails
-  return /* await */ Api.getStudents(`classes.id=${itemDetails.value.class.id}`);
+  return /* await */ Api.getStudents(`${params ? params + '&' : ''}classes.id=${itemDetails.value.class.id}`);
 }
 
 async function deleteFieldExtraStudent(studentID) {
