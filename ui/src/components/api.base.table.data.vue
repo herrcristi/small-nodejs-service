@@ -127,6 +127,24 @@
     </template>
 
     <!-- 
+        email 
+    -->
+    <template v-slot:item.email="{ item }">
+      <slot name="item.email" :item="item">
+        {{ item.email }}
+      </slot>
+    </template>
+
+    <!-- 
+        user.email 
+    -->
+    <template v-slot:item.user.email="{ item }">
+      <slot name="item.user.email" :item="item">
+        {{ item.user?.email }}
+      </slot>
+    </template>
+
+    <!-- 
         severity 
       -->
     <template v-slot:item.severity="{ item }">
@@ -140,6 +158,15 @@
             label
           ></v-chip>
         </div>
+      </slot>
+    </template>
+
+    <!-- 
+        credits
+        -->
+    <template v-slot:item.credits="{ item }">
+      <slot name="item.credits" :item="item">
+        <div class="">{{ item.credits }}</div>
       </slot>
     </template>
 
@@ -167,6 +194,15 @@
         <div class="">
           {{ item._lang_en?.message || item.message }}
         </div>
+      </slot>
+    </template>
+
+    <!-- 
+        createdTimestamp
+        -->
+    <template v-slot:item.createdTimestamp="{ item }">
+      <slot name="item.createdTimestamp" :item="item">
+        <div class="">{{ item.createdTimestamp }}</div>
       </slot>
     </template>
 

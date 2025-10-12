@@ -70,9 +70,24 @@
       <slot name="item.user.status" :item="item"> </slot>
     </template>
 
+    <!-- email -->
+    <template v-slot:item.email="{ item }">
+      <slot name="item.email" :item="item"> </slot>
+    </template>
+
+    <!-- user.email -->
+    <template v-slot:item.user.email="{ item }">
+      <slot name="item.user.email" :item="item"> </slot>
+    </template>
+
     <!-- severity -->
     <template v-slot:item.severity="{ item }">
       <slot name="item.severity" :item="item"> </slot>
+    </template>
+
+    <!-- credits -->
+    <template v-slot:item.credits="{ item }">
+      <slot name="item.credits" :item="item"> </slot>
     </template>
 
     <!-- required -->
@@ -83,6 +98,11 @@
     <!-- message -->
     <template v-slot:item.message="{ item }">
       <slot name="item.message" :item="item"> </slot>
+    </template>
+
+    <!-- createdTimestamp-->
+    <template v-slot:item.createdTimestamp="{ item }">
+      <slot name="item.createdTimestamp" :item="item"> </slot>
     </template>
 
     <!-- description -->
@@ -184,9 +204,24 @@
             <slot name="server.item.user.status" :item="item"> </slot>
           </template>
 
+          <!-- email -->
+          <template v-slot:item.email="{ item }">
+            <slot name="server.item.email" :item="item"> </slot>
+          </template>
+
+          <!-- user.email -->
+          <template v-slot:item.user.email="{ item }">
+            <slot name="server.item.user.email" :item="item"> </slot>
+          </template>
+
           <!-- severity -->
           <template v-slot:item.severity="{ item }">
             <slot name="server.item.severity" :item="item"> </slot>
+          </template>
+
+          <!-- credits-->
+          <template v-slot:item.credits="{ item }">
+            <slot name="server.item.credits" :item="item"> </slot>
           </template>
 
           <!-- required -->
@@ -197,6 +232,11 @@
           <!-- message -->
           <template v-slot:item.message="{ item }">
             <slot name="server.item.message" :item="item"> </slot>
+          </template>
+
+          <!-- createdTimestamp-->
+          <template v-slot:item.createdTimestamp="{ item }">
+            <slot name="server.item.createdTimestamp" :item="item"> </slot>
           </template>
 
           <!-- description -->
