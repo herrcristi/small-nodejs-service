@@ -232,7 +232,7 @@ const Api = {
     }),
   updateSchedule: (id, data) => instance.put(`/schedules/${id}`, data),
   deleteSchedule: (id) => instance.delete(`/schedules/${id}`),
-  updateScheduleInner: (id, newObjs, removeObjs) =>
+  updateScheduleInnerSchedules: (id, newObjs, removeObjs) =>
     instance.patch(`/schedules/${id}`, {
       add: {
         schedules: (newObjs || []).map((item) => {

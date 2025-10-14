@@ -36,6 +36,7 @@
   "events": "Evenimente",
   "filter": "Filtru",
   "frequency": "Frecvență",
+  "frequencyTimestamp": "Timp",
   "groups": "Grupe",
   "groups.add": "Adaugă Grup",
   "groups.edit": "Editează Grup",

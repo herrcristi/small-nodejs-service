@@ -205,7 +205,6 @@
               :sortFields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
               :filterFields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
               :apiFn="{
-                getAll: getAllFieldInnerSchedules,
                 updateField: updateFieldInnerSchedules,
                 deleteField: deleteFieldInnerSchedule,
               }"
@@ -245,12 +244,13 @@
             :editFields="['frequency', 'status', 'frequencyTimestamp', 'location']"
             :apiFn="{
               add: 1,
+              create: addFieldInnerSchedule,
               update: updateFieldInnerSchedules,
               delete: 0,
             }"
             :write="write && app?.rolesPermissions?.locations?.write"
             @cancel=""
-            @save="saveEdit($event)"
+            @save="editInnerScheduleDialog.closeDialog()"
           >
             <!-- 
                 add location 
@@ -554,6 +554,16 @@ async function onItemDetails(data) {
   fieldProfessors.value = itemDetails.value.professors || [];
   fieldInnerSchedules.value = itemDetails.value.schedules || [];
 
+  // inner schedules dont have id, create one from timestamp+frequency+location.id;
+  fieldInnerSchedules.value.forEach(
+    (item) =>
+      (item.id = {
+        frequency: item.frequency,
+        timestamp: item.timestamp,
+        location: item.location?.id,
+      })
+  );
+
   fieldGroups.value = itemDetails.value.groups || [];
   fieldGroupsStudents.value = getGroupsStudents(fieldGroups.value);
   fieldExtraStudents.value = itemDetails.value.students || [];
@@ -598,17 +608,26 @@ function getInnerScheduleTime(timestamp) {
   }
 }
 
-async function getAllFieldInnerSchedules(params) {
+function onAddUpdateFieldLocation(itemData, newObjs, removeIDs) {
+  // on add schedules dialog
+  // on add ApiFieldDetails calling updateField with actual objects instead of ids
+  itemData.location = newObjs?.length > 0 ? newObjs[0] : { id: '', status: 'pending', name: '', address: '' };
+}
+
+async function addFieldInnerSchedule(data) {
   // if fail will throw error and be catch in ApiFieldDetails
-  return /* await */ Api.getLocations(params);
+  await Api.updateScheduleInnerSchedules(props.itemID, [data], null);
+
+  // refresh
+  await detailsComponent.value.refresh();
 }
 
 async function deleteFieldInnerSchedule(innerScheduleID) {
   // if fail will throw error and be catch in ApiFieldDetails
   await Api.updateScheduleInnerSchedules(props.itemID, [], [innerScheduleID]);
 
-  // no need for server call
-  fieldInnerSchedules.value = fieldInnerSchedules.value.filter((item) => item.id !== innerScheduleID);
+  // refresh
+  await detailsComponent.value.refresh();
 }
 
 async function updateFieldInnerSchedules(newIDs, removeIDs) {
