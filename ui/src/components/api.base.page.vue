@@ -199,6 +199,10 @@
         <slot name="edit.address" :itemData="itemData"> </slot>
       </template>
 
+      <template v-slot:edit.class="{ itemData }">
+        <slot name="edit.class" :itemData="itemData"> </slot>
+      </template>
+
       <template v-slot:edit.description="{ itemData }">
         <slot name="edit.description" :itemData="itemData"> </slot>
       </template>

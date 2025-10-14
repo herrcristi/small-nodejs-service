@@ -15,6 +15,8 @@
     :show-select="props.select"
     @update:model="emit('update:modelValue', $event)"
     :show-expand="props.expand"
+    :select-strategy="props.selectStrategy"
+    :return-object="props.selectReturnObject"
     class="elevation-1"
     striped="even"
     items-per-page="50"
@@ -338,6 +340,8 @@ const props = defineProps({
   select: { type: [Boolean], default: null },
   modelValue: { type: Array, default: [] },
   expand: { type: [Boolean], default: null },
+  selectStrategy: { type: [String], default: 'page' }, // single, page, all
+  selectReturnObject: { type: [Boolean], default: false }, // default is to return ids since not all objects can be retreived on edit
 
   apiFn: { type: Object, default: {} }, // getAll, delete
 });

@@ -77,6 +77,16 @@
               />
             </slot>
 
+            <slot name="edit.class" :itemData="itemData">
+              <v-text-field
+                v-if="fieldsSet.has('class')"
+                v-model="itemData.class.id"
+                :label="t('class')"
+                :rules="[requiredRule]"
+                required
+              />
+            </slot>
+
             <slot name="edit.description" :itemData="itemData">
               <v-text-field
                 v-if="fieldsSet.has('description')"
@@ -300,6 +310,9 @@ function openAdd() {
   if (fieldsSet.value.has('required')) {
     itemData.required = 'required';
   }
+  if (fieldsSet.value.has('class')) {
+    itemData.class = { id: '', status: 'pending', name: '' };
+  }
 
   editing.value = false;
   dialog.value = true;
@@ -338,6 +351,9 @@ function openEdit(item) {
   }
   if (fieldsSet.value.has('address')) {
     itemData.address = item.address || '';
+  }
+  if (fieldsSet.value.has('class')) {
+    itemData.class = item.class || { id: '', status: 'pending', name: '' };
   }
 
   editing.value = true;

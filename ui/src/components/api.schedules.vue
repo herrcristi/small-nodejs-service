@@ -5,6 +5,8 @@
     :projectionFields="['name', 'status', 'class']"
     :sortFields="['name', 'status']"
     :filterFields="['name', '_lang_en.status', 'class.name']"
+    :addFields="['name', 'status', 'class']"
+    :editFields="['name', 'status']"
     :apiFn="{
       getAll: Api.getSchedules,
       create: Api.createSchedule,
@@ -30,6 +32,32 @@
         </td>
       </tr>
     </template>
+
+    <!-- 
+        add class 
+    -->
+    <template v-slot:edit.class="{ itemData }">
+      <ApiFieldDetails
+        ref="fieldDetailsClassesComponent"
+        title="class"
+        titleAdd="classes"
+        :items="itemData.class?.id ? [itemData.class] : []"
+        :fields="['name', 'status', 'description']"
+        :apiFn="{
+          getAll: Api.getClasses,
+          deleteField: 0,
+          updateField: (newObjs, removeIDs) => onAddUpdateFieldClass(itemData, newObjs, removeIDs),
+        }"
+        :read="read && app?.rolesPermissions?.classes?.read"
+        :write="read && app?.rolesPermissions?.classes?.write"
+        :loading="false"
+        :nodatatext="t('class.required')"
+        :selectStrategy="'single'"
+        :selectReturnObject="true"
+      >
+      </ApiFieldDetails>
+      <v-input v-if="!itemData.class?.id" :messages="t('required')" error></v-input>
+    </template>
   </ApiPage>
 
   <v-card v-if="read || write">
@@ -44,6 +72,7 @@
 import { ref, reactive, computed } from 'vue';
 import Api from '../api/api.js';
 import ApiPage from './api.base.page.vue';
+import ApiFieldDetails from './api.base.field.details.vue';
 import ApiScheduleDetails from './api.schedule.details.vue';
 import ApiScheduleMoreInfo from './api.schedule.moreinfo.vue';
 import { useAppStore } from '../stores/stores.js';
@@ -55,6 +84,8 @@ const { t } = useI18n();
  */
 const selectedItemID = ref(null);
 const detailsOpen = ref(false);
+
+const fieldDetailsClassesComponent = ref();
 
 const app = useAppStore();
 const read = app?.rolesPermissions?.schedules?.read || 0;
@@ -72,6 +103,13 @@ function openDetails(itemID) {
 function closeDetails() {
   selectedItemID.value = null;
   detailsOpen.value = false;
+}
+
+/**
+ * on add ApiFieldDetails calling updateField with actual objects instead of ids
+ */
+function onAddUpdateFieldClass(itemData, newObjs, removeIDs) {
+  itemData.class = newObjs?.length > 0 ? newObjs[0] : { id: '', status: 'pending', name: '' };
 }
 
 /**

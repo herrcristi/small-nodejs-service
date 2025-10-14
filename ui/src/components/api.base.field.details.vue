@@ -185,6 +185,8 @@
           :write="false"
           :select="true"
           v-model="selectedItems"
+          :selectStrategy="props.selectStrategy"
+          :selectReturnObject="props.selectReturnObject"
         >
           <!-- 
           expose slots
@@ -367,6 +369,9 @@ const props = defineProps({
   write: { type: [Boolean, Number], default: null },
 
   apiFn: { type: Object, default: {} }, // getAll, deleteField, updateField
+
+  selectStrategy: { type: [String], default: 'page' }, // single, page, all
+  selectReturnObject: { type: [Boolean], default: false }, // default is to return ids since not all objects can be retreived on edit
 });
 
 /**
@@ -404,7 +409,7 @@ async function deleteField(itemID) {
  */
 async function openAdd() {
   // existing ids
-  selectedItems.value = props.items.map((s) => s.id);
+  selectedItems.value = props.items.map((item) => (props.selectReturnObject ? item : item.id));
 
   addDialog.value = true;
 }
@@ -415,13 +420,15 @@ async function closeAdd() {
 }
 
 async function saveAdd() {
-  const existingIDs = new Set(props.items.map((s) => s.id));
-  const selectedIDs = new Set(selectedItems.value);
+  const existingIDs = new Set(props.items.map((item) => item.id));
 
-  const newIDs = selectedItems.value.filter((id) => !existingIDs.has(id));
+  // returned selected items can be ids or objects
+  const selectedIDs = new Set(selectedItems.value.map((item) => item?.id || item));
+
+  const newItems = selectedItems.value.filter((item) => !existingIDs.has(item?.id || item));
   const removeIDs = [...existingIDs].filter((id) => !selectedIDs.has(id));
 
-  if (newIDs.length == 0 && removeIDs.length == 0) {
+  if (newItems.length == 0 && removeIDs.length == 0) {
     // no change
     addDialog.value = false;
     selectedItems.value = [];
@@ -430,7 +437,7 @@ async function saveAdd() {
 
   try {
     // update, props.items should be update in the caller
-    await props.apiFn.updateField(newIDs, removeIDs);
+    await props.apiFn.updateField(newItems, removeIDs);
 
     snackbarText.value = t('update.success') || 'Updated';
     snackbarColor.value = 'success';
@@ -439,7 +446,7 @@ async function saveAdd() {
     addDialog.value = false;
     selectedItems.value = [];
 
-    emit('addItems', newIDs);
+    emit('addItems', newItems);
     emit('deleteItems', removeIDs);
   } catch (e) {
     console.error('Error updating field:', e);
