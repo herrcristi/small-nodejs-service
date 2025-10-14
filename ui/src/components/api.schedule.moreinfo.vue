@@ -205,10 +205,11 @@
               :sortFields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
               :filterFields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
               :apiFn="{
-                getAll: getAllFieldInnerSchedules,
                 updateField: updateFieldInnerSchedules,
                 deleteField: deleteFieldInnerSchedule,
               }"
+              :emitEdit="true"
+              @editItem="editInnerScheduleDialog.openEdit($event)"
               :read="read && app?.rolesPermissions?.locations?.read"
               :write="write && app?.rolesPermissions?.locations?.write"
               :loading="loading"
@@ -218,8 +219,72 @@
               <template v-slot:item.timestamp="{ item }">
                 {{ getInnerScheduleTime(item.timestamp) }}
               </template>
+
+              <!-- add -->
+              <template v-slot:top.add>
+                <v-btn
+                  class="me-2 left"
+                  color="primary"
+                  prepend-icon="mdi-plus"
+                  rounded="lg"
+                  text=""
+                  border
+                  @click="editInnerScheduleDialog.openAdd()"
+                  v-if="write && app?.rolesPermissions?.locations?.write"
+                ></v-btn>
+              </template>
             </ApiFieldDetails>
           </v-card>
+
+          <!-- 
+              edit dialog
+          -->
+          <ApiEditItem
+            ref="editInnerScheduleDialog"
+            title="schedules"
+            :addFields="['frequency', 'status', 'frequencyTimestamp', 'location']"
+            :editFields="['frequency', 'status', 'frequencyTimestamp', 'location']"
+            :apiFn="{
+              add: 1,
+              create: addFieldInnerSchedule,
+              update: updateFieldInnerSchedules,
+              delete: 0,
+            }"
+            :write="write && app?.rolesPermissions?.locations?.write"
+            @cancel=""
+            @save="editInnerScheduleDialog.closeDialog()"
+          >
+            <!-- 
+                add location 
+            -->
+            <template v-slot:edit.location="{ itemData, fieldsSet }">
+              <ApiFieldDetails
+                v-if="fieldsSet.has('location')"
+                ref="fieldDetailsLocationsComponent"
+                title="location"
+                titleAdd="locations"
+                :items="itemData.location?.id ? [itemData.location] : []"
+                :fields="['name', 'status', 'address']"
+                :apiFn="{
+                  getAll: Api.getLocations,
+                  deleteField: 0,
+                  updateField: (newObjs, removeIDs) => onAddUpdateFieldLocation(itemData, newObjs, removeIDs),
+                }"
+                :read="read && app?.rolesPermissions?.locations?.read"
+                :write="read && app?.rolesPermissions?.locations?.write"
+                :loading="false"
+                :nodatatext="''"
+                :selectStrategy="'single'"
+                :selectReturnObject="true"
+              >
+              </ApiFieldDetails>
+              <v-input
+                v-if="fieldsSet.has('location') && !itemData.location?.id"
+                :messages="t('location.required')"
+                error
+              ></v-input>
+            </template>
+          </ApiEditItem>
         </v-col>
       </v-row>
 
@@ -435,6 +500,7 @@
 import { ref, reactive, computed, watch } from 'vue';
 import ApiDetails from './api.base.details.vue';
 import ApiFieldDetails from './api.base.field.details.vue';
+import ApiEditItem from './api.base.edit.item.vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
@@ -465,6 +531,8 @@ const fieldClasses = ref([]);
 
 const fieldDetailsInnerSchedulesComponent = ref();
 const fieldInnerSchedules = ref([]);
+const editInnerScheduleDialog = ref();
+const fieldDetailsLocationsComponent = ref();
 
 const fieldDetailsGroupsComponent = ref();
 const fieldGroups = ref([]);
@@ -487,6 +555,16 @@ async function onItemDetails(data) {
   fieldClasses.value = [itemDetails.value.class];
   fieldProfessors.value = itemDetails.value.professors || [];
   fieldInnerSchedules.value = itemDetails.value.schedules || [];
+
+  // inner schedules dont have id, create one from timestamp+frequency+location.id;
+  fieldInnerSchedules.value.forEach(
+    (item) =>
+      (item.id = {
+        frequency: item.frequency,
+        timestamp: item.timestamp,
+        location: item.location?.id,
+      })
+  );
 
   fieldGroups.value = itemDetails.value.groups || [];
   fieldGroupsStudents.value = getGroupsStudents(fieldGroups.value);
@@ -532,17 +610,26 @@ function getInnerScheduleTime(timestamp) {
   }
 }
 
-async function getAllFieldInnerSchedules(params) {
+function onAddUpdateFieldLocation(itemData, newObjs, removeIDs) {
+  // on add schedules dialog
+  // on add ApiFieldDetails calling updateField with actual objects instead of ids
+  itemData.location = newObjs?.length > 0 ? newObjs[0] : { id: '', status: 'pending', name: '', address: '' };
+}
+
+async function addFieldInnerSchedule(data) {
   // if fail will throw error and be catch in ApiFieldDetails
-  return /* await */ Api.getLocations(params);
+  await Api.updateScheduleInnerSchedules(props.itemID, [data], null);
+
+  // refresh
+  await detailsComponent.value.refresh();
 }
 
 async function deleteFieldInnerSchedule(innerScheduleID) {
   // if fail will throw error and be catch in ApiFieldDetails
   await Api.updateScheduleInnerSchedules(props.itemID, [], [innerScheduleID]);
 
-  // no need for server call
-  fieldInnerSchedules.value = fieldInnerSchedules.value.filter((item) => item.id !== innerScheduleID);
+  // refresh
+  await detailsComponent.value.refresh();
 }
 
 async function updateFieldInnerSchedules(newIDs, removeIDs) {
