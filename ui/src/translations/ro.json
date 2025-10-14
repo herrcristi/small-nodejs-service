@@ -6,6 +6,7 @@
   "add.success": "Adăugare reușită",
   "address": "Adresă",
   "birthday": "Data nașterii",
+  "biweekly": "O dată la 2 săptămâni",
   "cancel": "Anulează",
   "class": "Curs",
   "class.required": "Cursul este necesar",
@@ -45,6 +46,8 @@
   "key": "Cheie",
   "loading": "Încărcare",
   "loading_subtitle": "Asteaptă, te rog",
+  "location": "Locație",
+  "location.required": "Locația este necesară",
   "locations": "Locații",
   "locations.add": "Adaugă Locație",
   "locations.add.error": "Eroare la adăugarea locației",
@@ -65,9 +68,11 @@
   "login.username.required": "Numele de utilizator este necesar",
   "logout": "Deconectare",
   "message": "Mesaj",
+  "monthly": "Lunar",
   "more.info": "Detalii",
   "name": "Nume",
   "name.required": "Numele este necesar",
+  "once": "O singură dată",
   "optional": "Opțional",
   "password.change": "Schimbă parola",
   "password.change.error": "Eroare la schimbarea parolei",
@@ -115,5 +120,6 @@
   "user": "Utilizator",
   "users": "Utilizatori",
   "value": "Valoare",
-  "warning": "Atenție"
+  "warning": "Atenție",
+  "weekly": "Săptămânal"
 }

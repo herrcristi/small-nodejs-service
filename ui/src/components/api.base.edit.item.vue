@@ -19,6 +19,28 @@
               />
             </slot>
 
+            <slot name="edit.frequency" :itemData="itemData" :fieldsSet="fieldsSet">
+              <v-select
+                v-if="fieldsSet.has('frequency')"
+                v-model="itemData.frequency"
+                :items="frequencyItems"
+                item-title="title"
+                item-value="value"
+                :label="t('frequency')"
+                :rules="[frequencyRule]"
+                required
+              />
+            </slot>
+
+            <slot name="edit.frequencyTimestamp" :itemData="itemData" :fieldsSet="fieldsSet">
+              <v-text-field
+                v-if="fieldsSet.has('frequencyTimestamp')"
+                v-model="itemData.frequencyTimestamp"
+                :label="t('frequencyTimestamp')"
+                required
+              />
+            </slot>
+
             <slot name="edit.status" :itemData="itemData" :fieldsSet="fieldsSet">
               <v-select
                 v-if="fieldsSet.has('status') || fieldsSet.has('user.status')"
@@ -82,7 +104,17 @@
                 v-if="fieldsSet.has('class')"
                 v-model="itemData.class.id"
                 :label="t('class')"
-                :rules="[requiredRule]"
+                :rules="[classRule]"
+                required
+              />
+            </slot>
+
+            <slot name="edit.location" :itemData="itemData" :fieldsSet="fieldsSet">
+              <v-text-field
+                v-if="fieldsSet.has('location')"
+                v-model="itemData.location.id"
+                :label="t('location')"
+                :rules="[locationRule]"
                 required
               />
             </slot>
@@ -156,6 +188,22 @@ const emit = defineEmits(['cancel', 'save']);
 const fieldsSet = ref(new Set([]));
 
 /**
+ * frequency items for the select
+ */
+const frequencyItems = computed(() => {
+  // base items
+  // when adding add pending too
+  let items = [
+    { title: t('once'), value: 'once' },
+    { title: t('weekly'), value: 'weekly' },
+    { title: t('biweekly'), value: 'biWeekly' },
+    { title: t('monthly'), value: 'monthly' },
+  ];
+
+  return items;
+});
+
+/**
  * status items for the select
  */
 const statusItems = computed(() => {
@@ -199,6 +247,9 @@ const creditsRule = (v) => {
   return (n != null && !Number.isNaN(n) && n >= 0 && n <= 1024) || t('credits.limits') || t('required');
 };
 const requiredRule = (v) => !!v || t('required');
+const classRule = (v) => !!v || t('required');
+const locationRule = (v) => !!v || t('required');
+const frequencyRule = (v) => !!v || t('required');
 
 /**
  * handle submit
@@ -222,11 +273,25 @@ async function handleSubmit() {
     itemData.description = itemData.description.toString().trim();
   }
 
+  // payload
+  const payload = { ...itemData };
+  if (payload.class?.id) {
+    payload.class = payload.class.id;
+  }
+  if (payload.location?.id) {
+    payload.location = payload.location.id;
+  }
+  if (payload.frequencyTimestamp) {
+    payload.timestamp = payload.frequencyTimestamp;
+    delete payload.frequencyTimestamp;
+  }
+
+  // add/update
   let ok = false;
   if (editing.value) {
-    ok = await update();
+    ok = await update(payload);
   } else {
-    ok = await add();
+    ok = await add(payload);
   }
 
   if (ok) {
@@ -240,12 +305,8 @@ async function handleSubmit() {
 /**
  * add
  */
-async function add() {
+async function add(payload) {
   try {
-    const payload = { ...itemData };
-    if (payload.class?.id) {
-      payload.class = payload.class.id;
-    }
     await props.apiFn.create(payload);
 
     snackbarText.value = t('add.success') || 'Added';
@@ -268,12 +329,8 @@ async function add() {
 /**
  * update
  */
-async function update() {
+async function update(payload) {
   try {
-    const payload = { ...itemData };
-    if (payload.class?.id) {
-      payload.class = payload.class.id;
-    }
     await props.apiFn.update(editingItemID.value, payload);
 
     snackbarText.value = t('update.success') || 'Updated';
@@ -304,7 +361,10 @@ function openAdd() {
   resetForm();
   fieldsSet.value = new Set(props.addFields);
 
-  // default status for new
+  // defaults for new
+  if (fieldsSet.value.has('frequency')) {
+    itemData.frequency = 'weekly';
+  }
   if (fieldsSet.value.has('status')) {
     itemData.status = 'active';
   }
@@ -319,6 +379,9 @@ function openAdd() {
   }
   if (fieldsSet.value.has('class')) {
     itemData.class = { id: '', status: 'pending', name: '' };
+  }
+  if (fieldsSet.value.has('location')) {
+    itemData.location = { id: '', status: 'pending', name: '', address: '' };
   }
 
   editing.value = false;
@@ -344,6 +407,12 @@ function openEdit(item) {
   if (fieldsSet.value.has('email') || fieldsSet.value.has('user.email')) {
     itemData.email = item.email || item.user?.email || '';
   }
+  if (fieldsSet.value.has('frequency')) {
+    itemData.frequency = item.frequency || 'weekly';
+  }
+  if (fieldsSet.value.has('frequencyTimestamp')) {
+    itemData.frequencyTimestamp = item.timestamp;
+  }
   if (fieldsSet.value.has('status') || fieldsSet.value.has('user.status')) {
     itemData.status = item.status || item.user?.status || 'active';
   }
@@ -361,6 +430,9 @@ function openEdit(item) {
   }
   if (fieldsSet.value.has('class')) {
     itemData.class = item.class || { id: '', status: 'pending', name: '' };
+  }
+  if (fieldsSet.value.has('location')) {
+    itemData.location = item.location || { id: '', status: 'pending', name: '', address: '' };
   }
 
   editing.value = true;

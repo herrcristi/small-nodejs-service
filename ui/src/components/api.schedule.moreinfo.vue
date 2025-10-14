@@ -218,8 +218,71 @@
               <template v-slot:item.timestamp="{ item }">
                 {{ getInnerScheduleTime(item.timestamp) }}
               </template>
+
+              <!-- add -->
+              <template v-slot:top.add>
+                <v-btn
+                  class="me-2 left"
+                  color="primary"
+                  prepend-icon="mdi-plus"
+                  rounded="lg"
+                  text=""
+                  border
+                  @click="editInnerScheduleDialog.openAdd()"
+                  v-if="write && app?.rolesPermissions?.locations?.write"
+                ></v-btn>
+              </template>
             </ApiFieldDetails>
           </v-card>
+
+          <!-- 
+              edit dialog
+          -->
+          <ApiEditItem
+            ref="editInnerScheduleDialog"
+            title="schedules"
+            :addFields="['frequency', 'status', 'frequencyTimestamp', 'location']"
+            :editFields="['frequency', 'status', 'frequencyTimestamp', 'location']"
+            :apiFn="{
+              add: 1,
+              update: updateFieldInnerSchedules,
+              delete: 0,
+            }"
+            :write="write && app?.rolesPermissions?.locations?.write"
+            @cancel=""
+            @save="saveEdit($event)"
+          >
+            <!-- 
+                add location 
+            -->
+            <template v-slot:edit.location="{ itemData, fieldsSet }">
+              <ApiFieldDetails
+                v-if="fieldsSet.has('location')"
+                ref="fieldDetailsLocationsComponent"
+                title="location"
+                titleAdd="locations"
+                :items="itemData.location?.id ? [itemData.location] : []"
+                :fields="['name', 'status', 'address']"
+                :apiFn="{
+                  getAll: Api.getLocations,
+                  deleteField: 0,
+                  updateField: (newObjs, removeIDs) => onAddUpdateFieldLocation(itemData, newObjs, removeIDs),
+                }"
+                :read="read && app?.rolesPermissions?.locations?.read"
+                :write="read && app?.rolesPermissions?.locations?.write"
+                :loading="false"
+                :nodatatext="''"
+                :selectStrategy="'single'"
+                :selectReturnObject="true"
+              >
+              </ApiFieldDetails>
+              <v-input
+                v-if="fieldsSet.has('location') && !itemData.location?.id"
+                :messages="t('location.required')"
+                error
+              ></v-input>
+            </template>
+          </ApiEditItem>
         </v-col>
       </v-row>
 
@@ -435,6 +498,7 @@
 import { ref, reactive, computed, watch } from 'vue';
 import ApiDetails from './api.base.details.vue';
 import ApiFieldDetails from './api.base.field.details.vue';
+import ApiEditItem from './api.base.edit.item.vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
@@ -465,6 +529,8 @@ const fieldClasses = ref([]);
 
 const fieldDetailsInnerSchedulesComponent = ref();
 const fieldInnerSchedules = ref([]);
+const editInnerScheduleDialog = ref();
+const fieldDetailsLocationsComponent = ref();
 
 const fieldDetailsGroupsComponent = ref();
 const fieldGroups = ref([]);
