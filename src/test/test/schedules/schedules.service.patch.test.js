@@ -26,7 +26,6 @@ describe('Schedules Service', function () {
   const testPatchReq = {
     set: {
       ...testSchedule,
-      class: testSchedule.class.id,
       schedules: [{ ...testSchedule.schedules[0], location: testSchedule.schedules[0].location.id }],
       professors: [{ id: testSchedule.professors[0].id }],
       groups: [{ id: testSchedule.groups[0].id }],
@@ -34,6 +33,7 @@ describe('Schedules Service', function () {
     },
   };
   delete testPatchReq.set.id;
+  delete testPatchReq.set.class;
   delete testPatchReq.set.type;
   delete testPatchReq.set._lang_en;
 
