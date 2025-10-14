@@ -208,6 +208,8 @@
                 updateField: updateFieldInnerSchedules,
                 deleteField: deleteFieldInnerSchedule,
               }"
+              :emitEdit="true"
+              @editItem="editInnerScheduleDialog.openEdit($event)"
               :read="read && app?.rolesPermissions?.locations?.read"
               :write="write && app?.rolesPermissions?.locations?.write"
               :loading="loading"
