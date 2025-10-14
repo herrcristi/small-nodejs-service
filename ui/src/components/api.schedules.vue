@@ -57,7 +57,7 @@
         :selectReturnObject="true"
       >
       </ApiFieldDetails>
-      <v-input v-if="fieldsSet.has('class') && !itemData.class?.id" :messages="t('required')" error></v-input>
+      <v-input v-if="fieldsSet.has('class') && !itemData.class?.id" :messages="t('class.required')" error></v-input>
     </template>
   </ApiPage>
 
