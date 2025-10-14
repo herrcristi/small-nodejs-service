@@ -326,6 +326,7 @@ describe('Schedules Functional', function () {
 
     testSchedule.name = 'new name';
     delete testSchedule.id;
+    delete testSchedule.class;
     delete testSchedule.type;
     delete testSchedule._lang_en;
 
@@ -359,7 +360,6 @@ describe('Schedules Functional', function () {
       .set('x-tenant-id', _ctx.tenantID)
       .send({
         ...testSchedule,
-        class: testSchedule.class.id,
         schedules: [{ ...testSchedule.schedules[0], location: testSchedule.schedules[0].location.id }],
         professors: [{ id: testSchedule.professors[0].id }],
         groups: [{ id: testSchedule.groups[0].id }],
@@ -415,6 +415,7 @@ describe('Schedules Functional', function () {
 
     testSchedule.name = 'new name';
     delete testSchedule.id;
+    delete testSchedule.class;
     delete testSchedule.type;
     delete testSchedule._lang_en;
 
@@ -449,7 +450,6 @@ describe('Schedules Functional', function () {
       .send({
         set: {
           ...testSchedule,
-          class: testSchedule.class.id,
           schedules: [{ ...testSchedule.schedules[0], location: testSchedule.schedules[0].location.id }],
           professors: [{ id: testSchedule.professors[0].id }],
           groups: [{ id: testSchedule.groups[0].id }],

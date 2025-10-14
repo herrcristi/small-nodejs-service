@@ -25,13 +25,13 @@ describe('Schedules Service', function () {
 
   const testPutReq = {
     ...testSchedule,
-    class: testSchedule.class.id,
     schedules: [{ ...testSchedule.schedules[0], location: testSchedule.schedules[0].location.id }],
     professors: [{ id: testSchedule.professors[0].id }],
     groups: [{ id: testSchedule.groups[0].id }],
     students: [{ id: testSchedule.students[0].id }],
   };
   delete testPutReq.id;
+  delete testPutReq.class;
   delete testPutReq.type;
   delete testPutReq._lang_en;
 
@@ -215,9 +215,9 @@ describe('Schedules Service', function () {
   }).timeout(10000);
 
   /**
-   * put fail validation
+   * put id fail validation
    */
-  it('should put fail validation', async () => {
+  it('should put id fail validation', async () => {
     const putReq = _.cloneDeep(testPutReq);
     putReq.id = testSchedule.id;
 
@@ -228,6 +228,22 @@ describe('Schedules Service', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "id" is not allowed');
+  }).timeout(10000);
+
+  /**
+   * put class fail validation
+   */
+  it('should put fail validation', async () => {
+    const putReq = _.cloneDeep(testPutReq);
+    putReq.class = testSchedule.class.id;
+
+    // call
+    let res = await SchedulesService.put(testSchedule.id, putReq, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "class" is not allowed');
   }).timeout(10000);
 
   /**
