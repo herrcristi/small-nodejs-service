@@ -60,7 +60,6 @@ const SchemaScheduleLocation = Joi.array().items(
 const Schema = {
   Schedule: Joi.object().keys({
     name: Joi.string().min(1).max(64),
-    class: Joi.string().min(1).max(64),
     status: Joi.string()
       .min(1)
       .max(64)
@@ -93,9 +92,10 @@ const Validators = {
   },
 
   Post: Schema.Schedule.fork(
-    ['name', 'class', 'schedules', 'professors', 'groups', 'students'],
+    ['name', 'schedules', 'professors', 'groups', 'students'],
     (x) => x.required() /*make required */
   ).keys({
+    class: Joi.string().min(1).max(64).required(), // class can be set only on post
     type: Joi.string().valid(SchedulesConstants.Type),
   }),
 

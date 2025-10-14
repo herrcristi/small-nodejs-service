@@ -175,36 +175,36 @@
           expose slots
       -->
 
-      <template v-slot:edit.name="{ itemData }">
-        <slot name="edit.name" :itemData="itemData"> </slot>
+      <template v-slot:edit.name="{ itemData, fieldsSet }">
+        <slot name="edit.name" :itemData="itemData" :fieldsSet="fieldsSet"> </slot>
       </template>
 
-      <template v-slot:edit.status="{ itemData }">
-        <slot name="edit.status" :itemData="itemData"> </slot>
+      <template v-slot:edit.status="{ itemData, fieldsSet }">
+        <slot name="edit.status" :itemData="itemData" :fieldsSet="fieldsSet"> </slot>
       </template>
 
-      <template v-slot:edit.email="{ itemData }">
-        <slot name="edit.email" :itemData="itemData"> </slot>
+      <template v-slot:edit.email="{ itemData, fieldsSet }">
+        <slot name="edit.email" :itemData="itemData" :fieldsSet="fieldsSet"> </slot>
       </template>
 
-      <template v-slot:edit.credits="{ itemData }">
-        <slot name="edit.credits" :itemData="itemData"> </slot>
+      <template v-slot:edit.credits="{ itemData, fieldsSet }">
+        <slot name="edit.credits" :itemData="itemData" :fieldsSet="fieldsSet"> </slot>
       </template>
 
-      <template v-slot:edit.required="{ itemData }">
-        <slot name="edit.required" :itemData="itemData"> </slot>
+      <template v-slot:edit.required="{ itemData, fieldsSet }">
+        <slot name="edit.required" :itemData="itemData" :fieldsSet="fieldsSet"> </slot>
       </template>
 
-      <template v-slot:edit.address="{ itemData }">
-        <slot name="edit.address" :itemData="itemData"> </slot>
+      <template v-slot:edit.address="{ itemData, fieldsSet }">
+        <slot name="edit.address" :itemData="itemData" :fieldsSet="fieldsSet"> </slot>
       </template>
 
-      <template v-slot:edit.class="{ itemData }">
-        <slot name="edit.class" :itemData="itemData"> </slot>
+      <template v-slot:edit.class="{ itemData, fieldsSet }">
+        <slot name="edit.class" :itemData="itemData" :fieldsSet="fieldsSet"> </slot>
       </template>
 
-      <template v-slot:edit.description="{ itemData }">
-        <slot name="edit.description" :itemData="itemData"> </slot>
+      <template v-slot:edit.description="{ itemData, fieldsSet }">
+        <slot name="edit.description" :itemData="itemData" :fieldsSet="fieldsSet"> </slot>
       </template>
     </ApiEditItem>
   </v-card>

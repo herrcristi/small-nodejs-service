@@ -12,7 +12,7 @@
     :apiFn="{
       add: 1,
       update: 0,
-      delete: deleteField,
+      delete: props.apiFn.deleteField ? deleteField : 0,
     }"
     :read="props.read"
     :write="props.write"

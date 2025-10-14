@@ -36,8 +36,9 @@
     <!-- 
         add class 
     -->
-    <template v-slot:edit.class="{ itemData }">
+    <template v-slot:edit.class="{ itemData, fieldsSet }">
       <ApiFieldDetails
+        v-if="fieldsSet.has('class')"
         ref="fieldDetailsClassesComponent"
         title="class"
         titleAdd="classes"
@@ -51,12 +52,12 @@
         :read="read && app?.rolesPermissions?.classes?.read"
         :write="read && app?.rolesPermissions?.classes?.write"
         :loading="false"
-        :nodatatext="t('class.required')"
+        :nodatatext="''"
         :selectStrategy="'single'"
         :selectReturnObject="true"
       >
       </ApiFieldDetails>
-      <v-input v-if="!itemData.class?.id" :messages="t('required')" error></v-input>
+      <v-input v-if="fieldsSet.has('class') && !itemData.class?.id" :messages="t('required')" error></v-input>
     </template>
   </ApiPage>
 

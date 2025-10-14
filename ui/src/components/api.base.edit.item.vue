@@ -9,7 +9,7 @@
 
         <v-card-text>
           <v-form ref="editForm" v-model="formValid">
-            <slot name="edit.name" :itemData="itemData">
+            <slot name="edit.name" :itemData="itemData" :fieldsSet="fieldsSet">
               <v-text-field
                 v-if="fieldsSet.has('name') || fieldsSet.has('user.name')"
                 v-model="itemData.name"
@@ -19,7 +19,7 @@
               />
             </slot>
 
-            <slot name="edit.status" :itemData="itemData">
+            <slot name="edit.status" :itemData="itemData" :fieldsSet="fieldsSet">
               <v-select
                 v-if="fieldsSet.has('status') || fieldsSet.has('user.status')"
                 v-model="itemData.status"
@@ -32,7 +32,7 @@
               />
             </slot>
 
-            <slot name="edit.email" :itemData="itemData">
+            <slot name="edit.email" :itemData="itemData" :fieldsSet="fieldsSet">
               <v-text-field
                 v-if="fieldsSet.has('email') || fieldsSet.has('user.email')"
                 v-model="itemData.email"
@@ -42,7 +42,7 @@
               />
             </slot>
 
-            <slot name="edit.credits" :itemData="itemData">
+            <slot name="edit.credits" :itemData="itemData" :fieldsSet="fieldsSet">
               <v-text-field
                 v-if="fieldsSet.has('credits')"
                 v-model.number="itemData.credits"
@@ -54,7 +54,7 @@
               />
             </slot>
 
-            <slot name="edit.required" :itemData="itemData">
+            <slot name="edit.required" :itemData="itemData" :fieldsSet="fieldsSet">
               <v-select
                 v-if="fieldsSet.has('required')"
                 v-model="itemData.required"
@@ -67,7 +67,7 @@
               />
             </slot>
 
-            <slot name="edit.address" :itemData="itemData">
+            <slot name="edit.address" :itemData="itemData" :fieldsSet="fieldsSet">
               <v-text-field
                 v-if="fieldsSet.has('address')"
                 v-model="itemData.address"
@@ -77,7 +77,7 @@
               />
             </slot>
 
-            <slot name="edit.class" :itemData="itemData">
+            <slot name="edit.class" :itemData="itemData" :fieldsSet="fieldsSet">
               <v-text-field
                 v-if="fieldsSet.has('class')"
                 v-model="itemData.class.id"
@@ -87,7 +87,7 @@
               />
             </slot>
 
-            <slot name="edit.description" :itemData="itemData">
+            <slot name="edit.description" :itemData="itemData" :fieldsSet="fieldsSet">
               <v-text-field
                 v-if="fieldsSet.has('description')"
                 v-model="itemData.description"
@@ -243,6 +243,9 @@ async function handleSubmit() {
 async function add() {
   try {
     const payload = { ...itemData };
+    if (payload.class?.id) {
+      payload.class = payload.class.id;
+    }
     await props.apiFn.create(payload);
 
     snackbarText.value = t('add.success') || 'Added';
@@ -267,7 +270,11 @@ async function add() {
  */
 async function update() {
   try {
-    await props.apiFn.update(editingItemID.value, itemData);
+    const payload = { ...itemData };
+    if (payload.class?.id) {
+      payload.class = payload.class.id;
+    }
+    await props.apiFn.update(editingItemID.value, payload);
 
     snackbarText.value = t('update.success') || 'Updated';
     snackbarColor.value = 'success';

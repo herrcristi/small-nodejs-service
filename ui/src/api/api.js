@@ -222,7 +222,14 @@ const Api = {
   // Schedules API
   getSchedules: (params) => instance.get(`/schedules?${params}`),
   getSchedule: (id) => instance.get(`/schedules/${id}`),
-  createSchedule: (data) => instance.post(`/schedules`, data),
+  createSchedule: (data) =>
+    instance.post(`/schedules`, {
+      ...data,
+      schedules: data.schedules || [],
+      professors: data.professors || [],
+      groups: data.groups || [],
+      students: data.students || [],
+    }),
   updateSchedule: (id, data) => instance.put(`/schedules/${id}`, data),
   deleteSchedule: (id) => instance.delete(`/schedules/${id}`),
   updateScheduleGroups: (id, newIds, removeIds) =>
