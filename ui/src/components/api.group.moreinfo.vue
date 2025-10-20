@@ -21,70 +21,25 @@
     <v-card-text>
       <v-row class="d-flex justify-end">
         <v-col cols="12" md="10">
-          <!-- list using v-chip -->
-          <div class="pa-1" v-if="type == 'v-chip' && read && app?.rolesPermissions?.students?.read">
-            <v-card-title class="d-flex justify-space-between">
-              <div>{{ t('students') }}</div>
-            </v-card-title>
-
-            <v-card-text>
-              <v-chip-group selected-class="text-primary" column text="chip">
-                <template v-for="s in fieldStudents" :key="s.id">
-                  <v-chip>
-                    {{ s.user.name }}
-                  </v-chip>
-                </template>
-              </v-chip-group>
-            </v-card-text>
-          </div>
-
-          <!-- list using v-card -->
-
-          <v-container fluid v-if="type == 'v-card' && read && app?.rolesPermissions?.students?.read">
-            <v-card-title class="d-flex justify-space-between">
-              <div>{{ t('students') }}</div>
-            </v-card-title>
-
-            <v-row dense>
-              <template v-for="s in fieldStudents" :key="s.id" small>
-                <v-col cols="12" md="6">
-                  <v-card>
-                    <v-card-title>
-                      {{ s.user.name }}
-                    </v-card-title>
-                    <v-card-subtitle>
-                      {{ s.user.email }}
-                    </v-card-subtitle>
-                  </v-card>
-                </v-col>
-              </template>
-            </v-row>
-          </v-container>
-
           <!-- list using table -->
 
-          <v-card v-if="type == 'v-table'">
-            <ApiFieldDetails
-              ref="fieldDetailsStudentsComponent"
-              title="students"
-              :titleAdd="itemDetails.name"
-              :items="fieldStudents"
-              :fields="['user.name', 'user.status', 'user.email']"
-              :projectionFields="['user.name', 'user.status', 'user.email']"
-              :sortFields="['user.name', 'user.status', 'user.email']"
-              :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
-              :apiFn="{
-                getAll: Api.getStudents,
-                updateField: updateFieldStudents,
-                deleteField: deleteFieldStudent,
-              }"
-              :read="read && app?.rolesPermissions?.students?.read"
-              :write="write && app?.rolesPermissions?.students?.write"
-              :loading="loading"
-              :nodatatext="nodatatext"
-            ></ApiFieldDetails>
-          </v-card> </v-col
-      ></v-row>
+          <ApiRefStudents
+            ref="fieldDetailsStudentsComponent"
+            :titleAdd="itemDetails.name"
+            :items="fieldStudents"
+            :apiFn="{
+              updateField: updateFieldStudents,
+              deleteField: deleteFieldStudent,
+            }"
+            :type="type"
+            :read="read"
+            :write="write"
+            :loading="loading"
+            :nodatatext="nodatatext"
+          >
+          </ApiRefStudents>
+        </v-col>
+      </v-row>
     </v-card-text>
   </v-card>
 </template>
@@ -92,7 +47,7 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
 import ApiDetails from './api.base.details.vue';
-import ApiFieldDetails from './api.base.field.details.vue';
+import ApiRefStudents from './api.references.students.vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';

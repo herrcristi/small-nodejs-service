@@ -27,25 +27,21 @@
       <!-- 
           field students 
       -->
-      <ApiFieldDetails
+      <ApiRefStudents
         ref="fieldDetailsStudentsComponent"
-        title="students"
         :titleAdd="itemDetails.name"
         :items="fieldStudents"
-        :fields="['user.name', 'user.status', 'user.email']"
-        :projectionFields="['user.name', 'user.status', 'user.email']"
-        :sortFields="['user.name', 'user.status', 'user.email']"
-        :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
         :apiFn="{
-          getAll: Api.getStudents,
           updateField: updateFieldStudents,
           deleteField: deleteFieldStudent,
         }"
-        :read="read && app?.rolesPermissions?.students?.read"
-        :write="write && app?.rolesPermissions?.students?.write"
+        type="v-table"
+        :read="read"
+        :write="write"
         :loading="loading"
         :nodatatext="nodatatext"
-      ></ApiFieldDetails>
+      >
+      </ApiRefStudents>
     </v-card-text>
   </v-card>
 </template>
@@ -53,7 +49,7 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
 import ApiDetails from './api.base.details.vue';
-import ApiFieldDetails from './api.base.field.details.vue';
+import ApiRefStudents from './api.references.students.vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
