@@ -180,6 +180,7 @@
           :filterFields="props.filterFields"
           :apiFn="{
             getAll: apiFn.getAll,
+            getAllParams: apiFn.getAllParams,
           }"
           :read="props.read"
           :write="false"
@@ -368,7 +369,7 @@ const props = defineProps({
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
 
-  apiFn: { type: Object, default: {} }, // getAll, deleteField, updateField
+  apiFn: { type: Object, default: {} }, // getAll, getAllParams, deleteField, updateField
 
   emitEdit: { type: [Boolean, Number], default: null },
   selectStrategy: { type: [String], default: 'page' }, // single, page, all

@@ -246,7 +246,7 @@ const props = defineProps({
   details: { type: [Boolean, Number], default: null },
   expand: { type: [Boolean], default: null },
 
-  apiFn: { type: Object, default: {} }, // getall, add, delete, update
+  apiFn: { type: Object, default: {} }, // getAll, getAllParams, delete, add,  update
 });
 
 const editDialog = ref();

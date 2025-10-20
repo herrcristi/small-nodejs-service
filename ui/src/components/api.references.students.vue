@@ -6,7 +6,7 @@
   <!-- list using v-chip -->
   <div class="pa-1" v-if="type == 'v-chip' && read && readStudents">
     <v-card-title class="d-flex justify-space-between">
-      <div>{{ t('students') }}</div>
+      <div>{{ t(title) }}</div>
     </v-card-title>
 
     <v-card-text>
@@ -23,7 +23,7 @@
   <!-- list using v-card -->
   <v-container fluid v-if="type == 'v-card' && read && readStudents">
     <v-card-title class="d-flex justify-space-between">
-      <div>{{ t('students') }}</div>
+      <div>{{ t(title) }}</div>
     </v-card-title>
 
     <v-row dense>
@@ -46,7 +46,7 @@
   <v-card v-if="type == 'v-table'">
     <ApiFieldDetails
       ref="fieldDetailsComponent"
-      title="students"
+      :title="title"
       :titleAdd="titleAdd"
       :items="items"
       :fields="['user.name', 'user.status', 'user.email']"
@@ -55,6 +55,7 @@
       :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
       :apiFn="{
         getAll: Api.getStudents,
+        getAllParams: apiFn.getAllParams,
         updateField: apiFn.updateField,
         deleteField: apiFn.deleteField,
       }"
@@ -80,6 +81,7 @@ const { t } = useI18n();
 const props = defineProps({
   items: { type: Array, default: [] },
 
+  title: { type: String, default: 'students' },
   titleAdd: { type: String, default: '' },
   loading: { type: [Boolean, Number], default: true },
   nodatatext: { type: String, default: '' },
@@ -87,7 +89,7 @@ const props = defineProps({
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
 
-  apiFn: { type: Object, default: {} }, // updateField, deleteField
+  apiFn: { type: Object, default: {} }, // getAllParams, updateField, deleteField
 
   type: { type: String, default: 'v-table' }, // v-table, v-chip, v-card
 });

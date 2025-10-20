@@ -1,10 +1,10 @@
 <template>
   <!-- 
-    field classes 
+    field professors 
   -->
 
   <!-- list using v-chip -->
-  <div class="pa-1" v-if="type == 'v-chip' && read && readClasses">
+  <div class="pa-1" v-if="type == 'v-chip' && read && readProfessors">
     <v-card-title class="d-flex justify-space-between">
       <div>{{ t(title) }}</div>
     </v-card-title>
@@ -13,7 +13,7 @@
       <v-chip-group selected-class="text-primary" column text="chip">
         <template v-for="s in items" :key="s.id">
           <v-chip>
-            {{ s.name }}
+            {{ s.user.name }}
           </v-chip>
         </template>
       </v-chip-group>
@@ -21,7 +21,7 @@
   </div>
 
   <!-- list using v-card -->
-  <v-container fluid v-if="type == 'v-card' && read && readClasses">
+  <v-container fluid v-if="type == 'v-card' && read && readProfessors">
     <v-card-title class="d-flex justify-space-between">
       <div>{{ t(title) }}</div>
     </v-card-title>
@@ -31,8 +31,11 @@
         <v-col cols="12" md="6">
           <v-card>
             <v-card-title>
-              {{ s.name }}
+              {{ s.user.name }}
             </v-card-title>
+            <v-card-subtitle>
+              {{ s.user.email }}
+            </v-card-subtitle>
           </v-card>
         </v-col>
       </template>
@@ -46,18 +49,18 @@
       :title="title"
       :titleAdd="titleAdd"
       :items="items"
-      :fields="['name', 'status', 'description']"
-      :projectionFields="['name', 'status', 'description']"
-      :sortFields="['name', 'status']"
-      :filterFields="['name', '_lang_en.status', 'description']"
+      :fields="['user.name', 'user.status', 'user.email']"
+      :projectionFields="['user.name', 'user.status', 'user.email']"
+      :sortFields="['user.name', 'user.status', 'user.email']"
+      :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
       :apiFn="{
-        getAll: Api.getClasses,
+        getAll: Api.getProfessors,
         getAllParams: apiFn.getAllParams,
         updateField: apiFn.updateField,
         deleteField: apiFn.deleteField,
       }"
-      :read="read && readClasses"
-      :write="write && writeClasses"
+      :read="read && readProfessors"
+      :write="write && writeProfessors"
       :loading="loading"
       :nodatatext="nodatatext"
     ></ApiFieldDetails>
@@ -78,7 +81,7 @@ const { t } = useI18n();
 const props = defineProps({
   items: { type: Array, default: [] },
 
-  title: { type: String, default: 'classes' },
+  title: { type: String, default: 'professors' },
   titleAdd: { type: String, default: '' },
   loading: { type: [Boolean, Number], default: true },
   nodatatext: { type: String, default: '' },
@@ -92,8 +95,8 @@ const props = defineProps({
 });
 
 const app = useAppStore();
-const readClasses = app?.rolesPermissions?.classes?.read;
-const writeClasses = app?.rolesPermissions?.classes?.write;
+const readProfessors = app?.rolesPermissions?.professors?.read;
+const writeProfessors = app?.rolesPermissions?.professors?.write;
 
 const fieldDetailsComponent = ref();
 
