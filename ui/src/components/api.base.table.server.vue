@@ -343,7 +343,7 @@ const props = defineProps({
   selectStrategy: { type: [String], default: 'page' }, // single, page, all
   selectReturnObject: { type: [Boolean], default: false }, // default is to return ids since not all objects can be retreived on edit
 
-  apiFn: { type: Object, default: {} }, // getAll, delete
+  apiFn: { type: Object, default: {} }, // getAll, getAllParams, delete
 });
 
 /**
@@ -427,6 +427,10 @@ async function fetchAll({ page = 1, itemsPerPage = 50, sortBy = [] } = {}) {
         params.sort += `${s.order === 'desc' ? `-${s.key}` : s.key},`;
       });
       params.sort = params.sort.slice(0, -1);
+    }
+    // additional params
+    if (props.apiFn.getAllParams) {
+      Object.assign(params, props.apiFn.getAllParams);
     }
 
     // call

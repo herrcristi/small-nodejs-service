@@ -179,6 +179,14 @@
         <slot name="edit.name" :itemData="itemData" :fieldsSet="fieldsSet"> </slot>
       </template>
 
+      <template v-slot:edit.frequency="{ itemData, fieldsSet }">
+        <slot name="edit.frequency" :itemData="itemData" :fieldsSet="fieldsSet"> </slot>
+      </template>
+
+      <template v-slot:edit.frequencyTimestamp="{ itemData, fieldsSet }">
+        <slot name="edit.frequencyTimestamp" :itemData="itemData" :fieldsSet="fieldsSet"> </slot>
+      </template>
+
       <template v-slot:edit.status="{ itemData, fieldsSet }">
         <slot name="edit.status" :itemData="itemData" :fieldsSet="fieldsSet"> </slot>
       </template>
@@ -201,6 +209,10 @@
 
       <template v-slot:edit.class="{ itemData, fieldsSet }">
         <slot name="edit.class" :itemData="itemData" :fieldsSet="fieldsSet"> </slot>
+      </template>
+
+      <template v-slot:edit.location="{ itemData, fieldsSet }">
+        <slot name="edit.location" :itemData="itemData" :fieldsSet="fieldsSet"> </slot>
       </template>
 
       <template v-slot:edit.description="{ itemData, fieldsSet }">
@@ -234,7 +246,7 @@ const props = defineProps({
   details: { type: [Boolean, Number], default: null },
   expand: { type: [Boolean], default: null },
 
-  apiFn: { type: Object, default: {} }, // getall, add, delete, update
+  apiFn: { type: Object, default: {} }, // getAll, getAllParams, delete, add,  update
 });
 
 const editDialog = ref();

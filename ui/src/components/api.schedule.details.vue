@@ -27,140 +27,124 @@
       <!-- 
           field classes 
       -->
-      <ApiFieldDetails
+      <ApiRefClasses
         ref="fieldDetailsClassesComponent"
         title="classes"
         :titleAdd="itemDetails.name"
         :items="fieldClasses"
-        :fields="['name', 'status', 'description']"
         :apiFn="{}"
-        :read="read && app?.rolesPermissions?.classes?.read"
+        :read="read"
         :write="false"
         :loading="loading"
         :nodatatext="nodatatext"
-      ></ApiFieldDetails>
+      >
+      </ApiRefClasses>
     </v-card-text>
 
     <v-card-text>
       <!-- 
           field professors 
       -->
-      <ApiFieldDetails
+      <ApiRefProfessors
         ref="fieldDetailsProfessorsComponent"
         title="professors"
         :titleAdd="itemDetails.name"
         :items="fieldProfessors"
-        :fields="['user.name', 'user.status', 'user.email']"
-        :projectionFields="['user.name', 'user.status', 'user.email']"
-        :sortFields="['user.name', 'user.status', 'user.email']"
-        :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
         :apiFn="{
-          getAll: getAllFieldProfessors,
+          getAllParams: { 'classes.id': itemDetails.class?.id },
           updateField: updateFieldProfessors,
           deleteField: deleteFieldProfessor,
         }"
-        :read="read && app?.rolesPermissions?.professors?.read"
-        :write="write && app?.rolesPermissions?.professors?.write"
+        :read="read"
+        :write="write"
         :loading="loading"
         :nodatatext="nodatatext"
-      ></ApiFieldDetails>
+      >
+      </ApiRefProfessors>
     </v-card-text>
 
     <v-card-text>
-      <ApiFieldDetails
+      <!-- 
+          field inner schedules
+      -->
+      <ApiRefInnerSchedules
         ref="fieldDetailsInnerSchedulesComponent"
         title="schedules"
         :titleAdd="itemDetails.name"
         :items="fieldInnerSchedules"
-        :fields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
-        :projectionFields="['frequency', 'status', 'timestamp', 'location']"
-        :filterFields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
         :apiFn="{
-          getAll: getAllFieldInnerSchedules,
+          addField: addFieldInnerSchedule,
           updateField: updateFieldInnerSchedules,
           deleteField: deleteFieldInnerSchedule,
         }"
-        :read="read && app?.rolesPermissions?.locations?.read"
-        :write="write && app?.rolesPermissions?.locations?.write"
+        :read="read"
+        :write="write"
         :loading="loading"
         :nodatatext="nodatatext"
       >
-        <!-- timestamp -->
-        <template v-slot:item.timestamp="{ item }">
-          {{ getInnerScheduleTime(item.timestamp) }}
-        </template>
-      </ApiFieldDetails>
+      </ApiRefInnerSchedules>
     </v-card-text>
 
     <v-card-text>
       <!-- 
           field groups 
       -->
-      <ApiFieldDetails
+      <ApiRefGroups
         ref="fieldDetailsGroupsComponent"
         title="groups"
         :titleAdd="itemDetails.name"
         :items="fieldGroups"
-        :fields="['name', 'status', 'description']"
-        :projectionFields="['name', 'status', 'description']"
-        :sortFields="['name', 'status']"
-        :filterFields="['name', '_lang_en.status', 'description']"
         :apiFn="{
-          getAll: getAllFieldGroups,
+          // getAllParams: { 'classes.id': itemDetails.class?.id },
           updateField: updateFieldGroups,
           deleteField: deleteFieldGroup,
         }"
-        :read="read && app?.rolesPermissions?.groups?.read"
-        :write="write && app?.rolesPermissions?.groups?.write"
+        :read="read"
+        :write="write"
         :loading="loading"
         :nodatatext="nodatatext"
-      ></ApiFieldDetails>
+      >
+      </ApiRefGroups>
     </v-card-text>
 
     <v-card-text>
       <!-- 
           field students from groups
       -->
-      <ApiFieldDetails
+      <ApiRefStudents
         ref="fieldDetailsGroupsStudentsComponent"
         title="schedules.groups.students"
         :titleAdd="itemDetails.name"
         :items="fieldGroupsStudents"
-        :fields="['user.name', 'user.status', 'user.email']"
-        :projectionFields="['user.name', 'user.status', 'user.email']"
-        :sortFields="['user.name', 'user.status', 'user.email']"
-        :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
         :apiFn="{}"
-        :read="read && app?.rolesPermissions?.students?.read"
+        :read="read"
         :write="false"
         :loading="loading"
         :nodatatext="nodatatext"
-      ></ApiFieldDetails>
+      >
+      </ApiRefStudents>
     </v-card-text>
 
     <v-card-text>
       <!-- 
           field students extra
       -->
-      <ApiFieldDetails
+      <ApiRefStudents
         ref="fieldDetailsExtraStudentsComponent"
         title="schedules.extra.students"
         :titleAdd="itemDetails.name"
         :items="fieldExtraStudents"
-        :fields="['user.name', 'user.status', 'user.email']"
-        :projectionFields="['user.name', 'user.status', 'user.email']"
-        :sortFields="['user.name', 'user.status', 'user.email']"
-        :filterFields="['user.name', '_lang_en.user.status', 'user.email']"
         :apiFn="{
-          getAll: getAllFieldExtraStudents,
+          getAllParams: { 'classes.id': itemDetails.class?.id },
           updateField: updateFieldExtraStudents,
           deleteField: deleteFieldExtraStudent,
         }"
-        :read="read && app?.rolesPermissions?.students?.read"
-        :write="write && app?.rolesPermissions?.students?.write"
+        :read="read"
+        :write="write"
         :loading="loading"
         :nodatatext="nodatatext"
-      ></ApiFieldDetails>
+      >
+      </ApiRefStudents>
     </v-card-text>
   </v-card>
 
@@ -176,7 +160,11 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
 import ApiDetails from './api.base.details.vue';
-import ApiFieldDetails from './api.base.field.details.vue';
+import ApiRefClasses from './api.references.classes.vue';
+import ApiRefGroups from './api.references.groups.vue';
+import ApiRefStudents from './api.references.students.vue';
+import ApiRefProfessors from './api.references.professors.vue';
+import ApiRefInnerSchedules from './api.references.innerschedules.vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
@@ -215,6 +203,7 @@ const fieldGroups = ref([]);
 
 const fieldDetailsGroupsStudentsComponent = ref();
 const fieldGroupsStudents = ref([]);
+
 const fieldDetailsExtraStudentsComponent = ref();
 const fieldExtraStudents = ref([]);
 
@@ -269,30 +258,14 @@ function closeDialog() {
 }
 
 /**
- * ApiFieldDetails calling inner schedules getAll / deleteField / updateField
+ * ApiFieldDetails calling inner schedules addField / deleteField / updateField
  */
-function getInnerScheduleTime(timestamp) {
-  try {
-    const d = new Date(timestamp);
-    const time = d.toLocaleDateString(undefined, {
-      weekday: 'short',
-      // year: 'numeric',
-      // month: 'short',
-      // day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      timeZone: 'UTC',
-    });
-    return time;
-  } catch (e) {
-    console.log('Error getting timestamp', e);
-    return '';
-  }
-}
-
-async function getAllFieldInnerSchedules(params) {
+async function addFieldInnerSchedule(data) {
   // if fail will throw error and be catch in ApiFieldDetails
-  return /* await */ Api.getLocations(params);
+  await Api.updateScheduleInnerSchedules(props.itemID, [data], null);
+
+  // refresh
+  await detailsComponent.value.refresh();
 }
 
 async function deleteFieldInnerSchedule(innerScheduleID) {
@@ -312,14 +285,8 @@ async function updateFieldInnerSchedules(newIDs, removeIDs) {
 }
 
 /**
- * * ApiFieldDetails calling groups getAll / deleteField / updateField
+ * * ApiFieldDetails calling groups: deleteField / updateField
  */
-async function getAllFieldGroups(params) {
-  // if fail will throw error and be catch in ApiFieldDetails
-  // return /* await */ Api.getGroups(`${params ? params + '&' : ''}classes.id=${itemDetails.value.class.id}`);
-  return /* await */ Api.getGroups(params);
-}
-
 async function deleteFieldGroup(groupID) {
   // if fail will throw error and be catch in ApiFieldDetails
   await Api.updateScheduleGroups(props.itemID, [], [groupID]);
@@ -338,13 +305,8 @@ async function updateFieldGroups(newIDs, removeIDs) {
 }
 
 /**
- * ApiFieldDetails calling professors getAll / deleteField / updateField
+ * ApiFieldDetails calling professors: deleteField / updateField
  */
-async function getAllFieldProfessors(params) {
-  // if fail will throw error and be catch in ApiFieldDetails
-  return /* await */ Api.getProfessors(`${params ? params + '&' : ''}classes.id=${itemDetails.value.class.id}`);
-}
-
 async function deleteFieldProfessor(professorID) {
   // if fail will throw error and be catch in ApiFieldDetails
   await Api.updateScheduleProfessors(props.itemID, [], [professorID]);
@@ -362,13 +324,8 @@ async function updateFieldProfessors(newIDs, removeIDs) {
 }
 
 /**
- * ApiFieldDetails calling students getAll / deleteField / updateField
+ * ApiFieldDetails calling extra students: deleteField / updateField
  */
-async function getAllFieldExtraStudents(params) {
-  // if fail will throw error and be catch in ApiFieldDetails
-  return /* await */ Api.getStudents(`${params ? params + '&' : ''}classes.id=${itemDetails.value.class.id}`);
-}
-
 async function deleteFieldExtraStudent(studentID) {
   // if fail will throw error and be catch in ApiFieldDetails
   await Api.updateScheduleStudents(props.itemID, [], [studentID]);

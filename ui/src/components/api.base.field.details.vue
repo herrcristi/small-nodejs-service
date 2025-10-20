@@ -11,7 +11,7 @@
     :filterFields="props.filterFields"
     :apiFn="{
       add: 1,
-      update: 0,
+      update: props.emitEdit,
       delete: props.apiFn.deleteField ? deleteField : 0,
     }"
     :read="props.read"
@@ -180,6 +180,7 @@
           :filterFields="props.filterFields"
           :apiFn="{
             getAll: apiFn.getAll,
+            getAllParams: apiFn.getAllParams,
           }"
           :read="props.read"
           :write="false"
@@ -368,8 +369,9 @@ const props = defineProps({
   read: { type: [Boolean, Number], default: null },
   write: { type: [Boolean, Number], default: null },
 
-  apiFn: { type: Object, default: {} }, // getAll, deleteField, updateField
+  apiFn: { type: Object, default: {} }, // getAll, getAllParams, deleteField, updateField
 
+  emitEdit: { type: [Boolean, Number], default: null },
   selectStrategy: { type: [String], default: 'page' }, // single, page, all
   selectReturnObject: { type: [Boolean], default: false }, // default is to return ids since not all objects can be retreived on edit
 });

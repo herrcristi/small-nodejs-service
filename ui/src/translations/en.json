@@ -6,6 +6,7 @@
   "add.success": "Add succeeded",
   "address": "Address",
   "birthday": "Birthday",
+  "biweekly": "BiWeekly",
   "cancel": "Cancel",
   "class": "Class",
   "class.required": "Class is required",
@@ -35,6 +36,7 @@
   "events": "Events",
   "filter": "Filter",
   "frequency": "Frequency",
+  "frequencyTimestamp": "Timestamp",
   "groups": "Groups",
   "groups.add": "Add Group",
   "groups.edit": "Edit Group",
@@ -45,6 +47,8 @@
   "key": "Key",
   "loading": "Loading",
   "loading_subtitle": "Please wait",
+  "location": "Location",
+  "location.required": "Location is required",
   "locations": "Locations",
   "locations.add": "Add Location",
   "locations.add.error": "Error adding location",
@@ -66,8 +70,10 @@
   "logout": "Log out",
   "message": "Message",
   "more.info": "More info",
+  "mothly": "Monthly",
   "name": "Name",
   "name.required": "Name is required",
+  "once": "Once",
   "optional": "Optional",
   "password.change": "Change Password",
   "password.change.error": "Error changing password",
@@ -115,5 +121,6 @@
   "user": "User",
   "users": "Users",
   "value": "Value",
-  "warning": "Warning"
+  "warning": "Warning",
+  "weekly": "Weekly"
 }

@@ -399,7 +399,7 @@ const headers = computed(() => {
  * custom filter
  */
 function customFilter(value, query, item) {
-  return findValue(props.filterFields, value, query, item);
+  return ComponentUtils.findValue(props.filterFields, value, query, item);
 }
 
 /**

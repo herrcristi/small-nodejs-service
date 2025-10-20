@@ -61,8 +61,8 @@
     </template>
   </ApiPage>
 
+  <!-- drawer for details -->
   <v-card v-if="read || write">
-    <!-- drawer for details -->
     <v-navigation-drawer v-model="detailsOpen" right temporary width="620">
       <ApiScheduleDetails :itemID="selectedItemID" @close="closeDetails" />
     </v-navigation-drawer>

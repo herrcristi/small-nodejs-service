@@ -232,6 +232,19 @@ const Api = {
     }),
   updateSchedule: (id, data) => instance.put(`/schedules/${id}`, data),
   deleteSchedule: (id) => instance.delete(`/schedules/${id}`),
+  updateScheduleInnerSchedules: (id, newObjs, removeObjs) =>
+    instance.patch(`/schedules/${id}`, {
+      add: {
+        schedules: (newObjs || []).map((item) => {
+          return { frequency: item.frequency, timestamp: item.timestamp, location: item.location, status: item.status };
+        }),
+      },
+      remove: {
+        schedules: (removeObjs || []).map((item) => {
+          return { frequency: item.frequency, timestamp: item.timestamp, location: item.location };
+        }),
+      },
+    }),
   updateScheduleGroups: (id, newIds, removeIds) =>
     instance.patch(`/schedules/${id}`, {
       add: {
