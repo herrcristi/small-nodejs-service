@@ -469,7 +469,7 @@ function mounted() {}
 /**
  * expose
  */
-defineExpose({ openAdd, openEdit });
+defineExpose({ openAdd, openEdit, closeDialog });
 </script>
 
 <style scoped>

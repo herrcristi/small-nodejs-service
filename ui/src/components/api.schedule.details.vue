@@ -67,29 +67,22 @@
       <!-- 
           field inner schedules
       -->
-      <ApiFieldDetails
+      <ApiRefInnerSchedules
         ref="fieldDetailsInnerSchedulesComponent"
         title="schedules"
         :titleAdd="itemDetails.name"
         :items="fieldInnerSchedules"
-        :fields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
-        :projectionFields="['frequency', 'status', 'timestamp', 'location']"
-        :filterFields="['frequency', 'status', 'timestamp', 'location.name', 'location.address']"
         :apiFn="{
-          getAll: getAllFieldInnerSchedules,
+          addField: addFieldInnerSchedule,
           updateField: updateFieldInnerSchedules,
           deleteField: deleteFieldInnerSchedule,
         }"
-        :read="read && app?.rolesPermissions?.locations?.read"
-        :write="write && app?.rolesPermissions?.locations?.write"
+        :read="read"
+        :write="write"
         :loading="loading"
         :nodatatext="nodatatext"
       >
-        <!-- timestamp -->
-        <template v-slot:item.timestamp="{ item }">
-          {{ getInnerScheduleTime(item.timestamp) }}
-        </template>
-      </ApiFieldDetails>
+      </ApiRefInnerSchedules>
     </v-card-text>
 
     <v-card-text>
@@ -167,11 +160,11 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
 import ApiDetails from './api.base.details.vue';
-import ApiFieldDetails from './api.base.field.details.vue';
 import ApiRefClasses from './api.references.classes.vue';
 import ApiRefGroups from './api.references.groups.vue';
 import ApiRefStudents from './api.references.students.vue';
 import ApiRefProfessors from './api.references.professors.vue';
+import ApiRefInnerSchedules from './api.references.innerschedules.vue';
 import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
@@ -210,6 +203,7 @@ const fieldGroups = ref([]);
 
 const fieldDetailsGroupsStudentsComponent = ref();
 const fieldGroupsStudents = ref([]);
+
 const fieldDetailsExtraStudentsComponent = ref();
 const fieldExtraStudents = ref([]);
 
@@ -264,30 +258,14 @@ function closeDialog() {
 }
 
 /**
- * ApiFieldDetails calling inner schedules getAll / deleteField / updateField
+ * ApiFieldDetails calling inner schedules addField / deleteField / updateField
  */
-function getInnerScheduleTime(timestamp) {
-  try {
-    const d = new Date(timestamp);
-    const time = d.toLocaleDateString(undefined, {
-      weekday: 'short',
-      // year: 'numeric',
-      // month: 'short',
-      // day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      timeZone: 'UTC',
-    });
-    return time;
-  } catch (e) {
-    console.log('Error getting timestamp', e);
-    return '';
-  }
-}
-
-async function getAllFieldInnerSchedules(params) {
+async function addFieldInnerSchedule(data) {
   // if fail will throw error and be catch in ApiFieldDetails
-  return /* await */ Api.getLocations(params);
+  await Api.updateScheduleInnerSchedules(props.itemID, [data], null);
+
+  // refresh
+  await detailsComponent.value.refresh();
 }
 
 async function deleteFieldInnerSchedule(innerScheduleID) {
