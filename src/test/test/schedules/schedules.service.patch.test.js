@@ -36,6 +36,7 @@ describe('Schedules Service', function () {
   delete testPatchReq.set.class;
   delete testPatchReq.set.type;
   delete testPatchReq.set._lang_en;
+  delete testPatchReq.set.schedules[0].id;
 
   before(async function () {});
 

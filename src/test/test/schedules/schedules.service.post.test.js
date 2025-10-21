@@ -33,6 +33,7 @@ describe('Schedules Service', function () {
   delete testPostReq.id;
   delete testPostReq.type;
   delete testPostReq._lang_en;
+  delete testPostReq.schedules[0].id;
 
   before(async function () {});
 

@@ -220,17 +220,6 @@ async function onItemDetails(data) {
   fieldProfessors.value = itemDetails.value.professors || [];
   fieldInnerSchedules.value = itemDetails.value.schedules || [];
 
-  // inner schedules dont have id, create one from timestamp+frequency+location.id;
-  // TODO: better to have real id from server side
-  fieldInnerSchedules.value.forEach(
-    (item) =>
-      (item.id = {
-        frequency: item.frequency,
-        timestamp: item.timestamp,
-        location: item.location?.id,
-      })
-  );
-
   fieldGroups.value = itemDetails.value.groups || [];
   fieldGroupsStudents.value = getGroupsStudents(fieldGroups.value);
   fieldExtraStudents.value = itemDetails.value.students || [];
@@ -272,9 +261,9 @@ async function deleteFieldInnerSchedule(innerScheduleID) {
   await detailsComponent.value.refresh();
 }
 
-async function updateFieldInnerSchedules(newIDs, removeIDs) {
+async function updateFieldInnerSchedules(innerScheduleID, payload) {
   // if fail will throw error and be catch in ApiFieldDetails
-  await Api.updateScheduleInnerSchedules(props.itemID, newIDs, removeIDs);
+  await Api.updateScheduleInnerSchedules(props.itemID, [payload], [innerScheduleID]);
 
   // refresh
   await detailsComponent.value.refresh();
