@@ -34,6 +34,7 @@ describe('Schedules Service', function () {
     delete postReq.id;
     delete postReq.type;
     delete postReq._lang_en;
+    delete postReq.schedules[0].id;
   });
 
   afterEach(async function () {

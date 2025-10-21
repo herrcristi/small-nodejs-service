@@ -240,8 +240,8 @@ const Api = {
         }),
       },
       remove: {
-        schedules: (removeObjs || []).map((item) => {
-          return { frequency: item.frequency, timestamp: item.timestamp, location: item.location };
+        schedules: (removeObjs || []).map((id) => {
+          return { id };
         }),
       },
     }),

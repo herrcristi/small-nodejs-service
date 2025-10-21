@@ -110,7 +110,7 @@ describe('Schedules Functional', function () {
       .send({
         ...testSchedule,
         class: testSchedule.class.id,
-        schedules: [{ ...testSchedule.schedules[0], location: testSchedule.schedules[0].location.id }],
+        schedules: [{ ...testSchedule.schedules[0], location: testSchedule.schedules[0].location.id, id: undefined }],
         professors: [{ id: testSchedule.professors[0].id }],
         groups: [{ id: testSchedule.groups[0].id }],
         students: [{ id: testSchedule.students[0].id }],
@@ -135,6 +135,7 @@ describe('Schedules Functional', function () {
     delete testSchedule.id;
     delete testSchedule.type;
     delete testSchedule._lang_en;
+    delete testSchedule.schedules[0].id;
 
     // check events before
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
@@ -211,6 +212,8 @@ describe('Schedules Functional', function () {
       .get(`${SchedulesConstants.ApiPath}/${testSchedule.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    testSchedule.schedules[0].id = res.body.schedules[0].id;
 
     // check
     chai.expect(res.status).to.equal(200);
@@ -329,6 +332,7 @@ describe('Schedules Functional', function () {
     delete testSchedule.class;
     delete testSchedule.type;
     delete testSchedule._lang_en;
+    delete testSchedule.schedules[0].id;
 
     // events before
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
@@ -418,6 +422,7 @@ describe('Schedules Functional', function () {
     delete testSchedule.class;
     delete testSchedule.type;
     delete testSchedule._lang_en;
+    delete testSchedule.schedules[0].id;
 
     // events before
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();

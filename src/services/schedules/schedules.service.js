@@ -41,7 +41,7 @@ const SchemaGroups = Joi.array().items(
     id: Joi.string().min(1).max(64).required(),
   })
 );
-const SchemaScheduleLocation = Joi.array().items(
+const SchemaScheduleLocationAdd = Joi.array().items(
   Joi.object().keys({
     timestamp: Joi.date().iso().required(),
     frequency: Joi.string()
@@ -56,6 +56,11 @@ const SchemaScheduleLocation = Joi.array().items(
       .valid(...Object.values(SchedulesConstants.Status)),
   })
 );
+const SchemaScheduleLocationRemove = Joi.array().items(
+  Joi.object().keys({
+    id: Joi.string().min(1).max(64).required(),
+  })
+);
 
 const Schema = {
   Schedule: Joi.object().keys({
@@ -64,7 +69,7 @@ const Schema = {
       .min(1)
       .max(64)
       .valid(...Object.values(SchedulesConstants.Status)),
-    schedules: SchemaScheduleLocation,
+    schedules: SchemaScheduleLocationAdd,
     professors: SchemaProfessors,
     groups: SchemaGroups,
     students: SchemaStudents,
@@ -79,6 +84,7 @@ const Validators = {
       'class.id',
       'class.name',
       'status',
+      'schedules.id',
       'schedules.location.id',
       'schedules.location.name',
       'professors.id',
@@ -105,13 +111,13 @@ const Validators = {
     // for patch allowed operations are set, add, remove
     set: Schema.Schedule,
     add: Joi.object().keys({
-      schedules: SchemaScheduleLocation,
+      schedules: SchemaScheduleLocationAdd,
       professors: SchemaProfessors,
       groups: SchemaGroups,
       students: SchemaStudents,
     }),
     remove: Joi.object().keys({
-      schedules: SchemaScheduleLocation,
+      schedules: SchemaScheduleLocationRemove,
       professors: SchemaProfessors,
       groups: SchemaGroups,
       students: SchemaStudents,
@@ -183,6 +189,17 @@ const Private = {
       status: 400,
       error: { message: msg, error: new Error(msg) },
     };
+  },
+
+  /**
+   * generate and add inner schedules ids
+   */
+  addInnerSchedulesIDs: (objs, _ctx) => {
+    for (const objInfo of objs) {
+      for (const s of objInfo?.schedules || []) {
+        s.id = s.id || CommonUtils.uuidc();
+      }
+    }
   },
 
   /**
@@ -384,6 +401,9 @@ const Public = {
     await Public.translate(objInfo, _ctx);
     objInfo = CommonUtils.patch2obj(objInfo);
 
+    // add ids to inner schedules
+    Private.addInnerSchedulesIDs([objInfo], _ctx);
+
     // post
     const r = await DbOpsUtils.post(config, objInfo, _ctx);
     if (r.error) {
@@ -462,6 +482,9 @@ const Public = {
     // translate
     await Public.translate(objInfo, _ctx);
 
+    // add ids to inner schedules
+    Private.addInnerSchedulesIDs([objInfo], _ctx);
+
     // put
     const r = await DbOpsUtils.put(config, objID, objInfo, projection, _ctx);
     if (r.error) {
@@ -519,6 +542,9 @@ const Public = {
 
     // translate
     await Public.translate(patchInfo.set, _ctx);
+
+    // add ids to inner schedules
+    Private.addInnerSchedulesIDs([patchInfo.set, patchInfo.add], _ctx);
 
     // patch
     const r = await DbOpsUtils.patch(config, objID, patchInfo, projection, _ctx);
