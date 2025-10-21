@@ -252,7 +252,7 @@ const frequencyDates = computed(() => {
 
 const frequencyDays = computed(() => {
   return [
-    { title: t('monday'), value: 'weekly' },
+    { title: t('monday'), value: '1' },
     { title: t('tuesday'), value: '2' },
     { title: t('wednesday'), value: '3' },
     { title: t('thursday'), value: '4' },
@@ -353,17 +353,41 @@ async function handleSubmit() {
     payload.location = payload.location.id;
   }
   if (payload.frequencyTimestamp) {
-    payload.timestamp = payload.frequencyTimestamp;
-    delete payload.frequencyTimestamp;
+    try {
+      const d = new Date(payload.frequencyTimestamp || Date.now());
+      let day = d.getUTCDate();
+      switch (payload.frequency) {
+        case 'monthly':
+          d.setUTCDate(Number(payload.frequencyDate));
+          d.setUTCHours(Number(payload.frequencyTime.substring(0, 2)));
+          d.setUTCMinutes(Number(payload.frequencyTime.substring(3, 5)));
+          break;
 
-    // @update:model="
-    //       (val) => {
-    //         const d = new Date(itemData.frequencyTimestamp || Date.now());
-    //         d.setUTCDate(d.getUTCDate() - d.getUTCDay() + Number(val));
-    //         itemData.frequencyTimestamp = d.toISOString();
-    //         console.log('Set frequency day to', val, 'new timestamp', itemData.frequencyTimestamp);
-    //       }
-    //     "
+        case 'weekly':
+        case 'biWeekly':
+          day = d.getUTCDate() - 7 - d.getUTCDay() + Number(payload.frequencyDay);
+          d.setUTCDate(day < 0 ? day + 14 : day);
+          d.setUTCHours(Number(payload.frequencyTime.substring(0, 2)));
+          d.setUTCMinutes(Number(payload.frequencyTime.substring(3, 5)));
+          break;
+
+        case 'once':
+        default:
+          // nothing to change
+          break;
+      }
+      payload.timestamp = d.toISOString();
+    } catch (e) {
+      console.log('Error parsing date:', e);
+      const errText = e.response?.data?.error?.toString() || e.toString();
+
+      snackbarText.value = (t('edit.error') || 'Error') + ' - ' + errText;
+      snackbarColor.value = 'error';
+      snackbar.value = true;
+      return;
+    }
+
+    delete payload.frequencyTimestamp;
   }
 
   // add/update
