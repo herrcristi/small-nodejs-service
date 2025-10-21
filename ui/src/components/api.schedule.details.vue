@@ -276,9 +276,9 @@ async function deleteFieldInnerSchedule(innerScheduleID) {
   fieldInnerSchedules.value = fieldInnerSchedules.value.filter((item) => item.id !== innerScheduleID);
 }
 
-async function updateFieldInnerSchedules(newIDs, removeIDs) {
+async function updateFieldInnerSchedules(innerScheduleID, payload) {
   // if fail will throw error and be catch in ApiFieldDetails
-  await Api.updateScheduleInnerSchedules(props.itemID, newIDs, removeIDs);
+  await Api.updateScheduleInnerSchedules(props.itemID, [payload], [innerScheduleID]);
 
   // refresh
   await detailsComponent.value.refresh();

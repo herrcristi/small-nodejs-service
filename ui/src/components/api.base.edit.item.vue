@@ -33,12 +33,49 @@
             </slot>
 
             <slot name="edit.frequencyTimestamp" :itemData="itemData" :fieldsSet="fieldsSet">
-              <v-text-field
-                v-if="fieldsSet.has('frequencyTimestamp')"
-                v-model="itemData.frequencyTimestamp"
-                :label="t('frequencyTimestamp')"
-                required
-              />
+              <v-row v-if="fieldsSet.has('frequencyTimestamp')">
+                <v-col v-if="itemData.frequency === 'once'">
+                  <v-text-field
+                    v-if="fieldsSet.has('frequencyTimestamp')"
+                    v-model="itemData.frequencyTimestamp"
+                    :label="t('frequencyTimestamp')"
+                    required
+                  />
+                </v-col>
+                <v-col v-if="itemData.frequency === 'monthly'">
+                  <v-select
+                    v-model="itemData.frequencyDate"
+                    :items="frequencyDates"
+                    item-title="title"
+                    item-value="value"
+                    :label="t('dayofmonth')"
+                    :rules="[frequencyRule]"
+                    required
+                  />
+                </v-col>
+                <v-col v-if="itemData.frequency === 'weekly' || itemData.frequency === 'biWeekly'">
+                  <v-select
+                    v-model="itemData.frequencyDay"
+                    :items="frequencyDays"
+                    item-title="title"
+                    item-value="value"
+                    :label="t('dayofweek')"
+                    :rules="[frequencyRule]"
+                    required
+                  />
+                </v-col>
+                <v-col v-if="itemData.frequency !== 'once'">
+                  <v-select
+                    v-model="itemData.frequencyTime"
+                    :items="frequencyHours"
+                    item-title="title"
+                    item-value="value"
+                    :label="t('timeofday')"
+                    :rules="[frequencyRule]"
+                    required
+                  />
+                </v-col>
+              </v-row>
             </slot>
 
             <slot name="edit.status" :itemData="itemData" :fieldsSet="fieldsSet">
@@ -203,6 +240,40 @@ const frequencyItems = computed(() => {
   return items;
 });
 
+const frequencyDates = computed(() => {
+  const dates = [];
+  for (let d = 1; d <= 31; d++) {
+    const title = d.toString();
+    const value = d.toString();
+    dates.push({ title, value });
+  }
+  return dates;
+});
+
+const frequencyDays = computed(() => {
+  return [
+    { title: t('monday'), value: '1' },
+    { title: t('tuesday'), value: '2' },
+    { title: t('wednesday'), value: '3' },
+    { title: t('thursday'), value: '4' },
+    { title: t('friday'), value: '5' },
+    { title: t('saturday'), value: '6' },
+    { title: t('sunday'), value: '0' },
+  ];
+});
+
+const frequencyHours = computed(() => {
+  const hours = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const title = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      const value = title;
+      hours.push({ title, value });
+    }
+  }
+  return hours;
+});
+
 /**
  * status items for the select
  */
@@ -282,7 +353,40 @@ async function handleSubmit() {
     payload.location = payload.location.id;
   }
   if (payload.frequencyTimestamp) {
-    payload.timestamp = payload.frequencyTimestamp;
+    try {
+      const d = new Date(payload.frequencyTimestamp || Date.now());
+      let day = d.getUTCDate();
+      switch (payload.frequency) {
+        case 'monthly':
+          d.setUTCDate(Number(payload.frequencyDate));
+          d.setUTCHours(Number(payload.frequencyTime.substring(0, 2)));
+          d.setUTCMinutes(Number(payload.frequencyTime.substring(3, 5)));
+          break;
+
+        case 'weekly':
+        case 'biWeekly':
+          day = d.getUTCDate() - 7 - d.getUTCDay() + Number(payload.frequencyDay);
+          d.setUTCDate(day <= 0 ? day + 14 : day);
+          d.setUTCHours(Number(payload.frequencyTime.substring(0, 2)));
+          d.setUTCMinutes(Number(payload.frequencyTime.substring(3, 5)));
+          break;
+
+        case 'once':
+        default:
+          // nothing to change
+          break;
+      }
+      payload.timestamp = d.toISOString();
+    } catch (e) {
+      console.log('Error parsing date:', e);
+      const errText = e.response?.data?.error?.toString() || e.toString();
+
+      snackbarText.value = (t('edit.error') || 'Error') + ' - ' + errText;
+      snackbarColor.value = 'error';
+      snackbar.value = true;
+      return;
+    }
+
     delete payload.frequencyTimestamp;
   }
 
@@ -365,6 +469,21 @@ function openAdd() {
   if (fieldsSet.value.has('frequency')) {
     itemData.frequency = 'weekly';
   }
+  if (fieldsSet.value.has('frequencyTimestamp')) {
+    const d = new Date();
+    itemData.frequencyTimestamp = d.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      seconds: 'numeric',
+      timeZone: 'UTC',
+    });
+    itemData.frequencyDay = new Date(itemData.frequencyTimestamp).getUTCDay() + '';
+    itemData.frequencyDate = new Date(itemData.frequencyTimestamp).getUTCDate() + '';
+    itemData.frequencyTime = new Date(itemData.frequencyTimestamp).toISOString().substring(11, 16);
+  }
   if (fieldsSet.value.has('status')) {
     itemData.status = 'active';
   }
@@ -412,6 +531,9 @@ function openEdit(item) {
   }
   if (fieldsSet.value.has('frequencyTimestamp')) {
     itemData.frequencyTimestamp = item.timestamp;
+    itemData.frequencyDay = new Date(itemData.frequencyTimestamp).getUTCDay() + '';
+    itemData.frequencyDate = new Date(itemData.frequencyTimestamp).getUTCDate() + '';
+    itemData.frequencyTime = new Date(itemData.frequencyTimestamp).toISOString().substring(11, 16);
   }
   if (fieldsSet.value.has('status') || fieldsSet.value.has('user.status')) {
     itemData.status = item.status || item.user?.status || 'active';
