@@ -366,7 +366,7 @@ async function handleSubmit() {
         case 'weekly':
         case 'biWeekly':
           day = d.getUTCDate() - 7 - d.getUTCDay() + Number(payload.frequencyDay);
-          d.setUTCDate(day < 0 ? day + 14 : day);
+          d.setUTCDate(day <= 0 ? day + 14 : day);
           d.setUTCHours(Number(payload.frequencyTime.substring(0, 2)));
           d.setUTCMinutes(Number(payload.frequencyTime.substring(3, 5)));
           break;
