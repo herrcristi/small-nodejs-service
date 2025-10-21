@@ -12,7 +12,9 @@
     <v-card-text>
       <v-chip-group selected-class="text-primary" column text="chip">
         <template v-for="s in fieldInnerSchedules" :key="s.id">
-          <v-chip> {{ s.frequency }}, {{ getInnerScheduleTime(s.timestamp) }}, {{ s.location.name }}</v-chip>
+          <v-chip>
+            {{ s.frequency }}, {{ getInnerScheduleTime(s.frequency, s.timestamp) }}, {{ s.location.name }}</v-chip
+          >
         </template>
       </v-chip-group>
     </v-card-text>
@@ -29,7 +31,7 @@
         <v-col cols="12" md="10">
           <v-card>
             <v-card-title> {{ s.location.name }} </v-card-title>
-            <v-card-subtitle> {{ s.frequency }}, {{ getInnerScheduleTime(s.timestamp) }} </v-card-subtitle>
+            <v-card-subtitle> {{ s.frequency }}, {{ getInnerScheduleTime(s.frequency, s.timestamp) }} </v-card-subtitle>
             <v-card-subtitle>
               {{ s.location.address }}
             </v-card-subtitle>
@@ -63,7 +65,7 @@
     >
       <!-- timestamp -->
       <template v-slot:item.timestamp="{ item }">
-        {{ getInnerScheduleTime(item.timestamp) }}
+        {{ getInnerScheduleTime(item.frequency, item.timestamp) }}
       </template>
 
       <!-- add -->
@@ -111,6 +113,7 @@
         titleAdd="locations"
         :items="itemData.location?.id ? [itemData.location] : []"
         :fields="['name', 'status', 'address']"
+        :projectionFields="['name', 'status', 'address']"
         :apiFn="{
           getAll: Api.getLocations,
           deleteField: 0,
@@ -170,25 +173,6 @@ const fieldDetailsComponent = ref();
 const editInnerScheduleDialog = ref();
 const fieldDetailsLocationsComponent = ref();
 
-function getInnerScheduleTime(timestamp) {
-  try {
-    const d = new Date(timestamp);
-    const time = d.toLocaleDateString(undefined, {
-      weekday: 'short',
-      // year: 'numeric',
-      // month: 'short',
-      // day: 'numeric',
-      hour: 'numeric',
-      minute: 'numeric',
-      timeZone: 'UTC',
-    });
-    return time;
-  } catch (e) {
-    console.log('Error getting timestamp', e);
-    return '';
-  }
-}
-
 /**
  * ApiFieldDetails calling inner schedules getAll / deleteField / updateField
  */
@@ -196,6 +180,56 @@ function onAddUpdateFieldLocation(itemData, newObjs, removeIDs) {
   // on add schedules dialog
   // on add ApiFieldDetails calling updateField with actual objects instead of ids
   itemData.location = newObjs?.length > 0 ? newObjs[0] : { id: '', status: 'pending', name: '', address: '' };
+}
+
+function getInnerScheduleTime(frequency, timestamp) {
+  try {
+    const d = new Date(timestamp);
+
+    let options = {};
+    switch (frequency) {
+      case 'weekly':
+      case 'biweekly':
+        // weekday + time
+        options = {
+          weekday: 'short',
+          hour: 'numeric',
+          minute: 'numeric',
+          timeZone: 'UTC',
+        };
+        break;
+
+      case 'monthly':
+        // date + time
+        options = {
+          day: 'numeric',
+          hour: 'numeric',
+          minute: 'numeric',
+          timeZone: 'UTC',
+        };
+        break;
+
+      case 'once':
+      default:
+        // full date + time
+        options = {
+          weekday: 'short',
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: 'numeric',
+          minute: 'numeric',
+          timeZone: 'UTC',
+        };
+        break;
+    }
+
+    const rtime = d.toLocaleDateString(undefined, options);
+    return rtime;
+  } catch (e) {
+    console.log('Error getting timestamp', e);
+    return '';
+  }
 }
 
 /**

@@ -33,12 +33,49 @@
             </slot>
 
             <slot name="edit.frequencyTimestamp" :itemData="itemData" :fieldsSet="fieldsSet">
-              <v-text-field
-                v-if="fieldsSet.has('frequencyTimestamp')"
-                v-model="itemData.frequencyTimestamp"
-                :label="t('frequencyTimestamp')"
-                required
-              />
+              <v-row v-if="fieldsSet.has('frequencyTimestamp')">
+                <v-col v-if="itemData.frequency === 'once'">
+                  <v-text-field
+                    v-if="fieldsSet.has('frequencyTimestamp')"
+                    v-model="itemData.frequencyTimestamp"
+                    :label="t('frequencyTimestamp')"
+                    required
+                  />
+                </v-col>
+                <v-col v-if="itemData.frequency === 'monthly'">
+                  <v-select
+                    v-model="itemData.frequencyDate"
+                    :items="frequencyDates"
+                    item-title="title"
+                    item-value="value"
+                    :label="t('dayofmonth')"
+                    :rules="[frequencyRule]"
+                    required
+                  />
+                </v-col>
+                <v-col v-if="itemData.frequency === 'weekly' || itemData.frequency === 'biWeekly'">
+                  <v-select
+                    v-model="itemData.frequencyDay"
+                    :items="frequencyDays"
+                    item-title="title"
+                    item-value="value"
+                    :label="t('dayofweek')"
+                    :rules="[frequencyRule]"
+                    required
+                  />
+                </v-col>
+                <v-col v-if="itemData.frequency !== 'once'">
+                  <v-select
+                    v-model="itemData.frequencyTime"
+                    :items="frequencyHours"
+                    item-title="title"
+                    item-value="value"
+                    :label="t('timeofday')"
+                    :rules="[frequencyRule]"
+                    required
+                  />
+                </v-col>
+              </v-row>
             </slot>
 
             <slot name="edit.status" :itemData="itemData" :fieldsSet="fieldsSet">
@@ -203,6 +240,40 @@ const frequencyItems = computed(() => {
   return items;
 });
 
+const frequencyDates = computed(() => {
+  const dates = [];
+  for (let d = 1; d <= 31; d++) {
+    const title = d.toString();
+    const value = d.toString();
+    dates.push({ title, value });
+  }
+  return dates;
+});
+
+const frequencyDays = computed(() => {
+  return [
+    { title: t('monday'), value: 'weekly' },
+    { title: t('tuesday'), value: '2' },
+    { title: t('wednesday'), value: '3' },
+    { title: t('thursday'), value: '4' },
+    { title: t('friday'), value: '5' },
+    { title: t('saturday'), value: '6' },
+    { title: t('sunday'), value: '0' },
+  ];
+});
+
+const frequencyHours = computed(() => {
+  const hours = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const title = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      const value = title;
+      hours.push({ title, value });
+    }
+  }
+  return hours;
+});
+
 /**
  * status items for the select
  */
@@ -284,6 +355,15 @@ async function handleSubmit() {
   if (payload.frequencyTimestamp) {
     payload.timestamp = payload.frequencyTimestamp;
     delete payload.frequencyTimestamp;
+
+    // @update:model="
+    //       (val) => {
+    //         const d = new Date(itemData.frequencyTimestamp || Date.now());
+    //         d.setUTCDate(d.getUTCDate() - d.getUTCDay() + Number(val));
+    //         itemData.frequencyTimestamp = d.toISOString();
+    //         console.log('Set frequency day to', val, 'new timestamp', itemData.frequencyTimestamp);
+    //       }
+    //     "
   }
 
   // add/update
@@ -365,6 +445,21 @@ function openAdd() {
   if (fieldsSet.value.has('frequency')) {
     itemData.frequency = 'weekly';
   }
+  if (fieldsSet.value.has('frequencyTimestamp')) {
+    const d = new Date();
+    itemData.frequencyTimestamp = d.toLocaleDateString(undefined, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      seconds: 'numeric',
+      timeZone: 'UTC',
+    });
+    itemData.frequencyDay = new Date(itemData.frequencyTimestamp).getUTCDay() + '';
+    itemData.frequencyDate = new Date(itemData.frequencyTimestamp).getUTCDate() + '';
+    itemData.frequencyTime = new Date(itemData.frequencyTimestamp).toISOString().substring(11, 16);
+  }
   if (fieldsSet.value.has('status')) {
     itemData.status = 'active';
   }
@@ -412,6 +507,9 @@ function openEdit(item) {
   }
   if (fieldsSet.value.has('frequencyTimestamp')) {
     itemData.frequencyTimestamp = item.timestamp;
+    itemData.frequencyDay = new Date(itemData.frequencyTimestamp).getUTCDay() + '';
+    itemData.frequencyDate = new Date(itemData.frequencyTimestamp).getUTCDate() + '';
+    itemData.frequencyTime = new Date(itemData.frequencyTimestamp).toISOString().substring(11, 16);
   }
   if (fieldsSet.value.has('status') || fieldsSet.value.has('user.status')) {
     itemData.status = item.status || item.user?.status || 'active';
