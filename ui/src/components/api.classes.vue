@@ -264,23 +264,11 @@ function openEdit(item) {
   fieldsSet.value = new Set(apiFields.editFields);
 
   // set
-  if (fieldsSet.value.has('name') || fieldsSet.value.has('user.name')) {
-    itemData.name = item.name || item.user?.name || '';
+  if (fieldsSet.value.has('name')) {
+    itemData.name = item.name || '';
   }
-  if (fieldsSet.value.has('email') || fieldsSet.value.has('user.email')) {
-    itemData.email = item.email || item.user?.email || '';
-  }
-  if (fieldsSet.value.has('frequency')) {
-    itemData.frequency = item.frequency || 'weekly';
-  }
-  if (fieldsSet.value.has('frequencyTimestamp')) {
-    itemData.frequencyTimestamp = item.timestamp;
-    itemData.frequencyDay = new Date(itemData.frequencyTimestamp).getUTCDay() + '';
-    itemData.frequencyDate = new Date(itemData.frequencyTimestamp).getUTCDate() + '';
-    itemData.frequencyTime = new Date(itemData.frequencyTimestamp).toISOString().substring(11, 16);
-  }
-  if (fieldsSet.value.has('status') || fieldsSet.value.has('user.status')) {
-    itemData.status = item.status || item.user?.status || 'active';
+  if (fieldsSet.value.has('status')) {
+    itemData.status = item.status || 'active';
   }
   if (fieldsSet.value.has('description')) {
     itemData.description = item.description || '';
@@ -290,15 +278,6 @@ function openEdit(item) {
   }
   if (fieldsSet.value.has('required')) {
     itemData.required = item.required || 'required';
-  }
-  if (fieldsSet.value.has('address')) {
-    itemData.address = item.address || '';
-  }
-  if (fieldsSet.value.has('class')) {
-    itemData.class = item.class || { id: '', status: 'pending', name: '' };
-  }
-  if (fieldsSet.value.has('location')) {
-    itemData.location = item.location || { id: '', status: 'pending', name: '', address: '' };
   }
 
   editing.value = true;
