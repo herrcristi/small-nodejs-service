@@ -5,7 +5,7 @@
     -->
     <ApiTableServer
       ref="tableServer"
-      title="classes"
+      title="events"
       :fields="apiFields.fields"
       :projectionFields="apiFields.projectionFields"
       :sortFields="apiFields.sortFields"
