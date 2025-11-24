@@ -326,6 +326,34 @@ async function updateFieldExtraStudents(newIDs, removeIDs) {
   // refresh
   await detailsComponent.value.refresh();
 }
+
+/**
+ * clear
+ */
+function clear() {
+  fieldDetailsClassesComponent.value.clear();
+  fieldClasses = [];
+
+  fieldDetailsInnerSchedulesComponent.value.clear();
+  fieldInnerSchedules = [];
+
+  fieldDetailsGroupsComponent.value.clear();
+  fieldGroups = [];
+
+  fieldDetailsProfessorsComponent.value.clear();
+  fieldProfessors = [];
+
+  fieldDetailsGroupsStudentsComponent.value.clear();
+  fieldGroupsStudents = [];
+
+  fieldDetailsExtraStudentsComponent.value.clear();
+  fieldExtraStudents = [];
+}
+
+/**
+ * expose
+ */
+defineExpose({ clear });
 </script>
 
 <style scoped></style>

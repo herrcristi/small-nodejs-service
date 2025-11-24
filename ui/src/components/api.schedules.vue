@@ -96,8 +96,8 @@ const write = app?.rolesPermissions?.schedules?.write || 0;
  * details panel state (moved to separate component)
  */
 
-function openDetails(itemID) {
-  selectedItemID.value = itemID;
+function openDetails(item) {
+  selectedItemID.value = item.id;
   detailsOpen.value = true;
 }
 

@@ -185,6 +185,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import ComponentsUtils from './components.utils.js';
 const { t } = useI18n();
 
 /**
@@ -225,102 +226,42 @@ const emit = defineEmits(['cancel', 'save']);
 const fieldsSet = ref(new Set([]));
 
 /**
- * frequency items for the select
+ * frequency items for the select - once, weekly, biWeekly, monthly
  */
-const frequencyItems = computed(() => {
-  // base items
-  // when adding add pending too
-  let items = [
-    { title: t('once'), value: 'once' },
-    { title: t('weekly'), value: 'weekly' },
-    { title: t('biweekly'), value: 'biWeekly' },
-    { title: t('monthly'), value: 'monthly' },
-  ];
+const frequencyItems = computed(() => ComponentsUtils.Edit.frequencyItems(t));
 
-  return items;
-});
+const frequencyDates = computed(() => ComponentsUtils.Edit.frequencyDates(t));
 
-const frequencyDates = computed(() => {
-  const dates = [];
-  for (let d = 1; d <= 31; d++) {
-    const title = d.toString();
-    const value = d.toString();
-    dates.push({ title, value });
-  }
-  return dates;
-});
+const frequencyDays = computed(() => ComponentsUtils.Edit.frequencyDays(t));
 
-const frequencyDays = computed(() => {
-  return [
-    { title: t('monday'), value: '1' },
-    { title: t('tuesday'), value: '2' },
-    { title: t('wednesday'), value: '3' },
-    { title: t('thursday'), value: '4' },
-    { title: t('friday'), value: '5' },
-    { title: t('saturday'), value: '6' },
-    { title: t('sunday'), value: '0' },
-  ];
-});
-
-const frequencyHours = computed(() => {
-  const hours = [];
-  for (let h = 0; h < 24; h++) {
-    for (let m = 0; m < 60; m += 15) {
-      const title = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
-      const value = title;
-      hours.push({ title, value });
-    }
-  }
-  return hours;
-});
+const frequencyHours = computed(() => ComponentsUtils.Edit.frequencyHours(t));
 
 /**
  * status items for the select
  */
-const statusItems = computed(() => {
-  // base items
-  // when adding add pending too
-  let items = [];
-
-  if (!editing.value) {
-    items.push({ title: t('pending'), value: 'pending' });
-  }
-
-  items = [
-    ...items,
-    { title: t('active'), value: 'active' },
-    { title: t('disabled'), value: 'disabled', disabled: false },
-  ];
-
-  return items;
-});
+const statusItems = computed(() =>
+  ComponentsUtils.Edit.statusItems(t, {
+    skipPending: editing.value,
+  })
+);
 
 /**
  * required items for the select
  */
-const requiredItems = computed(() => {
-  return [
-    { title: t('required'), value: 'required' },
-    { title: t('optional'), value: 'optional' },
-  ];
-});
+const requiredItems = computed(() => ComponentsUtils.Edit.requiredItems(t));
 
 /**
  * rules
  */
-const nameRule = (v) => (!!v && v.toString().trim().length > 0) || t('name.required');
-const statusRule = (v) => !!v || t('required');
-const emailRule = (v) => (!!v && v.toString().trim().length > 0) || t('email.required');
-const addressRule = (v) => (!!v && v.toString().trim().length > 0) || t('required');
-// credits must be a number greater than or equal to zero
-const creditsRule = (v) => {
-  const n = Number(v);
-  return (n != null && !Number.isNaN(n) && n >= 0 && n <= 1024) || t('credits.limits') || t('required');
-};
-const requiredRule = (v) => !!v || t('required');
-const classRule = (v) => !!v || t('required');
-const locationRule = (v) => !!v || t('required');
-const frequencyRule = (v) => !!v || t('required');
+const nameRule = (v) => ComponentsUtils.Edit.Rules.name(v, t);
+const statusRule = (v) => ComponentsUtils.Edit.Rules.status(v, t);
+const emailRule = (v) => ComponentsUtils.Edit.Rules.email(v, t);
+const addressRule = (v) => ComponentsUtils.Edit.Rules.address(v, t);
+const creditsRule = (v) => ComponentsUtils.Edit.Rules.credits(v, t);
+const requiredRule = (v) => ComponentsUtils.Edit.Rules.required(v, t);
+const classRule = (v) => ComponentsUtils.Edit.Rules.required(v, t);
+const locationRule = (v) => ComponentsUtils.Edit.Rules.required(v, t);
+const frequencyRule = (v) => ComponentsUtils.Edit.Rules.required(v, t);
 
 /**
  * handle submit
@@ -334,18 +275,12 @@ async function handleSubmit() {
   }
 
   // trim
-  if (itemData.name) {
-    itemData.name = itemData.name.toString().trim();
-  }
-  if (itemData.email) {
-    itemData.email = itemData.email.toString().trim();
-  }
-  if (itemData.description) {
-    itemData.description = itemData.description.toString().trim();
-  }
+  ComponentsUtils.Edit.trimFields(itemData, ['name', 'email', 'description']);
 
   // payload
   const payload = { ...itemData };
+  const snackbarO = { ref: snackbar, text: snackbarText, color: snackbarColor };
+
   if (payload.class?.id) {
     payload.class = payload.class.id;
   }
@@ -381,9 +316,9 @@ async function handleSubmit() {
       console.log('Error parsing date:', e);
       const errText = e.response?.data?.error?.toString() || e.toString();
 
-      snackbarText.value = (t('edit.error') || 'Error') + ' - ' + errText;
-      snackbarColor.value = 'error';
-      snackbar.value = true;
+      snackbarO.text.value = (t('edit.error') || 'Error') + ' - ' + errText;
+      snackbarO.color.value = 'error';
+      snackbarO.ref.value = true;
       return;
     }
 
@@ -393,9 +328,9 @@ async function handleSubmit() {
   // add/update
   let ok = false;
   if (editing.value) {
-    ok = await update(payload);
+    ok = await ComponentsUtils.Edit.update(props.apiFn, editingItemID.value, payload, snackbarO, t);
   } else {
-    ok = await add(payload);
+    ok = await ComponentsUtils.Edit.add(props.apiFn, payload, snackbarO, t);
   }
 
   if (ok) {
@@ -403,54 +338,6 @@ async function handleSubmit() {
     resetForm();
 
     emit('save');
-  }
-}
-
-/**
- * add
- */
-async function add(payload) {
-  try {
-    await props.apiFn.create(payload);
-
-    snackbarText.value = t('add.success') || 'Added';
-    snackbarColor.value = 'success';
-    snackbar.value = true;
-
-    return true;
-  } catch (e) {
-    console.error('Error adding:', e);
-    const errText = e.response?.data?.error?.toString() || e.toString();
-
-    snackbarText.value = (t('add.error') || 'Error adding') + ' - ' + errText;
-    snackbarColor.value = 'error';
-    snackbar.value = true;
-
-    return false;
-  }
-}
-
-/**
- * update
- */
-async function update(payload) {
-  try {
-    await props.apiFn.update(editingItemID.value, payload);
-
-    snackbarText.value = t('update.success') || 'Updated';
-    snackbarColor.value = 'success';
-    snackbar.value = true;
-
-    return true;
-  } catch (e) {
-    console.error('Error updating:', e);
-    const errText = e.response?.data?.error?.toString() || e.toString();
-
-    snackbarText.value = (t('update.error') || 'Error updating') + ' - ' + errText;
-    snackbarColor.value = 'error';
-    snackbar.value = true;
-
-    return false;
   }
 }
 
@@ -517,7 +404,6 @@ function openEdit(item) {
 
   resetForm();
   fieldsSet.value = new Set(props.editFields);
-  Object.keys(itemData).forEach((k) => delete itemData[k]);
 
   // set
   if (fieldsSet.value.has('name') || fieldsSet.value.has('user.name')) {
@@ -568,7 +454,6 @@ function openEdit(item) {
 function closeDialog() {
   dialog.value = false;
   resetForm();
-  fieldsSet.value = new Set([]);
 
   emit('cancel');
 }
@@ -578,6 +463,7 @@ function closeDialog() {
  */
 function resetForm() {
   Object.keys(itemData).forEach((k) => delete itemData[k]);
+  fieldsSet.value = new Set([]);
 
   editing.value = false;
   editingItemID.value = null;
