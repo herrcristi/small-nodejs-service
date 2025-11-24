@@ -124,8 +124,6 @@ const tableServer = ref();
 const details = null; // true for details column
 const expand = null; // true for expand column
 
-// const editDialog = ref();
-
 const app = useAppStore();
 const read = app?.rolesPermissions?.classes?.read || 0;
 const write = app?.rolesPermissions?.classes?.write || 0;
