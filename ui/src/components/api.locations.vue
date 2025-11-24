@@ -155,7 +155,7 @@ const addressRule = (v) => ComponentsUtils.Edit.Rules.address(v, t);
 /**
  * ApiTableServer event open details
  */
-function openDetails(itemID) {
+function openDetails(item) {
   // noop
 }
 

@@ -107,6 +107,19 @@ async function updateFieldStudents(newIDs, removeIDs) {
   // refresh
   await detailsComponent.value.refresh();
 }
+
+/**
+ * clear
+ */
+function clear() {
+  fieldStudents.value = [];
+  fieldDetailsStudentsComponent.value.clear();
+}
+
+/**
+ * expose
+ */
+defineExpose({ clear });
 </script>
 
 <style scoped></style>

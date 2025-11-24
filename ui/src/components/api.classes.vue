@@ -185,7 +185,7 @@ const requiredRule = (v) => ComponentsUtils.Edit.Rules.required(v, t);
 /**
  * ApiTableServer event open details
  */
-function openDetails(itemID) {
+function openDetails(item) {
   // noop
 }
 

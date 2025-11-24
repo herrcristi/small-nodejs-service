@@ -260,8 +260,8 @@ const emit = defineEmits(['openDetails']);
 /**
  * ApiTableServer event open details
  */
-function openDetails(itemID) {
-  emit('openDetails', itemID);
+function openDetails(item) {
+  emit('openDetails', item);
 }
 
 /**

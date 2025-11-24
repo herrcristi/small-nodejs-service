@@ -76,7 +76,7 @@
     <!-- details column (icon) -->
     <template v-slot:item.details="{ item }">
       <slot name="item.details" :item="item">
-        <v-btn v-if="props.details" icon small @click.stop="openDetails(item.id)" :title="t('details')">
+        <v-btn v-if="props.details" icon small @click.stop="openDetails(item)" :title="t('details')">
           <v-icon color="primary" class="mr-2" size="small">mdi-information-outline</v-icon>
           <!-- <v-icon color="primary">mdi-chevron-right</v-icon> -->
         </v-btn>
@@ -526,8 +526,8 @@ function openEdit(item) {
 /**
  * select details
  */
-function openDetails(itemID) {
-  emit('detailsItem', itemID);
+function openDetails(item) {
+  emit('detailsItem', item);
 }
 
 /**
