@@ -52,7 +52,7 @@
             <v-form ref="editForm" v-model="formValid">
               <slot name="edit.name" :itemData="itemData" :fieldsSet="fieldsSet">
                 <v-text-field
-                  v-if="fieldsSet.has('name')"
+                  v-if="fieldsSet.has('user.name')"
                   v-model="itemData.name"
                   :label="t('name')"
                   :rules="[nameRule]"
@@ -62,7 +62,7 @@
 
               <slot name="edit.status" :itemData="itemData" :fieldsSet="fieldsSet">
                 <v-select
-                  v-if="fieldsSet.has('status')"
+                  v-if="fieldsSet.has('user.status')"
                   v-model="itemData.status"
                   :items="statusItems"
                   item-title="title"
@@ -73,36 +73,12 @@
                 />
               </slot>
 
-              <slot name="edit.description" :itemData="itemData" :fieldsSet="fieldsSet">
+              <slot name="edit.email" :itemData="itemData" :fieldsSet="fieldsSet">
                 <v-text-field
-                  v-if="fieldsSet.has('description')"
-                  v-model="itemData.description"
-                  :label="t('description')"
-                  required
-                />
-              </slot>
-
-              <slot name="edit.credits" :itemData="itemData" :fieldsSet="fieldsSet">
-                <v-text-field
-                  v-if="fieldsSet.has('credits')"
-                  v-model.number="itemData.credits"
-                  type="number"
-                  :label="t('credits')"
-                  :rules="[creditsRule]"
-                  min="1"
-                  required
-                />
-              </slot>
-
-              <slot name="edit.required" :itemData="itemData" :fieldsSet="fieldsSet">
-                <v-select
-                  v-if="fieldsSet.has('required')"
-                  v-model="itemData.required"
-                  :items="requiredItems"
-                  item-title="title"
-                  item-value="value"
-                  :label="t('required')"
-                  :rules="[requiredRule]"
+                  v-if="fieldsSet.has('user.email')"
+                  v-model="itemData.email"
+                  :label="t('email')"
+                  :rules="[emailRule]"
                   required
                 />
               </slot>
@@ -140,7 +116,7 @@ const { t } = useI18n();
  */
 const tableServer = ref();
 const details = null; // true for details column
-const expand = null; // true for expand column
+const expand = true; // true for expand column
 
 const auth = useAuthStore();
 const currentUserID = auth?.raw?.id;
@@ -195,8 +171,7 @@ const statusItems = computed(() =>
  */
 const nameRule = (v) => ComponentsUtils.Edit.Rules.name(v, t);
 const statusRule = (v) => ComponentsUtils.Edit.Rules.status(v, t);
-const creditsRule = (v) => ComponentsUtils.Edit.Rules.credits(v, t);
-const requiredRule = (v) => ComponentsUtils.Edit.Rules.required(v, t);
+const emailRule = (v) => ComponentsUtils.Edit.Rules.email(v, t);
 
 /**
  * ApiTableServer event open details
@@ -252,14 +227,8 @@ function openAdd() {
   fieldsSet.value = new Set(apiFields.addFields);
 
   // defaults for new
-  if (fieldsSet.value.has('status')) {
+  if (fieldsSet.value.has('user.status')) {
     itemData.status = 'active';
-  }
-  if (fieldsSet.value.has('credits')) {
-    itemData.credits = 0;
-  }
-  if (fieldsSet.value.has('required')) {
-    itemData.required = 'required';
   }
 
   editing.value = false;
@@ -278,20 +247,14 @@ function openEdit(item) {
   fieldsSet.value = new Set(apiFields.editFields);
 
   // set
-  if (fieldsSet.value.has('name')) {
-    itemData.name = item.name || '';
+  if (fieldsSet.value.has('user.name')) {
+    itemData.name = item.user?.name || '';
   }
-  if (fieldsSet.value.has('status')) {
-    itemData.status = item.status || 'active';
+  if (fieldsSet.value.has('user.status')) {
+    itemData.status = item.user?.status || 'active';
   }
-  if (fieldsSet.value.has('description')) {
-    itemData.description = item.description || '';
-  }
-  if (fieldsSet.value.has('credits')) {
-    itemData.credits = Number(item.credits || 0);
-  }
-  if (fieldsSet.value.has('required')) {
-    itemData.required = item.required || 'required';
+  if (fieldsSet.value.has('user.email')) {
+    itemData.email = item.user?.email || '';
   }
 
   editing.value = true;
