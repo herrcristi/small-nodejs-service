@@ -144,7 +144,7 @@ const details = true; // true for details column
 const expand = true; // true for expand column
 
 const app = useAppStore();
-const read = 0; //app?.rolesPermissions?.schedules?.read || 0;
+const read = app?.rolesPermissions?.schedules?.read || 0;
 const write = app?.rolesPermissions?.schedules?.write || 0;
 
 /**
