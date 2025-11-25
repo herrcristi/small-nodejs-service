@@ -332,22 +332,22 @@ async function updateFieldExtraStudents(newIDs, removeIDs) {
  */
 function clear() {
   fieldDetailsClassesComponent.value.clear();
-  fieldClasses = [];
+  fieldClasses.value = [];
 
   fieldDetailsInnerSchedulesComponent.value.clear();
-  fieldInnerSchedules = [];
+  fieldInnerSchedules.value = [];
 
   fieldDetailsGroupsComponent.value.clear();
-  fieldGroups = [];
+  fieldGroups.value = [];
 
   fieldDetailsProfessorsComponent.value.clear();
-  fieldProfessors = [];
+  fieldProfessors.value = [];
 
   fieldDetailsGroupsStudentsComponent.value.clear();
-  fieldGroupsStudents = [];
+  fieldGroupsStudents.value = [];
 
   fieldDetailsExtraStudentsComponent.value.clear();
-  fieldExtraStudents = [];
+  fieldExtraStudents.value = [];
 }
 
 /**
