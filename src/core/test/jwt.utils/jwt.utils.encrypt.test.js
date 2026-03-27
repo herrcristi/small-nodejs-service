@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 
-const mocha = require('mocha');
 const assert = require('assert');
 const chai = require('chai');
 const sinon = require('sinon');

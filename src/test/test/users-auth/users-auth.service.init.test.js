@@ -1,6 +1,5 @@
 const _ = require('lodash');
 const crypto = require('crypto');
-const mocha = require('mocha');
 const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
