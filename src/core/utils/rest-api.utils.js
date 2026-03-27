@@ -1,7 +1,7 @@
 /**
  * Rest api utils
  */
-const Aqs = require('api-query-params');
+const Aqp = require('api-query-params').default;
 const Joi = require('joi');
 
 const CommonUtils = require('./common.utils.js');
@@ -68,7 +68,7 @@ const Public = {
   buildFilterFromReq: async (req, config, _ctx) => {
     try {
       // convert query to mongo build
-      let filter = Aqs(req.query, {
+      let filter = Aqp(req.query, {
         projectionKey: 'projection',
       });
 
