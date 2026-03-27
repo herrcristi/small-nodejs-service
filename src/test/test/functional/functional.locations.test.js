@@ -2,8 +2,7 @@ const _ = require('lodash');
 const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const chaiHttp = require('chai-http');
-chai.use(chaiHttp);
+const supertest = require('supertest');
 
 const TestConstants = require('../../test-constants.js');
 
@@ -42,8 +41,7 @@ describe('Locations Functional', function () {
     const testLocations = _.cloneDeep(TestConstants.Locations);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${LocationsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -71,8 +69,7 @@ describe('Locations Functional', function () {
     const testLocation = testLocations[0];
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -96,8 +93,7 @@ describe('Locations Functional', function () {
     delete testLocation._lang_en;
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${LocationsConstants.ApiPath}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -129,8 +125,7 @@ describe('Locations Functional', function () {
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${LocationsConstants.ApiPath}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -153,8 +148,7 @@ describe('Locations Functional', function () {
 
     // do a get
     testLocation.id = res.body.id;
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -182,8 +176,7 @@ describe('Locations Functional', function () {
     delete testLocation._lang_en;
 
     // call put first to update users
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${LocationsConstants.ApiPath}/${testLocationID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -198,8 +191,7 @@ describe('Locations Functional', function () {
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
     // call
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .delete(`${LocationsConstants.ApiPath}/${testLocationID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -217,8 +209,7 @@ describe('Locations Functional', function () {
 
     // do a get
     testLocation.id = res.body.id;
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -246,8 +237,7 @@ describe('Locations Functional', function () {
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${LocationsConstants.ApiPath}/${testLocationID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -266,8 +256,7 @@ describe('Locations Functional', function () {
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
     // do a get
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${LocationsConstants.ApiPath}/${testLocationID}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -294,8 +283,7 @@ describe('Locations Functional', function () {
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${LocationsConstants.ApiPath}/${testLocationID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -314,8 +302,7 @@ describe('Locations Functional', function () {
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
     // do a get
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${LocationsConstants.ApiPath}/${testLocationID}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);

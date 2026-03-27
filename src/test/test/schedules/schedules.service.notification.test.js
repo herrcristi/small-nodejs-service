@@ -2,8 +2,8 @@ const _ = require('lodash');
 const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const chaiHttp = require('chai-http');
-chai.use(chaiHttp);
+const supertest = require('supertest');
+
 
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');

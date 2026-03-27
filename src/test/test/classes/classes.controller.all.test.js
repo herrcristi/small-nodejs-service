@@ -2,8 +2,7 @@ const _ = require('lodash');
 const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const chaiHttp = require('chai-http');
-chai.use(chaiHttp);
+const supertest = require('supertest');
 
 const TestConstants = require('../../test-constants.js');
 const ClassesConstants = require('../../../services/classes/classes.constants.js');
@@ -53,8 +52,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -91,8 +89,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -117,8 +114,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -142,8 +138,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -174,8 +169,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -207,8 +201,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}/${testClass.id}?projection=id,name`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -235,8 +228,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -261,8 +253,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -287,8 +278,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -317,8 +307,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${ClassesConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ ...testClass });
@@ -346,8 +335,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${ClassesConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ ...testClass });
@@ -373,8 +361,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${ClassesConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ ...testClass });
@@ -404,8 +391,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .delete(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -432,8 +418,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .delete(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -458,8 +443,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .delete(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -488,8 +472,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ ...testClass });
@@ -517,8 +500,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ ...testClass });
@@ -544,8 +526,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ ...testClass });
@@ -575,8 +556,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ set: { ...testClass } });
@@ -604,8 +584,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ set: { ...testClass } });
@@ -631,8 +610,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ set: { ...testClass } });
@@ -662,8 +640,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${ClassesConstants.ApiPathInternal}/notifications`)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -688,8 +665,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${ClassesConstants.ApiPathInternal}/notifications`)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -714,8 +690,7 @@ describe('Classes Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${ClassesConstants.ApiPathInternal}/notifications`)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);

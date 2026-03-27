@@ -2,8 +2,7 @@ const _ = require('lodash');
 const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const chaiHttp = require('chai-http');
-chai.use(chaiHttp);
+const supertest = require('supertest');
 
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
@@ -44,8 +43,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPath}/login`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -73,8 +71,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPath}/login`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -99,8 +96,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPath}/login`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -126,7 +122,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).post(`${UsersAuthConstants.ApiPath}/logout`).send({});
+    let res = await supertest(TestConstants.WebServer).post(`${UsersAuthConstants.ApiPath}/logout`).send({});
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -149,7 +145,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).post(`${UsersAuthConstants.ApiPath}/logout`).send({});
+    let res = await supertest(TestConstants.WebServer).post(`${UsersAuthConstants.ApiPath}/logout`).send({});
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -169,7 +165,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).post(`${UsersAuthConstants.ApiPath}/logout`).send({});
+    let res = await supertest(TestConstants.WebServer).post(`${UsersAuthConstants.ApiPath}/logout`).send({});
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -201,8 +197,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
       .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -238,8 +233,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
       .set('authorization', `Bearer ${UsersAuthConstants.AuthToken}=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -267,8 +261,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
       .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -294,8 +287,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
       .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -328,8 +320,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPath}/logout`)
       .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -363,8 +354,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPath}/logout`)
       .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -396,8 +386,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
       .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -430,8 +419,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPathInternal}/validate`)
       .set('cookie', `${UsersAuthConstants.AuthToken}=${testUser.token}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -466,8 +454,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPathInternal}`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -499,8 +486,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPathInternal}`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -530,8 +516,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPathInternal}`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -560,7 +545,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).delete(`${UsersAuthConstants.ApiPath}/${testUser.id}`);
+    let res = await supertest(TestConstants.WebServer).delete(`${UsersAuthConstants.ApiPath}/${testUser.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -585,7 +570,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).delete(`${UsersAuthConstants.ApiPath}/${testUser.id}`);
+    let res = await supertest(TestConstants.WebServer).delete(`${UsersAuthConstants.ApiPath}/${testUser.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -608,7 +593,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai.request(TestConstants.WebServer).delete(`${UsersAuthConstants.ApiPath}/${testUser.id}`);
+    let res = await supertest(TestConstants.WebServer).delete(`${UsersAuthConstants.ApiPath}/${testUser.id}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -635,8 +620,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${UsersAuthConstants.ApiPath}/${testUser.id}/password`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -663,8 +647,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${UsersAuthConstants.ApiPath}/${testUser.id}/password`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -689,8 +672,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${UsersAuthConstants.ApiPath}/${testUser.id}/password`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -719,8 +701,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPath}/reset-password`)
       .send({ id: testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -747,8 +728,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPath}/reset-password`)
       .send({ id: testUser.id });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -773,8 +753,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPath}/reset-password`)
       .send({ id: testUser.id });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -803,8 +782,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPath}/reset-token/validate?token=token`)
       .send({ id: testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -831,9 +809,9 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .get(`${UsersAuthConstants.ApiPath}/reset-token/validate?token=token`);
+    let res = await supertest(TestConstants.WebServer).get(
+      `${UsersAuthConstants.ApiPath}/reset-token/validate?token=token`
+    );
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -856,9 +834,9 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
-      .get(`${UsersAuthConstants.ApiPath}/reset-token/validate?token=token`);
+    let res = await supertest(TestConstants.WebServer).get(
+      `${UsersAuthConstants.ApiPath}/reset-token/validate?token=token`
+    );
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -885,8 +863,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${UsersAuthConstants.ApiPath}/reset-token/password`)
       .set('x-reset-token', 'token')
       .send({ password: 'password' });
@@ -914,8 +891,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${UsersAuthConstants.ApiPath}/reset-token/password`)
       .set('x-reset-token', 'token')
       .send({ password: 'password' });
@@ -941,8 +917,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${UsersAuthConstants.ApiPath}/reset-token/password`)
       .set('x-reset-token', 'token')
       .send({ password: 'password' });
@@ -972,8 +947,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${UsersAuthConstants.ApiPath}/${testUser.id}/id`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -1002,8 +976,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${UsersAuthConstants.ApiPath}/${testUser.id}/id`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -1028,8 +1001,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${UsersAuthConstants.ApiPath}/${testUser.id}/id`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -1058,8 +1030,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/password`)
       .send({ set: { ...testUser } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -1086,8 +1057,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/password`)
       .send({ set: { ...testUser } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -1112,8 +1082,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/password`)
       .send({ set: { ...testUser } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -1142,8 +1111,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/id`)
       .send({ set: { ...testUser } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -1172,8 +1140,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/id`)
       .send({ set: { ...testUser } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -1198,8 +1165,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/id`)
       .send({ set: { ...testUser } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -1228,8 +1194,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/school/user/userID`)
       .send({ set: { ...testUser } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -1256,8 +1221,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/school/user/userID`)
       .send({ set: { ...testUser } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -1282,8 +1246,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${UsersAuthConstants.ApiPath}/${testUser.id}/school/user/userID`)
       .send({ set: { ...testUser } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -1317,8 +1280,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPathInternal}/notifications`)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -1348,8 +1310,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPathInternal}/notifications`)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -1379,8 +1340,7 @@ describe('Users Auth Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPathInternal}/notifications`)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);

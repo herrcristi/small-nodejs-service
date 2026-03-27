@@ -1,8 +1,7 @@
 const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const chaiHttp = require('chai-http');
-chai.use(chaiHttp);
+const supertest = require('supertest');
 
 const express = require('express');
 
@@ -48,7 +47,7 @@ describe('Web Server', function () {
     // check
     chai.expect(web.app.mountpath).to.equal('/');
 
-    let res = await chai.request(`http://localhost:${port}`).get(`${path}`);
+    let res = await supertest(`http://localhost:${port}`).get(`${path}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.status).to.equal(200);
