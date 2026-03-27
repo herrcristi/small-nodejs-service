@@ -2,8 +2,7 @@ const _ = require('lodash');
 const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const chaiHttp = require('chai-http');
-chai.use(chaiHttp);
+const supertest = require('supertest');
 
 const TestConstants = require('../../test-constants.js');
 
@@ -42,8 +41,7 @@ describe('Classes Functional', function () {
     const testClasses = _.cloneDeep(TestConstants.Classes);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -71,8 +69,7 @@ describe('Classes Functional', function () {
     const testClass = testClasses[0];
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -96,8 +93,7 @@ describe('Classes Functional', function () {
     delete testClass._lang_en;
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${ClassesConstants.ApiPath}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -129,8 +125,7 @@ describe('Classes Functional', function () {
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${ClassesConstants.ApiPath}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -153,8 +148,7 @@ describe('Classes Functional', function () {
 
     // do a get
     testClass.id = res.body.id;
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -182,8 +176,7 @@ describe('Classes Functional', function () {
     delete testClass._lang_en;
 
     // call put first to update users
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${ClassesConstants.ApiPath}/${testClassID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -198,8 +191,7 @@ describe('Classes Functional', function () {
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
     // call
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .delete(`${ClassesConstants.ApiPath}/${testClassID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -217,8 +209,7 @@ describe('Classes Functional', function () {
 
     // do a get
     testClass.id = res.body.id;
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}/${testClass.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -246,8 +237,7 @@ describe('Classes Functional', function () {
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${ClassesConstants.ApiPath}/${testClassID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -266,8 +256,7 @@ describe('Classes Functional', function () {
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
     // do a get
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}/${testClassID}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -294,8 +283,7 @@ describe('Classes Functional', function () {
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${ClassesConstants.ApiPath}/${testClassID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -314,8 +302,7 @@ describe('Classes Functional', function () {
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
     // do a get
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}/${testClassID}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);

@@ -2,8 +2,8 @@ const _ = require('lodash');
 const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const chaiHttp = require('chai-http');
-chai.use(chaiHttp);
+const supertest = require('supertest');
+
 
 const DBMgr = require('../../../core/utils/database-manager.utils.js');
 const DBOpsUtils = require('../../../core/utils/db-ops.utils.js');

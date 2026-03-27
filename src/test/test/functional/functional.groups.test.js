@@ -2,8 +2,7 @@ const _ = require('lodash');
 const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const chaiHttp = require('chai-http');
-chai.use(chaiHttp);
+const supertest = require('supertest');
 
 const TestConstants = require('../../test-constants.js');
 
@@ -43,8 +42,7 @@ describe('Groups Functional', function () {
     const testGroups = _.cloneDeep(TestConstants.Groups);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -72,8 +70,7 @@ describe('Groups Functional', function () {
     const testGroup = testGroups[0];
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroup.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -99,8 +96,7 @@ describe('Groups Functional', function () {
     testGroup.students = [{ id: testGroup.students[0].id }];
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${GroupsConstants.ApiPath}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -138,8 +134,7 @@ describe('Groups Functional', function () {
     chai.expect(studentsBefore.groups.length).to.equal(1);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${GroupsConstants.ApiPath}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -170,8 +165,7 @@ describe('Groups Functional', function () {
 
     // do a get
     testGroup.id = res.body.id;
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroup.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -203,8 +197,7 @@ describe('Groups Functional', function () {
     chai.expect(studentsBefore.groups.length).to.equal(1);
 
     // call
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .delete(`${GroupsConstants.ApiPath}/${testGroupID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -227,8 +220,7 @@ describe('Groups Functional', function () {
 
     // do a get
     testGroup.id = res.body.id;
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroup.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -262,8 +254,7 @@ describe('Groups Functional', function () {
     chai.expect(studentsBefore.groups.length).to.equal(1);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${GroupsConstants.ApiPath}/${testGroupID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -290,8 +281,7 @@ describe('Groups Functional', function () {
     chai.expect(studentsAfter.groups.length).to.equal(1);
 
     // do a get
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroupID}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -324,8 +314,7 @@ describe('Groups Functional', function () {
     chai.expect(studentsBefore.groups.length).to.equal(1);
 
     // call to remove students
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${GroupsConstants.ApiPath}/${testGroupID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -352,8 +341,7 @@ describe('Groups Functional', function () {
     chai.expect(studentsAfter.groups.length).to.equal(0);
 
     // call again and add student
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .put(`${GroupsConstants.ApiPath}/${testGroupID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -380,8 +368,7 @@ describe('Groups Functional', function () {
     chai.expect(studentsAfter.groups.length).to.equal(1);
 
     // do a get
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroupID}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -414,8 +401,7 @@ describe('Groups Functional', function () {
     chai.expect(studentsBefore.groups.length).to.equal(1);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${GroupsConstants.ApiPath}/${testGroupID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -444,8 +430,7 @@ describe('Groups Functional', function () {
     chai.expect(studentsAfter.groups.length).to.equal(1);
 
     // do a get
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroupID}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);

@@ -2,8 +2,8 @@ const _ = require('lodash');
 const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const chaiHttp = require('chai-http');
-chai.use(chaiHttp);
+const supertest = require('supertest');
+
 
 const TestConstants = require('../../test-constants.js');
 const EventsConstants = require('../../../services/events/events.constants.js');

@@ -2,8 +2,7 @@ const _ = require('lodash');
 const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const chaiHttp = require('chai-http');
-chai.use(chaiHttp);
+const supertest = require('supertest');
 
 const TestConstants = require('../../test-constants.js');
 
@@ -46,8 +45,7 @@ describe('Schedules Functional', function () {
     const testSchedules = _.cloneDeep(TestConstants.Schedules);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${SchedulesConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -75,8 +73,7 @@ describe('Schedules Functional', function () {
     const testSchedule = testSchedules[0];
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${SchedulesConstants.ApiPath}/${testSchedule.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -100,8 +97,7 @@ describe('Schedules Functional', function () {
     delete testSchedule._lang_en;
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${SchedulesConstants.ApiPath}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -158,8 +154,7 @@ describe('Schedules Functional', function () {
     chai.expect(studentsBefore.schedules.length).to.equal(1);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${SchedulesConstants.ApiPath}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -206,8 +201,7 @@ describe('Schedules Functional', function () {
 
     // do a get
     testSchedule.id = res.body.id;
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${SchedulesConstants.ApiPath}/${testSchedule.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -271,8 +265,7 @@ describe('Schedules Functional', function () {
     chai.expect(studentsBefore.schedules.length).to.equal(1);
 
     // call
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .delete(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -307,8 +300,7 @@ describe('Schedules Functional', function () {
 
     // do a get
     testSchedule.id = res.body.id;
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${SchedulesConstants.ApiPath}/${testSchedule.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -355,8 +347,7 @@ describe('Schedules Functional', function () {
     chai.expect(studentsBefore.schedules.length).to.equal(1);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -398,8 +389,7 @@ describe('Schedules Functional', function () {
     chai.expect(studentsAfter.schedules.length).to.equal(1);
 
     // do a get
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -445,8 +435,7 @@ describe('Schedules Functional', function () {
     chai.expect(studentsBefore.schedules.length).to.equal(1);
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
@@ -490,8 +479,7 @@ describe('Schedules Functional', function () {
     chai.expect(studentsAfter.schedules.length).to.equal(1);
 
     // do a get
-    res = await chai
-      .request(TestConstants.WebServer)
+    res = await supertest(TestConstants.WebServer)
       .get(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);

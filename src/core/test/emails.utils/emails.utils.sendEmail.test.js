@@ -4,8 +4,8 @@ const crypto = require('crypto');
 const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const chaiHttp = require('chai-http');
-chai.use(chaiHttp);
+const supertest = require('supertest');
+
 
 const CommonUtils = require('../../utils/common.utils.js');
 const EmailsUtils = require('../../utils/emails.utils.js');

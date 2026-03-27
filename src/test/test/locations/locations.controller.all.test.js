@@ -2,8 +2,7 @@ const _ = require('lodash');
 const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const chaiHttp = require('chai-http');
-chai.use(chaiHttp);
+const supertest = require('supertest');
 
 const TestConstants = require('../../test-constants.js');
 const LocationsConstants = require('../../../services/locations/locations.constants.js');
@@ -53,8 +52,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${LocationsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -91,8 +89,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${LocationsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -117,8 +114,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${LocationsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -142,8 +138,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${LocationsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -174,8 +169,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -207,8 +201,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${LocationsConstants.ApiPath}/${testLocation.id}?projection=id,name`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -235,8 +228,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -261,8 +253,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -287,8 +278,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .get(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -317,8 +307,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${LocationsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ ...testLocation });
@@ -346,8 +335,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${LocationsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ ...testLocation });
@@ -373,8 +361,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${LocationsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ ...testLocation });
@@ -404,8 +391,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .delete(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -432,8 +418,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .delete(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -458,8 +443,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .delete(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -488,8 +472,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ ...testLocation });
@@ -517,8 +500,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ ...testLocation });
@@ -544,8 +526,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .put(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ ...testLocation });
@@ -575,8 +556,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ set: { ...testLocation } });
@@ -604,8 +584,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ set: { ...testLocation } });
@@ -631,8 +610,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .patch(`${LocationsConstants.ApiPath}/${testLocation.id}`)
       .set('x-tenant-id', _ctx.tenantID)
       .send({ set: { ...testLocation } });
@@ -662,8 +640,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${LocationsConstants.ApiPathInternal}/notifications`)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -688,8 +665,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${LocationsConstants.ApiPathInternal}/notifications`)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -714,8 +690,7 @@ describe('Locations Controller', function () {
     });
 
     // call
-    let res = await chai
-      .request(TestConstants.WebServer)
+    let res = await supertest(TestConstants.WebServer)
       .post(`${LocationsConstants.ApiPathInternal}/notifications`)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
