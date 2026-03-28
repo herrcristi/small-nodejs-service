@@ -154,7 +154,7 @@ function goProfile() {
  * tenants
  */
 function goTenants() {
-  const current = window.location.pathname + window.location.search;
+  const current = globalThis.location.pathname + globalThis.location.search;
   const tenantID = appStore?.tenantID;
   router.push(`/tenants?tenantID=${encodeURIComponent(tenantID || '')}&next=${encodeURIComponent(current)}`);
 }
@@ -164,7 +164,7 @@ function goTenants() {
  */
 async function doLogout() {
   // save next and tenant to re-use after logout redirect
-  const current = window.location.pathname + window.location.search;
+  const current = globalThis.location.pathname + globalThis.location.search;
   const tenantID = appStore?.tenantID;
   try {
     await Api.logout(false);

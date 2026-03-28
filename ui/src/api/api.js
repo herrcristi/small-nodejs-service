@@ -78,7 +78,7 @@ instance.interceptors.response.use(
               return Promise.reject(rLogin.error.error);
             }
 
-            const newToken = r.token;
+            const newToken = rLogin.token;
             Refresh.processQueue(null, newToken);
             Refresh.isRefreshing = false;
             return instance(originalRequest);
@@ -86,10 +86,10 @@ instance.interceptors.response.use(
             Refresh.processQueue(refreshErr, null);
             Refresh.isRefreshing = false;
             // redirect to login
-            const current = window.location.pathname + window.location.search;
+            const current = globalThis.location.pathname + globalThis.location.search;
             const tenantID = useAppStore()?.tenantID;
             const loginUrl = `/login?tenantID=${encodeURIComponent(tenantID)}&next=${encodeURIComponent(current)}`;
-            window.location.href = loginUrl;
+            globalThis.location.href = loginUrl;
 
             return Promise.reject(refreshErr);
           }
@@ -112,12 +112,12 @@ instance.interceptors.response.use(
 
     try {
       if (err.response?.status === 401) {
-        const current = window.location.pathname + window.location.search;
+        const current = globalThis.location.pathname + globalThis.location.search;
         const tenantID = useAppStore()?.tenantID;
 
         if (!current.startsWith('/login')) {
           const loginUrl = `/login?tenantID=${encodeURIComponent(tenantID)}&next=${encodeURIComponent(current)}`;
-          window.location.href = loginUrl;
+          globalThis.location.href = loginUrl;
         }
       }
     } catch (e) {}
