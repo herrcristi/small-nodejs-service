@@ -63,6 +63,21 @@ const error = ref(null);
 const valid = ref(true);
 const router = useRouter();
 
+/**
+ * only allow relative URLs starting with /
+ */
+function isValidRedirectUrl(url) {
+  try {
+    const decoded = decodeURIComponent(url);
+    return decoded.startsWith('/') && !decoded.includes('://');
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * submit login form
+ */
 async function submit() {
   error.value = null;
   if (!username.value || !password.value) {
@@ -84,10 +99,13 @@ async function submit() {
       throw new Error('Authentication failed');
     }
 
+    // only allow relative URLs starting with /
+    const nextUrl = isValidRedirectUrl(props.next) ? props.next : '/';
+
     // if tenant already selected, redirect to next
     if (r.tenantID) {
       // if tenant changed, reset next to /
-      const target = props.next || '/';
+      let target = nextUrl;
       if (props.tenantID && props.tenantID !== r.tenantID) {
         target = '/';
       }
@@ -96,7 +114,7 @@ async function submit() {
     } else {
       // redirect to tenant selection page and pass next
       const tenantIDParam = props.tenantID ? encodeURIComponent(props.tenantID) : '';
-      const nextParam = encodeURIComponent(props.next || '/');
+      const nextParam = encodeURIComponent(nextUrl);
       router.push(`/tenants?tenantID=${tenantIDParam}&next=${nextParam}`);
     }
   } catch (e) {

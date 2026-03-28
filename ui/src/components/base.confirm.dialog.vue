@@ -6,7 +6,7 @@
       <v-spacer />
 
       <v-card-text>
-        <div v-html="translatedMessage"></div>
+        <div>{{ translatedMessage }}</div>
       </v-card-text>
 
       <v-spacer />
