@@ -32,7 +32,7 @@ const Validators = {
     sort: { 'user.name': 1 },
   },
 
-  Post: Schema.Admin.fork([], (x) => x.required() /*make required */).keys({
+  Post: Schema.Admin.fork([]).keys({
     id: Joi.string().min(1).max(64).required(),
     type: Joi.string().valid(AdminsConstants.Type),
   }),

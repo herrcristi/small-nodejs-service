@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
@@ -16,7 +15,7 @@ const AdminsRest = require('../../../services/rest/admins.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
 describe('Admins Service', function () {
-  const tenantID = _.cloneDeep(TestConstants.Schools[0].id);
+  const tenantID = _.cloneDeep(TestConstants.Schools[1].id);
   const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Admins' };
 
   before(async function () {});
@@ -82,7 +81,7 @@ describe('Admins Service', function () {
 
     let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
       console.log(`\nNotificationsUtils.notification called\n`);
-      chai.expect(ctx.tenantID).to.equal(notif.modified[0].schools[0].id);
+      chai.expect(ctx.tenantID).to.equal(notif.modified[0].schools[1].id);
       return {
         status: 200,
         value: true,
@@ -163,7 +162,7 @@ describe('Admins Service', function () {
 
     let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
       console.log(`\nNotificationsUtils.notification called with ${JSON.stringify(notification, null, 2)}\n`);
-      chai.expect(ctx.tenantID).to.equal(notif.added[0].schools[0].id);
+      chai.expect(ctx.tenantID).to.equal(notif.added[0].schools[1].id);
       return {
         status: 200,
         value: true,
@@ -215,7 +214,7 @@ describe('Admins Service', function () {
 
     let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
       console.log(`\nNotificationsUtils.notification called ${JSON.stringify(notification, null, 2)}\n`);
-      chai.expect(ctx.tenantID).to.equal(notif.removed[0].schools[0].id);
+      chai.expect(ctx.tenantID).to.equal(notif.removed[0].schools[1].id);
 
       chai.expect(notification.modified[0].status).to.equal(UsersRest.Constants.Status.Disabled);
 
