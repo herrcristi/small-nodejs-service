@@ -246,6 +246,11 @@ function openEdit(item) {
   resetForm();
   fieldsSet.value = new Set(apiFields.editFields);
 
+  // remove status if current user is editing himself to prevent accidentally disabling himself
+  if (currentUserID == item.id) {
+    fieldsSet.value.delete('user.status');
+  }
+
   // set
   if (fieldsSet.value.has('user.name')) {
     itemData.name = item.user?.name || '';
