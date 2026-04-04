@@ -247,6 +247,43 @@ const Public = {
   ],
 
   /**
+   * Admins
+   */
+  Admins: [
+    {
+      id: 'user1',
+      user: {
+        id: 'user1',
+        name: 'Big Ben',
+        type: 'user',
+        status: 'active',
+        email: 'big.ben@testdomain.test',
+      },
+      type: 'admin',
+    },
+  ],
+
+  AdminsNotifications: [
+    {
+      serviceName: 'admins',
+      modified: [
+        {
+          id: 'user1',
+          user: {
+            id: 'user1',
+            name: 'Big Ben',
+            type: 'user',
+            status: 'active',
+            email: 'big.ben@testdomain.test',
+          },
+          name: 'Big Ben',
+          type: 'admin',
+          status: 'active',
+        },
+      ],
+    },
+  ],
+  /**
    * students
    */
   Students: [

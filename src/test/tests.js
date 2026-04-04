@@ -14,6 +14,7 @@ require('./test/users/users.all.tests.js');
 require('./test/schools/schools.all.tests.js');
 require('./test/events/events.all.tests.js');
 
+require('./test/admins/admins.all.tests.js');
 require('./test/students/students.all.tests.js');
 require('./test/professors/professors.all.tests.js');
 require('./test/classes/classes.all.tests.js');
