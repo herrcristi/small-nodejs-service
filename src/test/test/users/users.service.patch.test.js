@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
@@ -203,9 +202,9 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * patch fail patch
+   * patch fail patch db
    */
-  it('should patch fail patch', async () => {
+  it('should patch fail patch db', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
@@ -251,6 +250,60 @@ describe('Users Service', function () {
       error: {
         message: 'Test error message',
         error: 'Error: Test error',
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * patch fail patch status disable for current user
+   */
+  it('should patch fail patch status disable for current user', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
+
+    const patchReq = {
+      set: {
+        ...testUser,
+        status: UsersConstants.Status.Disabled,
+      },
+    };
+    delete patchReq.set.id;
+    delete patchReq.set.type;
+    delete patchReq.set.email;
+    delete patchReq.set.schools;
+    delete patchReq.set._lang_en;
+
+    // stub
+    let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.get called`);
+      return {
+        status: 200,
+        value: { ...testUser },
+      };
+    });
+
+    let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
+      return { status: 200, value: true };
+    });
+
+    let stubBase = sinon.stub(DbOpsUtils, 'patch').callsFake((config, objID, patchObj) => {
+      console.log(`\nDbOpsUtils.patch called`);
+      return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await UsersService.patch(testUser.id, patchReq, { _ctx, userID: testUser.id });
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubGet.callCount).to.equal(0);
+    chai.expect(stubPopulateReferences.callCount).to.equal(0);
+    chai.expect(stubBase.callCount).to.equal(0);
+    chai.expect(res).to.deep.equal({
+      status: 400,
+      error: {
+        message: 'Skipping disabling status of current user',
+        error: new Error('Skipping disabling status of current user'),
       },
     });
   }).timeout(10000);

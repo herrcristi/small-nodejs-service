@@ -1,0 +1,383 @@
+const _ = require('lodash');
+const assert = require('assert');
+const sinon = require('sinon');
+const chai = require('chai');
+const supertest = require('supertest');
+
+const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
+const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
+const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
+
+const TestConstants = require('../../test-constants.js');
+const AdminsService = require('../../../services/admins/admins.service.js');
+const UsersRest = require('../../../services/rest/users.rest.js');
+const AdminsRest = require('../../../services/rest/admins.rest.js');
+const EventsRest = require('../../../services/rest/events.rest.js');
+
+describe('Admins Service', function () {
+  const tenantID = _.cloneDeep(TestConstants.Schools[1].id);
+  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Admins' };
+
+  before(async function () {});
+
+  beforeEach(async function () {});
+
+  afterEach(async function () {
+    sinon.restore();
+  });
+
+  after(async function () {});
+
+  /**
+   * notification with success for user modified
+   */
+  it('should do notification with success for user modified', async () => {
+    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
+    const notif = notifications[0];
+    const userID = notif.modified[0].id;
+    const userType = notif.modified[0].type;
+    const userStatus = notif.modified[0].status;
+    const username = notif.modified[0].name;
+    const userEmail = notif.modified[0].email;
+
+    // stub
+    let stubGet = sinon.stub(DbOpsUtils, 'getAllByIDs').callsFake((config, ids) => {
+      console.log(`\nDbOpsUtils.getAllByIDs called. ids: ${JSON.stringify(ids, null, 2)}\n`);
+      chai.expect(ids).to.have.deep.members([userID]);
+
+      return {
+        status: 200,
+        value: [],
+      };
+    });
+
+    let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake((config, objInfo) => {
+      console.log(`\nReferencesUtils.populateReferences called\n`);
+      objInfo.user = {
+        id: userID,
+        name: username,
+        type: userType,
+        status: userStatus,
+        email: userEmail,
+      };
+      return { status: 200, value: true };
+    });
+
+    let stubPost = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
+      console.log(`\nDbOpsUtils.post called: ${JSON.stringify(postObj, null, 2)}`);
+      return {
+        status: 201,
+        value: { ...postObj, id: userID },
+      };
+    });
+
+    let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
+      console.log(`\nEventsRest.raiseEventForObject called`);
+    });
+
+    let stubAdminsRest = sinon.stub(AdminsRest, 'raiseNotification').callsFake(() => {
+      console.log(`\nAdminsRest raiseNotification called`);
+    });
+
+    let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
+      console.log(`\nNotificationsUtils.notification called\n`);
+      chai.expect(ctx.tenantID).to.equal(notif.modified[0].schools[1].id);
+      return {
+        status: 200,
+        value: true,
+      };
+    });
+
+    // call
+    let res = await AdminsService.notification(notif, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubGet.callCount).to.equal(1);
+    chai.expect(stubPopulateReferences.callCount).to.equal(1);
+    chai.expect(stubPost.callCount).to.equal(1);
+    chai.expect(stubEvent.callCount).to.equal(1);
+    chai.expect(stubAdminsRest.callCount).to.equal(1);
+    chai.expect(stubNotification.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: true,
+    });
+  }).timeout(10000);
+
+  /**
+   * notification with success for user added
+   */
+  it('should do notification with success for user added', async () => {
+    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
+    const notif = notifications[0];
+    const userID = notif.modified[0].id;
+    const userType = notif.modified[0].type;
+    const userStatus = notif.modified[0].status;
+    const username = notif.modified[0].name;
+    const userEmail = notif.modified[0].email;
+    notif.added = notif.modified;
+    delete notif.modified;
+
+    // stub
+    let stubGet = sinon.stub(DbOpsUtils, 'getAllByIDs').callsFake((config, ids) => {
+      console.log(`\nDbOpsUtils.getAllByIDs called. ids: ${JSON.stringify(ids, null, 2)}\n`);
+      chai.expect(ids).to.have.deep.members([userID]);
+
+      return {
+        status: 200,
+        value: [],
+      };
+    });
+
+    let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake((config, objInfo) => {
+      console.log(`\nReferencesUtils.populateReferences called\n`);
+      objInfo.user = {
+        id: userID,
+        name: username,
+        type: userType,
+        status: userStatus,
+        email: userEmail,
+      };
+      return { status: 200, value: true };
+    });
+
+    let stubPost = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
+      console.log(`\nDbOpsUtils.post called: ${JSON.stringify(postObj, null, 2)}`);
+      return {
+        status: 201,
+        value: { ...postObj, id: userID },
+      };
+    });
+
+    let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
+      console.log(`\nEventsRest.raiseEventForObject called`);
+    });
+
+    let stubAdminsRest = sinon.stub(AdminsRest, 'raiseNotification').callsFake((notificationType, objs) => {
+      console.log(`\nAdminsRest raiseNotification called`);
+      console.log(`\nNotificationType: ${JSON.stringify(notificationType, null, 2)}`);
+      console.log(`\nObjs: ${JSON.stringify(objs, null, 2)}`);
+    });
+
+    let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
+      console.log(`\nNotificationsUtils.notification called with ${JSON.stringify(notification, null, 2)}\n`);
+      chai.expect(ctx.tenantID).to.equal(notif.added[0].schools[1].id);
+      return {
+        status: 200,
+        value: true,
+      };
+    });
+
+    // call
+    let res = await AdminsService.notification(notif, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubGet.callCount).to.equal(1);
+    chai.expect(stubPopulateReferences.callCount).to.equal(1);
+    chai.expect(stubPost.callCount).to.equal(1);
+    chai.expect(stubEvent.callCount).to.equal(1);
+    chai.expect(stubAdminsRest.callCount).to.equal(1);
+    chai.expect(stubNotification.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: true,
+    });
+  }).timeout(10000);
+
+  /**
+   * notification with success for user removed
+   */
+  it('should do notification with success for user removed', async () => {
+    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
+    const notif = notifications[0];
+    const userID = notif.modified[0].id;
+    const userType = notif.modified[0].type;
+    const userStatus = notif.modified[0].status;
+    const username = notif.modified[0].name;
+    const userEmail = notif.modified[0].email;
+
+    notif.removed = notif.modified;
+    delete notif.modified;
+
+    // stub
+    let stubGet = sinon.stub(DbOpsUtils, 'getAllByIDs').callsFake((config, ids) => {
+      console.log(`\nDbOpsUtils.getAllByIDs called. ids: ${JSON.stringify(ids, null, 2)}\n`);
+      chai.expect(ids).to.have.deep.members([userID]);
+
+      return {
+        status: 200,
+        value: [],
+      };
+    });
+
+    let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
+      console.log(`\nNotificationsUtils.notification called ${JSON.stringify(notification, null, 2)}\n`);
+      chai.expect(ctx.tenantID).to.equal(notif.removed[0].schools[1].id);
+
+      chai.expect(notification.modified[0].status).to.equal(UsersRest.Constants.Status.Disabled);
+
+      return {
+        status: 200,
+        value: true,
+      };
+    });
+
+    // call
+    let res = await AdminsService.notification(notif, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubGet.callCount).to.equal(0);
+    chai.expect(stubNotification.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: true,
+    });
+  }).timeout(10000);
+
+  /**
+   * notification fail validation
+   */
+  it('should notification fail validation', async () => {
+    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
+    const notif = notifications[0];
+    delete notif.serviceName;
+
+    // call
+    let res = await AdminsService.notification(notif, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "serviceName" is required');
+  }).timeout(10000);
+
+  /**
+   * notification user fail error
+   */
+  it('should do notification user fail error', async () => {
+    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
+    const notif = notifications[0];
+    const userID = notif.modified[0].id;
+
+    // stub
+    let stubGet = sinon.stub(DbOpsUtils, 'getAllByIDs').callsFake((config, ids) => {
+      console.log(`\nDbOpsUtils.getAllByIDs called. ids: ${JSON.stringify(ids, null, 2)}\n`);
+      chai.expect(ids).to.have.deep.members([userID]);
+
+      return {
+        status: 500,
+        error: { message: 'Test error message', error: new Error('Test error').toString() },
+      };
+    });
+
+    // call
+    let res = await AdminsService.notification(notif, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubGet.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 500,
+      error: { message: 'Test error message', error: new Error('Test error').toString() },
+    });
+  }).timeout(10000);
+
+  /**
+   * notification groups service
+   */
+  it('should do notification groups service', async () => {
+    const notifications = _.cloneDeep(TestConstants.GroupsNotifications);
+    const notif = notifications[0];
+
+    // stub
+    let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
+      console.log(`\nNotificationsUtils.notification called\n`);
+
+      chai.expect(notification).to.deep.equal(notif);
+      chai.expect(ctx.tenantID).to.deep.equal(_ctx.tenantID);
+
+      return {
+        status: 200,
+        value: true,
+      };
+    });
+
+    // call
+    let res = await AdminsService.notification(notif, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubNotification.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: true,
+    });
+  }).timeout(10000);
+
+  /**
+   * notification schedules service
+   */
+  it('should do notification schedules service', async () => {
+    const notifications = _.cloneDeep(TestConstants.SchedulesNotifications);
+    const notif = notifications[0];
+
+    // stub
+    let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
+      console.log(`\nNotificationsUtils.notification called\n`);
+
+      chai.expect(notification).to.deep.equal(notif);
+      chai.expect(ctx.tenantID).to.deep.equal(_ctx.tenantID);
+
+      return {
+        status: 200,
+        value: true,
+      };
+    });
+
+    // call
+    let res = await AdminsService.notification(notif, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubNotification.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: true,
+    });
+  }).timeout(10000);
+
+  /**
+   * notification groups service and fail
+   */
+  it('should do notification group service and fail', async () => {
+    const notifications = _.cloneDeep(TestConstants.AdminsNotifications);
+    const notif = notifications[0];
+
+    // stub
+    let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
+      console.log(`\nNotificationsUtils.notification called\n`);
+
+      chai.expect(notification).to.deep.equal(notif);
+      chai.expect(ctx.tenantID).to.deep.equal(_ctx.tenantID);
+
+      return {
+        status: 500,
+        error: { message: 'Test error message', error: new Error('Test error').toString() },
+      };
+    });
+
+    // call
+    let res = await AdminsService.notification(notif, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubNotification.callCount).to.equal(1);
+    chai.expect(res).to.deep.equal({
+      status: 500,
+      error: { message: 'Test error message', error: new Error('Test error').toString() },
+    });
+  }).timeout(10000);
+});

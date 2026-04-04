@@ -32,6 +32,12 @@ const EventsDatabase = require('./events/events.database.js');
 const EventsRouter = require('./events/events.router.js');
 const EventsRest = require('./rest/events.rest.js');
 
+const AdminsConstants = require('./admins/admins.constants.js');
+const AdminsService = require('./admins/admins.service.js');
+const AdminsDatabase = require('./admins/admins.database.js');
+const AdminsRouter = require('../services/admins/admins.router.js');
+const AdminsRest = require('./rest/admins.rest.js');
+
 const StudentsConstants = require('./students/students.constants.js');
 const StudentsService = require('./students/students.service.js');
 const StudentsDatabase = require('./students/students.database.js');
@@ -79,6 +85,7 @@ const Public = {
       UsersAuthDatabase,
       UsersDatabase,
       EventsDatabase,
+      AdminsDatabase,
       StudentsDatabase,
       ProfessorsDatabase,
       ClassesDatabase,
@@ -95,6 +102,7 @@ const Public = {
       UsersAuthService,
       UsersService,
       EventsService,
+      AdminsService,
       StudentsService,
       ProfessorsService,
       ClassesService,
@@ -115,7 +123,7 @@ const Public = {
     }
 
     // users
-    for (const rest of [StudentsRest, ProfessorsRest, UsersAuthRest]) {
+    for (const rest of [AdminsRest, StudentsRest, ProfessorsRest, UsersAuthRest]) {
       const projection = { ...notifyProjection, email: 1, schools: 1 };
       await UsersRest.subscribe({ callback: rest.notification, projection });
     }
@@ -166,6 +174,7 @@ const Public = {
         [UsersAuthConstants.ServiceName]: UsersAuthService,
         [UsersConstants.ServiceName]: UsersService,
         [EventsConstants.ServiceName]: EventsService,
+        [AdminsConstants.ServiceName]: AdminsService,
         [StudentsConstants.ServiceName]: StudentsService,
         [ProfessorsConstants.ServiceName]: ProfessorsService,
         [ClassesConstants.ServiceName]: ClassesService,
@@ -177,6 +186,7 @@ const Public = {
         [UsersAuthConstants.ServiceNameInternal]: UsersAuthService,
         [UsersConstants.ServiceNameInternal]: UsersService,
         [EventsConstants.ServiceNameInternal]: EventsService,
+        [AdminsConstants.ServiceNameInternal]: AdminsService,
         [StudentsConstants.ServiceNameInternal]: StudentsService,
         [ProfessorsConstants.ServiceNameInternal]: ProfessorsService,
         [ClassesConstants.ServiceNameInternal]: ClassesService,
@@ -209,6 +219,12 @@ const Public = {
           host: 'localhost',
           port: port,
           path: EventsConstants.ApiPath,
+        },
+        [AdminsConstants.ServiceName]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: port,
+          path: AdminsConstants.ApiPath,
         },
         [StudentsConstants.ServiceName]: {
           protocol: 'http',
@@ -272,6 +288,12 @@ const Public = {
           port: port,
           path: EventsConstants.ApiPathInternal,
         },
+        [AdminsConstants.ServiceNameInternal]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: port,
+          path: AdminsConstants.ApiPathInternal,
+        },
         [StudentsConstants.ServiceNameInternal]: {
           protocol: 'http',
           host: 'localhost',
@@ -323,6 +345,7 @@ const Public = {
       UsersAuthRouter,
       UsersRouter,
       EventsRouter,
+      AdminsRouter,
       StudentsRouter,
       ProfessorsRouter,
       ClassesRouter,

@@ -8,6 +8,7 @@ const TestConstants = require('../../test-constants.js');
 
 const SchoolsDatabase = require('../../../services/schools/schools.database.js');
 const UsersDatabase = require('../../../services/users/users.database.js');
+const AdminsDatabase = require('../../../services/admins/admins.database.js');
 const StudentsDatabase = require('../../../services/students/students.database.js');
 const ProfessorsDatabase = require('../../../services/professors/professors.database.js');
 const EventsDatabase = require('../../../services/events/events.database.js');
@@ -39,16 +40,20 @@ describe('Users Functional', function () {
   after(async function () {});
 
   /**
-   * check schools before for events/students/professors
+   * check schools before for events/admins/students/professors
    */
   checkSchoolsBefore = async (testUser, _ctx) => {
-    // events/students/professors before (in each school)
+    // events/admins/students/professors before (in each school)
     for (const school of testUser.schools) {
       let eventsSchoolCountBefore = await (
         await EventsDatabase.collection({ ..._ctx, tenantID: school.id })
       ).countDocuments();
       console.log(`\nEvents for schools ${school.id} count before: ${eventsSchoolCountBefore}\n`);
       chai.expect(eventsSchoolCountBefore).to.equal(0);
+
+      let adminsBefore = await (await AdminsDatabase.collection({ ..._ctx, tenantID: school.id })).find({}).toArray();
+      console.log(`\nAdmins for school ${school.id} before: ${JSON.stringify(adminsBefore, null, 2)}\n`);
+      chai.expect(adminsBefore.length).to.equal(0);
 
       let studentsBefore = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
         .find({})
@@ -65,9 +70,10 @@ describe('Users Functional', function () {
   };
 
   /**
-   * check schools after for events/students/professors
+   * check schools after for events/admins/students/professors
    */
   checkSchoolsAfter = async (testUserID, testUser, testUserStatus, _ctx) => {
+    const testAdminSchoolsIDs = testUser.schools.filter((item) => item.roles.includes('admin')).map((item) => item.id);
     const testStudentSchoolsIDs = testUser.schools
       .filter((item) => item.roles.includes('student'))
       .map((item) => item.id);
@@ -75,9 +81,28 @@ describe('Users Functional', function () {
       .filter((item) => item.roles.includes('professor'))
       .map((item) => item.id);
 
-    // events/students/professors after (in each school)
+    // events/admins/students/professors after (in each school)
     for (const school of testUser.schools) {
       let expectedEvents = 0;
+      let adminsAfter = await (await AdminsDatabase.collection({ ..._ctx, tenantID: school.id })).find({}).toArray();
+      console.log(`\nAdmins for school ${school.id} after: ${JSON.stringify(adminsAfter, null, 2)}\n`);
+
+      if (testAdminSchoolsIDs.includes(school.id)) {
+        expectedEvents++;
+        chai.expect(adminsAfter.length).to.equal(1);
+
+        chai.expect(adminsAfter.map((item) => item.id).includes(testUserID)).to.equal(true);
+        for (const admin of adminsAfter) {
+          if (admin.id === testUserID) {
+            chai.expect(admin.user.name).to.equal(testUser.name);
+            chai.expect(admin.user.email).to.equal(testUser.email);
+            chai.expect(admin.user.status).to.equal(testUserStatus);
+          }
+        }
+      } else {
+        chai.expect(adminsAfter.length).to.equal(0);
+      }
+
       let studentsAfter = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
         .find({})
         .toArray();
@@ -226,7 +251,7 @@ describe('Users Functional', function () {
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
-    // events/students/professors before (in each school)
+    // events/admins/students/professors before (in each school)
     await checkSchoolsBefore(testUser, _ctx);
 
     sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
@@ -257,7 +282,7 @@ describe('Users Functional', function () {
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
-    // events/students/professors after (in each school)
+    // events/admins/students/professors after (in each school)
     await checkSchoolsAfter(
       testUserID,
       { ...testUser, email: 'newemail@test.com', name: 'new name' },
@@ -303,10 +328,10 @@ describe('Users Functional', function () {
     delete testUser.schools;
     delete testUser._lang_en;
 
-    // events/students/professors before (in each school)
+    // events/admins/students/professors before (in each school)
     await checkSchoolsBefore({ schools }, _ctx);
 
-    // call put first to update users and create students, professors, etc ...
+    // call put first to update users and create admins, students, professors, etc ...
     let res = await supertest(TestConstants.WebServer)
       .put(`${UsersConstants.ApiPath}/${testUserID}`)
       .set('x-user-id', 'testid')
@@ -316,7 +341,7 @@ describe('Users Functional', function () {
 
     chai.expect(res.status).to.equal(200);
 
-    // events/students/professors after put (in each school)
+    // events/admins/students/professors after put (in each school)
     await checkSchoolsAfter(testUserID, { name, email, schools }, testUser.status, _ctx);
 
     // check global events before
@@ -344,7 +369,7 @@ describe('Users Functional', function () {
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
-    // check events/students/professors after (should remain the same with status disabled even after user is deleted)
+    // check events/admins/students/professors after (should remain the same with status disabled even after user is deleted)
     await checkSchoolsAfter(testUserID, { name, email, schools }, UsersRest.Constants.Status.Disabled, _ctx);
 
     // do a get
@@ -378,7 +403,7 @@ describe('Users Functional', function () {
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
-    // events/students/professors before (in each school)
+    // events/admins/students/professors before (in each school)
     await checkSchoolsBefore({ name, email, schools }, _ctx);
 
     // call
@@ -396,7 +421,7 @@ describe('Users Functional', function () {
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
-    // events/students/professors after (in each school)
+    // events/admins/students/professors after (in each school)
     await checkSchoolsAfter(testUserID, { name: 'new name', email, schools }, testUser.status, _ctx);
 
     // do a get
@@ -422,7 +447,7 @@ describe('Users Functional', function () {
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
-    // events/students/professors before (in each school)
+    // events/admins/students/professors before (in each school)
     await checkSchoolsBefore({ name, email, schools }, _ctx);
 
     sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
@@ -445,7 +470,7 @@ describe('Users Functional', function () {
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
-    // events/students/professors after (in each school)
+    // events/admins/students/professors after (in each school)
     await checkSchoolsAfter(testUserID, { name, email: newEmail, schools }, testUser.status, _ctx);
 
     // do a get
@@ -477,7 +502,7 @@ describe('Users Functional', function () {
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
-    // events/students/professors before (in each school)
+    // events/admins/students/professors before (in each school)
     await checkSchoolsBefore({ name, email, schools }, _ctx);
 
     // call
@@ -498,7 +523,7 @@ describe('Users Functional', function () {
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
-    // events/students/professors after put (in each school)
+    // events/admins/students/professors after put (in each school)
     await checkSchoolsAfter(testUserID, { name: 'new name', email, schools }, testUser.status, _ctx);
 
     // do a get
@@ -541,7 +566,7 @@ describe('Users Functional', function () {
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
-    // events/students/professors before (in each school)
+    // events/admins/students/professors before (in each school)
     await checkSchoolsBefore({ name, email, schools }, _ctx);
 
     sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
@@ -567,7 +592,7 @@ describe('Users Functional', function () {
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
-    // events/students/professors after put (in each school)
+    // events/admins/students/professors after put (in each school)
     await checkSchoolsAfter(testUserID, { name, email, schools: schoolsAfter }, testUser.status, _ctx);
 
     // do a get

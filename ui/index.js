@@ -29,7 +29,7 @@ const Util = {
    * init env
    */
   initEnv: () => {
-    const nodeEnv = process.env.NODE_ENV || 'dev';
+    const nodeEnv = process.env.NODE_ENV || 'production';
     console.log(`\nCurrent env: ${nodeEnv}`);
 
     const envFile = path.resolve(__dirname, `./.${nodeEnv}.env`);

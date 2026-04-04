@@ -298,6 +298,7 @@ const Public = {
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
 
+    // delete
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
     const r = await DbOpsUtils.delete(config, objID, projection, _ctx);
     if (r.error) {
@@ -323,6 +324,18 @@ const Public = {
     const v = validator.validate(objInfo);
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+
+    // if current user is trying to change the status to disabled, skip it for himself
+    if (objID === _ctx.userID && objInfo.status === UsersConstants.Status.Disabled) {
+      console.log(`\nSkipping disabling of current user ${objID}`);
+      return {
+        error: {
+          message: 'Skipping disabling status of current user',
+          error: new Error('Skipping disabling status of current user'),
+        },
+        status: 400,
+      };
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -376,6 +389,18 @@ const Public = {
     const v = validator.validate(patchInfo);
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
+    }
+
+    // if current user is trying to change the status to disabled, skip it for himself
+    if (objID === _ctx.userID && patchInfo.set?.status === UsersConstants.Status.Disabled) {
+      console.log(`\nSkipping disabling status of current user ${objID}`);
+      return {
+        error: {
+          message: 'Skipping disabling status of current user',
+          error: new Error('Skipping disabling status of current user'),
+        },
+        status: 400,
+      };
     }
 
     // { serviceName, collection, references, notifications.projection }

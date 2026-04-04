@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const BaseServiceUtils = require('../../../core/utils/base-service.utils.js');
 const TranslationsUtils = require('../../../core/utils/translations.utils.js');
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
@@ -73,9 +72,9 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * delete fail
+   * delete fail db
    */
-  it('should delete fail ', async () => {
+  it('should delete fail db ', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 

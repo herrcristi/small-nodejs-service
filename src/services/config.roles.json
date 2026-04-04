@@ -77,6 +77,13 @@
         "PUT": ["/api/v1/schedules/:id"],
         "PATCH": ["/api/v1/schedules/:id"]
       },
+      "admins": {
+        "GET": ["/api/v1/admins", "/api/v1/admins/:id"],
+        "POST": ["/api/v1/admins"],
+        "DELETE": ["/api/v1/admins/:id"],
+        "PUT": ["/api/v1/admins/:id"],
+        "PATCH": ["/api/v1/admins/:id"]
+      },
       "professors": {
         "GET": ["/api/v1/professors", "/api/v1/professors/:id"],
         "POST": ["/api/v1/professors"],
