@@ -1,5 +1,5 @@
 /**
- * Students service tests
+ * Professors service tests
  *
  * include them in order
  */
