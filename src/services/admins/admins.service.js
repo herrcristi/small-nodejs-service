@@ -280,6 +280,15 @@ const Public = {
       return Private.errorNoTenant(_ctx);
     }
 
+    // if the deleted user is the current user, skip delete
+    if (objID === _ctx.userID) {
+      console.log(`\nSkipping delete of current admin ${objID}`);
+      return {
+        error: { message: 'Skipping delete of current admin', error: new Error('Skipping delete of current admin') },
+        status: 400,
+      };
+    }
+
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
 

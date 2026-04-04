@@ -17,7 +17,7 @@ const AdminsRest = require('../../../services/rest/admins.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
 describe('Admins Service', function () {
-  const tenantID = _.cloneDeep(TestConstants.Schools[0].id);
+  const tenantID = _.cloneDeep(TestConstants.Schools[1].id);
   const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Admins' };
 
   before(async function () {});
@@ -108,6 +108,34 @@ describe('Admins Service', function () {
       error: {
         message: 'Test error message',
         error: 'Error: Test error',
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * delete fail skipping current admin
+   */
+  it('should delete fail skipping current admin', async () => {
+    const testAdmins = _.cloneDeep(TestConstants.Admins);
+    const testAdmin = testAdmins[0];
+
+    // stub
+    let stubBase = sinon.stub(DbOpsUtils, 'delete').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.delete called`);
+      return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await AdminsService.delete(testAdmin.id, { ..._ctx, userID: testAdmin.id });
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubBase.callCount).to.equal(0);
+    chai.expect(res).to.deep.equal({
+      status: 400,
+      error: {
+        message: 'Skipping delete of current admin',
+        error: new Error('Skipping delete of current admin'),
       },
     });
   }).timeout(10000);

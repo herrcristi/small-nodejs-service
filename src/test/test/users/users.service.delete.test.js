@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const BaseServiceUtils = require('../../../core/utils/base-service.utils.js');
 const TranslationsUtils = require('../../../core/utils/translations.utils.js');
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
@@ -73,9 +72,9 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * delete fail
+   * delete fail db
    */
-  it('should delete fail ', async () => {
+  it('should delete fail db ', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
@@ -96,6 +95,34 @@ describe('Users Service', function () {
       error: {
         message: 'Test error message',
         error: 'Error: Test error',
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * delete fail for current user
+   */
+  it('should delete fail for current user', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
+
+    // stub
+    let stubBase = sinon.stub(DbOpsUtils, 'delete').callsFake((config, objID) => {
+      console.log(`\nDbOpsUtils.delete called`);
+      return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
+    });
+
+    // call
+    let res = await UsersService.delete(testUser.id, { ..._ctx, userID: testUser.id });
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubBase.callCount).to.equal(0);
+    chai.expect(res).to.deep.equal({
+      status: 400,
+      error: {
+        message: 'Skipping delete of current user',
+        error: new Error('Skipping delete of current user'),
       },
     });
   }).timeout(10000);

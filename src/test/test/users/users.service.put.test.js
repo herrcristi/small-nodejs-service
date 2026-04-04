@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
@@ -156,9 +155,9 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * put fail put
+   * put fail put db
    */
-  it('should put fail put', async () => {
+  it('should put fail put db', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
@@ -193,6 +192,49 @@ describe('Users Service', function () {
       error: {
         message: 'Test error message',
         error: new Error('Test error'),
+      },
+    });
+  }).timeout(10000);
+
+  /**
+   * put fail put status to disabled for current user
+   */
+  it('should put fail put status to disabled for current user', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
+
+    const putReq = {
+      ...testUser,
+      status: UsersConstants.Status.Disabled,
+    };
+    delete putReq.id;
+    delete putReq.type;
+    delete putReq.email;
+    delete putReq.schools;
+    delete putReq._lang_en;
+
+    // stub
+    let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
+      return { status: 200, value: true };
+    });
+
+    let stubBase = sinon.stub(DbOpsUtils, 'put').callsFake((config, objID, putObj) => {
+      console.log(`\nDbOpsUtils.put called`);
+      return { status: 500, error: { message: 'Test error message', error: new Error('Test error') } };
+    });
+
+    // call
+    let res = await UsersService.put(testUser.id, putReq, { ..._ctx, userID: testUser.id });
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(stubPopulateReferences.callCount).to.equal(0);
+    chai.expect(stubBase.callCount).to.equal(0);
+    chai.expect(res).to.deep.equal({
+      status: 400,
+      error: {
+        message: 'Skipping disabling status of current user',
+        error: new Error('Skipping disabling status of current user'),
       },
     });
   }).timeout(10000);
