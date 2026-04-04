@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const RestCommsUtils = require('../../../core/utils/rest-communications.utils.js');
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
 
@@ -326,6 +325,37 @@ describe('Users Rest', function () {
     // check
     chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal(true);
+  }).timeout(10000);
+
+  /**
+   * filterNotificationByRole for admin
+   */
+  it('should do filterNotificationByRole for admin', async () => {
+    const notification = _.cloneDeep(TestConstants.UsersNotifications[0]);
+
+    // call
+    let res = UsersRest.filterNotificationByRole(notification, 'admin', _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res).to.deep.equal({
+      serviceName: 'users',
+      modified: [
+        {
+          id: 'user1',
+          name: 'Big Ben',
+          type: 'user',
+          status: 'active',
+          email: 'big.ben@testdomain.test',
+          schools: [
+            {
+              id: 'school-high2',
+              roles: ['admin'],
+            },
+          ],
+        },
+      ],
+    });
   }).timeout(10000);
 
   /**

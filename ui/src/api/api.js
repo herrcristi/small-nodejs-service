@@ -133,6 +133,17 @@ const Api = {
   updateSchool: (id, data) => instance.put(`/schools/${id}`, data),
   deleteSchool: (id) => instance.delete(`/schools/${id}`),
 
+  // Admins API
+  getAdmins: (params) => instance.get(`/admins?${params}`),
+  getAdmin: (id) => instance.get(`/admins/${id}`),
+  createAdmin: (data) =>
+    Api.invite({
+      email: data.email /*new user email*/,
+      school: { role: 'admin' },
+    }),
+  updateAdmin: (id, data) => Api.updateUser(id, data),
+  deleteAdmin: (id) => instance.delete(`/admins/${id}`),
+
   // Students API
   getStudents: (params) => instance.get(`/students?${params}`),
   getStudent: (id) => instance.get(`/students/${id}`),

@@ -39,6 +39,9 @@
         <v-list-item link to="/schools" v-if="permissions.schools?.read">
           <v-list-item-title>{{ t('schools') }}</v-list-item-title>
         </v-list-item>
+        <v-list-item link to="/admins" v-if="permissions.admins?.read">
+          <v-list-item-title>{{ t('admins') }}</v-list-item-title>
+        </v-list-item>
         <v-list-item link to="/students" v-if="permissions.students?.read">
           <v-list-item-title>{{ t('students') }}</v-list-item-title>
         </v-list-item>

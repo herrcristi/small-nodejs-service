@@ -1,6 +1,6 @@
 # Small Node.js Service with Vue.js Frontend
 
-This project is a full-stack application that consists of a Node.js backend and a Vue.js frontend. The backend provides APIs for managing schools, students, professors, groups, locations, events, and classes, while the frontend offers a user-friendly interface to interact with these APIs.
+This project is a full-stack application that consists of a Node.js backend and a Vue.js frontend. The backend provides APIs for managing schools, admins, students, professors, groups, locations, events, and classes, while the frontend offers a user-friendly interface to interact with these APIs.
 
 ## Project Structure
 
