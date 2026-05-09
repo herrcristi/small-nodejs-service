@@ -120,10 +120,12 @@ describe('Rest Communications Utils', function () {
       },
     };
 
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
+
     // stub
     mockAxios.onPatch().reply((config) => {
       chai.expect(config.method).to.equal('patch');
-      chai.expect(config.url).to.equal('http://localhost:8080/api/v1/service/id1/school/user/userID1');
+      chai.expect(config.url).to.equal(`${configUrl}/api/v1/service/id1/school/user/userID1`);
 
       return [200, { id: 'userID1', name: 'name', type: 'type' }];
     });
@@ -161,6 +163,8 @@ describe('Rest Communications Utils', function () {
       },
     };
 
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
+
     // stub
     mockAxios.onPatch().reply(500, {});
 
@@ -172,6 +176,6 @@ describe('Rest Communications Utils', function () {
 
     chai
       .expect(res.error.message)
-      .to.include('Calling PATCH http://localhost:8080/api/v1/service/id1/school/user/userID1 failed with status 500');
+      .to.include(`Calling PATCH ${configUrl}/api/v1/service/id1/school/user/userID1 failed with status 500`);
   }).timeout(10000);
 });

@@ -122,13 +122,15 @@ describe('Rest Communications Utils', function () {
       },
     };
 
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
+
     // stub
     mockAxios.onGet().reply((config) => {
       chai.expect(config.method).to.equal('get');
       chai
         .expect(config.url)
         .to.equal(
-          'http://localhost:8080/api/internal_v1/service/validate/validate?method=get&route=%2Fapi%2Fv1%2Fschools'
+          `${configUrl}/api/internal_v1/service/validate/validate?method=get&route=%2Fapi%2Fv1%2Fschools`
         );
       chai.expect(config.headers.cookie).to.equal('cookieTokenName=token');
 
@@ -169,6 +171,8 @@ describe('Rest Communications Utils', function () {
       },
     };
 
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
+
     // stub
     mockAxios.onGet().reply(500, null);
 
@@ -183,7 +187,7 @@ describe('Rest Communications Utils', function () {
     );
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    chai.expect(res.error.message).to.include('Calling GET http://localhost:8080/api/internal_v1/service/validate');
+    chai.expect(res.error.message).to.include(`Calling GET ${configUrl}/api/internal_v1/service/validate`);
     chai.expect(res.error.message).to.include('failed with status 500');
   }).timeout(10000);
 });

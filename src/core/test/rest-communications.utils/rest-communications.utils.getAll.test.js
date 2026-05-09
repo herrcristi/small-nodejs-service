@@ -169,6 +169,8 @@ describe('Rest Communications Utils', function () {
       },
     };
 
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
+
     // stub
     mockAxios.onGet().reply(500, {});
 
@@ -180,6 +182,6 @@ describe('Rest Communications Utils', function () {
 
     chai
       .expect(res.error.message)
-      .to.include('Calling GET http://localhost:8080/api/v1/service?id=id1&sort=id&limit=10 failed with status 500');
+      .to.include(`Calling GET ${configUrl}/api/v1/service?id=id1&sort=id&limit=10 failed with status 500`);
   }).timeout(10000);
 });

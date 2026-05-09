@@ -44,6 +44,7 @@ const Public = {
     for (const val of expectedValues) {
       if (!process.env[val]) {
         console.log(`Env var ${val} is not set`);
+        process.exit(1);
         return false;
       }
     }
@@ -59,11 +60,7 @@ const Public = {
       console.log('\nInit service');
 
       // init env
-      const isGoodEnv = await Public.initEnv();
-      if (!isGoodEnv) {
-        console.log('\nFailed to init service due to bad env vars');
-        process.exit(1);
-      }
+      await Public.initEnv();
 
       // init language
       for (const lang of Constants.Languages) {

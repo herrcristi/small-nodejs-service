@@ -50,10 +50,12 @@ describe('Rest Communications Utils', function () {
       },
     };
 
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
+
     // stub
     mockAxios.onPatch().reply((config) => {
       chai.expect(config.method).to.equal('patch');
-      chai.expect(config.url).to.equal('http://localhost:8080/api/v1/service/id1');
+      chai.expect(config.url).to.equal(`${configUrl}/api/v1/service/id1`);
 
       console.log(`\nRequest headers: ${JSON.stringify(config.headers, null, 2)}`);
       const s2sToken = config.headers['x-s2s-token'];
@@ -70,7 +72,7 @@ describe('Rest Communications Utils', function () {
             service: 'Service',
           },
           method: 'PATCH',
-          url: 'http://localhost:8080/api/v1/service/id1',
+          url: `${configUrl}/api/v1/service/id1`,
           timestamp: rv.value.timestamp,
         },
       });
@@ -219,6 +221,8 @@ describe('Rest Communications Utils', function () {
       },
     };
 
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
+
     // stub
     sinon.stub(JwtUtils, 'encrypt').returns({ status: 200, value: 's2stoken' });
     mockAxios.onPatch().reply(500, {});
@@ -237,9 +241,7 @@ describe('Rest Communications Utils', function () {
     );
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    chai
-      .expect(res.error.message)
-      .to.include('Calling PATCH http://localhost:8080/api/v1/service/id1 failed with status 500');
+    chai.expect(res.error.message).to.include(`Calling PATCH ${configUrl}/api/v1/service/id1 failed with status 500`);
   }).timeout(10000);
 
   /**

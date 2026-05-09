@@ -242,10 +242,12 @@ describe('Rest Communications Utils', function () {
       },
     };
 
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
+
     // stub
     mockAxios.onPatch().reply((config) => {
       chai.expect(config.method).to.equal('patch');
-      chai.expect(config.url).to.equal('http://localhost:8080/api/v1/service/id1/field');
+      chai.expect(config.url).to.equal(`${configUrl}/api/v1/service/id1/field`);
 
       return [200, { id: 'id1', name: 'name', type: 'type' }];
     });
@@ -283,6 +285,8 @@ describe('Rest Communications Utils', function () {
       },
     };
 
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
+
     // stub
     mockAxios.onPatch().reply(500, {});
 
@@ -292,8 +296,6 @@ describe('Rest Communications Utils', function () {
     let res = await RestCommsUtils.patch(serviceName, 'id1', { set: { name: 'name' } }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    chai
-      .expect(res.error.message)
-      .to.include('Calling PATCH http://localhost:8080/api/v1/service/id1 failed with status 500');
+    chai.expect(res.error.message).to.include(`Calling PATCH ${configUrl}/api/v1/service/id1 failed with status 500`);
   }).timeout(10000);
 });

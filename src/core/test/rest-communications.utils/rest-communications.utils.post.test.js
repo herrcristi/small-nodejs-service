@@ -160,6 +160,8 @@ describe('Rest Communications Utils', function () {
       },
     };
 
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
+
     // stub
     mockAxios.onPost().reply(500, {});
 
@@ -169,8 +171,6 @@ describe('Rest Communications Utils', function () {
     let res = await RestCommsUtils.post(serviceName, { name: 'name' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    chai
-      .expect(res.error.message)
-      .to.include('Calling POST http://localhost:8080/api/v1/service failed with status 500');
+    chai.expect(res.error.message).to.include(`Calling POST ${configUrl}/api/v1/service failed with status 500`);
   }).timeout(10000);
 });

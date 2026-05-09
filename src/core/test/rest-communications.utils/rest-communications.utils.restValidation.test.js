@@ -51,11 +51,13 @@ describe('Rest Communications Utils', function () {
       },
     };
 
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
+
     // stub
     let s2sToken;
     mockAxios.onPatch().reply((config) => {
       chai.expect(config.method).to.equal('patch');
-      chai.expect(config.url).to.equal('http://localhost:8080/api/v1/service/id1');
+      chai.expect(config.url).to.equal(`${configUrl}/api/v1/service/id1`);
 
       console.log(`\nRequest headers: ${JSON.stringify(config.headers, null, 2)}`);
       requestHeaders = config.headers;
@@ -110,7 +112,7 @@ describe('Rest Communications Utils', function () {
           ipAddress: 'ip',
         },
         method: 'PATCH',
-        url: 'http://localhost:8080/api/v1/service/id1',
+        url: `${configUrl}/api/v1/service/id1`,
         timestamp: rv.value.timestamp,
       },
     });
@@ -175,11 +177,13 @@ describe('Rest Communications Utils', function () {
       },
     };
 
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
+
     // stub
     let s2sToken;
     mockAxios.onPatch().reply((config) => {
       chai.expect(config.method).to.equal('patch');
-      chai.expect(config.url).to.equal('http://localhost:8080/api/v1/service/id1');
+      chai.expect(config.url).to.equal(`${configUrl}/api/v1/service/id1`);
 
       console.log(`\nRequest headers: ${JSON.stringify(config.headers, null, 2)}`);
       requestHeaders = config.headers;
