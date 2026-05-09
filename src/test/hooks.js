@@ -25,12 +25,12 @@ exports.mochaHooks = {
     },
 
     function (done) {
-      console.log('\ncurrent env TEST_DB', process.env.TEST_DB);
+      console.log('\ncurrent env IS_TEST_DB', process.env.IS_TEST_DB);
 
       // init service
       const DBMgr = require('../core/utils/database-manager.utils.js');
 
-      if (!process.env.TEST_DB) {
+      if (!process.env.IS_TEST_DB) {
         sinon.stub(DBMgr, 'connect').callsFake((dbUrl, dbName) => {
           console.log(`\nMock db connection to ${dbUrl} ${dbName}`);
           return { collection: () => null };
