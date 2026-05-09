@@ -139,7 +139,8 @@ Router.beforeEach((to, from, next) => {
     return next();
   }
 
-  const token = useAuthStore()?.token;
+  const authStore = useAuthStore();
+  const token = authStore?.token || authStore?.raw?.id || authStore?.raw?.email;
   const tenantID = useAppStore()?.tenantID;
   const nextPath = encodeURIComponent(to.fullPath || to.path || '/');
 

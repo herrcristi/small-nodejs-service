@@ -4,14 +4,15 @@ import { useAppStore, useAuthStore } from './stores/stores.js';
  * Default processing of login response.
  * If backend returns { token: '...', cookie: '...' } it will save token and set cookie.
  */
-export async function processLoginResponse(response) {
+export async function processLoginResponse(response, options = {}) {
   try {
     // give the app a chance to run custom processing
     const data = response?.data ? response.data : response;
-    if (data?.token) {
-      const s = useAuthStore();
-      s.save({ token: data.token, expires: data.expires, raw: data });
-    }
+    const useCookies = !!options.useCookies;
+
+    // Persist minimal user info in-memory. Cookie-only mode: do not persist tokens.
+    const s = useAuthStore();
+    s.save({ token: null, expires: data?.expires, raw: data });
     // if only one school is active, set it as current tenantID
     let tenantID = null;
     if (Array.isArray(data?.schools) && data.schools.length == 1 && data.schools[0].status === 'active') {
@@ -23,7 +24,7 @@ export async function processLoginResponse(response) {
     // Cookies should be set by the server using `Set-Cookie; HttpOnly; Secure; SameSite=...`.
     // Relying on document.cookie for auth cookies is insecure and can be abused.
 
-    return { status: 200, token: data?.token, tenantID };
+    return { status: 200, tenantID };
   } catch (e) {
     console.error('Error processing login response', e);
     return { status: 401, error: { message: e.message, error: e } };
