@@ -53,6 +53,15 @@ import { useI18n } from 'vue-i18n';
 import ComponentsUtils from './components.utils.js';
 const { t } = useI18n();
 
+// client-side password strength rule: min 8, uppercase, lowercase, digit, special char
+const passwordRegex = /(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}/;
+
+const passwordNewRules = [
+  (v) => !!v || t('password.new.required'),
+  (v) => (v && v.length >= 8) || t('password.new.length'),
+  (v) => (v ? passwordRegex.test(v) : true) || t('password.new.complexity'),
+];
+
 /**
  * props
  */
