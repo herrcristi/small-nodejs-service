@@ -159,7 +159,7 @@ describe('Rest Communications Utils', function () {
         [serviceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: process.env.PORT, // see test.utils.js
+          port: process.env.SMALL_API_PORT, // see test.utils.js
           path: '/api/internal_v1/service',
         },
       },
@@ -197,11 +197,13 @@ describe('Rest Communications Utils', function () {
         [serviceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: process.env.PORT, // see test.utils.js
+          port: process.env.SMALL_API_PORT, // see test.utils.js
           path: '/api/internal_v1/service',
         },
       },
     };
+
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
 
     // stub
     mockAxios.onPost().reply(500, {});
@@ -220,6 +222,6 @@ describe('Rest Communications Utils', function () {
 
     chai
       .expect(res.error.message)
-      .to.include('Calling POST http://localhost:8080/api/internal_v1/service/login failed with status 500');
+      .to.include(`Calling POST ${configUrl}/api/internal_v1/service/login failed with status 500`);
   }).timeout(10000);
 });

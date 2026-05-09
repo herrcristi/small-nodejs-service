@@ -25,15 +25,31 @@ const Public = {
    * init env
    */
   initEnv: async () => {
+    process.env.NODE_ENV = process.env.NODE_ENV || 'production';
     console.log(`\nCurrent env: ${process.env.NODE_ENV}`);
 
-    const envFile = path.resolve(__dirname, `./.${process.env.NODE_ENV}.env`);
-    if (fs.existsSync(envFile)) {
-      let config = require('dotenv').config({ path: envFile, override: true });
-      require('dotenv-expand').expand(config);
-      return true;
+    const expectedValues = [
+      'SMALL_API_URL',
+      'SMALL_API_PORT',
+      'SMALL_API_AUTH_PROVIDER_TYPE',
+      'SMALL_API_SALT',
+      'SMALL_API_S2SPASS',
+      'SMALL_API_PREVAUTHPASS',
+      'SMALL_API_AUTHPASS',
+      'SMALL_API_SMTP_CONFIG',
+      'SMALL_API_DATABASE_URL',
+      'SMALL_API_DATABASE_DB',
+    ];
+
+    for (const val of expectedValues) {
+      if (!process.env[val]) {
+        console.log(`Env var ${val} is not set`);
+        process.exit(1);
+        return false;
+      }
     }
-    return false;
+
+    return true;
   },
 
   /**
@@ -52,7 +68,7 @@ const Public = {
         await TranslationsUtils.initEmails(lang, path.resolve(__dirname, `translations/${lang}.emails.json`));
       }
 
-      const port = process.env.PORT;
+      const port = process.env.SMALL_API_PORT;
       // init services
       await ConfigServices.init(port);
 

@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DBMgr = require('../../../core/utils/database-manager.utils.js');
 const DBOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const DBOpsArrayUtils = require('../../../core/utils/db-ops.array.utils.js');
@@ -18,7 +17,7 @@ describe('Database Functional', function () {
   let database = null;
 
   before(async function () {
-    database = await DBMgr.connect(process.env.DATABASE_URL, process.env.DATABASE_DB, _ctx);
+    database = await DBMgr.connect(process.env.SMALL_API_DATABASE_URL, process.env.SMALL_API_DATABASE_DB, _ctx);
   });
 
   beforeEach(async function () {

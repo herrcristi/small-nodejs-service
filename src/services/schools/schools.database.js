@@ -15,7 +15,7 @@ const Public = {
    * init
    */
   init: async (_ctx) => {
-    Private.DB = await DBMgr.connect(process.env.DATABASE_URL, process.env.DATABASE_SCHOOLS, _ctx);
+    Private.DB = await DBMgr.connect(process.env.SMALL_API_DATABASE_URL, process.env.SMALL_API_DATABASE_DB, _ctx);
     console.log('\nSchools database inited');
   },
 

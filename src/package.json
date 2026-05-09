@@ -8,7 +8,7 @@
     "up": "docker compose -f ../tools/local/docker-compose.yaml up -d",
     "down": "docker compose -f ../tools/local/docker-compose.yaml down",
     "test": "nyc --reporter=text --reporter=html mocha --require test/hooks.js --timeout 15000 --reporte mocha-multi-reporters --exit",
-    "testdb": "TEST_DB=1 nyc --reporter=text --reporter=html mocha --require test/hooks.js --timeout 15000 --reporte mocha-multi-reporters --exit"
+    "testdb": "IS_TEST_DB=1 nyc --reporter=text --reporter=html mocha --require test/hooks.js --timeout 15000 --reporte mocha-multi-reporters --exit"
   },
   "keywords": [
     "small",

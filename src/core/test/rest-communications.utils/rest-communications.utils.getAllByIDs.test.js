@@ -114,7 +114,7 @@ describe('Rest Communications Utils', function () {
         [serviceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: process.env.PORT, // see test.utils.js
+          port: process.env.SMALL_API_PORT, // see test.utils.js
           path: '/api/v1/service',
         },
       },
@@ -154,11 +154,13 @@ describe('Rest Communications Utils', function () {
         [serviceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: process.env.PORT, // see test.utils.js
+          port: process.env.SMALL_API_PORT, // see test.utils.js
           path: '/api/v1/service',
         },
       },
     };
+
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
 
     // stub
     mockAxios.onGet().reply(500, {});
@@ -169,8 +171,6 @@ describe('Rest Communications Utils', function () {
     let res = await RestCommsUtils.getAllByIDs(serviceName, ['id1'], null, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    chai
-      .expect(res.error.message)
-      .to.include('Calling GET http://localhost:8080/api/v1/service?id=id1 failed with status 500');
+    chai.expect(res.error.message).to.include(`Calling GET ${configUrl}/api/v1/service?id=id1 failed with status 500`);
   }).timeout(10000);
 });

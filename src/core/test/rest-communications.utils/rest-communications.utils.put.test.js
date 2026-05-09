@@ -196,7 +196,7 @@ describe('Rest Communications Utils', function () {
         [serviceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: process.env.PORT, // see test.utils.js
+          port: process.env.SMALL_API_PORT, // see test.utils.js
           path: '/api/v1/service',
         },
       },
@@ -236,16 +236,18 @@ describe('Rest Communications Utils', function () {
         [serviceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: process.env.PORT, // see test.utils.js
+          port: process.env.SMALL_API_PORT, // see test.utils.js
           path: '/api/v1/service',
         },
       },
     };
 
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
+
     // stub
     mockAxios.onPut().reply((config) => {
       chai.expect(config.method).to.equal('put');
-      chai.expect(config.url).to.equal('http://localhost:8080/api/v1/service/id1/field');
+      chai.expect(config.url).to.equal(`${configUrl}/api/v1/service/id1/field`);
 
       return [200, { id: 'id1', name: 'name', type: 'type' }];
     });
@@ -277,11 +279,13 @@ describe('Rest Communications Utils', function () {
         [serviceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: process.env.PORT, // see test.utils.js
+          port: process.env.SMALL_API_PORT, // see test.utils.js
           path: '/api/v1/service',
         },
       },
     };
+
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
 
     // stub
     mockAxios.onPut().reply(500, {});
@@ -292,8 +296,6 @@ describe('Rest Communications Utils', function () {
     let res = await RestCommsUtils.put(serviceName, 'id1', { name: 'name' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    chai
-      .expect(res.error.message)
-      .to.include('Calling PUT http://localhost:8080/api/v1/service/id1 failed with status 500');
+    chai.expect(res.error.message).to.include(`Calling PUT ${configUrl}/api/v1/service/id1 failed with status 500`);
   }).timeout(10000);
 });

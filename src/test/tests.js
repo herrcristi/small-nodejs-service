@@ -22,6 +22,6 @@ require('./test/locations/locations.all.tests.js');
 require('./test/groups/groups.all.tests.js');
 require('./test/schedules/schedules.all.tests.js');
 
-if (process.env.TEST_DB) {
+if (process.env.IS_TEST_DB) {
   require('./test/functional/functional.all.tests.js');
 }

@@ -2,13 +2,13 @@ import axios from 'axios';
 import { processLoginResponse, getAuthToken } from '../auth.js';
 import { useAuthStore, useAppStore } from '../stores/stores.js';
 
-import { API_BASE_URL } from './api.url.js';
+import { SMALL_API_URL, SMALL_API_CORS_ORIGIN } from './api.url.js';
 
 // Do NOT send credentials by default to avoid CORS preflight failure when server
 // returns Access-Control-Allow-Origin: * while withCredentials is true.
 // If you need to send cookies, pass { withCredentials: true } explicitly to the call
 const instance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: SMALL_API_URL,
   withCredentials: false,
 });
 

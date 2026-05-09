@@ -25,7 +25,7 @@ describe('Jwt Utils', function () {
     const time = new Date();
 
     // call
-    await JwtUtils.init(issuer, [process.env.AUTHPASS]);
+    await JwtUtils.init(issuer, [process.env.SMALL_API_AUTHPASS]);
 
     // test by generate a valid token
     const rT = JwtUtils.getJwt({ test: 'test' }, issuer, {});

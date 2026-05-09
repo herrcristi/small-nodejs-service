@@ -115,7 +115,7 @@ describe('Rest Communications Utils', function () {
         [serviceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: process.env.PORT, // see test.utils.js
+          port: process.env.SMALL_API_PORT, // see test.utils.js
           path: '/api/v1/service',
         },
       },
@@ -155,11 +155,13 @@ describe('Rest Communications Utils', function () {
         [serviceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: process.env.PORT, // see test.utils.js
+          port: process.env.SMALL_API_PORT, // see test.utils.js
           path: '/api/v1/service',
         },
       },
     };
+
+    const configUrl = `http://localhost:${process.env.SMALL_API_PORT}`;
 
     // stub
     mockAxios.onDelete().reply(500, {});
@@ -170,8 +172,6 @@ describe('Rest Communications Utils', function () {
     let res = await RestCommsUtils.delete(serviceName, 'id1', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    chai
-      .expect(res.error.message)
-      .to.include('Calling DELETE http://localhost:8080/api/v1/service/id1 failed with status 500');
+    chai.expect(res.error.message).to.include(`Calling DELETE ${configUrl}/api/v1/service/id1 failed with status 500`);
   }).timeout(10000);
 });

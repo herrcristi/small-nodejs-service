@@ -1,6 +1,4 @@
-import axios from 'axios';
 import { useAppStore, useAuthStore } from './stores/stores.js';
-import { API_BASE_URL } from './api/api.url.js';
 
 /**
  * Default processing of login response.
