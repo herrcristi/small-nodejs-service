@@ -8,7 +8,7 @@ const Public = {
    * setup env
    */
   setupEnv: () => {
-    // env same as .test.env
+    // env
     process.env.NODE_ENV = 'test';
     process.env.SMALL_PORT = TestConstants.Port;
     process.env.SMALL_API_URL = TestConstants.WebServer;
