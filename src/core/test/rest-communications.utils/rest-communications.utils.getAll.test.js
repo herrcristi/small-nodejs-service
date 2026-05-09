@@ -119,7 +119,7 @@ describe('Rest Communications Utils', function () {
         [serviceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: process.env.PORT, // see test.utils.js
+          port: process.env.SMALL_API_PORT, // see test.utils.js
           path: '/api/v1/service',
         },
       },
@@ -163,7 +163,7 @@ describe('Rest Communications Utils', function () {
         [serviceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: process.env.PORT, // see test.utils.js
+          port: process.env.SMALL_API_PORT, // see test.utils.js
           path: '/api/v1/service',
         },
       },

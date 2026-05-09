@@ -302,10 +302,10 @@ const Public = {
   init: async () => {
     // init token encryption (due to multipod env password must be the same for all pods)
     // allow rotation of password by providing mutiple password to support old tokens
-    await JwtUtils.init(Private.Issuer, [process.env.PREVAUTHPASS, process.env.AUTHPASS]);
+    await JwtUtils.init(Private.Issuer, [process.env.SMALL_API_PREVAUTHPASS, process.env.SMALL_API_AUTHPASS]);
 
     // init auth provider
-    Private.UsersAuthProviderType = process.env.SMALL_AUTH_PROVIDER_TYPE;
+    Private.UsersAuthProviderType = process.env.SMALL_API_AUTH_PROVIDER_TYPE;
     if (Private.UsersAuthProviderType === 'firebase') {
       await UsersAuthServiceFirebase.init();
     } else {

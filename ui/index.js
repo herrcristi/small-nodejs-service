@@ -29,17 +29,26 @@ const Util = {
    * init env
    */
   initEnv: () => {
-    const nodeEnv = process.env.NODE_ENV || 'production';
-    console.log(`\nCurrent env: ${nodeEnv}`);
+    process.env.NODE_ENV = process.env.NODE_ENV || 'production';
+    console.log(`\nCurrent env: ${process.env.NODE_ENV}`);
 
-    const envFile = path.resolve(__dirname, `./.${nodeEnv}.env`);
-    if (fs.existsSync(envFile)) {
-      // Do not override existing process.env values (avoid conflicts for NODE_ENV)
-      const config = dotenv.config({ path: envFile, override: false });
-      dotenvExpand.expand(config);
-      return true;
+    const expectedValues = [
+      // api
+      'SMALL_API_URL',
+
+      // ui
+      'SMALL_UI_URL',
+      'SMALL_UI_PORT',
+    ];
+
+    for (const val of expectedValues) {
+      if (!process.env[val]) {
+        console.log(`Env var ${val} is not set`);
+        return false;
+      }
     }
-    return false;
+
+    return true;
   },
 
   /**
@@ -74,7 +83,7 @@ const Util = {
     // });
 
     // Start the server
-    const PORT = process.env.PORT || 3000;
+    const PORT = process.env.SMALL_UI_PORT;
     server.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
     });
@@ -86,5 +95,8 @@ const Util = {
  */
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-Util.initEnv();
+if (!Util.initEnv()) {
+  console.log('\nFailed to init app due to bad env vars');
+  process.exit(1);
+}
 // Util.initApp();

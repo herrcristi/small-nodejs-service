@@ -167,7 +167,7 @@ const Public = {
     // init the communication
     const config = {
       issuer: 'SmallApp-Service2Service',
-      s2sPass: process.env.S2SPASS,
+      s2sPass: process.env.SMALL_API_S2SPASS,
 
       local: {
         [SchoolsConstants.ServiceName]: SchoolsService,

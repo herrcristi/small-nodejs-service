@@ -19,7 +19,7 @@ const Public = {
   },
 
   Database: {
-    Url: `${process.env.SMALL_DATABASE_URL}`, // mongodb://${MONGODB_ROOT_USERNAME}:${MONGODB_ROOT_PASSWORD}@localhost/
+    Url: `${process.env.SMALL_API_DATABASE_URL}`, // mongodb://${MONGODB_ROOT_USERNAME}:${MONGODB_ROOT_PASSWORD}@localhost/
     Db: 'Small-Test',
   },
 

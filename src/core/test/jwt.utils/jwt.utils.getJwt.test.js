@@ -11,7 +11,7 @@ describe('Jwt Utils', function () {
   const issuer = 'getJwt';
 
   before(async function () {
-    await JwtUtils.init(issuer, [process.env.AUTHPASS]);
+    await JwtUtils.init(issuer, [process.env.SMALL_API_AUTHPASS]);
   });
 
   beforeEach(async function () {});

@@ -38,13 +38,13 @@ describe('Rest Communications Utils', function () {
     let serviceName = 'Service';
     let restConfig = {
       issuer: 'test-issuer',
-      s2sPass: process.env.S2SPASS,
+      s2sPass: process.env.SMALL_API_S2SPASS,
 
       rest: {
         [serviceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: process.env.PORT, // see test.utils.js
+          port: process.env.SMALL_API_PORT, // see test.utils.js
           path: '/api/v1/service',
         },
       },
@@ -117,7 +117,7 @@ describe('Rest Communications Utils', function () {
     let serviceName = 'Service';
     let restConfig = {
       issuer: 'test-issuer',
-      s2sPass: process.env.S2SPASS,
+      s2sPass: process.env.SMALL_API_S2SPASS,
 
       rest: {
         [serviceName]: {
@@ -169,7 +169,7 @@ describe('Rest Communications Utils', function () {
     let serviceName = 'Service';
     let restConfig = {
       issuer: 'test-issuer',
-      s2sPass: process.env.S2SPASS,
+      s2sPass: process.env.SMALL_API_S2SPASS,
 
       rest: {},
     };
@@ -207,13 +207,13 @@ describe('Rest Communications Utils', function () {
     let serviceName = 'Service';
     let restConfig = {
       issuer: 'test-issuer',
-      s2sPass: process.env.S2SPASS,
+      s2sPass: process.env.SMALL_API_S2SPASS,
 
       rest: {
         [serviceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: process.env.PORT, // see test.utils.js
+          port: process.env.SMALL_API_PORT, // see test.utils.js
           path: '/api/v1/service',
         },
       },
@@ -250,13 +250,13 @@ describe('Rest Communications Utils', function () {
     let serviceName = 'Service';
     let restConfig = {
       issuer: 'test-issuer',
-      s2sPass: process.env.S2SPASS,
+      s2sPass: process.env.SMALL_API_S2SPASS,
 
       rest: {
         [serviceName]: {
           protocol: 'http',
           host: 'localhost',
-          port: process.env.PORT, // see test.utils.js
+          port: process.env.SMALL_API_PORT, // see test.utils.js
           path: '/api/v1/service',
         },
       },
