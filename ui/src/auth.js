@@ -19,14 +19,9 @@ export async function processLoginResponse(response) {
       useAppStore()?.saveTenant(tenantID, getRolesPermissions(tenantID, data));
     }
 
-    // if server sent a cookie value in response.data.cookie, set it (may not be necessary if server uses Set-Cookie)
-    if (typeof document !== 'undefined') {
-      // value expected like 'sid=abc; Path=/; HttpOnly' — be careful with HttpOnly which JS cannot set/read
-      const cookie = response?.data?.cookie || response?.cookie;
-      if (cookie) {
-        document.cookie = cookie;
-      }
-    }
+    // NOTE: Removed client-side assignment of server-provided cookie values.
+    // Cookies should be set by the server using `Set-Cookie; HttpOnly; Secure; SameSite=...`.
+    // Relying on document.cookie for auth cookies is insecure and can be abused.
 
     return { status: 200, token: data?.token, tenantID };
   } catch (e) {
