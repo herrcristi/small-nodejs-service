@@ -15,7 +15,7 @@ const Public = {
    */
   init: async (_ctx) => {
     // TODO init only if local auth is used
-    Private.DB = await DBMgr.connect(process.env.DATABASE_URL, process.env.DATABASE_USERS_AUTH, _ctx);
+    Private.DB = await DBMgr.connect(process.env.SMALL_DATABASE_URL, process.env.SMALL_DATABASE_DB, _ctx);
     console.log('\nUsers Auth database inited');
   },
 

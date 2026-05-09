@@ -7,6 +7,7 @@ const CommonUtils = require('../../core/utils/common.utils.js');
 const JwtUtils = require('../../core/utils/jwt.utils.js');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
 
+const WebConstants = require('../../web-server/web-server.constants.js');
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthDatabase = require('./users-local-auth.database.js');
 const EmailsUtils = require('../../core/utils/emails.utils.js');
@@ -307,11 +308,11 @@ const Public = {
     let emailArgs = {
       user: '',
       school: _ctx.tenantName || _ctx.tenantID,
-      appUrl: `${process.env.APP_URL}`,
+      appUrl: `${process.env.SMALL_API_URL}`,
     };
 
     if (args.resetType != null) {
-      emailArgs.resetUrl = `${process.env.APP_URL}/api/v1/users-auth/reset-token/validate?&type=${args.resetType}&token=${args.token}`;
+      emailArgs.resetUrl = `${process.env.SMALL_API_URL}/${WebConstants.API_VERSION}/users-auth/reset-token/validate?&type=${args.resetType}&token=${args.token}`;
     }
 
     let emailTemplate = TranslationsUtils.email(args.emailID, _ctx, emailArgs);

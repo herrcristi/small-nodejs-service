@@ -6,7 +6,22 @@ const Public = {
   /**
    * web server
    */
-  WebServer: 'http://localhost:8080',
+  Port: 8090,
+  WebServer: 'http://localhost:8090',
+
+  Auth: {
+    AuthProviderType: 'local', // # for testing default is local (local / firebase)
+    Salt: 'bcccbcccbcccbcccbcccbcccbcccbcccbcccbcccbcccbcccbcccbcccbcccbccc', // 64 chars
+    S2SPass: '00001111222233334444555566667777', // 32 characters
+    PrevAuthPass: '00001111222233334444555566667777', // 32 characters
+    AuthPass: '00001111222233334444555566667777', // 32 characters
+    SmtpConfig: '{ "host": "host", "port": "465", "user": "user", "password": "password", "from": "small@localhost" }', // { host, port, user, pass, from }
+  },
+
+  Database: {
+    Url: `${process.env.SMALL_DATABASE_URL}`, // mongodb://${MONGODB_ROOT_USERNAME}:${MONGODB_ROOT_PASSWORD}@localhost/
+    Db: 'Small-Test',
+  },
 
   /**
    * schools

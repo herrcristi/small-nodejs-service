@@ -305,7 +305,7 @@ const Public = {
     await JwtUtils.init(Private.Issuer, [process.env.PREVAUTHPASS, process.env.AUTHPASS]);
 
     // init auth provider
-    Private.UsersAuthProviderType = process.env.USERS_AUTH_PROVIDER;
+    Private.UsersAuthProviderType = process.env.SMALL_AUTH_PROVIDER_TYPE;
     if (Private.UsersAuthProviderType === 'firebase') {
       await UsersAuthServiceFirebase.init();
     } else {
