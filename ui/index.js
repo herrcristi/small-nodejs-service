@@ -34,11 +34,8 @@ const Util = {
 
     const expectedValues = [
       // api
-      'SMALL_API_URL',
-
-      // ui
-      'SMALL_UI_URL',
-      'SMALL_UI_PORT',
+      'VUE_APP_SMALL_API_URL',
+      'VUE_APP_SMALL_API_CORS_ORIGIN',
     ];
 
     for (const val of expectedValues) {
