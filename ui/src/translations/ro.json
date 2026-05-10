@@ -93,6 +93,8 @@
   "password.must.match": "Parolele trebuie să coincidă",
   "password.new": "Parola nouă",
   "password.new.required": "Parola nouă este necesară",
+  "password.new.length": "Parola trebuie să aibă cel puțin 8 caractere",
+  "password.new.complexity": "Parola trebuie să conțină majuscule, litere mici, cifre și un caracter special",
   "pending": "În așteptare",
   "phoneNumber": "Telefon",
   "professors": "Profesori",

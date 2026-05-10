@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 
 const TestConstants = require('../../test-constants.js');
@@ -35,7 +34,7 @@ describe('Users Auth Service', function () {
 
     const postReq = {
       id: testUser.id,
-      password: testUser._test_data.origPassword,
+      password: testUser._test_data.origPassword + 'aA1!',
       userID: testUser.userID,
     };
 
@@ -81,7 +80,7 @@ describe('Users Auth Service', function () {
 
     const postReq = {
       id: testUser.id,
-      password: testUser._test_data.origPassword,
+      password: testUser._test_data.origPassword + 'aA1!',
       userID: testUser.userID,
       something: 1,
     };
@@ -104,7 +103,7 @@ describe('Users Auth Service', function () {
 
     const postReq = {
       id: testUser.id,
-      password: testUser._test_data.origPassword,
+      password: testUser._test_data.origPassword + 'aA1!',
       userID: testUser.userID,
     };
 

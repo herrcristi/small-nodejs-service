@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
 
@@ -36,7 +35,7 @@ describe('Users Auth Service', function () {
 
     const putReq = {
       oldPassword: testUser._test_data.origPassword,
-      newPassword: testUser._test_data.origPassword + '1',
+      newPassword: testUser._test_data.origPassword + 'aA1!',
     };
 
     // stub
@@ -104,7 +103,7 @@ describe('Users Auth Service', function () {
     const putReq = {
       id: testUser.id,
       oldPassword: testUser._test_data.origPassword,
-      newPassword: testUser._test_data.origPassword + '1',
+      newPassword: testUser._test_data.origPassword + 'aA1!',
     };
 
     // call
@@ -124,8 +123,8 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const putReq = {
-      oldPassword: testUser._test_data.origPassword,
-      newPassword: testUser._test_data.origPassword,
+      oldPassword: testUser._test_data.origPassword + 'aA1!',
+      newPassword: testUser._test_data.origPassword + 'aA1!',
     };
 
     // stub
@@ -161,7 +160,7 @@ describe('Users Auth Service', function () {
 
     const putReq = {
       oldPassword: testUser._test_data.origPassword,
-      newPassword: testUser._test_data.origPassword + '1',
+      newPassword: testUser._test_data.origPassword + 'aA1!',
     };
 
     // stub
@@ -191,7 +190,7 @@ describe('Users Auth Service', function () {
 
     const putReq = {
       oldPassword: testUser._test_data.origPassword + '0',
-      newPassword: testUser._test_data.origPassword + '1',
+      newPassword: testUser._test_data.origPassword + 'aA1!',
     };
 
     // stub
@@ -224,7 +223,7 @@ describe('Users Auth Service', function () {
 
     const putReq = {
       oldPassword: testUser._test_data.origPassword,
-      newPassword: testUser._test_data.origPassword + '1',
+      newPassword: testUser._test_data.origPassword + 'aA1!',
     };
 
     // stub

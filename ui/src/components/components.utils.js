@@ -273,7 +273,11 @@ const Utils = {
     Rules: {
       name: (v, t) => (!!v && v.toString().trim().length > 0) || t('name.required'),
       status: (v, t) => !!v || t('required'),
-      email: (v, t) => (!!v && v.toString().trim().length > 0) || t('email.required'),
+      emailReq: (v, t) => (!!v && v.toString().trim().length > 0) || t('email.required'),
+      emailValid: (v, t) => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return (!!v && emailRegex.test(v.toString().trim())) || t('email.invalid');
+      },
       address: (v, t) => (!!v && v.toString().trim().length > 0) || t('required'),
       credits: (v, t) => {
         // credits must be a number greater than or equal to zero
@@ -281,6 +285,16 @@ const Utils = {
         return (n != null && !Number.isNaN(n) && n >= 0 && n <= 1024) || t('credits.limits') || t('required');
       },
       required: (v, t) => !!v || t('required'),
+      passwordReq: (v, t) => (!!v && v.toString().trim().length > 0) || t('password.current.required'),
+      // min 8 chars
+      passwordNewReq: (v, t) => (!!v && v.toString().trim().length > 0) || t('password.new.required'),
+      passwordMinLength: (v, t) => (!!v && v.toString().trim().length >= 8) || t('password.new.length'),
+      passwordComplex: (v, t) => {
+        // client-side password strength rule: uppercase, lowercase, digit, special char
+        const passwordRegex = /(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}/;
+        return (!!v && passwordRegex.test(v)) || t('password.new.complexity');
+      },
+      confirmPassword: (v, t, password) => (!!v && v === password) || t('password.must.match'),
     },
 
     /**

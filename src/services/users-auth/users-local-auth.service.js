@@ -308,11 +308,11 @@ const Public = {
     let emailArgs = {
       user: '',
       school: _ctx.tenantName || _ctx.tenantID,
-      appUrl: `${process.env.SMALL_API_URL}`,
+      appUrl: `${process.env.SMALL_API_URL}`, // TODO should be the frontend url or at least router should redirect to frontend url
     };
 
     if (args.resetType != null) {
-      emailArgs.resetUrl = `${process.env.SMALL_API_URL}/${WebConstants.API_VERSION}/users-auth/reset-token/validate?&type=${args.resetType}&token=${args.token}`;
+      emailArgs.resetUrl = `${process.env.SMALL_API_URL}${WebConstants.BaseApiPath}/users-auth/reset-token/validate?&type=${args.resetType}&token=${args.token}`;
     }
 
     let emailTemplate = TranslationsUtils.email(args.emailID, _ctx, emailArgs);

@@ -12,21 +12,21 @@
             v-model="passwordOld"
             :label="t('password.current')"
             type="password"
-            :rules="[(v) => !!v || t('password.current.required')]"
+            :rules="[passwordReqRule]"
             required
           />
           <v-text-field
             v-model="passwordNew"
             :label="t('password.new')"
             type="password"
-            :rules="[(v) => !!v || t('password.new.required')]"
+            :rules="[passwordNewReqRule, passwordMinLengthRule, passwordComplexRule]"
             required
           />
           <v-text-field
             v-model="passwordConfirm"
             :label="t('password.confirm')"
             type="password"
-            :rules="[(v) => v === passwordNew || t('password.must.match')]"
+            :rules="[confirmPasswordRule]"
             required
           />
         </v-form>
@@ -50,6 +50,7 @@ import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import Api from '../api/api.js';
 import { useAuthStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
+import ComponentsUtils from './components.utils.js';
 const { t } = useI18n();
 
 /**
@@ -66,6 +67,14 @@ const snackbar = ref(false);
 const snackbarText = ref('');
 const snackbarColor = ref('');
 
+/**
+ * rules
+ */
+const passwordReqRule = (v) => ComponentsUtils.Edit.Rules.passwordReq(v, t);
+const passwordNewReqRule = (v) => ComponentsUtils.Edit.Rules.passwordNewReq(v, t);
+const passwordMinLengthRule = (v) => ComponentsUtils.Edit.Rules.passwordMinLength(v, t);
+const passwordComplexRule = (v) => ComponentsUtils.Edit.Rules.passwordComplex(v, t);
+const confirmPasswordRule = (v) => ComponentsUtils.Edit.Rules.confirmPassword(v, t, passwordNew.value);
 /**
  * emit
  */
