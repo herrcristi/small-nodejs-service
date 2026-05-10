@@ -50,7 +50,7 @@ describe('Users Auth Signup Controller', function () {
 
     // call
     let res = await supertest(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/${testUser.id}/signup`)
+      .post(`${UsersAuthConstants.ApiPath}/signup`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -96,7 +96,7 @@ describe('Users Auth Signup Controller', function () {
 
     // call
     let res = await supertest(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/${testUserID}/signup`)
+      .post(`${UsersAuthConstants.ApiPath}/signup`)
       .set('Authorization', 'Bearer token')
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -128,7 +128,7 @@ describe('Users Auth Signup Controller', function () {
 
     // call
     let res = await supertest(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/${testUser.id}/signup`)
+      .post(`${UsersAuthConstants.ApiPath}/signup`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -154,7 +154,7 @@ describe('Users Auth Signup Controller', function () {
 
     // call
     let res = await supertest(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/${testUser.id}/signup`)
+      .post(`${UsersAuthConstants.ApiPath}/signup`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -179,7 +179,7 @@ describe('Users Auth Signup Controller', function () {
 
     // call
     let res = await supertest(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/${testUser.id}/signup`)
+      .post(`${UsersAuthConstants.ApiPath}/signup`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -210,7 +210,7 @@ describe('Users Auth Signup Controller', function () {
 
     // call
     let res = await supertest(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/${testAuthUser.id}/invite`)
+      .post(`${UsersAuthConstants.ApiPath}/invite`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -245,7 +245,7 @@ describe('Users Auth Signup Controller', function () {
 
     // call
     let res = await supertest(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/${testAuthUser.id}/invite`)
+      .post(`${UsersAuthConstants.ApiPath}/invite`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -273,7 +273,7 @@ describe('Users Auth Signup Controller', function () {
 
     // call
     let res = await supertest(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/${testAuthUser.id}/invite`)
+      .post(`${UsersAuthConstants.ApiPath}/invite`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -300,7 +300,7 @@ describe('Users Auth Signup Controller', function () {
 
     // call
     let res = await supertest(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/${testAuthUser.id}/invite`)
+      .post(`${UsersAuthConstants.ApiPath}/invite`)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 

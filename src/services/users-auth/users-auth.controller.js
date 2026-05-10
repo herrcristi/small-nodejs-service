@@ -156,7 +156,7 @@ const Public = {
       console.log(
         `${_ctx.serviceName}: Delete called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
       );
-      const objID = req.params.id;
+      const objID = _ctx.userID;
 
       // delete
       const r = await UsersAuthService.delete(objID, _ctx);
@@ -273,7 +273,7 @@ const Public = {
           2
         )}`
       );
-      const objID = req.params.id;
+      const objID = _ctx.userID;
 
       // put
       const r = await UsersAuthService.putPassword(objID, req.body, _ctx);
@@ -304,7 +304,7 @@ const Public = {
           2
         )}, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
-      const objID = req.params.id;
+      const objID = _ctx.userID;
 
       // put
       const r = await UsersAuthService.putID(objID, req.body, _ctx);
@@ -347,7 +347,7 @@ const Public = {
           2
         )}`
       );
-      const objID = req.params.id;
+      const objID = _ctx.userID;
 
       // patch
       const r = await UsersAuthService.patchPassword(objID, req.body, _ctx);
@@ -378,7 +378,7 @@ const Public = {
           2
         )} body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
-      const objID = req.params.id;
+      const objID = _ctx.userID;
 
       // patch
       const r = await UsersAuthService.patchID(objID, req.body, _ctx);
@@ -421,7 +421,7 @@ const Public = {
           2
         )} body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
-      const adminEmail = req.params.id;
+      const adminEmail = _ctx.userID;
       const adminID = _ctx.userID; // after auth validation
       const userID = req.params.uid;
 

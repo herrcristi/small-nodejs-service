@@ -1,30 +1,17 @@
 {
   "roles": {
-    "deny-not-current-user": {
-      "users-auth": {
-        "POST": ["/api/v1/users-auth/:id/invite", "/api/v1/users-auth/:id/signup"],
-        "DELETE": ["/api/v1/users-auth/:id"],
-        "PUT": ["/api/v1/users-auth/:id/password", "/api/v1/users-auth/:id/id"],
-        "PATCH": [
-          "/api/v1/users-auth/:id/password",
-          "/api/v1/users-auth/:id/id",
-          "/api/v1/users-auth/:id/school/user/:uid"
-        ]
-      }
-    },
-
     "all": {
       "users-auth": {
         "POST": ["/api/v1/users-auth/logout"],
-        "DELETE": ["/api/v1/users-auth/:id"],
-        "PUT": ["/api/v1/users-auth/:id/password", "/api/v1/users-auth/:id/id"],
-        "PATCH": ["/api/v1/users-auth/:id/password", "/api/v1/users-auth/:id/id"]
+        "DELETE": ["/api/v1/users-auth"],
+        "PUT": ["/api/v1/users-auth/password", "/api/v1/users-auth/id"],
+        "PATCH": ["/api/v1/users-auth/password", "/api/v1/users-auth/id"]
       }
     },
 
     "portal-admin": {
       "users-auth": {
-        "POST": ["/api/v1/users-auth/:id/signup"]
+        "POST": ["/api/v1/users-auth/signup"]
       }
     },
 
@@ -45,8 +32,8 @@
         "PATCH": ["/api/v1/schools/:id"]
       },
       "users-auth": {
-        "POST": ["/api/v1/users-auth/:id/invite"],
-        "PATCH": ["/api/v1/users-auth/:id/school/user/:uid"]
+        "POST": ["/api/v1/users-auth/invite"],
+        "PATCH": ["/api/v1/users-auth/school/user/:uid"]
       },
       "users": {
         "GET": ["/api/v1/users/:id"],

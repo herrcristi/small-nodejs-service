@@ -54,7 +54,7 @@ const Public = {
         )}, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
 
-      const objID = req.params.id;
+      const objID = _ctx.userID;
 
       // invite (is a separate service)
       const r = await UsersAuthSignupService.invite(objID, req.body, _ctx);

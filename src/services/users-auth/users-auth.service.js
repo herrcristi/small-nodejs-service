@@ -239,21 +239,6 @@ const Private = {
    * _ctx: { userID, username, tenantID }
    */
   validateRoute: (user, method, route, _ctx) => {
-    // some routes are only for current user
-    const isDenyNotCurrentUser = Private.isValidRouteForRoles(['deny-not-current-user'], method, route);
-    if (isDenyNotCurrentUser) {
-      let paramID = _ctx.userID;
-      if (new RegExp(`^${UsersAuthRest.Constants.ApiPath}/:id`).test(route)) {
-        paramID = _ctx.username;
-      }
-
-      const isValid = Private.isValidRouteForParam(route, paramID, _ctx);
-      if (!isValid) {
-        const msg = 'user :id restriction applied';
-        return { status: 403, error: { message: msg, error: new Error(msg) } };
-      }
-    }
-
     // validate for all (non-tenant) route
     const validGlobalRole = Private.isValidRouteForRoles(['all'], method, route);
     if (validGlobalRole) {
