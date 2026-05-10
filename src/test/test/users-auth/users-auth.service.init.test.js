@@ -5,7 +5,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const JwtUtils = require('../../../core/utils/jwt.utils.js');
 const EmailsUtils = require('../../../core/utils/emails.utils.js');
 
@@ -17,13 +16,17 @@ const EventsRest = require('../../../services/rest/events.rest.js');
 
 describe('Users Auth Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
+  let authProviderType; // to restore after test
 
   before(async function () {});
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    authProviderType = process.env.SMALL_API_AUTH_PROVIDER_TYPE;
+  });
 
   afterEach(async function () {
     sinon.restore();
+    process.env.SMALL_API_AUTH_PROVIDER_TYPE = authProviderType;
   });
 
   after(async function () {});
@@ -40,5 +43,20 @@ describe('Users Auth Service', function () {
     let res = await UsersAuthService.init();
 
     chai.expect(stubJwt.callCount).to.equal(2);
+  }).timeout(10000);
+
+  /**
+   * init failed due to invalid auth provider
+   */
+  it('should init failed due to invalid auth provider', async () => {
+    // stub
+    let stubExit = sinon.stub(process, 'exit');
+
+    // set invalid auth provider type
+    sinon.stub(process, 'env').value({});
+
+    // call
+    let res = await UsersAuthService.init();
+    chai.expect(stubExit.calledOnceWith(1)).to.be.true;
   }).timeout(10000);
 });
