@@ -86,7 +86,7 @@ const Private = {
     const rAuth = await UsersAuth.post(
       {
         id: objInfo.email,
-        password: CommonUtils.getRandomBytes(32).toString('hex'),
+        password: CommonUtils.getRandomBytes(30).toString('hex') + 'aA1!', // random password with complexity rules
         userID: userID,
       },
       _ctx

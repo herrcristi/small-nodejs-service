@@ -72,7 +72,7 @@ const snackbarColor = ref('');
  */
 const passwordReqRule = (v) => ComponentsUtils.Edit.Rules.passwordReq(v, t);
 const passwordNewReqRule = (v) => ComponentsUtils.Edit.Rules.passwordNewReq(v, t);
-const passwordMinLengthRule = (v) => ComponentsUtils.Edit.Rules.passwordMinLengt(v, t);
+const passwordMinLengthRule = (v) => ComponentsUtils.Edit.Rules.passwordMinLength(v, t);
 const passwordComplexRule = (v) => ComponentsUtils.Edit.Rules.passwordComplex(v, t);
 const confirmPasswordRule = (v) => ComponentsUtils.Edit.Rules.confirmPassword(v, t, passwordNew.value);
 /**
