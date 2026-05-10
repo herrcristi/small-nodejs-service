@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
@@ -22,7 +21,7 @@ describe('Users Auth Service', function () {
     // valid post req
     postReq = {
       ...testUser,
-      password: testUser._test_data.origPassword,
+      password: testUser._test_data.origPassword + 'aA1!',
     };
     delete postReq.type;
     delete postReq.salt;
@@ -135,7 +134,7 @@ describe('Users Auth Service', function () {
     // other params
     putReq = {
       oldPassword: 'pass',
-      newPassword: 'pass1',
+      newPassword: 'passaA1!',
       extra: 1,
     };
     res = UsersAuthService.Validators.PutPassword.validate(putReq);
@@ -202,7 +201,7 @@ describe('Users Auth Service', function () {
     patchReq = {
       set: {
         oldPassword: 'pass',
-        newPassword: 'pass1',
+        newPassword: 'passaA1!',
         extra: 1,
       },
     };

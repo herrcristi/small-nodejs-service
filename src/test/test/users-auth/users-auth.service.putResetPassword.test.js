@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
 const JwtUtils = require('../../../core/utils/jwt.utils.js');
@@ -42,7 +41,7 @@ describe('Users Auth Service', function () {
     let token = JwtUtils.encrypt(rT.value, authIssuer, _ctx).value; // double encryption
 
     const putReq = {
-      password: testUser._test_data.origPassword,
+      password: testUser._test_data.origPassword + 'aA1!',
     };
 
     // stub
@@ -99,7 +98,7 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const putReq = {
-      password: testUser._test_data.origPassword,
+      password: testUser._test_data.origPassword + 'aA1!',
       extra: 1,
     };
 
@@ -122,7 +121,7 @@ describe('Users Auth Service', function () {
     let token = 'token-invalid';
 
     const putReq = {
-      password: testUser._test_data.origPassword,
+      password: testUser._test_data.origPassword + 'aA1!',
     };
 
     // stub
@@ -172,7 +171,7 @@ describe('Users Auth Service', function () {
     let token = JwtUtils.encrypt(rT.value, authIssuer, _ctx).value; // double encryption
 
     const putReq = {
-      password: testUser._test_data.origPassword,
+      password: testUser._test_data.origPassword + 'aA1!',
     };
 
     // stub
