@@ -78,7 +78,7 @@
                   v-if="fieldsSet.has('user.email')"
                   v-model="itemData.email"
                   :label="t('email')"
-                  :rules="[emailRule]"
+                  :rules="[emailReqRule, emailValidRule]"
                   required
                 />
               </slot>
@@ -171,7 +171,8 @@ const statusItems = computed(() =>
  */
 const nameRule = (v) => ComponentsUtils.Edit.Rules.name(v, t);
 const statusRule = (v) => ComponentsUtils.Edit.Rules.status(v, t);
-const emailRule = (v) => ComponentsUtils.Edit.Rules.email(v, t);
+const emailReqRule = (v) => ComponentsUtils.Edit.Rules.emailReq(v, t);
+const emailValidRule = (v) => ComponentsUtils.Edit.Rules.emailValid(v, t);
 
 /**
  * ApiTableServer event open details

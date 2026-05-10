@@ -93,6 +93,8 @@
   "password.must.match": "Passwords must match",
   "password.new": "New password",
   "password.new.required": "New password is required",
+  "password.new.length": "Password must be at least 8 characters",
+  "password.new.complexity": "Password must include uppercase, lowercase, number and special character",
   "pending": "Pending",
   "phoneNumber": "Phone",
   "professors": "Professors",

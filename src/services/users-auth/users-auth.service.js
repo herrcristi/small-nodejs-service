@@ -23,6 +23,16 @@ const UsersAuthServiceFirebase = require('./users-firebase-auth.service.js'); //
 /**
  * validation
  */
+
+// Stronger password validator: at least 8 chars, upper, lower, digit and special char
+const CurrentPassword = Joi.string().min(1).max(64);
+const NewPassword = Joi.string()
+  .min(8)
+  .max(64)
+  .pattern(new RegExp('(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9])'))
+  .required()
+  .messages({ 'string.pattern.base': 'Password must contain uppercase, lowercase, number and special character' });
+
 const Schema = {
   Login: Joi.object().keys({
     id: Joi.string()
@@ -30,7 +40,7 @@ const Schema = {
       .min(1)
       .max(128)
       .required(),
-    password: Joi.string().min(1).max(64).required(),
+    password: CurrentPassword.required(),
   }),
 
   User: Joi.object().keys({
@@ -39,20 +49,20 @@ const Schema = {
       .min(1)
       .max(128)
       .required(),
-    password: Joi.string().min(1).max(64).required(),
+    password: NewPassword.required(),
     userID: Joi.string().min(1).max(64).required(),
   }),
 
   UserPass: Joi.object().keys({
-    oldPassword: Joi.string().min(1).max(64).required(),
-    newPassword: Joi.string().min(1).max(64).required(),
+    oldPassword: CurrentPassword.required(),
+    newPassword: NewPassword.required(),
   }),
 
   UserID: Joi.object().keys({
     id: Joi.string()
       .email({ tlds: { allow: false } })
       .required(),
-    password: Joi.string().min(1).max(64).required(),
+    password: CurrentPassword.required(),
   }),
 
   SchoolRoles: Joi.object().keys({
@@ -119,7 +129,7 @@ const Validators = {
   }),
 
   PutResetPassword: Joi.object().keys({
-    password: Joi.string().min(1).max(64).required(),
+    password: NewPassword.required(),
     // TODO if resetType is invite provide all details
     // name: Joi.string().min(1).max(128),
     // birthday: Joi.date().iso(),

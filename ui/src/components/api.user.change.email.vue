@@ -11,14 +11,14 @@
             v-model="emailNew"
             :label="t('email.new')"
             type="email"
-            :rules="[(v) => !!v || t('email.required'), (v) => /.+@.+\..+/.test(v) || t('email.invalid')]"
+            :rules="[emailReqRule, emailValidRule]"
             required
           />
           <v-text-field
             v-model="emailPassword"
             :label="t('password.current')"
             type="password"
-            :rules="[(v) => !!v || t('password.current.required')]"
+            :rules="[passwordReqRule]"
             required
           />
         </v-form>
@@ -42,6 +42,7 @@ import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import Api from '../api/api.js';
 import { useAuthStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
+import ComponentsUtils from './components.utils.js';
 const { t } = useI18n();
 
 /**
@@ -58,6 +59,13 @@ const emailFormRef = ref(null);
 const snackbar = ref(false);
 const snackbarText = ref('');
 const snackbarColor = ref('');
+
+/**
+ * rules
+ */
+const emailReqRule = (v) => ComponentsUtils.Edit.Rules.emailReq(v, t);
+const emailValidRule = (v) => ComponentsUtils.Edit.Rules.emailValid(v, t);
+const passwordReqRule = (v) => ComponentsUtils.Edit.Rules.passwordReq(v, t);
 
 /**
  * emit
