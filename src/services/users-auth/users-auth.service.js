@@ -158,8 +158,16 @@ const Private = {
 
   Issuer: UsersAuthConstants.ServiceName,
 
-  // will be initialized on init
+  /**
+   * Auth Providers
+   * will be initialized on init
+   */
   UsersAuthProviderType: null,
+
+  UsersAuthProviders: {
+    local: UsersAuthServiceLocal,
+    firebase: UsersAuthServiceFirebase,
+  },
 
   RolesApiAccess: {},
 
@@ -172,7 +180,9 @@ const Private = {
       serviceName: UsersAuthConstants.ServiceName,
       //collection: ... // will be added only for local auth
       references: [],
+      isLocalAuth: Private.UsersAuthProviderType === 'local',
       isFirebaseAuth: Private.UsersAuthProviderType === 'firebase',
+      authProvider: Private.UsersAuthProviders[Private.UsersAuthProviderType],
     };
     return config;
   },
@@ -310,17 +320,23 @@ const Public = {
    * init
    */
   init: async () => {
+    // init auth provider
+    const authProviderType = process.env.SMALL_API_AUTH_PROVIDER_TYPE;
+    const expectedAuthProviders = Object.keys(Private.UsersAuthProviders);
+    if (!expectedAuthProviders.includes(authProviderType)) {
+      console.log(`Invalid auth provider type ${authProviderType}, expected one of ${expectedAuthProviders}`);
+      process.exit(1);
+      return false;
+    }
+
     // init token encryption (due to multipod env password must be the same for all pods)
     // allow rotation of password by providing mutiple password to support old tokens
     await JwtUtils.init(Private.Issuer, [process.env.SMALL_API_PREVAUTHPASS, process.env.SMALL_API_AUTHPASS]);
 
-    // init auth provider
-    Private.UsersAuthProviderType = process.env.SMALL_API_AUTH_PROVIDER_TYPE;
-    if (Private.UsersAuthProviderType === 'firebase') {
-      await UsersAuthServiceFirebase.init();
-    } else {
-      await UsersAuthServiceLocal.init();
-    }
+    // init auth
+    Private.UsersAuthProviderType = authProviderType;
+    const authProvider = Private.UsersAuthProviders[Private.UsersAuthProviderType];
+    await authProvider.init();
 
     // init roles
     Private.initRolesAccess();
@@ -359,12 +375,7 @@ const Public = {
     ///
     // login
     ///
-    let rL;
-    if (config.isFirebaseAuth) {
-      rL = await UsersAuthServiceFirebase.login(config, objInfo, _ctx);
-    } else {
-      rL = await UsersAuthServiceLocal.login(config, objInfo, _ctx);
-    }
+    let rL = await config.authProvider.login(config, objInfo, _ctx);
 
     if (rL.error) {
       // raise event for invalid login
@@ -419,12 +430,11 @@ const Public = {
     ///
     // token
     ///
-    let rT;
+    const userInfo = { id: objInfo.id, userID: user.id };
     if (config.isFirebaseAuth) {
-      rT = await UsersAuthServiceFirebase.getToken(config, { token: rL.value, id: objInfo.id, userID: user.id }, _ctx);
-    } else {
-      rT = await UsersAuthServiceLocal.getToken(config, { id: objInfo.id, userID: user.id }, _ctx);
+      userInfo.token = rL.value; // pass firebase token to auth provider to validate and get user info from it (if needed)
     }
+    let rT = await config.authProvider.getToken(config, userInfo, _ctx);
     if (rT.error) {
       const msg = 'Failed to get token';
       return { status: 500, error: { message: msg, error: new Error(msg) } };
@@ -456,12 +466,7 @@ const Public = {
     ///
     // logout
     ///
-    let rL;
-    if (config.isFirebaseAuth) {
-      rL = await UsersAuthServiceFirebase.logout(config, _ctx);
-    } else {
-      rL = await UsersAuthServiceLocal.logout(config, _ctx);
-    }
+    let rL = await config.authProvider.logout(config, _ctx);
 
     // success empty token
     return {
@@ -498,12 +503,7 @@ const Public = {
 
     // token
     const validateTokenInfo = { token: decodedToken.value };
-    let rT;
-    if (config.isFirebaseAuth) {
-      rT = await UsersAuthServiceFirebase.validateToken(config, validateTokenInfo, _ctx);
-    } else {
-      rT = await UsersAuthServiceLocal.validateToken(config, validateTokenInfo, _ctx);
-    }
+    let rT = await config.authProvider.validateToken(config, validateTokenInfo, _ctx);
     if (rT.error) {
       const msg = 'Failed to validate token';
       return { status: 401, error: { message: msg, error: new Error(msg) } };
@@ -560,12 +560,7 @@ const Public = {
     const config = await Private.getConfig(_ctx);
 
     // post
-    let r;
-    if (config.isFirebaseAuth) {
-      r = await UsersAuthServiceFirebase.post(config, objInfo, _ctx);
-    } else {
-      r = await UsersAuthServiceLocal.post(config, objInfo, _ctx);
-    }
+    let r = await config.authProvider.post(config, objInfo, _ctx);
     if (r.error) {
       return r;
     }
@@ -589,12 +584,7 @@ const Public = {
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
-    let r;
-    if (config.isFirebaseAuth) {
-      r = await UsersAuthServiceFirebase.delete(config, objID, _ctx);
-    } else {
-      r = await UsersAuthServiceLocal.delete(config, objID, _ctx);
-    }
+    let r = await config.authProvider.delete(config, objID, _ctx);
     if (r.error) {
       return r;
     }
@@ -630,12 +620,7 @@ const Public = {
     const config = await Private.getConfig(_ctx);
 
     // put
-    let r;
-    if (config.isFirebaseAuth) {
-      r = await UsersAuthServiceFirebase.putPassword(config, objID, objInfo, _ctx);
-    } else {
-      r = await UsersAuthServiceLocal.putPassword(config, objID, objInfo, _ctx);
-    }
+    let r = await config.authProvider.putPassword(config, objID, objInfo, _ctx);
     if (r.error) {
       return r;
     }
@@ -665,12 +650,7 @@ const Public = {
     const config = await Private.getConfig(_ctx);
 
     // put
-    let r;
-    if (config.isFirebaseAuth) {
-      r = await UsersAuthServiceFirebase.putID(config, objID, objInfo, _ctx);
-    } else {
-      r = await UsersAuthServiceLocal.putID(config, objID, objInfo, _ctx);
-    }
+    let r = await config.authProvider.putID(config, objID, objInfo, _ctx);
     if (r.error) {
       return r;
     }
@@ -682,11 +662,7 @@ const Public = {
       // restore old id (email)
       const restorePut = { ...objInfo, id: objID };
       const restoreCtx = { ..._ctx, username: newIDEmail };
-      if (config.isFirebaseAuth) {
-        r = await UsersAuthServiceFirebase.putID(config, newIDEmail, restorePut, restoreCtx);
-      } else {
-        r = await UsersAuthServiceLocal.putID(config, newIDEmail, restorePut, restoreCtx);
-      }
+      await config.authProvider.putID(config, newIDEmail, restorePut, restoreCtx); // best effort to restore, if fail not much to do
 
       return rUserDetails;
     }
@@ -786,13 +762,8 @@ const Public = {
     const action = Private.Action.Invite;
     const args = { emailID: 'invite' };
 
-    // only for local auth
-    if (config.isFirebaseAuth) {
-      // nothing to do
-    } else {
-      // send via email
-      await UsersAuthServiceLocal.sendEmail(config, objID, args, _ctx);
-    }
+    // best effort to send email, if fail not much to do (no token for invite, just send email with info)
+    await config.authProvider.sendEmail(config, objID, args, _ctx);
 
     // raise event for reset password
     const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
@@ -821,18 +792,13 @@ const Public = {
     const args = { emailID: resetType, resetType };
 
     // reset password
-    let r;
-    if (config.isFirebaseAuth) {
-      r = await UsersAuthServiceFirebase.resetPassword(config, objID, _ctx);
-    } else {
-      r = await UsersAuthServiceLocal.resetPassword(config, objID, _ctx);
-    }
+    let r = await config.authProvider.resetPassword(config, objID, _ctx);
     if (r.error) {
       return r;
     }
 
     // only for local auth
-    if (!config.isFirebaseAuth) {
+    if (config.isLocalAuth) {
       // encrypt token again
       const token = JwtUtils.encrypt(r.value, Private.Issuer, _ctx).value;
 

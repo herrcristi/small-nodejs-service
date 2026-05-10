@@ -82,7 +82,7 @@ const Public = {
     }
 
     // success
-    return { id: objInfo.id };
+    return { status: 200, id: objInfo.id };
   },
 
   /**
@@ -98,7 +98,7 @@ const Public = {
     }
 
     // success
-    return { id: objID };
+    return { status: 200, id: objID };
   },
 
   /**
@@ -116,7 +116,7 @@ const Public = {
     }
 
     // success
-    return { id: objID };
+    return { status: 200, id: objID };
   },
 
   /**
@@ -134,7 +134,7 @@ const Public = {
     }
 
     // success
-    return { id: objID };
+    return { status: 200, id: objID };
   },
 
   /**
@@ -151,7 +151,19 @@ const Public = {
     }
 
     // success
-    return { id: objID };
+    return { status: 200, id: objID };
+  },
+
+  /**
+   * send email
+   * config: { serviceName }
+   * args: { token, resetType }
+   */
+  sendEmail: async (config, objID, args, _ctx) => {
+    // nothing to do for firebase auth as firebase will send email directly
+
+    // success
+    return { status: 200, id: objID };
   },
 };
 
