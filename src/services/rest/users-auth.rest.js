@@ -90,7 +90,7 @@ const Public = {
    */
   post: async (objInfo, _ctx) => {
     const config = {
-      serviceName: UsersAuthConstants.ServiceName,
+      serviceName: UsersAuthConstants.ServiceNameInternal,
       method: 'POST',
       path: '',
       body: objInfo,
