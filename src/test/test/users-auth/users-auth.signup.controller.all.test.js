@@ -63,51 +63,6 @@ describe('Users Auth Signup Controller', function () {
   }).timeout(10000);
 
   /**
-   * signup fail different user then current
-   */
-  it('should signup fail different user then current', async () => {
-    const testUsers = _.cloneDeep(TestConstants.UsersSignup);
-    const testUser = testUsers[0];
-
-    const testUserID = 'user1';
-
-    // restore stubs
-    sinon.restore();
-
-    let stubTokenGet = sinon.stub(JwtUtils, 'getJwt').callsFake((data) => {
-      console.log(`\nJwtUtils.getJwt called for ${JSON.stringify(data, null, 2)}\n`);
-      return { status: 200, value: 'token' };
-    });
-    let stubTokenValidate = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
-      console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
-      return { status: 200, value: { id: testUser.id, userID: testUser.id } };
-    });
-    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
-      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
-
-      return { status: 200, value: data };
-    });
-    let stubUsersGet = sinon.stub(UsersRest, 'getOneByEmail').callsFake((email) => {
-      console.log(`\nUsersRest.getOneByEmail called for ${JSON.stringify(email, null, 2)}\n`);
-
-      chai.expect(email).to.equal(testUser.id);
-      return { status: 200, value: testUser };
-    });
-
-    // call
-    let res = await supertest(TestConstants.WebServer)
-      .post(`${UsersAuthConstants.ApiPath}/signup`)
-      .set('Authorization', 'Bearer token')
-      .send({ ...testUser });
-    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(403);
-    chai.expect(res.body.message).to.include('Request is not having enough permissions');
-    chai.expect(res.body.error).to.include('Error: user :id restriction applied');
-  }).timeout(10000);
-
-  /**
    * signup validation fail
    */
   it('should signup validation fail', async () => {

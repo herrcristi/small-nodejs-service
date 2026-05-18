@@ -45,7 +45,7 @@ const Private = {
         error: { message: `No service ${config.serviceName}`, error: new Error(`No service ${config.serviceName}`) },
       };
     }
-    let srvUri = `${srvConfigUri.protocol || 'http'}://${srvConfigUri.host}:${srvConfigUri.port || 80}${
+    let srvUri = `${srvConfigUri.protocol || 'https'}://${srvConfigUri.host}:${srvConfigUri.port || 80}${
       srvConfigUri.path
     }${config.path}`;
 
@@ -181,22 +181,17 @@ const Public = {
 
   /**
    * call either local or rest
-   * config: { serviceName, method, path, query?, body?, headers? }
+   * config: { serviceName, method, path, query?, body?, headers?, localCall:{ fn, params?: {} } }
    * examples
-   *  login  objInfo: { id, password }
-   *  logout objInfo: { }
-   *  signup objInfo: { email, password, name, birthday, phoneNumber?, address, school: { name, description } },
-   *  invite objInfo: { email, school: { role } } - schoolID is _ctx.tenantID
+   *  login  body: { id, password }
+   *  logout body: { }
+   *  signup body: { email, password, name, birthday, phoneNumber?, address, school: { name, description } },
+   *  invite body: { email, school: { role } } - schoolID is _ctx.tenantID
    */
   call: async (config, _ctx) => {
     const localService = Private.Config.local[config.serviceName];
     if (localService) {
-      const callPath = config.path.slice(1); // remove first /
-      if (config.method.toUpperCase() === 'GET') {
-        return await localService[callPath](...Object.values(config.query), _ctx);
-      } else {
-        return await localService[callPath](config.body, _ctx);
-      }
+      return await localService[config.localCall.fn](...Object.values(config.localCall.params || {}), _ctx);
     }
     return await Private.restCall(config, _ctx);
   },
@@ -260,76 +255,75 @@ const Public = {
    * get one
    */
   getOne: async (serviceName, objID, projection, _ctx) => {
-    const localService = Private.Config.local[serviceName];
-    if (localService) {
-      return await localService.getOne(objID, projection, _ctx);
-    }
-    const queryParams = projection ? `projection=${Object.keys(projection).join(',')}` : '';
-    return await Private.restCall({ serviceName, method: 'GET', path: `/${objID}`, query: queryParams }, _ctx);
+    const config = {
+      serviceName,
+      method: 'GET',
+      path: `/${objID}`,
+      query: projection ? `projection=${Object.keys(projection).join(',')}` : '',
+      localCall: { fn: 'getOne', params: { objID, projection } },
+    };
+    return await Public.call(config, _ctx);
   },
 
   /**
    * post
    */
   post: async (serviceName, objInfo, _ctx) => {
-    const localService = Private.Config.local[serviceName];
-    if (localService) {
-      return await localService.post(objInfo, _ctx);
-    }
-    return await Private.restCall({ serviceName, method: 'POST', path: '', body: objInfo }, _ctx);
+    const config = {
+      serviceName,
+      method: 'POST',
+      path: '',
+      body: objInfo,
+      localCall: { fn: 'post', params: { objInfo } },
+    };
+    return await Public.call(config, _ctx);
   },
 
   /**
    * delete
    */
   delete: async (serviceName, objID, _ctx) => {
-    const localService = Private.Config.local[serviceName];
-    if (localService) {
-      return await localService.delete(objID, _ctx);
-    }
-    return await Private.restCall({ serviceName, method: 'DELETE', path: `/${objID}` }, _ctx);
+    const config = {
+      serviceName,
+      method: 'DELETE',
+      path: `/${objID}`,
+      localCall: { fn: 'delete', params: { objID } },
+    };
+    return await Public.call(config, _ctx);
   },
 
   /**
    * put
    */
   put: async (serviceName, objID, objInfo, _ctx, field = '') => {
-    const method = `put${field === 'id' ? 'ID' : CommonUtils.capitalize(field)}`;
-    const extraPath = field ? `/${field}` : '';
+    const localFn = `put${field === 'id' ? 'ID' : CommonUtils.capitalize(field)}`; // put, putID, putPassword etc
+    const extraPath = field ? `/${field}` : ''; // '', '/id', '/password' etc
 
-    const localService = Private.Config.local[serviceName];
-    if (localService) {
-      return await localService[method](objID, objInfo, _ctx);
-    }
-    return await Private.restCall({ serviceName, method: 'PUT', path: `/${objID}${extraPath}`, body: objInfo }, _ctx);
+    const config = {
+      serviceName,
+      method: 'PUT',
+      path: `/${objID}${extraPath}`,
+      body: objInfo,
+      localCall: { fn: localFn, params: { objID, objInfo } },
+    };
+    return await Public.call(config, _ctx);
   },
 
   /**
    * patch
    */
   patch: async (serviceName, objID, patchInfo, _ctx, field = '') => {
-    const method = `patch${field === 'id' ? 'ID' : CommonUtils.capitalize(field)}`;
-    const extraPath = field ? `/${field}` : '';
+    const localFn = `patch${field === 'id' ? 'ID' : CommonUtils.capitalize(field)}`; // patch, patchID, patchPassword, etc
+    const extraPath = field ? `/${field}` : ''; // '', '/id', '/password', etc
 
-    const localService = Private.Config.local[serviceName];
-    if (localService) {
-      return await localService[method](objID, patchInfo, _ctx);
-    }
-    return await Private.restCall(
-      { serviceName, method: 'PATCH', path: `/${objID}${extraPath}`, body: patchInfo },
-      _ctx
-    );
-  },
-
-  patchUserSchool: async (serviceName, adminID, userID, patchInfo, _ctx) => {
-    const localService = Private.Config.local[serviceName];
-    if (localService) {
-      return await localService.patchUserSchool(adminID, userID, patchInfo, _ctx);
-    }
-    return await Private.restCall(
-      { serviceName, method: 'PATCH', path: `/${adminID}/school/user/${userID}`, body: patchInfo },
-      _ctx
-    );
+    const config = {
+      serviceName,
+      method: 'PATCH',
+      path: `/${objID}${extraPath}`,
+      body: patchInfo,
+      localCall: { fn: localFn, params: { objID, patchInfo } },
+    };
+    return await Public.call(config, _ctx);
   },
 
   /**
@@ -337,11 +331,14 @@ const Public = {
    * notification: { serviceName, added?, modified?, removed? }
    */
   notification: async (serviceName, notification, _ctx) => {
-    const localService = Private.Config.local[serviceName];
-    if (localService) {
-      return await localService.notification(notification, _ctx);
-    }
-    return await Private.restCall({ serviceName, method: 'POST', path: '/notifications', body: notification }, _ctx);
+    const config = {
+      serviceName,
+      method: 'POST',
+      path: '/notifications',
+      body: notification,
+      localCall: { fn: 'notification', params: { notification } },
+    };
+    return await Public.call(config, _ctx);
   },
 
   /**
@@ -349,19 +346,18 @@ const Public = {
    * objInfo: { method, route, token }
    */
   validate: async (serviceName, objInfo, cookieTokenName, _ctx) => {
-    const localService = Private.Config.local[serviceName];
-    if (localService) {
-      return await localService.validate(objInfo, _ctx);
-    }
-
-    const cookie = `${cookieTokenName}=${objInfo.token}`;
-    const authorization = `Bearer ${objInfo.token}`;
-    const queryParams = `method=${objInfo.method}&route=${encodeURIComponent(objInfo.route)}`;
-
-    return await Private.restCall(
-      { serviceName, method: 'GET', path: '/validate', query: queryParams, headers: { cookie, authorization } },
-      _ctx
-    );
+    const config = {
+      serviceName,
+      method: 'GET',
+      path: '/validate',
+      query: `method=${objInfo.method}&route=${encodeURIComponent(objInfo.route)}`,
+      headers: {
+        cookie: `${cookieTokenName}=${objInfo.token}`,
+        authorization: `Bearer ${objInfo.token}`,
+      },
+      localCall: { fn: 'validate', params: { objInfo } },
+    };
+    return await Public.call(config, _ctx);
   },
 };
 
