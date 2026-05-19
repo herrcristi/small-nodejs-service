@@ -25,7 +25,7 @@ const Public = {
   /**
    * get one
    * config: { serviceName }
-   * objInfo: { id, password }
+   * objInfo: { username, password }
    * returns { status, value } or { status, error }
    */
   login: async (config, objInfo, _ctx) => {
@@ -47,10 +47,13 @@ const Public = {
   /**
    * get the token
    * config: { serviceName }
-   * userInfo: { token, id, userID }
+   * userInfo: { token, username }
    */
   getToken: async (config, userInfo, _ctx) => {
-    return { status: 200, value: { token: userInfo.token, data: { id: userInfo.id, userID: userInfo.userID } } };
+    return {
+      status: 200,
+      value: { token: userInfo.token, data: { username: userInfo.username } },
+    };
   },
 
   /**
@@ -64,13 +67,13 @@ const Public = {
       return r;
     }
 
-    return { status: 200, value: { id: 'email' } };
+    return { status: 200, value: { username: 'email' } };
   },
 
   /**
    * post
    * config: { serviceName }
-   * objInfo: { id, password }
+   * objInfo: { username, password }
    */
   post: async (config, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
@@ -82,14 +85,14 @@ const Public = {
     }
 
     // success
-    return { status: 200, id: objInfo.id };
+    return { status: 200, value: { username: objInfo.username } };
   },
 
   /**
    * delete
    * config: { serviceName }
    */
-  delete: async (config, objID, _ctx) => {
+  delete: async (config, username, _ctx) => {
     await Private.setupConfig(config, _ctx);
 
     const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
@@ -98,7 +101,7 @@ const Public = {
     }
 
     // success
-    return { status: 200, id: objID };
+    return { status: 200, value: { username: username } };
   },
 
   /**
@@ -106,7 +109,7 @@ const Public = {
    * config: { serviceName }
    * objInfo: { oldPassword, newPassword }
    */
-  putPassword: async (config, objID, objInfo, _ctx) => {
+  putPassword: async (config, username, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
 
     // patch
@@ -116,15 +119,15 @@ const Public = {
     }
 
     // success
-    return { status: 200, id: objID };
+    return { status: 200, value: { username: username } };
   },
 
   /**
-   * put id (email)
+   * put (email)
    * config: { serviceName }
-   * objInfo: { id, password }
+   * objInfo: { username, password }
    */
-  putID: async (config, objID, objInfo, _ctx) => {
+  putID: async (config, username, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
 
     // patch
@@ -134,15 +137,14 @@ const Public = {
     }
 
     // success
-    return { status: 200, id: objID };
+    return { status: 200, value: { username: objInfo.username } };
   },
 
   /**
    * reset password
    * config: { serviceName }
-   * objInfo: { id }
    */
-  resetPassword: async (config, objID, _ctx) => {
+  resetPassword: async (config, username, _ctx) => {
     await Private.setupConfig(config, _ctx);
 
     const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
@@ -151,7 +153,7 @@ const Public = {
     }
 
     // success
-    return { status: 200, id: objID };
+    return { status: 200, value: { username: username } };
   },
 
   /**
@@ -159,11 +161,16 @@ const Public = {
    * config: { serviceName }
    * args: { token, resetType }
    */
-  sendEmail: async (config, objID, args, _ctx) => {
-    // nothing to do for firebase auth as firebase will send email directly
+  sendEmail: async (config, username, args, _ctx) => {
+    await Private.setupConfig(config, _ctx);
+
+    const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
+    if (r.error) {
+      return r;
+    }
 
     // success
-    return { status: 200, id: objID };
+    return { status: 200, value: { username: username } };
   },
 };
 

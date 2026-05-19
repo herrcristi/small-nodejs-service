@@ -163,16 +163,16 @@ const Public = {
   },
 
   /**
-   * patch called by admin to add/remove user to school (_ctx.tenantID)
+   * patch called by current user (admin verified) to add/remove user to school (_ctx.tenantID)
    * patchInfo: { roles }
    */
-  patchUserSchool: async (adminID, userID, patchInfo, _ctx) => {
+  patchUserSchool: async (userID, patchInfo, _ctx) => {
     const config = {
       serviceName: UsersAuthConstants.ServiceName,
       method: 'PATCH',
       path: `/school/user/${userID}`,
       body: patchInfo,
-      localCall: { fn: 'patchUserSchool', params: { adminID, userID, patchInfo } },
+      localCall: { fn: 'patchUserSchool', params: { userID, patchInfo } },
     };
     return await RestCommsUtils.call(config, _ctx);
   },
