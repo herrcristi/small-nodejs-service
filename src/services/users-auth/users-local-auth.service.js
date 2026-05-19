@@ -305,7 +305,7 @@ const Public = {
   /**
    * send email
    * config: { serviceName }
-   * args: { token, resetType }
+   * args: { token, resetType, emailType }
    */
   sendEmail: async (config, username, args, _ctx) => {
     // { serviceName, collection, notifications.projection }
@@ -321,7 +321,7 @@ const Public = {
       emailArgs.resetUrl = `${process.env.SMALL_API_URL}${WebConstants.BaseApiPath}/users-auth/reset-token/validate?&type=${args.resetType}&token=${args.token}`;
     }
 
-    let emailTemplate = TranslationsUtils.email(args.emailID, _ctx, emailArgs);
+    let emailTemplate = TranslationsUtils.email(args.emailType, _ctx, emailArgs);
 
     // send email
     /* no await */ EmailsUtils.sendEmail(username, emailTemplate['en'].subject, emailTemplate['en'].email, _ctx);

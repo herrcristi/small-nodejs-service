@@ -101,8 +101,8 @@ async function submitEmail() {
   }
 
   try {
-    await Api.updateUserEmail({
-      id: emailNew.value,
+    await Api.updateUsername({
+      username: emailNew.value,
       password: emailPassword.value,
     });
 

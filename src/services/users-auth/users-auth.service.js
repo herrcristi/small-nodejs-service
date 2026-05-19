@@ -192,7 +192,7 @@ const Private = {
       for (const service in roleAccess) {
         const serviceRoles = roleAccess[service];
         for (const method in serviceRoles) {
-          Private.RolesApiAccess[role][method] ??= {};
+          Private.RolesApiAccess[role][method.toUpperCase()] ??= {};
 
           for (const api of serviceRoles[method]) {
             Private.RolesApiAccess[role][method.toUpperCase()][api] = true;
@@ -442,7 +442,11 @@ const Public = {
 
     // success
     return {
-      ...BaseServiceUtils.getProjectedResponse(rUserDetails, userProjection, _ctx),
+      userID: _ctx.userID,
+      username: _ctx.username,
+      status: user.status,
+      name: user.name,
+      schools: user.schools,
       token: rT.value,
     };
   },
@@ -578,7 +582,7 @@ const Public = {
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Added, [newObj], _ctx);
 
     // success
-    return { status: 201, value: newObj };
+    return { status: 201, value: { userID: objInfo.userID, username: objInfo.username, type: objInfo.type } };
   },
 
   /**
@@ -612,7 +616,7 @@ const Public = {
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Removed, [newObj], _ctx);
 
     // success
-    return { status: 200, value: newObj };
+    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type } };
   },
 
   /**
@@ -648,7 +652,7 @@ const Public = {
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
 
     // success
-    return { status: 200, value: newObj };
+    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type } };
   },
 
   /**
@@ -688,8 +692,12 @@ const Public = {
       return rUserDetails;
     }
 
-    // raise event for put (changed id)
-    const newObj = { id: _ctx.userID, name: newUsername, oldID: _ctx.username, type: UsersAuthConstants.Type };
+    // update username in context
+    const oldUsername = _ctx.username;
+    _ctx.username = newUsername;
+
+    // raise event for put (changed username)
+    const newObj = { id: _ctx.userID, name: newUsername, oldID: oldUsername, type: UsersAuthConstants.Type };
     const args = { id: newUsername };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
@@ -697,7 +705,7 @@ const Public = {
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
 
     // success
-    return { status: 200, value: newObj };
+    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type } };
   },
 
   /**
@@ -781,7 +789,7 @@ const Public = {
 
     const username = objInfo.username;
     const action = Private.Action.Invite;
-    const args = { emailID: 'invite' };
+    const args = { emailType: 'invite' };
 
     // send email
     const Providers = {
@@ -795,7 +803,7 @@ const Public = {
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
     // success
-    return { status: 200, value: newObj };
+    return { status: 200, value: { username, type: UsersAuthConstants.Type } };
   },
 
   /**
@@ -814,7 +822,7 @@ const Public = {
 
     const username = objInfo.username;
     const action = resetType;
-    const args = { emailID: resetType, resetType };
+    const args = { emailType: resetType, resetType };
 
     // reset password
     const Providers = {
@@ -839,7 +847,7 @@ const Public = {
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
     // success
-    return { status: 200, value: newObj };
+    return { status: 200, value: { username, type: UsersAuthConstants.Type } };
   },
 
   /**
@@ -873,8 +881,7 @@ const Public = {
     _ctx.userID = r.value.userID;
 
     // success
-    const newObj = { id: _ctx.username, name: _ctx.username, type: UsersAuthConstants.Type };
-    return { status: 200, value: newObj };
+    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type } };
   },
 
   /**
@@ -916,7 +923,7 @@ const Public = {
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
 
     // success
-    return { status: 200, value: newObj };
+    return { status: 200, value: { username, type: UsersAuthConstants.Type } };
   },
 
   /**
