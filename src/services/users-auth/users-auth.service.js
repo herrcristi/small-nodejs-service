@@ -442,12 +442,15 @@ const Public = {
 
     // success
     return {
-      userID: _ctx.userID,
-      username: _ctx.username,
-      status: user.status,
-      name: user.name,
-      schools: user.schools,
-      token: rT.value,
+      status: 200,
+      value: {
+        userID: _ctx.userID,
+        username: _ctx.username,
+        status: user.status,
+        name: user.name,
+        schools: user.schools,
+        token: rT.value,
+      },
     };
   },
 

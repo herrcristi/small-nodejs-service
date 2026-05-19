@@ -36,6 +36,7 @@ const Public = {
       console.log(`\nRequest closed  : ${call} -> Response: ${res.statusCode}. Time: ${req._ctx.duration} ms`);
     });
 
+    console.log('\n\n----------------------------------------------------------------\n\n');
     console.log('\nReceived call', call, req._ctx);
     next();
   },
