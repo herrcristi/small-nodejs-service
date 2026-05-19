@@ -138,7 +138,7 @@ const Api = {
   getAdmin: (id) => instance.get(`/admins/${id}`),
   createAdmin: (data) =>
     Api.invite({
-      username: data.email /*new user email*/,
+      email: data.email /*new user email*/,
       school: { role: 'admin' },
     }),
   updateAdmin: (id, data) => Api.updateUser(id, data),
@@ -149,7 +149,7 @@ const Api = {
   getStudent: (id) => instance.get(`/students/${id}`),
   createStudent: (data) =>
     Api.invite({
-      username: data.email /*new user email*/,
+      email: data.email /*new user email*/,
       school: { role: 'student' },
     }),
   updateStudent: (id, data) => Api.updateUser(id, data),
@@ -173,7 +173,7 @@ const Api = {
   getProfessor: (id) => instance.get(`/professors/${id}`),
   createProfessor: (data) =>
     Api.invite({
-      username: data.email /*new user email*/,
+      email: data.email /*new user email*/,
       school: { role: 'professor' },
     }),
   updateProfessor: (id, data) => Api.updateUser(id, data),
