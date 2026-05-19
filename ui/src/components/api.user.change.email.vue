@@ -76,7 +76,7 @@ const emit = defineEmits(['email-changed', 'close']);
  * email change
  */
 function openDialog() {
-  emailNew.value = useAuthStore()?.raw?.email;
+  emailNew.value = useAuthStore()?.raw?.username;
   emailPassword.value = '';
   emailDialog.value = true;
 }

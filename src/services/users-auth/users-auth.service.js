@@ -443,13 +443,13 @@ const Public = {
     // success
     return {
       status: 200,
+      token: rT.value,
       value: {
         userID: _ctx.userID,
         username: _ctx.username,
         status: user.status,
         name: user.name,
         schools: user.schools,
-        token: rT.value,
       },
     };
   },

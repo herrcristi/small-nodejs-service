@@ -219,7 +219,7 @@ const snackbarColor = ref('');
 
 // fetch fresh profile from server when component mounts
 onMounted(async () => {
-  userID.value = auth?.raw?.id;
+  userID.value = auth?.raw?.userID;
 });
 
 /**
@@ -313,7 +313,7 @@ async function saveEdit() {
 
       // update store locally
       let auth = useAuthStore();
-      auth.raw = { ...auth.raw, name: payload.name, email: auth.raw.email };
+      auth.raw = { ...auth.raw, name: payload.name, email: auth.raw.username };
       useAuthStore()?.save(auth);
 
       // update local profile and close dialog
