@@ -52,35 +52,35 @@ describe('Users Auth Service', function () {
    * schema post id
    */
   it('should validate post schema for id', async () => {
-    // id is required
-    delete postReq.id;
+    // username is required
+    delete postReq.username;
     let res = UsersAuthService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"id" is required');
+    chai.expect(res.error.details[0].message).to.include('"username" is required');
 
-    // id is number
-    postReq.id = 1;
+    // username is number
+    postReq.username = 1;
     res = UsersAuthService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"id" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"username" must be a string');
 
-    // id is null
-    postReq.id = null;
+    // username is null
+    postReq.username = null;
     res = UsersAuthService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"id" must be a string');
+    chai.expect(res.error.details[0].message).to.include('"username" must be a string');
 
-    // id empty
-    postReq.id = '';
+    // username empty
+    postReq.username = '';
     res = UsersAuthService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"id" is not allowed to be empty');
+    chai.expect(res.error.details[0].message).to.include('"username" is not allowed to be empty');
 
-    // id not valid
-    postReq.id = 'email';
+    // username not valid
+    postReq.username = 'email';
     res = UsersAuthService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"id" must be a valid email');
+    chai.expect(res.error.details[0].message).to.include('"username" must be a valid email');
   }).timeout(10000);
 
   /**
