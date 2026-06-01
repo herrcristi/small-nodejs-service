@@ -34,6 +34,7 @@ const Public = {
 
     // Add a generic auth-rate limiter scaffold accessible via app.locals.authLimiter
     app.locals.authLimiter = rateLimit(RateLimiterMiddleware.authLimiter);
+    app.use(app.locals.authLimiter);
 
     // Security headers and HTTPS enforcement
     const isProduction = !CommonUtils.isDebug();

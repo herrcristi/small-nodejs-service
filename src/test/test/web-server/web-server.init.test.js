@@ -5,6 +5,7 @@ const supertest = require('supertest');
 
 const express = require('express');
 
+const CommonUtils = require('../../../core/utils/common.utils.js');
 const WebServer = require('../../../web-server/web-server.js');
 
 describe('Web Server', function () {
@@ -60,6 +61,9 @@ describe('Web Server', function () {
   it('should cors validation fails', async () => {
     const port = 8091;
     const path = '/test/webserver';
+
+    // stub isDebug to false to trigger production mode and cors validation
+    sinon.stub(CommonUtils, 'isDebug').returns(false);
 
     const router = express.Router();
     router.route(path).get(async (req, res) => {
