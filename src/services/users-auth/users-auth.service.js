@@ -688,7 +688,7 @@ const Public = {
     const rUserDetails = await UsersRest.putEmail(_ctx.userID, { email: newUsername }, _ctx);
     if (rUserDetails.error) {
       // restore old id (email)
-      const restorePut = { ...objInfo, id: _ctx.username };
+      const restorePut = { ...objInfo, username: _ctx.username };
       const restoreCtx = { ..._ctx, username: newUsername };
       let r = await Providers[Private.UsersAuthProviderType](config, newUsername, restorePut, restoreCtx);
 
@@ -700,7 +700,7 @@ const Public = {
     _ctx.username = newUsername;
 
     // raise event for put (changed username)
-    const newObj = { id: _ctx.userID, name: newUsername, oldID: oldUsername, type: UsersAuthConstants.Type };
+    const newObj = { id: _ctx.userID, name: newUsername, oldUsername: oldUsername, type: UsersAuthConstants.Type };
     const args = { id: newUsername };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
@@ -725,7 +725,7 @@ const Public = {
   },
 
   /**
-   * patch id (email)
+   * patch id { set: { username, password} }
    */
   patchID: async (patchInfo, _ctx) => {
     // validate

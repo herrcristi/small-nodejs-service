@@ -223,7 +223,7 @@ const Public = {
 
     // check if equal
     if (username === objInfo.username) {
-      const msg = 'New id email is the same as current one';
+      const msg = 'New username is the same as current one';
       return { status: 400, error: { message: msg, error: new Error(msg) } };
     }
 
