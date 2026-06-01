@@ -8,6 +8,7 @@ const Public = {
    */
   Port: 8090,
   WebServer: 'http://localhost:8090',
+  WebServer1: 'http://localhost:8091',
 
   Auth: {
     AuthProviderType: 'local', // # for testing default is local (local / firebase)

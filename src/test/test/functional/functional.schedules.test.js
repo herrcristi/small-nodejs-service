@@ -47,7 +47,8 @@ describe('Schedules Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${SchedulesConstants.ApiPath}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -75,7 +76,8 @@ describe('Schedules Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${SchedulesConstants.ApiPath}/${testSchedule.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -102,6 +104,7 @@ describe('Schedules Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({
         ...testSchedule,
         class: testSchedule.class.id,
@@ -159,6 +162,7 @@ describe('Schedules Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({
         ...testSchedule,
         class: testSchedule.class.id,
@@ -203,7 +207,8 @@ describe('Schedules Functional', function () {
     testSchedule.id = res.body.id;
     res = await supertest(TestConstants.WebServer)
       .get(`${SchedulesConstants.ApiPath}/${testSchedule.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     testSchedule.schedules[0].id = res.body.schedules[0].id;
@@ -269,7 +274,8 @@ describe('Schedules Functional', function () {
       .delete(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -302,7 +308,8 @@ describe('Schedules Functional', function () {
     testSchedule.id = res.body.id;
     res = await supertest(TestConstants.WebServer)
       .get(`${SchedulesConstants.ApiPath}/${testSchedule.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -352,6 +359,7 @@ describe('Schedules Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({
         ...testSchedule,
         schedules: [{ ...testSchedule.schedules[0], location: testSchedule.schedules[0].location.id }],
@@ -391,7 +399,8 @@ describe('Schedules Functional', function () {
     // do a get
     res = await supertest(TestConstants.WebServer)
       .get(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.body.id).to.equal(testScheduleID);
@@ -440,6 +449,7 @@ describe('Schedules Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({
         set: {
           ...testSchedule,
@@ -481,7 +491,8 @@ describe('Schedules Functional', function () {
     // do a get
     res = await supertest(TestConstants.WebServer)
       .get(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.body.id).to.equal(testScheduleID);

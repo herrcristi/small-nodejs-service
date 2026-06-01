@@ -44,7 +44,8 @@ describe('Groups Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -72,7 +73,8 @@ describe('Groups Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroup.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -101,6 +103,7 @@ describe('Groups Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testGroup });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -139,6 +142,7 @@ describe('Groups Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({
         ...testGroup,
         students: [{ id: testGroup.students[0].id }],
@@ -167,7 +171,8 @@ describe('Groups Functional', function () {
     testGroup.id = res.body.id;
     res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroup.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -201,7 +206,8 @@ describe('Groups Functional', function () {
       .delete(`${GroupsConstants.ApiPath}/${testGroupID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -222,7 +228,8 @@ describe('Groups Functional', function () {
     testGroup.id = res.body.id;
     res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroup.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -259,6 +266,7 @@ describe('Groups Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({
         ...testGroup,
         students: [{ id: testGroup.students[0].id }],
@@ -283,7 +291,8 @@ describe('Groups Functional', function () {
     // do a get
     res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroupID}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.body.id).to.equal(testGroupID);
@@ -319,6 +328,7 @@ describe('Groups Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({
         ...testGroup,
         students: [],
@@ -346,6 +356,7 @@ describe('Groups Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({
         ...testGroup,
         students: [{ id: testGroup.students[0].id }],
@@ -370,7 +381,8 @@ describe('Groups Functional', function () {
     // do a get
     res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroupID}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.body.id).to.equal(testGroupID);
@@ -406,6 +418,7 @@ describe('Groups Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({
         set: {
           ...testGroup,
@@ -432,7 +445,8 @@ describe('Groups Functional', function () {
     // do a get
     res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroupID}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.body.id).to.equal(testGroupID);

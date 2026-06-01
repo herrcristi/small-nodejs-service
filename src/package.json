@@ -20,28 +20,29 @@
   "license": "ISC",
   "dependencies": {
     "api-query-params": "6.1.0",
-    "axios": "1.14.0",
+    "axios": "1.16.1",
     "bcrypt": "6.0.0",
     "body-parser": "2.2.2",
     "cookie-parser": "1.4.7",
     "cors": "2.8.6",
-    "dotenv": "17.3.1",
-    "dotenv-expand": "12.0.3",
+    "dotenv": "17.4.2",
+    "dotenv-expand": "13.0.0",
     "express": "5.2.1",
-    "joi": "18.1.1",
+    "express-rate-limit": "8.5.2",
+    "joi": "18.2.1",
     "jsonwebtoken": "9.0.3",
-    "lodash": "4.17.23",
-    "mongodb": "7.1.1",
-    "nodemailer": "8.0.4"
+    "lodash": "4.18.1",
+    "mongodb": "7.2.0",
+    "nodemailer": "8.0.10"
   },
   "devDependencies": {
     "axios-mock-adapter": "2.1.0",
     "chai": "6.2.2",
-    "mocha": "11.7.5",
+    "mocha": "11.7.6",
     "mocha-multi-reporters": "1.5.1",
     "nyc": "18.0.0",
-    "query-string": "9.3.1",
-    "sinon": "21.0.3",
+    "query-string": "9.4.0",
+    "sinon": "22.0.0",
     "supertest": "7.2.2"
   }
 }

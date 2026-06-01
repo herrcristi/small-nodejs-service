@@ -50,7 +50,9 @@ describe('Events Controller', function () {
     });
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(`${EventsConstants.ApiPath}`);
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${EventsConstants.ApiPath}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -85,7 +87,9 @@ describe('Events Controller', function () {
     });
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(`${EventsConstants.ApiPath}`);
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${EventsConstants.ApiPath}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -108,7 +112,9 @@ describe('Events Controller', function () {
     });
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(`${EventsConstants.ApiPath}`);
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${EventsConstants.ApiPath}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -130,7 +136,9 @@ describe('Events Controller', function () {
     });
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(`${EventsConstants.ApiPath}`);
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${EventsConstants.ApiPath}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -159,7 +167,9 @@ describe('Events Controller', function () {
     });
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(`${EventsConstants.ApiPath}/${testEvent.id}`);
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${EventsConstants.ApiPath}/${testEvent.id}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -189,9 +199,9 @@ describe('Events Controller', function () {
     });
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(
-      `${EventsConstants.ApiPath}/${testEvent.id}?projection=id,name`
-    );
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${EventsConstants.ApiPath}/${testEvent.id}?projection=id,name`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -216,7 +226,9 @@ describe('Events Controller', function () {
     });
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(`${EventsConstants.ApiPath}/${testEvent.id}`);
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${EventsConstants.ApiPath}/${testEvent.id}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -239,7 +251,9 @@ describe('Events Controller', function () {
     });
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(`${EventsConstants.ApiPath}/${testEvent.id}`);
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${EventsConstants.ApiPath}/${testEvent.id}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -262,7 +276,9 @@ describe('Events Controller', function () {
     });
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(`${EventsConstants.ApiPath}/${testEvent.id}`);
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${EventsConstants.ApiPath}/${testEvent.id}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -291,6 +307,7 @@ describe('Events Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${EventsConstants.ApiPathInternal}`)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testEvent });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -318,6 +335,7 @@ describe('Events Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${EventsConstants.ApiPathInternal}`)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testEvent });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -343,6 +361,7 @@ describe('Events Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${EventsConstants.ApiPathInternal}`)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testEvent });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -372,6 +391,7 @@ describe('Events Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${EventsConstants.ApiPathInternal}/notifications`)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -397,6 +417,7 @@ describe('Events Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${EventsConstants.ApiPathInternal}/notifications`)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -422,6 +443,7 @@ describe('Events Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${EventsConstants.ApiPathInternal}/notifications`)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 

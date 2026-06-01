@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const TestConstants = require('../../test-constants.js');
 const GroupsConstants = require('../../../services/groups/groups.constants.js');
 const GroupsService = require('../../../services/groups/groups.service.js');
@@ -55,7 +54,8 @@ describe('Groups Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -92,7 +92,8 @@ describe('Groups Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -117,7 +118,8 @@ describe('Groups Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -141,7 +143,8 @@ describe('Groups Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -172,7 +175,8 @@ describe('Groups Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroup.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -204,7 +208,8 @@ describe('Groups Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroup.id}?projection=id,name`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -231,7 +236,8 @@ describe('Groups Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroup.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -256,7 +262,8 @@ describe('Groups Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroup.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -281,7 +288,8 @@ describe('Groups Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${GroupsConstants.ApiPath}/${testGroup.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -311,6 +319,7 @@ describe('Groups Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .post(`${GroupsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testGroup });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -339,6 +348,7 @@ describe('Groups Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .post(`${GroupsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testGroup });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -365,6 +375,7 @@ describe('Groups Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .post(`${GroupsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testGroup });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -394,7 +405,8 @@ describe('Groups Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .delete(`${GroupsConstants.ApiPath}/${testGroup.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -421,7 +433,8 @@ describe('Groups Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .delete(`${GroupsConstants.ApiPath}/${testGroup.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -446,7 +459,8 @@ describe('Groups Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .delete(`${GroupsConstants.ApiPath}/${testGroup.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -476,6 +490,7 @@ describe('Groups Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .put(`${GroupsConstants.ApiPath}/${testGroup.id}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testGroup });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -504,6 +519,7 @@ describe('Groups Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .put(`${GroupsConstants.ApiPath}/${testGroup.id}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testGroup });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -530,6 +546,7 @@ describe('Groups Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .put(`${GroupsConstants.ApiPath}/${testGroup.id}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testGroup });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -560,6 +577,7 @@ describe('Groups Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .patch(`${GroupsConstants.ApiPath}/${testGroup.id}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ set: { ...testGroup } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -588,6 +606,7 @@ describe('Groups Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .patch(`${GroupsConstants.ApiPath}/${testGroup.id}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ set: { ...testGroup } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -614,6 +633,7 @@ describe('Groups Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .patch(`${GroupsConstants.ApiPath}/${testGroup.id}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ set: { ...testGroup } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -643,6 +663,8 @@ describe('Groups Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${GroupsConstants.ApiPathInternal}/notifications`)
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -668,6 +690,8 @@ describe('Groups Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${GroupsConstants.ApiPathInternal}/notifications`)
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -693,6 +717,8 @@ describe('Groups Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${GroupsConstants.ApiPathInternal}/notifications`)
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 

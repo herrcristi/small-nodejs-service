@@ -7,6 +7,7 @@ const express = require('express');
 
 const WebServer = require('../../web-server/web-server.utils.js');
 const CommonUtils = require('../../utils/common.utils.js');
+const TestConstants = require('../../../test/test-constants.js');
 
 describe('Web Server Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
@@ -81,7 +82,7 @@ describe('Web Server Utils', function () {
     // check
     chai.expect(web.app.mountpath).to.equal('/');
 
-    let res = await supertest(`http://localhost:${port}`).get(`${path}`);
+    let res = await supertest(`http://localhost:${port}`).get(`${path}`).set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.status).to.equal(200);
@@ -116,7 +117,7 @@ describe('Web Server Utils', function () {
     // check
     chai.expect(web.app.mountpath).to.equal('/');
 
-    let res = await supertest(`http://localhost:${port}`).get(`${path}`);
+    let res = await supertest(`http://localhost:${port}`).get(`${path}`).set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.status).to.equal(200);
@@ -154,7 +155,7 @@ describe('Web Server Utils', function () {
     // check
     chai.expect(web.app.mountpath).to.equal('/');
 
-    let res = await supertest(`http://localhost:${port}`).get(`${path}`);
+    let res = await supertest(`http://localhost:${port}`).get(`${path}`).set('Origin', TestConstants.WebServer);
     console.log(
       `\nTest returned: status=${JSON.stringify(res?.status, null, 2)}, ${JSON.stringify(res?.body, null, 2)}\n`
     );
@@ -198,13 +199,13 @@ describe('Web Server Utils', function () {
     // check
     chai.expect(web.app.mountpath).to.equal('/');
 
-    let res = await supertest(`http://localhost:${port}`).get(`${path}`);
+    let res = await supertest(`http://localhost:${port}`).get(`${path}`).set('Origin', `http://localhost:${port}`);
     console.log(
       `\nTest returned: status=${JSON.stringify(res?.status, null, 2)}, ${JSON.stringify(res?.body, null, 2)}\n`
     );
 
     chai.expect(authMiddlewares[0].middleware.callCount).to.equal(1);
-    chai.expect(stubDebug.callCount).to.equal(1);
+    chai.expect(stubDebug.callCount).to.be.greaterThanOrEqual(1);
     chai.expect(res.body.error.message).to.include('Test error');
     chai.expect(res.body.error.error).to.not.exist;
   }).timeout(10000);

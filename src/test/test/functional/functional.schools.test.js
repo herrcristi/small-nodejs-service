@@ -42,7 +42,9 @@ describe('Schools Functional', function () {
     const testSchools = _.cloneDeep(TestConstants.Schools);
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}`);
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${SchoolsConstants.ApiPath}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -67,7 +69,9 @@ describe('Schools Functional', function () {
     const testSchools = _.cloneDeep(TestConstants.Schools);
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}?limit=1000000`);
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${SchoolsConstants.ApiPath}?limit=1000000`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -92,7 +96,9 @@ describe('Schools Functional', function () {
     const testSchools = _.cloneDeep(TestConstants.Schools);
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}?id,name=/univ/i`);
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${SchoolsConstants.ApiPath}?id,name=/univ/i`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -117,7 +123,9 @@ describe('Schools Functional', function () {
     const testSchools = _.cloneDeep(TestConstants.Schools);
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}?name=/something/i`);
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${SchoolsConstants.ApiPath}?name=/something/i`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -143,7 +151,9 @@ describe('Schools Functional', function () {
     const testSchool = testSchools[0];
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}/${testSchool.id}`);
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -174,6 +184,7 @@ describe('Schools Functional', function () {
       .post(`${SchoolsConstants.ApiPathInternal}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testSchool });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -210,6 +221,7 @@ describe('Schools Functional', function () {
       .post(`${SchoolsConstants.ApiPathInternal}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testSchool });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -228,7 +240,9 @@ describe('Schools Functional', function () {
 
     // do a get
     testSchool.id = res.body.id;
-    res = await supertest(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}/${testSchool.id}`);
+    res = await supertest(TestConstants.WebServer)
+      .get(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -272,6 +286,7 @@ describe('Schools Functional', function () {
       .put(`${SchoolsConstants.ApiPath}/${testSchoolID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testSchool });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -299,7 +314,8 @@ describe('Schools Functional', function () {
     res = await supertest(TestConstants.WebServer)
       .delete(`${SchoolsConstants.ApiPath}/${testSchoolID}`)
       .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname');
+      .set('x-user-name', 'testname')
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -318,7 +334,9 @@ describe('Schools Functional', function () {
 
     // do a get
     testSchool.id = res.body.id;
-    res = await supertest(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}/${testSchool.id}`);
+    res = await supertest(TestConstants.WebServer)
+      .get(`${SchoolsConstants.ApiPath}/${testSchool.id}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -362,6 +380,7 @@ describe('Schools Functional', function () {
       .put(`${SchoolsConstants.ApiPath}/${testSchoolID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testSchool });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -390,7 +409,9 @@ describe('Schools Functional', function () {
     }
 
     // do a get
-    res = await supertest(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}/${testSchoolID}`);
+    res = await supertest(TestConstants.WebServer)
+      .get(`${SchoolsConstants.ApiPath}/${testSchoolID}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.body.id).to.equal(testSchoolID);
@@ -433,6 +454,7 @@ describe('Schools Functional', function () {
       .patch(`${SchoolsConstants.ApiPath}/${testSchoolID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
+      .set('Origin', TestConstants.WebServer)
       .send({ set: { ...testSchool } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -461,7 +483,9 @@ describe('Schools Functional', function () {
     }
 
     // do a get
-    res = await supertest(TestConstants.WebServer).get(`${SchoolsConstants.ApiPath}/${testSchoolID}`);
+    res = await supertest(TestConstants.WebServer)
+      .get(`${SchoolsConstants.ApiPath}/${testSchoolID}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.body.id).to.equal(testSchoolID);

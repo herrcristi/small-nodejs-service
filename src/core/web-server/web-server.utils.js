@@ -4,9 +4,15 @@
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
 
+const CommonUtils = require('../utils/common.utils.js');
 const RequestMiddleware = require('./request.middleware.js');
 const ErrorMiddleware = require('./error.middleware.js');
+const CorsMiddleware = require('./cors.middleware.js');
+const RateLimiterMiddleware = require('./rate-limiter.middleware.js');
+const HttpsMiddleware = require('./https.middleware.js');
+const SecurityHeadersMiddleware = require('./security-headers.middleware.js');
 
 const Public = {
   /**
@@ -15,12 +21,30 @@ const Public = {
   init: async (port, routers /*: [] */, middlewares /* :[] */ = null, usersAuthMiddleware /* :[] */ = null) => {
     console.log(`\nInit web server on port ${port}`);
 
+    // init
+    await CorsMiddleware.init();
+
+    // setup express app and middlewares
     let app = express();
     let bodyParser = require('body-parser');
 
-    //parse application/json and look for raw text
-    app.use(cors());
+    app.use(cors(CorsMiddleware.cors));
+
     app.use(cookieParser());
+
+    // Add a generic auth-rate limiter scaffold accessible via app.locals.authLimiter
+    app.locals.authLimiter = rateLimit(RateLimiterMiddleware.authLimiter);
+    app.use(app.locals.authLimiter);
+
+    // Security headers and HTTPS enforcement
+    const isProduction = !CommonUtils.isDebug();
+    if (isProduction) {
+      app.use(HttpsMiddleware.middleware);
+    }
+
+    app.use(SecurityHeadersMiddleware.middleware);
+
+    // parse application/json and look for raw text
     app.use(bodyParser.json({ limit: '5mb' }));
     app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
     app.use(bodyParser.text());

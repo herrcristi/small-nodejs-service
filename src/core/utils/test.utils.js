@@ -20,6 +20,8 @@ const Public = {
     process.env.SMALL_API_AUTHPASS = TestConstants.Auth.AuthPass;
     process.env.SMALL_API_SMTP_CONFIG = TestConstants.Auth.SmtpConfig;
 
+    process.env.SMALL_API_CORS_ORIGIN = TestConstants.WebServer + ',' + TestConstants.WebServer1;
+
     process.env.SMALL_API_DATABASE_URL = TestConstants.Database.Url;
     process.env.SMALL_API_DATABASE_DB = TestConstants.Database.Db;
 
@@ -33,6 +35,8 @@ const Public = {
     console.log('\nprocess.env.SMALL_API_PREVAUTHPASS:', process.env.SMALL_API_PREVAUTHPASS);
     console.log('\nprocess.env.SMALL_API_AUTHPASS:', process.env.SMALL_API_AUTHPASS);
     console.log('\nprocess.env.SMALL_API_SMTP_CONFIG:', process.env.SMALL_API_SMTP_CONFIG);
+
+    console.log('\nprocess.env.SMALL_API_CORS_ORIGIN:', process.env.SMALL_API_CORS_ORIGIN);
 
     console.log('\nprocess.env.SMALL_API_DATABASE_URL:', process.env.SMALL_API_DATABASE_URL);
     console.log('\nprocess.env.SMALL_API_DATABASE_DB:', process.env.SMALL_API_DATABASE_DB);
