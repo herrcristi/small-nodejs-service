@@ -22,10 +22,7 @@ const Public = {
     console.log(`\nInit web server on port ${port}`);
 
     // init
-    if (!CorsMiddleware.init()) {
-      console.log('Failed to init CORS middleware');
-      process.exit(1);
-    }
+    await CorsMiddleware.init();
 
     // setup express app and middlewares
     let app = express();

@@ -22,7 +22,7 @@ const Public = {
   /**
    * Setup for CORS
    */
-  init: function () {
+  init: async () => {
     Private.initCorsOriginsSet();
     return true;
   },
