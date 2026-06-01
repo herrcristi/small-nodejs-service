@@ -55,7 +55,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -115,7 +115,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -175,7 +175,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -361,7 +361,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     // call
@@ -420,7 +420,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     // call
@@ -472,7 +472,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -530,7 +530,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -592,7 +592,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -660,7 +660,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     // call
@@ -718,7 +718,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     // call
@@ -780,7 +780,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     // call
@@ -838,7 +838,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     // call
@@ -893,7 +893,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     // call

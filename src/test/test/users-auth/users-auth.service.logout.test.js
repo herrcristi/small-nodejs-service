@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const JwtUtils = require('../../../core/utils/jwt.utils.js');
 
@@ -32,7 +31,12 @@ describe('Users Auth Service', function () {
    * logout with success
    */
   it('should logout with success', async () => {
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
     // call
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
     let res = await UsersAuthService.logout(_ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 

@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const JwtUtils = require('../../../core/utils/jwt.utils.js');
 
@@ -63,8 +62,8 @@ describe('Users Auth Service', function () {
         chai.expect({ serviceName, action, objTarget, objArg, severity }).to.deep.equal({
           serviceName: UsersAuthService.Constants.ServiceName,
           action: 'login',
-          objTarget: { id: testAuthUser.id, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
-          objArg: { id: testAuthUser.id, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
+          objTarget: { id: testAuthUser.userID, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
+          objArg: { id: testAuthUser.userID, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
           severity: undefined, // default info
         });
         return { status: 200, value: {} };
@@ -97,7 +96,9 @@ describe('Users Auth Service', function () {
       console.log(`\nJwtUtils.getJwt called for ${JSON.stringify(data, null, 2)}\n`);
 
       chai.expect(data.creatingTimestamp).to.exists;
-      chai.expect(_.omit(data, 'creatingTimestamp')).to.deep.equal({ id: testAuthUser.id, userID: testInfoUser.id });
+      chai
+        .expect(_.omit(data, 'creatingTimestamp'))
+        .to.deep.equal({ username: testAuthUser.id, userID: testInfoUser.id });
       return { status: 200, value: 'token' };
     });
 
@@ -108,7 +109,7 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
+    let res = await UsersAuthService.login({ username: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -122,10 +123,10 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        id: testInfoUser.id,
+        userID: testInfoUser.id,
+        username: testInfoUser.email,
         status: testInfoUser.status,
         name: testInfoUser.name,
-        email: testInfoUser.email,
         schools: testInfoUser.schools,
       },
       token: 'token',
@@ -168,8 +169,8 @@ describe('Users Auth Service', function () {
         chai.expect({ serviceName, action, objTarget, objArg, severity }).to.deep.equal({
           serviceName: UsersAuthService.Constants.ServiceName,
           action: 'login',
-          objTarget: { id: testAuthUser.id, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
-          objArg: { id: testAuthUser.id, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
+          objTarget: { id: testAuthUser.userID, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
+          objArg: { id: testAuthUser.userID, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
           severity: undefined, // default info
         });
         return { status: 200, value: {} };
@@ -202,7 +203,9 @@ describe('Users Auth Service', function () {
       console.log(`\nJwtUtils.getJwt called for ${JSON.stringify(data, null, 2)}\n`);
 
       chai.expect(data.creatingTimestamp).to.exists;
-      chai.expect(_.omit(data, 'creatingTimestamp')).to.deep.equal({ id: testAuthUser.id, userID: testInfoUser.id });
+      chai
+        .expect(_.omit(data, 'creatingTimestamp'))
+        .to.deep.equal({ userID: testAuthUser.userID, username: testInfoUser.email });
       return { status: 200, value: 'token' };
     });
 
@@ -213,7 +216,7 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
+    let res = await UsersAuthService.login({ username: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -227,10 +230,10 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        id: testInfoUser.id,
+        userID: testInfoUser.id,
+        username: testInfoUser.email,
         status: testInfoUser.status,
         name: testInfoUser.name,
-        email: testInfoUser.email,
         schools: testInfoUser.schools,
       },
       token: 'token',
@@ -257,7 +260,7 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.login({ id: testAuthUser.id }, _ctx);
+    let res = await UsersAuthService.login({ username: testAuthUser.id }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -316,7 +319,7 @@ describe('Users Auth Service', function () {
       });
 
     // call
-    let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
+    let res = await UsersAuthService.login({ username: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -377,7 +380,7 @@ describe('Users Auth Service', function () {
       });
 
     // call
-    let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
+    let res = await UsersAuthService.login({ username: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -445,7 +448,7 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
+    let res = await UsersAuthService.login({ username: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -494,9 +497,9 @@ describe('Users Auth Service', function () {
         chai.expect({ serviceName, action, objTarget, objArg, severity }).to.deep.equal({
           serviceName: UsersAuthService.Constants.ServiceName,
           action: 'login.failed',
-          objTarget: { id: testAuthUser.id, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
+          objTarget: { id: testAuthUser.userID, name: testAuthUser.id, type: UsersAuthService.Constants.Type },
           objArg: {
-            id: testAuthUser.id,
+            id: testAuthUser.userID,
             name: testAuthUser.id,
             type: UsersAuthService.Constants.Type,
             reason: 'User is disabled',
@@ -514,7 +517,7 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
+    let res = await UsersAuthService.login({ username: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -572,7 +575,7 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
+    let res = await UsersAuthService.login({ username: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -630,7 +633,7 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
+    let res = await UsersAuthService.login({ username: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -682,12 +685,14 @@ describe('Users Auth Service', function () {
       console.log(`\nJwtUtils.getJwt called for ${JSON.stringify(data, null, 2)}\n`);
 
       chai.expect(data.creatingTimestamp).to.exists;
-      chai.expect(_.omit(data, 'creatingTimestamp')).to.deep.equal({ id: testAuthUser.id, userID: testInfoUser.id });
+      chai
+        .expect(_.omit(data, 'creatingTimestamp'))
+        .to.deep.equal({ userID: testAuthUser.userID, username: testAuthUser.id });
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
     // call
-    let res = await UsersAuthService.login({ id: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
+    let res = await UsersAuthService.login({ username: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
