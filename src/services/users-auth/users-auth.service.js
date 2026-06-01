@@ -523,7 +523,7 @@ const Public = {
     // get user details (by email)
     ///
     const email = rT.value.username;
-    const userProjection = { id: 1, status: 1, email: 1, schools: 1 };
+    const userProjection = { id: 1, status: 1, name: 1, email: 1, schools: 1 };
     const rUserDetails = await UsersRest.getOneByEmail(email, userProjection, _ctx);
     if (rUserDetails.error) {
       return { ...rUserDetails, status: 401 };
@@ -548,7 +548,17 @@ const Public = {
     ///
     // success
     ///
-    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username, tenantName: rr.tenantName } };
+    return {
+      status: 200,
+      value: {
+        userID: _ctx.userID,
+        username: _ctx.username,
+        tenantName: rr.tenantName,
+        status: user.status,
+        name: user.name,
+        schools: user.schools,
+      },
+    };
   },
 
   /**

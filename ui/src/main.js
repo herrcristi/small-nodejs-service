@@ -2,6 +2,7 @@ import { createApp } from 'vue';
 import { createI18n } from 'vue-i18n';
 import { createPinia } from 'pinia';
 import { useAuthStore, useAppStore } from './stores/stores.js';
+import Api, { bootstrapAuthFromCookie } from './api/api.js';
 
 import App from './app.vue';
 import './styles.css';
@@ -52,4 +53,16 @@ app.config.errorHandler = (err) => {
 app.use(i18n);
 app.use(Router);
 app.use(vuetify);
-app.mount('#app');
+
+// bootstrap: restore session from cookie (if user refreshed page), then mount app
+bootstrapAuthFromCookie()
+  .then(() => {
+    // reload stores after bootstrap completes
+    authStore.load();
+  })
+  .finally(() => {
+    // wait for router to be ready, then mount app
+    Router.isReady().then(() => {
+      app.mount('#app');
+    });
+  });

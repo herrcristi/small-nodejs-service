@@ -4,6 +4,7 @@
       "users-auth": {
         "POST": ["/api/v1/users-auth/logout"],
         "DELETE": ["/api/v1/users-auth"],
+        "GET": ["/api/v1/users-auth/me"],
         "PUT": ["/api/v1/users-auth/password", "/api/v1/users-auth/id"],
         "PATCH": ["/api/v1/users-auth/password", "/api/v1/users-auth/id"]
       }

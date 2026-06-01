@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { useAuthStore, useAppStore } from '../stores/stores.js';
+import { processLoginResponse } from '../auth.js';
 
 import { SMALL_API_URL, SMALL_API_CORS_ORIGIN } from './api.url.js';
 
@@ -48,6 +49,29 @@ instance.interceptors.response.use(
     return Promise.reject(err);
   }
 );
+
+/**
+ * Bootstrap: restore session from cookie on app init (after page refresh)
+ * Calls /users-auth/me to validate cookie and get current user data
+ * If cookie is invalid, returns error (interceptor will redirect to login)
+ */
+export async function bootstrapAuthFromCookie() {
+  try {
+    const response = await instance.get('/users-auth/me');
+    if (response.status === 200) {
+      // restore auth store with user data (schools, username, etc.)
+      processLoginResponse(response, { useCookies: true });
+      return { status: 200, user: response.data };
+    }
+  } catch (e) {
+    if (e.response?.status === 401) {
+      // no valid cookie; user is not authenticated
+      return { status: 401, error: 'Not authenticated' };
+    }
+
+    return { status: 401, error: e.message };
+  }
+}
 
 const Api = {
   // Schools API
