@@ -31,12 +31,17 @@ const Public = {
     const expectedValues = [
       'SMALL_API_URL',
       'SMALL_API_PORT',
+
       'SMALL_API_AUTH_PROVIDER_TYPE',
       'SMALL_API_SALT',
       'SMALL_API_S2SPASS',
       'SMALL_API_PREVAUTHPASS',
       'SMALL_API_AUTHPASS',
+
+      'SMALL_API_CORS_ORIGIN',
+
       'SMALL_API_SMTP_CONFIG',
+
       'SMALL_API_DATABASE_URL',
       'SMALL_API_DATABASE_DB',
     ];

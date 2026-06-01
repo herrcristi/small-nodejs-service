@@ -3,18 +3,23 @@
  */
 
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthController = require('./users-auth.controller.js');
 const UsersAuthSignupController = require('./users-auth.signup.controller.js');
 const CommonUtils = require('../../core/utils/common.utils.js');
+const RateLimiterMiddleware = require('../../core/web-server/rate-limiter.middleware.js');
 
 const router = express.Router();
+
+// Apply a stricter limiter for login attempts to mitigate brute-force attacks.
+const loginLimiter = rateLimit(RateLimiterMiddleware.loginLimiter);
 
 /**
  * Users Auth
  */
-router.route(`${UsersAuthConstants.ApiPath}/login`).post(UsersAuthController.login); // public dont require authentication
+router.route(`${UsersAuthConstants.ApiPath}/login`).post(loginLimiter, UsersAuthController.login); // public dont require authentication
 router.route(`${UsersAuthConstants.ApiPath}/logout`).post(UsersAuthController.logout); // logout the current login user
 //router.route(`${UsersAuthConstants.ApiPath}/signup`).post(UsersAuthSignupController.signup); // may be done by anonymous user
 router.route(`${UsersAuthConstants.ApiPath}/reset-password`).post(UsersAuthController.resetPassword); // public dont require authentication
