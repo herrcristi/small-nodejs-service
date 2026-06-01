@@ -134,40 +134,26 @@ const Router = createRouter({
 });
 
 // navigation guard - redirect to /login if route requires auth and user is not authenticated
+// cookie is sent automatically by browser; 401 responses are caught by interceptors
 Router.beforeEach((to, from, next) => {
   if (!to.meta || to.meta.requiresAuth === false) {
     return next();
   }
 
-  // get token from cookie
-  const tokenFromCookie = document.cookie.split('; ').find((row) => row.startsWith('token='));
-  const token = tokenFromCookie?.split('=')[1];
-  // const token = authStore?.token || authStore?.raw?.id || authStore?.raw?.email;
-
-  const authStore = useAuthStore();
   const tenantID = useAppStore()?.tenantID;
   const nextPath = encodeURIComponent(to.fullPath || to.path || '/');
 
-  // check auth
-  if (token) {
-    // check tenant
-    if (tenantID) {
-      return next();
-    }
-
-    // redirect to tenant select
-    if (to.path === '/tenants') {
-      next();
-    }
-    return next({ path: '/tenants', query: { next: nextPath } });
+  // check tenant
+  if (tenantID) {
+    return next();
   }
 
-  // reset tenantID if no auth
-  useAppStore()?.saveTenant(null, null); // reset it
+  // redirect to tenant select if authenticated but no tenant selected
+  if (to.path === '/tenants') {
+    return next();
+  }
 
-  // pass tenant and if in tenant selection tenant will be changed
-  // then the next should be cleared
-  return next({ path: '/login', query: { tenantID, next: nextPath } });
+  return next({ path: '/tenants', query: { next: nextPath } });
 });
 
 export default Router;

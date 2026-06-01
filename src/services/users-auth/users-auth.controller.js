@@ -37,7 +37,7 @@ const Public = {
         httpOnly: true,
       });
 
-      // add token and expires to response due to CORS limitations
+      // browser will auto-send cookie with subsequent requests; token is not returned to client
       res.status(r.status).json({
         ...r.value,
       });
