@@ -56,6 +56,7 @@ describe('Rest Communications Utils', function () {
       method: 'POST',
       path: '/login',
       body: { id: 'email@test.com', password: 'password' },
+      localCall: { fn: 'login', params: { loginInfo: { id: 'email@test.com', password: 'password' } } },
     };
     let res = await RestCommsUtils.call(config, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -96,7 +97,7 @@ describe('Rest Communications Utils', function () {
       method: 'GET',
       path: '/login',
       query: { ids: ['id1'] },
-      body: { id: 'email@test.com', password: 'password' },
+      localCall: { fn: 'login', params: { ids: ['id1'] } },
     };
     let res = await RestCommsUtils.call(config, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -133,6 +134,7 @@ describe('Rest Communications Utils', function () {
       method: 'POST',
       path: '/login',
       body: { id: 'email@test.com', password: 'password' },
+      localCall: { fn: 'login', params: null },
     };
     let res = await RestCommsUtils.call(config, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -176,6 +178,7 @@ describe('Rest Communications Utils', function () {
       method: 'POST',
       path: '/login',
       body: { id: 'email@test.com', password: 'password' },
+      localCall: { fn: 'login', params: { loginInfo: { id: 'email@test.com', password: 'password' } } },
     };
     let res = await RestCommsUtils.call(config, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -216,6 +219,7 @@ describe('Rest Communications Utils', function () {
       method: 'POST',
       path: '/login',
       body: { id: 'email@test.com', password: 'password' },
+      localCall: { fn: 'login', params: { loginInfo: { id: 'email@test.com', password: 'password' } } },
     };
     let res = await RestCommsUtils.call(config, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);

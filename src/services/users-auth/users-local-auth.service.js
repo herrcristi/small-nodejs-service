@@ -66,7 +66,7 @@ const Public = {
   /**
    * login
    * config: { serviceName }
-   * objInfo: { id, password }
+   * objInfo: { username, password }
    */
   login: async (config, objInfo, _ctx) => {
     // { serviceName, collection, notifications.projection }
@@ -76,7 +76,7 @@ const Public = {
 
     // get one
     const passProjection = { ...projection, password: 1, salt: 1 };
-    const r = await DbOpsUtils.getOne(config, objInfo.id, passProjection, _ctx);
+    const r = await DbOpsUtils.getOne(config, objInfo.username /*id*/, passProjection, _ctx);
     if (r.error) {
       return r;
     }
@@ -104,10 +104,14 @@ const Public = {
   /**
    * get the jwt token
    * config: { serviceName }
-   * userInfo: { id, userID } // id is the username/email
+   * userInfo: { username, userID }
    */
   getToken: async (config, userInfo, _ctx) => {
-    return JwtUtils.getJwt({ ...userInfo, creatingTimestamp: new Date().toISOString() }, Private.Issuer, _ctx);
+    return JwtUtils.getJwt(
+      { username: userInfo.username, userID: userInfo.userID, creatingTimestamp: new Date().toISOString() },
+      Private.Issuer,
+      _ctx
+    );
   },
 
   /**
@@ -122,7 +126,7 @@ const Public = {
   /**
    * post
    * config: { serviceName }
-   * objInfo: { id, password }
+   * objInfo: { username, password, userID }
    */
   post: async (config, objInfo, _ctx) => {
     // { serviceName, collection, notifications.projection }
@@ -131,11 +135,15 @@ const Public = {
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // hash password
-    objInfo.salt = Private.genSalt();
-    objInfo.password = Private.hashPassword(objInfo.password, objInfo.salt, _ctx);
+    const salt = Private.genSalt();
+    objInfo.password = Private.hashPassword(objInfo.password, salt, _ctx);
 
     // post
-    const r = await DbOpsUtils.post(config, objInfo, _ctx);
+    const r = await DbOpsUtils.post(
+      config,
+      { id: objInfo.username, password: objInfo.password, userID: objInfo.userID, salt },
+      _ctx
+    );
     if (r.error) {
       return r;
     }
@@ -148,12 +156,12 @@ const Public = {
    * delete
    * config: { serviceName }
    */
-  delete: async (config, objID, _ctx) => {
+  delete: async (config, username, _ctx) => {
     // { serviceName, collection, notifications.projection }
     await Private.setupConfig(config, _ctx);
 
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
-    const r = await DbOpsUtils.delete(config, objID, projection, _ctx);
+    const r = await DbOpsUtils.delete(config, username /*id*/, projection, _ctx);
     if (r.error) {
       return r;
     }
@@ -167,7 +175,7 @@ const Public = {
    * config: { serviceName }
    * objInfo: { oldPassword, newPassword }
    */
-  putPassword: async (config, objID, objInfo, _ctx) => {
+  putPassword: async (config, username, objInfo, _ctx) => {
     // { serviceName, collection, notifications.projection }
     await Private.setupConfig(config, _ctx);
 
@@ -180,7 +188,7 @@ const Public = {
     }
 
     // check old password
-    const rCheck = await Public.login(config, { id: objID, password: objInfo.oldPassword }, _ctx);
+    const rCheck = await Public.login(config, { username, password: objInfo.oldPassword }, _ctx);
     if (rCheck.error) {
       return rCheck;
     }
@@ -193,7 +201,7 @@ const Public = {
     };
 
     // put
-    const r = await DbOpsUtils.put(config, objID, passwordPut, projection, _ctx);
+    const r = await DbOpsUtils.put(config, username /*id*/, passwordPut, projection, _ctx);
     if (r.error) {
       return r;
     }
@@ -205,31 +213,29 @@ const Public = {
   /**
    * put id (email)
    * config: { serviceName }
-   *  objInfo: { id, password }
+   * objInfo: { username, password }
    */
-  putID: async (config, objID, objInfo, _ctx) => {
+  putID: async (config, username, objInfo, _ctx) => {
     // { serviceName, collection, notifications.projection }
     await Private.setupConfig(config, _ctx);
 
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // check if equal
-    if (_ctx.username === objInfo.id) {
-      const msg = 'New id email is the same as current one';
+    if (username === objInfo.username) {
+      const msg = 'New username is the same as current one';
       return { status: 400, error: { message: msg, error: new Error(msg) } };
     }
 
     // check old password
-    const rCheck = await Public.login(config, { id: objID, password: objInfo.password }, _ctx);
+    const rCheck = await Public.login(config, { username, password: objInfo.password }, _ctx);
     if (rCheck.error) {
       return rCheck;
     }
 
-    // remove password
-    const idPutInfo = { id: objInfo.id };
-
-    // put
-    const r = await DbOpsUtils.put(config, objID, idPutInfo, projection, _ctx);
+    // put new id
+    const newIdPutInfo = { id: objInfo.username };
+    const r = await DbOpsUtils.put(config, username /*id*/, newIdPutInfo, projection, _ctx);
     if (r.error) {
       return r;
     }
@@ -242,20 +248,20 @@ const Public = {
    * reset password
    * config: { serviceName }
    */
-  resetPassword: async (config, objID, _ctx) => {
+  resetPassword: async (config, username, _ctx) => {
     // { serviceName, collection, notifications.projection }
     await Private.setupConfig(config, _ctx);
 
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // check user exists
-    const r = await DbOpsUtils.getOne(config, objID, { ...projection, userID: 1 }, _ctx);
+    const r = await DbOpsUtils.getOne(config, username /*id*/, { ...projection, userID: 1 }, _ctx);
     if (r.error) {
       return r;
     }
 
     // create reset token
-    const userInfo = { id: r.value.id, userID: r.value.userID };
+    const userInfo = { username: r.value.id, userID: r.value.userID };
     return Public.getToken(config, userInfo, _ctx);
   },
 
@@ -273,7 +279,7 @@ const Public = {
    * config: { serviceName }
    * objInfo: { password }
    */
-  putResetPassword: async (config, objID, objInfo, _ctx) => {
+  putResetPassword: async (config, username, objInfo, _ctx) => {
     // { serviceName, collection, notifications.projection }
     await Private.setupConfig(config, _ctx);
 
@@ -287,7 +293,7 @@ const Public = {
     };
 
     // put
-    const r = await DbOpsUtils.put(config, objID, passwordPut, projection, _ctx);
+    const r = await DbOpsUtils.put(config, username /*id*/, passwordPut, projection, _ctx);
     if (r.error) {
       return r;
     }
@@ -299,9 +305,9 @@ const Public = {
   /**
    * send email
    * config: { serviceName }
-   * args: { token, resetType }
+   * args: { token, resetType, emailType }
    */
-  sendEmail: async (config, objID, args, _ctx) => {
+  sendEmail: async (config, username, args, _ctx) => {
     // { serviceName, collection, notifications.projection }
     await Private.setupConfig(config, _ctx);
 
@@ -315,10 +321,10 @@ const Public = {
       emailArgs.resetUrl = `${process.env.SMALL_API_URL}${WebConstants.BaseApiPath}/users-auth/reset-token/validate?&type=${args.resetType}&token=${args.token}`;
     }
 
-    let emailTemplate = TranslationsUtils.email(args.emailID, _ctx, emailArgs);
+    let emailTemplate = TranslationsUtils.email(args.emailType, _ctx, emailArgs);
 
     // send email
-    /* no await */ EmailsUtils.sendEmail(objID, emailTemplate['en'].subject, emailTemplate['en'].email, _ctx);
+    /* no await */ EmailsUtils.sendEmail(username, emailTemplate['en'].subject, emailTemplate['en'].email, _ctx);
   },
 };
 

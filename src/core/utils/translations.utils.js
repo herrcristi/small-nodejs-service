@@ -94,15 +94,15 @@ const Public = {
   /**
    * translate email { subject, email }
    */
-  email: (val, _ctx, args = []) => {
-    if (val === undefined) {
+  email: (emailType, _ctx, args = []) => {
+    if (emailType === undefined) {
       return undefined;
     }
 
     let r = {};
     for (const lang in Private.Emails) {
-      const lval = val?.toLowerCase();
-      r[lang] = Private.Emails[lang][lval] || Private.Emails['en'][lval] || null;
+      const emailTypeLowercase = emailType?.toLowerCase();
+      r[lang] = Private.Emails[lang][emailTypeLowercase] || Private.Emails['en'][emailTypeLowercase] || null;
       // expand subject, email
       for (const key in r[lang] || {}) {
         r[lang][key] = Private.expandArgs(r[lang][key], args, _ctx);

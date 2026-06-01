@@ -67,7 +67,7 @@ describe('Users Auth Service', function () {
       chai.expect(notificationType).to.equal(NotificationsUtils.Constants.Notification.Modified);
       chai.expect(objs).to.deep.equal([
         {
-          id: testUser.id,
+          id: testUser.userID,
           name: testUser.id,
           type: UsersAuthConstants.Type,
         },
@@ -75,7 +75,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.putPassword(testUser.id, putReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.putPassword(putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -86,8 +88,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        id: testUser.id,
-        name: testUser.id,
+        userID: testUser.userID,
+        username: testUser.id,
         type: testUser.type,
       },
     });
@@ -107,7 +109,9 @@ describe('Users Auth Service', function () {
     };
 
     // call
-    let res = await UsersAuthService.putPassword(testUser.id, putReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.putPassword(putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -137,7 +141,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.putPassword(testUser.id, putReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.putPassword(putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -170,7 +176,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.putPassword(testUser.id, putReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.putPassword(putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -203,7 +211,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.putPassword(testUser.id, putReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.putPassword(putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -241,7 +251,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.putPassword(testUser.id, putReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.putPassword(putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

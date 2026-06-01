@@ -123,7 +123,7 @@ const breadcrumbs = computed(() => {
  * userName
  */
 const userName = computed(() => {
-  return authStore?.raw?.name || authStore?.raw?.email || 'User';
+  return authStore?.raw?.name || authStore?.raw?.username || 'User';
 });
 
 /**

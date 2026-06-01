@@ -33,7 +33,7 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const postReq = {
-      id: testUser.id,
+      username: testUser.id,
       password: testUser._test_data.origPassword + 'aA1!',
       userID: testUser.userID,
     };
@@ -63,10 +63,9 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 201,
       value: {
-        id: testUser.id,
-        name: testUser.id,
-        type: testUser.type,
         userID: testUser.userID,
+        username: testUser.id,
+        type: testUser.type,
       },
     });
   }).timeout(10000);
@@ -79,7 +78,7 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const postReq = {
-      id: testUser.id,
+      username: testUser.id,
       password: testUser._test_data.origPassword + 'aA1!',
       userID: testUser.userID,
       something: 1,
@@ -102,7 +101,7 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const postReq = {
-      id: testUser.id,
+      username: testUser.id,
       password: testUser._test_data.origPassword + 'aA1!',
       userID: testUser.userID,
     };

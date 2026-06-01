@@ -119,7 +119,7 @@ const details = null; // true for details column
 const expand = true; // true for expand column
 
 const auth = useAuthStore();
-const currentUserID = auth?.raw?.id;
+const currentUserID = auth?.raw?.userID;
 
 const app = useAppStore();
 const read = app?.rolesPermissions?.professors?.read;

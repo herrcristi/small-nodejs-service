@@ -85,7 +85,7 @@ const Private = {
     // create user auth with a random password
     const rAuth = await UsersAuth.post(
       {
-        id: objInfo.email,
+        username: objInfo.email,
         password: CommonUtils.getRandomBytes(30).toString('hex') + 'aA1!', // random password with complexity rules
         userID: userID,
       },
@@ -104,7 +104,7 @@ const Private = {
 
   /**
    * put user role
-   * userInfo: { id, schools: [ { id, roles } ] }
+   * userInfo: { id, name, schools: [ { id, roles } ] }
    * objInfo: { email, school: { role } }
    */
   putUserRole: async (userInfo, objInfo, _ctx) => {
@@ -115,7 +115,7 @@ const Private = {
     if (role) {
       return {
         status: 204,
-        value: { id: userInfo.email, name: userInfo.name, type: UsersAuthConstants.Type, userID: userInfo.id },
+        value: { userID: userInfo.id, username: userInfo.email, name: userInfo.name, type: UsersAuthConstants.Type },
       };
     }
 
@@ -131,7 +131,7 @@ const Private = {
 
     return {
       status: 200,
-      value: { id: userInfo.email, name: userInfo.name, type: UsersAuthConstants.Type, userID: userInfo.id },
+      value: { userID: userInfo.id, username: userInfo.email, name: userInfo.name, type: UsersAuthConstants.Type },
     };
   },
 };
@@ -175,11 +175,7 @@ const Public = {
       school: { role: UsersRest.Constants.Roles.Admin },
     };
 
-    const rInvite = await Public.invite(_ctx.userID, inviteInfo, {
-      ..._ctx,
-      tenantID: schoolID,
-      tenantName: schoolName,
-    });
+    const rInvite = await Public.invite(inviteInfo, { ..._ctx, tenantID: schoolID, tenantName: schoolName });
     if (rInvite.error) {
       // delete school
       await SchoolsRest.delete(schoolID, _ctx);
@@ -198,14 +194,12 @@ const Public = {
    * invite
    * objInfo: { email, school: { role } } - schoolID is _ctx.tenantID
    */
-  invite: async (objID, objInfo, _ctx) => {
+  invite: async (objInfo, _ctx) => {
     // validate
     const v = Validators.Invite.validate(objInfo);
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
-
-    // objID is the _ctx.userID
 
     // invite has 2 steps
     const errorO = {
@@ -239,7 +233,7 @@ const Public = {
     }
 
     // send invitation email and for signup reset password email (dont fail if this returns error)
-    const userInfo = { id: objInfo.email };
+    const userInfo = { username: objInfo.email };
     if (isNewUser) {
       /* const rr = */ await UsersAuth.resetPassword(userInfo, _ctx, UsersAuthConstants.ResetTokenType.Signup);
     } else {

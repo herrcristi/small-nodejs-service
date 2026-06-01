@@ -88,7 +88,7 @@ async function submit() {
   loading.value = true;
   try {
     // call the backend login
-    const resp = await Api.login({ id: username.value, password: password.value }, withCreds.value);
+    const resp = await Api.login({ username: username.value, password: password.value }, withCreds.value);
 
     // process the response
     const r = await processLoginResponse(resp);

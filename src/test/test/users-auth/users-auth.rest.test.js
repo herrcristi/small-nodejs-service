@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const RestCommsUtils = require('../../../core/utils/rest-communications.utils.js');
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
 
@@ -39,6 +38,7 @@ describe('Users Auth Rest', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal('dummy');
   }).timeout(10000);
 
@@ -57,6 +57,7 @@ describe('Users Auth Rest', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal('dummy');
   }).timeout(10000);
 
@@ -75,6 +76,7 @@ describe('Users Auth Rest', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal('dummy');
   }).timeout(10000);
 
@@ -93,6 +95,7 @@ describe('Users Auth Rest', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal('dummy');
   }).timeout(10000);
 
@@ -111,6 +114,7 @@ describe('Users Auth Rest', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal('dummy');
   }).timeout(10000);
 
@@ -119,8 +123,8 @@ describe('Users Auth Rest', function () {
    */
   it('should post a call via rest', async () => {
     // stub
-    let stub = sinon.stub(RestCommsUtils, 'post').callsFake(() => {
-      console.log(`\nRestCommUtils.post called\n`);
+    let stub = sinon.stub(RestCommsUtils, 'call').callsFake((config) => {
+      console.log(`\nRestCommUtils.call called with ${JSON.stringify(config)}\n`);
       return { status: 200, value: 'dummy' };
     });
 
@@ -129,6 +133,7 @@ describe('Users Auth Rest', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal('dummy');
   }).timeout(10000);
 
@@ -137,8 +142,8 @@ describe('Users Auth Rest', function () {
    */
   it('should delete a call via rest', async () => {
     // stub
-    let stub = sinon.stub(RestCommsUtils, 'delete').callsFake(() => {
-      console.log(`\nRestCommUtils.delete called\n`);
+    let stub = sinon.stub(RestCommsUtils, 'call').callsFake((config) => {
+      console.log(`\nRestCommUtils.call called with ${JSON.stringify(config)}\n`);
       return { status: 200, value: 'dummy' };
     });
 
@@ -147,6 +152,7 @@ describe('Users Auth Rest', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal('dummy');
   }).timeout(10000);
 
@@ -155,8 +161,8 @@ describe('Users Auth Rest', function () {
    */
   it('should put password call via rest', async () => {
     // stub
-    let stub = sinon.stub(RestCommsUtils, 'put').callsFake(() => {
-      console.log(`\nRestCommUtils.put called\n`);
+    let stub = sinon.stub(RestCommsUtils, 'call').callsFake((config) => {
+      console.log(`\nRestCommUtils.call called with ${JSON.stringify(config)}\n`);
       return { status: 200, value: 'dummy' };
     });
 
@@ -165,6 +171,7 @@ describe('Users Auth Rest', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal('dummy');
   }).timeout(10000);
 
@@ -173,8 +180,8 @@ describe('Users Auth Rest', function () {
    */
   it('should put id call via rest', async () => {
     // stub
-    let stub = sinon.stub(RestCommsUtils, 'put').callsFake(() => {
-      console.log(`\nRestCommUtils.put called\n`);
+    let stub = sinon.stub(RestCommsUtils, 'call').callsFake((config) => {
+      console.log(`\nRestCommUtils.call called with ${JSON.stringify(config)}\n`);
       return { status: 200, value: 'dummy' };
     });
 
@@ -183,6 +190,7 @@ describe('Users Auth Rest', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal('dummy');
   }).timeout(10000);
 
@@ -191,8 +199,8 @@ describe('Users Auth Rest', function () {
    */
   it('should patch password call via rest', async () => {
     // stub
-    let stub = sinon.stub(RestCommsUtils, 'patch').callsFake(() => {
-      console.log(`\nRestCommUtils.patch called\n`);
+    let stub = sinon.stub(RestCommsUtils, 'call').callsFake((config) => {
+      console.log(`\nRestCommUtils.call called with ${JSON.stringify(config)}\n`);
       return { status: 200, value: 'dummy' };
     });
 
@@ -201,6 +209,7 @@ describe('Users Auth Rest', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal('dummy');
   }).timeout(10000);
 
@@ -209,8 +218,8 @@ describe('Users Auth Rest', function () {
    */
   it('should patch id call via rest', async () => {
     // stub
-    let stub = sinon.stub(RestCommsUtils, 'patch').callsFake(() => {
-      console.log(`\nRestCommUtils.patch called\n`);
+    let stub = sinon.stub(RestCommsUtils, 'call').callsFake((config) => {
+      console.log(`\nRestCommUtils.call called with ${JSON.stringify(config)}\n`);
       return { status: 200, value: 'dummy' };
     });
 
@@ -219,6 +228,7 @@ describe('Users Auth Rest', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal('dummy');
   }).timeout(10000);
 
@@ -227,8 +237,8 @@ describe('Users Auth Rest', function () {
    */
   it('should patch user school call via rest', async () => {
     // stub
-    let stub = sinon.stub(RestCommsUtils, 'patchUserSchool').callsFake(() => {
-      console.log(`\nRestCommUtils.patchUserSchool called\n`);
+    let stub = sinon.stub(RestCommsUtils, 'call').callsFake((config) => {
+      console.log(`\nRestCommUtils.call called with ${JSON.stringify(config)}\n`);
       return { status: 200, value: 'dummy' };
     });
 
@@ -237,6 +247,7 @@ describe('Users Auth Rest', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal('dummy');
   }).timeout(10000);
 

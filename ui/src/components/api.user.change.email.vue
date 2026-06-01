@@ -76,7 +76,7 @@ const emit = defineEmits(['email-changed', 'close']);
  * email change
  */
 function openDialog() {
-  emailNew.value = useAuthStore()?.raw?.email;
+  emailNew.value = useAuthStore()?.raw?.username;
   emailPassword.value = '';
   emailDialog.value = true;
 }
@@ -101,8 +101,8 @@ async function submitEmail() {
   }
 
   try {
-    await Api.updateUserEmail({
-      id: emailNew.value,
+    await Api.updateUsername({
+      username: emailNew.value,
       password: emailPassword.value,
     });
 

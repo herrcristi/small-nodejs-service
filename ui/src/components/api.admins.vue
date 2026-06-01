@@ -119,7 +119,7 @@ const details = null; // true for details column
 const expand = true; // true for expand column
 
 const auth = useAuthStore();
-const currentUserID = auth?.raw?.id;
+const currentUserID = auth?.raw?.userID;
 
 const app = useAppStore();
 const read = app?.rolesPermissions?.admins?.read;
@@ -259,7 +259,7 @@ function openEdit(item) {
   if (fieldsSet.value.has('user.status')) {
     itemData.status = item.user?.status || 'active';
   }
-  if (fieldsSet.value.has('user.email')) {
+  if (fieldsSet.value.has('user.username')) {
     itemData.email = item.user?.email || '';
   }
 

@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const JwtUtils = require('../../../core/utils/jwt.utils.js');
 
@@ -56,7 +55,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -116,7 +115,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -176,7 +175,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -362,7 +361,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     // call
@@ -421,7 +420,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     // call
@@ -447,9 +446,9 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * fail validate GET user auth :id
+   * fail validate GET user auth
    */
-  it('should fail validate GET user auth :id', async () => {
+  it('should fail validate GET user auth', async () => {
     const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testAuthUser = testAuthUsers[0];
 
@@ -473,7 +472,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -486,8 +485,8 @@ describe('Users Auth Service', function () {
     _ctx.tenantID = testInfoUser.schools[0].id;
     _ctx.userID = testInfoUser.id;
     _ctx.username = testAuthUser.id;
-    _ctx.reqUrl = `/api/v1/users-auth/${_ctx.username}`;
-    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users-auth/:id' }, _ctx);
+    _ctx.reqUrl = `/api/v1/users-auth`;
+    let res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users-auth' }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -498,70 +497,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 403,
       error: {
-        message: 'Route is not accesible: get /api/v1/users-auth/:id',
-        error: new Error('Route is not accesible: get /api/v1/users-auth/:id'),
-      },
-    });
-  }).timeout(10000);
-
-  /**
-   * fail validate user auth :id
-   */
-  it('should fail validate user auth :id', async () => {
-    const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
-    const testAuthUser = testAuthUsers[0];
-
-    const testInfoUsers = _.cloneDeep(TestConstants.Users);
-    const testInfoUser = testInfoUsers[0];
-    for (const school of testInfoUser.schools) {
-      school.status = SchoolsRest.Constants.Status.Active;
-    }
-
-    const testAuthData = testAuthUser._test_data;
-    delete testAuthUser._test_data;
-
-    // stub
-    let stubUsersGet = sinon.stub(UsersRest, 'getOneByEmail').callsFake((email) => {
-      console.log(`\nUsersRest.getOne called for ${JSON.stringify(email, null, 2)}\n`);
-
-      chai.expect(email).to.equal(testAuthUser.id);
-      return { status: 200, value: testInfoUser };
-    });
-
-    let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
-      console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
-
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
-    });
-
-    let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
-      console.log(`\nJwtUtils.decrypt called for ${JSON.stringify(data, null, 2)}\n`);
-
-      return { status: 200, value: data };
-    });
-
-    // call
-    _ctx.tenantID = testInfoUser.schools[0].id;
-    _ctx.userID = testInfoUser.id;
-    _ctx.username = testAuthUser.id;
-    _ctx.reqUrl = `/api/v1/users-auth/diffid`;
-    // non get method
-    let res = await UsersAuthService.validate(
-      { token: 'token', method: 'delete', route: '/api/v1/users-auth/:id' },
-      _ctx
-    );
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubUsersGet.callCount).to.equal(1);
-    chai.expect(stubToken.callCount).to.equal(1);
-    chai.expect(stubDecrypt.callCount).to.equal(1);
-
-    chai.expect(res).to.deep.equal({
-      status: 403,
-      error: {
-        message: 'user :id restriction applied',
-        error: new Error('user :id restriction applied'),
+        message: 'Route is not accesible: get /api/v1/users-auth',
+        error: new Error('Route is not accesible: get /api/v1/users-auth'),
       },
     });
   }).timeout(10000);
@@ -593,7 +530,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -606,9 +543,9 @@ describe('Users Auth Service', function () {
     _ctx.tenantID = testInfoUser.schools[0].id;
     _ctx.userID = testInfoUser.id;
     _ctx.username = testAuthUser.id;
-    _ctx.reqUrl = `/api/v1/users-auth/diffid/something`;
+    _ctx.reqUrl = `/api/v1/users-auth/something`;
     let res = await UsersAuthService.validate(
-      { token: 'token', method: 'delete', route: '/api/v1/users-auth/:id/something' },
+      { token: 'token', method: 'delete', route: '/api/v1/users-auth/something' },
       _ctx
     );
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -622,8 +559,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 403,
       error: {
-        message: 'Route is not accesible: delete /api/v1/users-auth/:id/something',
-        error: new Error('Route is not accesible: delete /api/v1/users-auth/:id/something'),
+        message: 'Route is not accesible: delete /api/v1/users-auth/something',
+        error: new Error('Route is not accesible: delete /api/v1/users-auth/something'),
       },
     });
   }).timeout(10000);
@@ -655,7 +592,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -723,7 +660,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     // call
@@ -781,7 +718,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     // call
@@ -843,7 +780,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     // call
@@ -901,7 +838,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     // call
@@ -956,7 +893,7 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { id: testAuthUser.id, userID: testInfoUser.id } };
+      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
     });
 
     // call

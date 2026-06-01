@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 
 const TestConstants = require('../../test-constants.js');
@@ -115,26 +114,26 @@ describe('Users Auth Service', function () {
 
       chai.expect(userAuthReq.password.length).to.equal(64);
       chai.expect({ ...userAuthReq, password: null }).to.deep.equal({
-        id: testUser.email,
+        username: testUser.email,
         password: null,
         userID: testUserID,
       });
 
       return {
         status: 201,
-        value: { id: testUser.email, type: UsersAuthRest.Constants.Type, userID: testUserID },
+        value: { username: testUser.email, type: UsersAuthRest.Constants.Type, userID: testUserID },
       };
     });
     let stubUsersAuthResetPass = sinon.stub(UsersAuthService, 'resetPassword').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.resetPassword called with ${JSON.stringify(objInfo, null, 2)}`);
 
       chai.expect(objInfo).to.deep.equal({
-        id: testUser.email,
+        username: testUser.email,
       });
 
       return {
         status: 200,
-        value: { id: testUser.email, type: UsersAuthRest.Constants.Type, name: testUser.id },
+        value: { username: testUser.email, type: UsersAuthRest.Constants.Type, userID: testUser.id },
       };
     });
 
@@ -162,7 +161,7 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 201,
       value: {
-        id: testUser.email,
+        username: testUser.email,
         type: UsersAuthRest.Constants.Type,
         userID: testUserID,
       },
@@ -437,7 +436,7 @@ describe('Users Auth Service', function () {
     let stubUsersAuthPost = sinon.stub(UsersAuthService, 'post').callsFake((userAuthReq) => {
       console.log(`\nUsersAuthRest.post called with ${JSON.stringify(userAuthReq, null, 2)}`);
       chai.expect({ ...userAuthReq, password: null }).to.deep.equal({
-        id: testUser.email,
+        username: testUser.email,
         password: null,
         userID: testUserID,
       });

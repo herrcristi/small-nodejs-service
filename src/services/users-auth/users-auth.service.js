@@ -35,7 +35,7 @@ const NewPassword = Joi.string()
 
 const Schema = {
   Login: Joi.object().keys({
-    id: Joi.string()
+    username: Joi.string()
       .email({ tlds: { allow: false } })
       .min(1)
       .max(128)
@@ -44,7 +44,7 @@ const Schema = {
   }),
 
   User: Joi.object().keys({
-    id: Joi.string()
+    username: Joi.string()
       .email({ tlds: { allow: false } })
       .min(1)
       .max(128)
@@ -58,8 +58,8 @@ const Schema = {
     newPassword: NewPassword.required(),
   }),
 
-  UserID: Joi.object().keys({
-    id: Joi.string()
+  UserName: Joi.object().keys({
+    username: Joi.string()
       .email({ tlds: { allow: false } })
       .required(),
     password: CurrentPassword.required(),
@@ -93,7 +93,7 @@ const Validators = {
   }),
 
   PutPassword: Schema.UserPass,
-  PutID: Schema.UserID,
+  PutID: Schema.UserName,
 
   PatchPassword: Joi.object().keys({
     // for patch allowed operations are: set
@@ -101,7 +101,7 @@ const Validators = {
   }),
   PatchID: Joi.object().keys({
     // for patch allowed operations are: set
-    set: Schema.UserID,
+    set: Schema.UserName,
   }),
 
   PatchUserSchool: Joi.object().keys({
@@ -111,14 +111,14 @@ const Validators = {
   }),
 
   Invite: Joi.object().keys({
-    id: Joi.string()
+    username: Joi.string()
       .email({ tlds: { allow: false } })
       .min(1)
       .max(128),
   }),
 
   ResetPassword: Joi.object().keys({
-    id: Joi.string()
+    username: Joi.string()
       .email({ tlds: { allow: false } })
       .min(1)
       .max(128),
@@ -164,11 +164,6 @@ const Private = {
    */
   UsersAuthProviderType: null,
 
-  UsersAuthProviders: {
-    local: UsersAuthServiceLocal,
-    firebase: UsersAuthServiceFirebase,
-  },
-
   RolesApiAccess: {},
 
   /**
@@ -180,9 +175,6 @@ const Private = {
       serviceName: UsersAuthConstants.ServiceName,
       //collection: ... // will be added only for local auth
       references: [],
-      isLocalAuth: Private.UsersAuthProviderType === 'local',
-      isFirebaseAuth: Private.UsersAuthProviderType === 'firebase',
-      authProvider: Private.UsersAuthProviders[Private.UsersAuthProviderType],
     };
     return config;
   },
@@ -200,7 +192,7 @@ const Private = {
       for (const service in roleAccess) {
         const serviceRoles = roleAccess[service];
         for (const method in serviceRoles) {
-          Private.RolesApiAccess[role][method] ??= {};
+          Private.RolesApiAccess[role][method.toUpperCase()] ??= {};
 
           for (const api of serviceRoles[method]) {
             Private.RolesApiAccess[role][method.toUpperCase()][api] = true;
@@ -239,21 +231,6 @@ const Private = {
    * _ctx: { userID, username, tenantID }
    */
   validateRoute: (user, method, route, _ctx) => {
-    // some routes are only for current user
-    const isDenyNotCurrentUser = Private.isValidRouteForRoles(['deny-not-current-user'], method, route);
-    if (isDenyNotCurrentUser) {
-      let paramID = _ctx.userID;
-      if (new RegExp(`^${UsersAuthRest.Constants.ApiPath}/:id`).test(route)) {
-        paramID = _ctx.username;
-      }
-
-      const isValid = Private.isValidRouteForParam(route, paramID, _ctx);
-      if (!isValid) {
-        const msg = 'user :id restriction applied';
-        return { status: 403, error: { message: msg, error: new Error(msg) } };
-      }
-    }
-
     // validate for all (non-tenant) route
     const validGlobalRole = Private.isValidRouteForRoles(['all'], method, route);
     if (validGlobalRole) {
@@ -321,8 +298,14 @@ const Public = {
    */
   init: async () => {
     // init auth provider
+
+    const AuthProviders = {
+      firebase: UsersAuthServiceFirebase.init,
+      local: UsersAuthServiceLocal.init,
+    };
+
     const authProviderType = process.env.SMALL_API_AUTH_PROVIDER_TYPE;
-    const expectedAuthProviders = Object.keys(Private.UsersAuthProviders);
+    const expectedAuthProviders = Object.keys(AuthProviders);
     if (!expectedAuthProviders.includes(authProviderType)) {
       console.log(`Invalid auth provider type ${authProviderType}, expected one of ${expectedAuthProviders}`);
       process.exit(1);
@@ -333,10 +316,9 @@ const Public = {
     // allow rotation of password by providing mutiple password to support old tokens
     await JwtUtils.init(Private.Issuer, [process.env.SMALL_API_PREVAUTHPASS, process.env.SMALL_API_AUTHPASS]);
 
-    // init auth
+    // init auth provider
     Private.UsersAuthProviderType = authProviderType;
-    const authProvider = Private.UsersAuthProviders[Private.UsersAuthProviderType];
-    await authProvider.init();
+    await AuthProviders[Private.UsersAuthProviderType]();
 
     // init roles
     Private.initRolesAccess();
@@ -344,7 +326,7 @@ const Public = {
 
   /**
    * login
-   * objInfo: { id, password }
+   * objInfo: { username, password }
    */
   login: async (objInfo, _ctx) => {
     // validate
@@ -356,14 +338,14 @@ const Public = {
       };
     }
 
-    _ctx.userID = objInfo.id;
-    _ctx.username = objInfo.id;
+    _ctx.userID = null; // userID is not known at this point, it will be set in the validate function after validating the token
+    _ctx.username = objInfo.username;
 
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
     // events
-    const eventO = { id: objInfo.id, name: objInfo.id, type: UsersAuthConstants.Type };
+    const eventO = { id: objInfo.username, name: objInfo.username, type: UsersAuthConstants.Type };
     const srvName = UsersAuthConstants.ServiceName;
     const failedAction = `${Private.Action.Login}.failed`;
     const failedSeverity = EventsRest.Constants.Severity.Warning;
@@ -375,8 +357,11 @@ const Public = {
     ///
     // login
     ///
-    let rL = await config.authProvider.login(config, objInfo, _ctx);
-
+    const Providers = {
+      firebase: UsersAuthServiceFirebase.login,
+      local: UsersAuthServiceLocal.login,
+    };
+    let rL = await Providers[Private.UsersAuthProviderType](config, objInfo, _ctx);
     if (rL.error) {
       // raise event for invalid login
       const eventArgs = { ...eventO, reason: 'Login failed' };
@@ -388,13 +373,16 @@ const Public = {
     // get user details (by email)
     ///
     const userProjection = { id: 1, status: 1, name: 1, email: 1, schools: 1 };
-    const rUserDetails = await UsersRest.getOneByEmail(objInfo.id, userProjection, _ctx);
+    const rUserDetails = await UsersRest.getOneByEmail(objInfo.username, userProjection, _ctx);
     if (rUserDetails.error) {
       // raise event
       const eventArgs = { ...eventO, reason: 'No user details' };
       await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventArgs, _ctx, failedSeverity);
       return rError; // return generic error
     }
+
+    _ctx.userID = rUserDetails.value.id; // set userID in context for events and notifications
+    eventO.id = _ctx.userID; // set userID in event object
 
     // fail login if user is disabled
     const user = rUserDetails.value;
@@ -430,11 +418,15 @@ const Public = {
     ///
     // token
     ///
-    const userInfo = { id: objInfo.id, userID: user.id };
-    if (config.isFirebaseAuth) {
-      userInfo.token = rL.value; // pass firebase token to auth provider to validate and get user info from it (if needed)
-    }
-    let rT = await config.authProvider.getToken(config, userInfo, _ctx);
+    const ProvidersToken = {
+      firebase: UsersAuthServiceFirebase.getToken,
+      local: UsersAuthServiceLocal.getToken,
+    };
+    let rT = await ProvidersToken[Private.UsersAuthProviderType](
+      config,
+      { token: rL.value, username: objInfo.username, userID: user.id },
+      _ctx
+    );
     if (rT.error) {
       const msg = 'Failed to get token';
       return { status: 500, error: { message: msg, error: new Error(msg) } };
@@ -450,8 +442,15 @@ const Public = {
 
     // success
     return {
-      ...BaseServiceUtils.getProjectedResponse(rUserDetails, userProjection, _ctx),
+      status: 200,
       token: rT.value,
+      value: {
+        userID: _ctx.userID,
+        username: _ctx.username,
+        status: user.status,
+        name: user.name,
+        schools: user.schools,
+      },
     };
   },
 
@@ -466,7 +465,11 @@ const Public = {
     ///
     // logout
     ///
-    let rL = await config.authProvider.logout(config, _ctx);
+    const Providers = {
+      firebase: UsersAuthServiceFirebase.logout,
+      local: UsersAuthServiceLocal.logout,
+    };
+    let rL = await Providers[Private.UsersAuthProviderType](config, _ctx);
 
     // success empty token
     return {
@@ -503,19 +506,23 @@ const Public = {
 
     // token
     const validateTokenInfo = { token: decodedToken.value };
-    let rT = await config.authProvider.validateToken(config, validateTokenInfo, _ctx);
+    const Providers = {
+      firebase: UsersAuthServiceFirebase.validateToken,
+      local: UsersAuthServiceLocal.validateToken,
+    };
+    let rT = await Providers[Private.UsersAuthProviderType](config, validateTokenInfo, _ctx);
     if (rT.error) {
       const msg = 'Failed to validate token';
       return { status: 401, error: { message: msg, error: new Error(msg) } };
     }
 
-    _ctx.username = rT.value.id;
-    _ctx.userID = rT.value.id;
+    _ctx.username = rT.value.username;
+    _ctx.userID = rT.value.userID;
 
     ///
     // get user details (by email)
     ///
-    const email = rT.value.id;
+    const email = rT.value.username;
     const userProjection = { id: 1, status: 1, email: 1, schools: 1 };
     const rUserDetails = await UsersRest.getOneByEmail(email, userProjection, _ctx);
     if (rUserDetails.error) {
@@ -546,6 +553,7 @@ const Public = {
 
   /**
    * post
+   * objInfo: { username, password, userID }
    */
   post: async (objInfo, _ctx) => {
     objInfo.type = UsersAuthConstants.Type;
@@ -560,31 +568,39 @@ const Public = {
     const config = await Private.getConfig(_ctx);
 
     // post
-    let r = await config.authProvider.post(config, objInfo, _ctx);
+    const Providers = {
+      firebase: UsersAuthServiceFirebase.post,
+      local: UsersAuthServiceLocal.post,
+    };
+    let r = await Providers[Private.UsersAuthProviderType](config, objInfo, _ctx);
     if (r.error) {
       return r;
     }
 
     // raise event
-    const newObj = { id: objInfo.id, name: objInfo.id, type: objInfo.type, userID: objInfo.userID };
+    const newObj = { id: objInfo.userID, name: objInfo.username, type: objInfo.type, userID: objInfo.userID };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Post, newObj, newObj, _ctx);
 
     // raise a notification for new obj
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Added, [newObj], _ctx);
 
     // success
-    return { status: 201, value: newObj };
+    return { status: 201, value: { userID: objInfo.userID, username: objInfo.username, type: objInfo.type } };
   },
 
   /**
-   * delete the user can be done only by login user (_ctx.userID), objID is the email
+   * delete the user can be done only by login user (_ctx)
    * (admins can delete users from tenants using patchUserSchool)
    */
-  delete: async (objID, _ctx) => {
+  delete: async (_ctx) => {
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
-    let r = await config.authProvider.delete(config, objID, _ctx);
+    const Providers = {
+      firebase: UsersAuthServiceFirebase.delete,
+      local: UsersAuthServiceLocal.delete,
+    };
+    let r = await Providers[Private.UsersAuthProviderType](config, _ctx.username, _ctx);
     if (r.error) {
       return r;
     }
@@ -596,20 +612,22 @@ const Public = {
     }
 
     // raise event
-    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    const newObj = { id: _ctx.userID, name: _ctx.username, type: UsersAuthConstants.Type };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Delete, newObj, newObj, _ctx);
 
     // raise a notification for removed obj
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Removed, [newObj], _ctx);
 
     // success
-    return { status: 200, value: newObj };
+    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type } };
   },
 
   /**
    * put (only password)
+   * objInfo: { oldPassword, newPassword }
+   * only login user can change password (not even portal admin) for security reason (need old password)
    */
-  putPassword: async (objID, objInfo, _ctx, action = Private.Action.PutPassword) => {
+  putPassword: async (objInfo, _ctx, action = Private.Action.PutPassword) => {
     // validate
     const v = Validators.PutPassword.validate(objInfo);
     if (v.error) {
@@ -620,26 +638,32 @@ const Public = {
     const config = await Private.getConfig(_ctx);
 
     // put
-    let r = await config.authProvider.putPassword(config, objID, objInfo, _ctx);
+    const Providers = {
+      firebase: UsersAuthServiceFirebase.putPassword,
+      local: UsersAuthServiceLocal.putPassword,
+    };
+    let r = await Providers[Private.UsersAuthProviderType](config, _ctx.username, objInfo, _ctx);
     if (r.error) {
       return r;
     }
 
     // raise event for put (changed password)
-    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    const newObj = { id: _ctx.userID, name: _ctx.username, type: UsersAuthConstants.Type };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, {} /*args*/, _ctx);
 
     // raise a notification for modified obj
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
 
     // success
-    return { status: 200, value: newObj };
+    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type } };
   },
 
   /**
    * put only id (email)
+   * objInfo: { username, password }
+   * only login user can change email (not even portal admin) for security reason (need password)
    */
-  putID: async (objID, objInfo, _ctx, action = Private.Action.PutID) => {
+  putID: async (objInfo, _ctx, action = Private.Action.PutID) => {
     // validate
     const v = Validators.PutID.validate(objInfo);
     if (v.error) {
@@ -650,73 +674,81 @@ const Public = {
     const config = await Private.getConfig(_ctx);
 
     // put
-    let r = await config.authProvider.putID(config, objID, objInfo, _ctx);
+    const Providers = {
+      firebase: UsersAuthServiceFirebase.putID,
+      local: UsersAuthServiceLocal.putID,
+    };
+    let r = await Providers[Private.UsersAuthProviderType](config, _ctx.username, objInfo, _ctx);
     if (r.error) {
       return r;
     }
 
     // put user details email
-    const newIDEmail = objInfo.id;
-    const rUserDetails = await UsersRest.putEmail(_ctx.userID, { email: newIDEmail }, _ctx);
+    const newUsername = objInfo.username;
+    const rUserDetails = await UsersRest.putEmail(_ctx.userID, { email: newUsername }, _ctx);
     if (rUserDetails.error) {
       // restore old id (email)
-      const restorePut = { ...objInfo, id: objID };
-      const restoreCtx = { ..._ctx, username: newIDEmail };
-      await config.authProvider.putID(config, newIDEmail, restorePut, restoreCtx); // best effort to restore, if fail not much to do
+      const restorePut = { ...objInfo, username: _ctx.username };
+      const restoreCtx = { ..._ctx, username: newUsername };
+      let r = await Providers[Private.UsersAuthProviderType](config, newUsername, restorePut, restoreCtx);
 
       return rUserDetails;
     }
 
-    // raise event for put (changed id)
-    const newObj = { id: newIDEmail, name: newIDEmail, oldID: objID, type: UsersAuthConstants.Type };
-    const args = { id: newIDEmail };
+    // update username in context
+    const oldUsername = _ctx.username;
+    _ctx.username = newUsername;
+
+    // raise event for put (changed username)
+    const newObj = { id: _ctx.userID, name: newUsername, oldUsername: oldUsername, type: UsersAuthConstants.Type };
+    const args = { id: newUsername };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
     // raise a notification for modified obj
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
 
     // success
-    return { status: 200, value: newObj };
+    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type } };
   },
 
   /**
    * patch (only password)
    */
-  patchPassword: async (objID, patchInfo, _ctx) => {
+  patchPassword: async (patchInfo, _ctx) => {
     // validate
     const v = Validators.PatchPassword.validate(patchInfo);
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
-    return await Public.putPassword(objID, patchInfo.set, _ctx, Private.Action.PatchPassword);
+    return await Public.putPassword(patchInfo.set, _ctx, Private.Action.PatchPassword);
   },
 
   /**
-   * patch id (email)
+   * patch id { set: { username, password} }
    */
-  patchID: async (objID, patchInfo, _ctx) => {
+  patchID: async (patchInfo, _ctx) => {
     // validate
     const v = Validators.PatchID.validate(patchInfo);
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
-    return await Public.putID(objID, patchInfo.set, _ctx, Private.Action.PatchID);
+    return await Public.putID(patchInfo.set, _ctx, Private.Action.PatchID);
   },
 
   /**
    * patch called by admin to add/remove user to school (_ctx.tenantID)
    * patchInfo: { roles }
    */
-  patchUserSchool: async (adminID, userID, patchInfo, _ctx) => {
+  patchUserSchool: async (userID, patchInfo, _ctx) => {
     // validate
     const v = Validators.PatchUserSchool.validate(patchInfo);
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
-    // here route is already validated that the current adminID (_ctx.userID) is the admin of the school (_ctx.tenantID)
+    // here route is already validated that the current _ctx.username is the admin of the school (_ctx.tenantID)
 
     // add the school id
     const patchSchoolInfo = {};
@@ -727,7 +759,7 @@ const Public = {
       let roles = patchInfo[op].roles;
 
       // prevent removing itself as admin
-      if (op === 'remove' && adminID === userID) {
+      if (op === 'remove' && _ctx.userID === userID) {
         roles = roles.filter((item) => item !== UsersRest.Constants.Roles.Admin);
       }
       if (!roles.length) {
@@ -746,7 +778,7 @@ const Public = {
 
   /**
    * invite user to school
-   * objInfo: { id }
+   * objInfo: { username }
    */
   invite: async (objInfo, _ctx) => {
     // validate
@@ -758,24 +790,28 @@ const Public = {
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
-    const objID = objInfo.id;
+    const username = objInfo.username;
     const action = Private.Action.Invite;
-    const args = { emailID: 'invite' };
+    const args = { emailType: 'invite' };
 
-    // best effort to send email, if fail not much to do (no token for invite, just send email with info)
-    await config.authProvider.sendEmail(config, objID, args, _ctx);
+    // send email
+    const Providers = {
+      firebase: UsersAuthServiceFirebase.sendEmail,
+      local: UsersAuthServiceLocal.sendEmail,
+    };
+    await Providers[Private.UsersAuthProviderType](config, username, args, _ctx);
 
     // raise event for reset password
-    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    const newObj = { id: username, name: username, type: UsersAuthConstants.Type };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
     // success
-    return { status: 200, value: newObj };
+    return { status: 200, value: { username, type: UsersAuthConstants.Type } };
   },
 
   /**
    * reset password
-   * objInfo: { id }
+   * objInfo: { username }
    */
   resetPassword: async (objInfo, _ctx, resetType = UsersAuthConstants.ResetTokenType.ResetPassword) => {
     // validate
@@ -787,31 +823,34 @@ const Public = {
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
-    const objID = objInfo.id;
+    const username = objInfo.username;
     const action = resetType;
-    const args = { emailID: resetType, resetType };
+    const args = { emailType: resetType, resetType };
 
     // reset password
-    let r = await config.authProvider.resetPassword(config, objID, _ctx);
+    const Providers = {
+      firebase: UsersAuthServiceFirebase.resetPassword,
+      local: UsersAuthServiceLocal.resetPassword,
+    };
+    let r = await Providers[Private.UsersAuthProviderType](config, username, _ctx);
     if (r.error) {
       return r;
     }
 
     // only for local auth
-    if (config.isLocalAuth) {
+    if (Private.UsersAuthProviderType === 'local') {
       // encrypt token again
       const token = JwtUtils.encrypt(r.value, Private.Issuer, _ctx).value;
-
-      // send via email
-      await UsersAuthServiceLocal.sendEmail(config, objID, { ...args, token }, _ctx);
+      // send email with token
+      await UsersAuthServiceLocal.sendEmail(config, username, { ...args, token }, _ctx);
     }
 
     // raise event for reset password
-    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    const newObj = { id: username, name: username, type: UsersAuthConstants.Type };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
     // success
-    return { status: 200, value: newObj };
+    return { status: 200, value: { username, type: UsersAuthConstants.Type } };
   },
 
   /**
@@ -841,18 +880,16 @@ const Public = {
       return r;
     }
 
-    _ctx.username = r.value.id;
-    _ctx.userID = r.value.id;
-    const objID = _ctx.username;
+    _ctx.username = r.value.username;
+    _ctx.userID = r.value.userID;
 
     // success
-    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
-    return { status: 200, value: newObj };
+    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type } };
   },
 
   /**
    * validate reset token and put reset password
-   * objInfo: { id, password }
+   * objInfo: { password }
    */
   putResetPassword: async (resetToken, objInfo, _ctx) => {
     // validate
@@ -871,17 +908,17 @@ const Public = {
       return rT;
     }
 
-    const objID = rT.value.id;
+    const username = rT.value.username;
 
     // put reset password
     const putResetPasswordInfo = { password: objInfo.password };
-    let r = await UsersAuthServiceLocal.putResetPassword(config, objID, putResetPasswordInfo, _ctx);
+    let r = await UsersAuthServiceLocal.putResetPassword(config, username, putResetPasswordInfo, _ctx);
     if (r.error) {
       return r;
     }
 
     // raise event for put reset password
-    const newObj = { id: objID, name: objID, type: UsersAuthConstants.Type };
+    const newObj = { id: username, name: username, type: UsersAuthConstants.Type };
     const action = Private.Action.PutResetPassword;
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, {} /*args*/, _ctx);
 
@@ -889,7 +926,7 @@ const Public = {
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
 
     // success
-    return { status: 200, value: newObj };
+    return { status: 200, value: { username, type: UsersAuthConstants.Type } };
   },
 
   /**

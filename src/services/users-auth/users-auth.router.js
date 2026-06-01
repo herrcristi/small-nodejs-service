@@ -7,6 +7,7 @@ const express = require('express');
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthController = require('./users-auth.controller.js');
 const UsersAuthSignupController = require('./users-auth.signup.controller.js');
+const CommonUtils = require('../../core/utils/common.utils.js');
 
 const router = express.Router();
 
@@ -21,15 +22,15 @@ router.route(`${UsersAuthConstants.ApiPath}/reset-password`).post(UsersAuthContr
 router.route(`${UsersAuthConstants.ApiPath}/reset-token/validate`).get(UsersAuthController.validateResetToken); // public dont require authentication only for local auth
 router.route(`${UsersAuthConstants.ApiPath}/reset-token/password`).put(UsersAuthController.putResetPassword); // public dont require authentication only for local auth
 
-router.route(`${UsersAuthConstants.ApiPath}/:id/invite`).post(UsersAuthSignupController.invite);
-router.route(`${UsersAuthConstants.ApiPath}/:id/signup`).post(UsersAuthSignupController.signup); // by portal admin
+router.route(`${UsersAuthConstants.ApiPath}/invite`).post(UsersAuthSignupController.invite);
+router.route(`${UsersAuthConstants.ApiPath}/signup`).post(UsersAuthSignupController.signup); // by portal admin
 
-router.route(`${UsersAuthConstants.ApiPath}/:id/password`).put(UsersAuthController.putPassword);
-router.route(`${UsersAuthConstants.ApiPath}/:id/id`).put(UsersAuthController.putID);
-router.route(`${UsersAuthConstants.ApiPath}/:id/password`).patch(UsersAuthController.patchPassword);
-router.route(`${UsersAuthConstants.ApiPath}/:id/id`).patch(UsersAuthController.patchID);
-router.route(`${UsersAuthConstants.ApiPath}/:id/school/user/:uid`).patch(UsersAuthController.patchUserSchool);
-router.route(`${UsersAuthConstants.ApiPath}/:id`).delete(UsersAuthController.delete);
+router.route(`${UsersAuthConstants.ApiPath}/password`).put(UsersAuthController.putPassword);
+router.route(`${UsersAuthConstants.ApiPath}/id`).put(UsersAuthController.putID);
+router.route(`${UsersAuthConstants.ApiPath}/password`).patch(UsersAuthController.patchPassword);
+router.route(`${UsersAuthConstants.ApiPath}/id`).patch(UsersAuthController.patchID);
+router.route(`${UsersAuthConstants.ApiPath}/school/user/:uid`).patch(UsersAuthController.patchUserSchool);
+router.route(`${UsersAuthConstants.ApiPath}`).delete(UsersAuthController.delete);
 
 /**
  * Internal

@@ -19,7 +19,13 @@ const Public = {
    * objInfo: { id, password }
    */
   login: async (objInfo, _ctx) => {
-    const config = { serviceName: UsersAuthConstants.ServiceName, method: 'POST', path: '/login', body: objInfo };
+    const config = {
+      serviceName: UsersAuthConstants.ServiceName,
+      method: 'POST',
+      path: '/login',
+      body: objInfo,
+      localCall: { fn: 'login', params: { objInfo } },
+    };
     return await RestCommsUtils.call(config, _ctx);
   },
 
@@ -27,7 +33,13 @@ const Public = {
    * logout
    */
   logout: async (_ctx) => {
-    const config = { serviceName: UsersAuthConstants.ServiceName, method: 'POST', path: '/logout', body: {} };
+    const config = {
+      serviceName: UsersAuthConstants.ServiceName,
+      method: 'POST',
+      path: '/logout',
+      body: {},
+      localCall: { fn: 'logout', params: {} },
+    };
     return await RestCommsUtils.call(config, _ctx);
   },
 
@@ -36,7 +48,13 @@ const Public = {
    * objInfo: { email, password, name, birthday, phoneNumber?, address, school: { name, description } },
    */
   signup: async (objInfo, _ctx) => {
-    const config = { serviceName: UsersAuthConstants.ServiceName, method: 'POST', path: '/signup', body: objInfo };
+    const config = {
+      serviceName: UsersAuthConstants.ServiceName,
+      method: 'POST',
+      path: '/signup',
+      body: objInfo,
+      localCall: { fn: 'signup', params: { objInfo } },
+    };
     return await RestCommsUtils.call(config, _ctx);
   },
 
@@ -44,9 +62,14 @@ const Public = {
    * invite
    * objInfo: { email, school: { role } } - schoolID is _ctx.tenantID
    */
-  invite: async (objID, objInfo, _ctx) => {
-    const path = `/${objID}/invite`;
-    const config = { serviceName: UsersAuthConstants.ServiceName, method: 'POST', path, body: objInfo };
+  invite: async (objInfo, _ctx) => {
+    const config = {
+      serviceName: UsersAuthConstants.ServiceName,
+      method: 'POST',
+      path: '/invite',
+      body: objInfo,
+      localCall: { fn: 'invite', params: { objInfo } },
+    };
     return await RestCommsUtils.call(config, _ctx);
   },
 
@@ -66,44 +89,92 @@ const Public = {
    * post (internal) called from signup + invite user
    */
   post: async (objInfo, _ctx) => {
-    return await RestCommsUtils.post(UsersAuthConstants.ServiceNameInternal, objInfo, _ctx);
+    const config = {
+      serviceName: UsersAuthConstants.ServiceNameInternal,
+      method: 'POST',
+      path: '',
+      body: objInfo,
+      localCall: { fn: 'post', params: { objInfo } },
+    };
+    return await RestCommsUtils.call(config, _ctx);
   },
 
   /**
    * delete
    */
-  delete: async (objID, _ctx) => {
-    return await RestCommsUtils.delete(UsersAuthConstants.ServiceName, objID, _ctx);
+  delete: async (_ctx) => {
+    const config = {
+      serviceName: UsersAuthConstants.ServiceName,
+      method: 'DELETE',
+      path: '',
+      localCall: { fn: 'delete', params: {} },
+    };
+    return await RestCommsUtils.call(config, _ctx);
   },
 
   /**
    * put
    */
-  putPassword: async (objID, objInfo, _ctx) => {
-    return await RestCommsUtils.put(UsersAuthConstants.ServiceName, objID, objInfo, _ctx, 'password');
+  putPassword: async (objInfo, _ctx) => {
+    const config = {
+      serviceName: UsersAuthConstants.ServiceName,
+      method: 'PUT',
+      path: `/password`,
+      body: objInfo,
+      localCall: { fn: 'putPassword', params: { objInfo } },
+    };
+    return await RestCommsUtils.call(config, _ctx);
   },
 
-  putID: async (objID, objInfo, _ctx) => {
-    return await RestCommsUtils.put(UsersAuthConstants.ServiceName, objID, objInfo, _ctx, 'id');
+  putID: async (objInfo, _ctx) => {
+    const config = {
+      serviceName: UsersAuthConstants.ServiceName,
+      method: 'PUT',
+      path: `/id`,
+      body: objInfo,
+      localCall: { fn: 'putID', params: { objInfo } },
+    };
+    return await RestCommsUtils.call(config, _ctx);
   },
 
   /**
    * patch
    */
-  patchPassword: async (objID, patchInfo, _ctx) => {
-    return await RestCommsUtils.patch(UsersAuthConstants.ServiceName, objID, patchInfo, _ctx, 'password');
+  patchPassword: async (patchInfo, _ctx) => {
+    const config = {
+      serviceName: UsersAuthConstants.ServiceName,
+      method: 'PATCH',
+      path: `/password`,
+      body: patchInfo,
+      localCall: { fn: 'patchPassword', params: { patchInfo } },
+    };
+    return await RestCommsUtils.call(config, _ctx);
   },
 
-  patchID: async (objID, patchInfo, _ctx) => {
-    return await RestCommsUtils.patch(UsersAuthConstants.ServiceName, objID, patchInfo, _ctx, 'id');
+  patchID: async (patchInfo, _ctx) => {
+    const config = {
+      serviceName: UsersAuthConstants.ServiceName,
+      method: 'PATCH',
+      path: `/id`,
+      body: patchInfo,
+      localCall: { fn: 'patchID', params: { patchInfo } },
+    };
+    return await RestCommsUtils.call(config, _ctx);
   },
 
   /**
-   * patch called by admin to add/remove user to school (_ctx.tenantID)
+   * patch called by current user (admin verified) to add/remove user to school (_ctx.tenantID)
    * patchInfo: { roles }
    */
-  patchUserSchool: async (adminID, userID, patchInfo, _ctx) => {
-    return await RestCommsUtils.patchUserSchool(UsersAuthConstants.ServiceName, adminID, userID, patchInfo, _ctx);
+  patchUserSchool: async (userID, patchInfo, _ctx) => {
+    const config = {
+      serviceName: UsersAuthConstants.ServiceName,
+      method: 'PATCH',
+      path: `/school/user/${userID}`,
+      body: patchInfo,
+      localCall: { fn: 'patchUserSchool', params: { userID, patchInfo } },
+    };
+    return await RestCommsUtils.call(config, _ctx);
   },
 
   /**

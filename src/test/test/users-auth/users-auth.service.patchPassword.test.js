@@ -67,7 +67,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patchPassword(testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchPassword(patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -78,8 +80,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        id: testUser.id,
-        name: testUser.id,
+        userID: testUser.userID,
+        username: testUser.id,
         type: testUser.type,
       },
     });
@@ -94,19 +96,21 @@ describe('Users Auth Service', function () {
 
     const patchReq = {
       set: {
-        id: testUser.id,
+        username: testUser.id,
         oldPassword: testUser._test_data.origPassword,
         newPassword: testUser._test_data.origPassword + 'aA1!',
       },
     };
 
     // call
-    let res = await UsersAuthService.patchPassword(testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchPassword(patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(res.status).to.equal(400);
-    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "set.id" is not allowed');
+    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "set.username" is not allowed');
   }).timeout(10000);
 
   /**
@@ -133,7 +137,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patchPassword(testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchPassword(patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -171,7 +177,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patchPassword(testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchPassword(patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -206,7 +214,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patchPassword(testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchPassword(patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -246,7 +256,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patchPassword(testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchPassword(patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
