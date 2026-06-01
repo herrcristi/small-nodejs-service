@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
 
 const TestConstants = require('../../test-constants.js');
@@ -30,6 +29,9 @@ describe('Users Auth Service', function () {
     const notifications = _.cloneDeep(TestConstants.UsersNotifications);
     const notif = notifications[0];
 
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
     // stub
     let stubBase = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification) => {
       console.log(`\nNotificationsUtils.notification called\n`);
@@ -40,6 +42,8 @@ describe('Users Auth Service', function () {
     });
 
     // call
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
     let res = await UsersAuthService.notification(notif, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
@@ -59,6 +63,9 @@ describe('Users Auth Service', function () {
     const notif = notifications[0];
     delete notif.serviceName;
 
+    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
+    const testUser = testUsers[0];
+
     // stub
     let stubBase = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification) => {
       console.log(`\nNotificationsUtils.notification called\n`);
@@ -69,6 +76,8 @@ describe('Users Auth Service', function () {
     });
 
     // call
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
     let res = await UsersAuthService.notification(notif, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 

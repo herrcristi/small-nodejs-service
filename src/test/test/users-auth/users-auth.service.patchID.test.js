@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
@@ -38,7 +37,7 @@ describe('Users Auth Service', function () {
 
     const patchReq = {
       set: {
-        id: testUser.id + '1',
+        username: testUser.id + '1',
         password: testUser._test_data.origPassword,
       },
     };
@@ -74,7 +73,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patchID(testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchID(patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -86,9 +87,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        id: patchReq.set.id,
-        oldID: testUser.id,
-        name: patchReq.set.id,
+        userID: testUser.userID,
+        username: patchReq.set.username,
         type: testUser.type,
       },
     });
@@ -103,14 +103,16 @@ describe('Users Auth Service', function () {
 
     const patchReq = {
       set: {
-        id: testUser.id + '1',
+        username: testUser.id + '1',
         password: testUser._test_data.origPassword,
         other: 1,
       },
     };
 
     // call
-    let res = await UsersAuthService.patchID(testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchID(patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -119,15 +121,15 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * patchID fail same id email
+   * patchID fail same username
    */
-  it('should patchID fail same id email', async () => {
+  it('should patchID fail same username', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
     const patchReq = {
       set: {
-        id: testUser.id,
+        username: testUser.id,
         password: testUser._test_data.origPassword,
       },
     };
@@ -142,7 +144,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patchID(testUser.id, patchReq, { ..._ctx, username: testUser.id });
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchID(patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -150,8 +154,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 400,
       error: {
-        message: 'New id email is the same as current one',
-        error: new Error('New id email is the same as current one'),
+        message: 'New username is the same as current one',
+        error: new Error('New username is the same as current one'),
       },
     });
   }).timeout(10000);
@@ -165,7 +169,7 @@ describe('Users Auth Service', function () {
 
     const patchReq = {
       set: {
-        id: testUser.id + '1',
+        username: testUser.id + '1',
         password: testUser._test_data.origPassword,
       },
     };
@@ -180,7 +184,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patchID(testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchID(patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -200,7 +206,7 @@ describe('Users Auth Service', function () {
 
     const patchReq = {
       set: {
-        id: testUser.id + '1',
+        username: testUser.id + '1',
         password: testUser._test_data.origPassword + '1',
       },
     };
@@ -215,7 +221,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patchID(testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchID(patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -235,7 +243,7 @@ describe('Users Auth Service', function () {
 
     const patchReq = {
       set: {
-        id: testUser.id + '1',
+        username: testUser.id + '1',
         password: testUser._test_data.origPassword,
       },
     };
@@ -258,7 +266,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patchID(testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchID(patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -279,7 +289,7 @@ describe('Users Auth Service', function () {
 
     const patchReq = {
       set: {
-        id: testUser.id + '1',
+        username: testUser.id + '1',
         password: testUser._test_data.origPassword,
       },
     };
@@ -307,7 +317,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patchID(testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchID(patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

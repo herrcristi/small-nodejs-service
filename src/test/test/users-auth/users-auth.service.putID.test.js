@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
 
@@ -36,7 +35,7 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const putReq = {
-      id: testUser.id + '1',
+      username: testUser.id + '1',
       password: testUser._test_data.origPassword,
     };
 
@@ -74,16 +73,18 @@ describe('Users Auth Service', function () {
       chai.expect(notificationType).to.equal(NotificationsUtils.Constants.Notification.Modified);
       chai.expect(objs).to.deep.equal([
         {
-          id: putReq.id,
-          oldID: testUser.id,
-          name: putReq.id,
+          id: testUser.userID,
+          name: putReq.username,
+          oldUsername: testUser.id,
           type: UsersAuthConstants.Type,
         },
       ]);
     });
 
     // call
-    let res = await UsersAuthService.putID(testUser.id, putReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.putID(putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -95,9 +96,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        id: putReq.id,
-        oldID: testUser.id,
-        name: putReq.id,
+        userID: testUser.userID,
+        username: putReq.username,
         type: testUser.type,
       },
     });
@@ -111,13 +111,15 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const putReq = {
-      id: testUser.id + '1',
+      username: testUser.id + '1',
       password: testUser._test_data.origPassword,
       other: 1,
     };
 
     // call
-    let res = await UsersAuthService.putID(testUser.id, putReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.putID(putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -126,14 +128,14 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * putID fail same id (email)
+   * putID fail same username (email)
    */
-  it('should putID fail same id (email)', async () => {
+  it('should putID fail same username (email)', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
     const putReq = {
-      id: testUser.id,
+      username: testUser.id,
       password: testUser._test_data.origPassword,
     };
 
@@ -147,7 +149,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.putID(testUser.id, putReq, { ..._ctx, username: testUser.id });
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.putID(putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -155,8 +159,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 400,
       error: {
-        message: 'New id email is the same as current one',
-        error: new Error('New id email is the same as current one'),
+        message: 'New username is the same as current one',
+        error: new Error('New username is the same as current one'),
       },
     });
   }).timeout(10000);
@@ -169,7 +173,7 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const putReq = {
-      id: testUser.id + '1',
+      username: testUser.id + '1',
       password: testUser._test_data.origPassword,
     };
 
@@ -180,7 +184,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.putID(testUser.id, putReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.putID(putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -199,7 +205,7 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const putReq = {
-      id: testUser.id + '1',
+      username: testUser.id + '1',
       password: testUser._test_data.origPassword + '1',
     };
 
@@ -213,7 +219,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.putID(testUser.id, putReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.putID(putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -232,7 +240,7 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const putReq = {
-      id: testUser.id + '1',
+      username: testUser.id + '1',
       password: testUser._test_data.origPassword,
     };
 
@@ -251,7 +259,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.putID(testUser.id, putReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.putID(putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -271,7 +281,7 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     const putReq = {
-      id: testUser.id + '1',
+      username: testUser.id + '1',
       password: testUser._test_data.origPassword,
     };
 
@@ -295,11 +305,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.putID(testUser.id, putReq, {
-      ..._ctx,
-      userID: testUser.userID,
-      username: testUser.id,
-    });
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.putID(putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

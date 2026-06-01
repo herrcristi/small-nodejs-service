@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
@@ -45,7 +44,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patchUserSchool(testUser.id, testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchUserSchool(testUser.userID, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -80,7 +81,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patchUserSchool(testUser.id, testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchUserSchool(testUser.userID, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -107,7 +110,9 @@ describe('Users Auth Service', function () {
     };
 
     // call
-    let res = await UsersAuthService.patchUserSchool(testUser.id, testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchUserSchool(testUser.userID, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -135,7 +140,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.patchUserSchool(testUser.id, testUser.id, patchReq, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.patchUserSchool(testUser.userID, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

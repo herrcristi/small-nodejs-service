@@ -22,7 +22,9 @@ describe('Users Auth Service', function () {
     postReq = {
       ...testUser,
       password: testUser._test_data.origPassword + 'aA1!',
+      username: testUser.id, // username is email
     };
+    delete postReq.id;
     delete postReq.type;
     delete postReq.salt;
     delete postReq._test_data;
@@ -150,11 +152,11 @@ describe('Users Auth Service', function () {
     let putReq = {};
     let res = UsersAuthService.Validators.PutID.validate(putReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"id" is required');
+    chai.expect(res.error.details[0].message).to.include('"username" is required');
 
     // other params
     putReq = {
-      id: 'email@test.com',
+      username: 'email@test.com',
       password: 'pass1',
       extra: 1,
     };
@@ -242,12 +244,12 @@ describe('Users Auth Service', function () {
     };
     res = UsersAuthService.Validators.PatchID.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"set.id" is required');
+    chai.expect(res.error.details[0].message).to.include('"set.username" is required');
 
     // set extra is not allowed
     patchReq = {
       set: {
-        id: 'email@test.com',
+        username: 'email@test.com',
         password: 'pass1',
         extra: 1,
       },

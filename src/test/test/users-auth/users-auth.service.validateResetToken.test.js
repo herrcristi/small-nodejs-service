@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const JwtUtils = require('../../../core/utils/jwt.utils.js');
 
 const TestConstants = require('../../test-constants.js');
@@ -34,7 +33,7 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     // get token from resetPassword
-    let rT = await UsersLocalAuthService.getToken({}, testUser, _ctx);
+    let rT = await UsersLocalAuthService.getToken({}, { ...testUser, username: testUser.id }, _ctx);
     const authIssuer = `${UsersAuthConstants.ServiceName}`;
     let token = JwtUtils.encrypt(rT.value, authIssuer, _ctx).value; // double encryption
 
@@ -46,8 +45,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        id: testUser.id,
-        name: testUser.id,
+        userID: testUser.userID,
+        username: testUser.id,
         type: testUser.type,
       },
     });
@@ -82,7 +81,7 @@ describe('Users Auth Service', function () {
     const testUser = testUsers[0];
 
     // get token from resetPassword
-    let token = 'toekn';
+    let token = 'token';
 
     // call
     let res = await UsersAuthService.validateResetToken({ token }, _ctx);

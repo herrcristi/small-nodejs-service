@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const BaseServiceUtils = require('../../../core/utils/base-service.utils.js');
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const RestApiUtils = require('../../../core/utils/rest-api.utils.js');
@@ -62,7 +61,9 @@ describe('Users Auth Service', function () {
     let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject');
 
     // call
-    let res = await UsersAuthService.delete(testUser.id, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.delete(_ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -73,8 +74,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
-        id: testUser.id,
-        name: testUser.id,
+        userID: testUser.userID,
+        username: testUser.id,
         type: testUser.type,
       },
     });
@@ -94,7 +95,9 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.delete(testUser.id, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.delete(_ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -135,7 +138,9 @@ describe('Users Auth Service', function () {
     let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject');
 
     // call
-    let res = await UsersAuthService.delete(testUser.id, _ctx);
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    let res = await UsersAuthService.delete(_ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
