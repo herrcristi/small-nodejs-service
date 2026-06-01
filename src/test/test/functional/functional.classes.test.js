@@ -43,7 +43,8 @@ describe('Classes Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -71,7 +72,8 @@ describe('Classes Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}/${testClass.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -98,6 +100,7 @@ describe('Classes Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testClass });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -130,6 +133,7 @@ describe('Classes Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testClass });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -150,7 +154,8 @@ describe('Classes Functional', function () {
     testClass.id = res.body.id;
     res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}/${testClass.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -181,6 +186,7 @@ describe('Classes Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testClass });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -195,7 +201,8 @@ describe('Classes Functional', function () {
       .delete(`${ClassesConstants.ApiPath}/${testClassID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -211,7 +218,8 @@ describe('Classes Functional', function () {
     testClass.id = res.body.id;
     res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}/${testClass.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -242,6 +250,7 @@ describe('Classes Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testClass });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -258,7 +267,8 @@ describe('Classes Functional', function () {
     // do a get
     res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}/${testClassID}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.body.id).to.equal(testClassID);
@@ -288,6 +298,7 @@ describe('Classes Functional', function () {
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ set: { ...testClass } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -304,7 +315,8 @@ describe('Classes Functional', function () {
     // do a get
     res = await supertest(TestConstants.WebServer)
       .get(`${ClassesConstants.ApiPath}/${testClassID}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.body.id).to.equal(testClassID);

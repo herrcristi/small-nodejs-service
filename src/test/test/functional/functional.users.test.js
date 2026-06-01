@@ -165,7 +165,9 @@ describe('Users Functional', function () {
     });
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(`${UsersConstants.ApiPathInternal}`);
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPathInternal}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -191,7 +193,9 @@ describe('Users Functional', function () {
     const testUser = testUsers[0];
 
     // call
-    let res = await supertest(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUser.id}`);
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}/${testUser.id}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -224,6 +228,7 @@ describe('Users Functional', function () {
       .post(`${UsersConstants.ApiPathInternal}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
+      .set('Origin', TestConstants.WebServer)
       .send({ ...postReq });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -264,6 +269,7 @@ describe('Users Functional', function () {
       .post(`${UsersConstants.ApiPathInternal}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
+      .set('Origin', TestConstants.WebServer)
       .send({ ...postReq });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -291,7 +297,9 @@ describe('Users Functional', function () {
     );
 
     // do a get
-    res = await supertest(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUserID}`);
+    res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}/${testUserID}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -336,6 +344,7 @@ describe('Users Functional', function () {
       .put(`${UsersConstants.ApiPath}/${testUserID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -357,7 +366,8 @@ describe('Users Functional', function () {
     res = await supertest(TestConstants.WebServer)
       .delete(`${UsersConstants.ApiPathInternal}/${testUserID}`)
       .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname');
+      .set('x-user-name', 'testname')
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -374,7 +384,9 @@ describe('Users Functional', function () {
 
     // do a get
     testUser.id = res.body.id;
-    res = await supertest(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUser.id}`);
+    res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}/${testUser.id}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -411,6 +423,7 @@ describe('Users Functional', function () {
       .put(`${UsersConstants.ApiPath}/${testUserID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -425,7 +438,9 @@ describe('Users Functional', function () {
     await checkSchoolsAfter(testUserID, { name: 'new name', email, schools }, testUser.status, _ctx);
 
     // do a get
-    res = await supertest(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUserID}`);
+    res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}/${testUserID}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.body.id).to.equal(testUserID);
@@ -460,6 +475,7 @@ describe('Users Functional', function () {
       .put(`${UsersConstants.ApiPathInternal}/${testUserID}/email`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
+      .set('Origin', TestConstants.WebServer)
       .send({ email: newEmail });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -474,7 +490,9 @@ describe('Users Functional', function () {
     await checkSchoolsAfter(testUserID, { name, email: newEmail, schools }, testUser.status, _ctx);
 
     // do a get
-    res = await supertest(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUserID}`);
+    res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}/${testUserID}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.body.id).to.equal(testUserID);
@@ -510,6 +528,7 @@ describe('Users Functional', function () {
       .patch(`${UsersConstants.ApiPath}/${testUserID}`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
+      .set('Origin', TestConstants.WebServer)
       .send({ set: { ...testUser } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -527,7 +546,9 @@ describe('Users Functional', function () {
     await checkSchoolsAfter(testUserID, { name: 'new name', email, schools }, testUser.status, _ctx);
 
     // do a get
-    res = await supertest(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUserID}`);
+    res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}/${testUserID}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.body.id).to.equal(testUserID);
@@ -579,6 +600,7 @@ describe('Users Functional', function () {
       .patch(`${UsersConstants.ApiPathInternal}/${testUserID}/school`)
       .set('x-user-id', 'testid')
       .set('x-user-name', 'testname')
+      .set('Origin', TestConstants.WebServer)
       .send(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -596,7 +618,9 @@ describe('Users Functional', function () {
     await checkSchoolsAfter(testUserID, { name, email, schools: schoolsAfter }, testUser.status, _ctx);
 
     // do a get
-    res = await supertest(TestConstants.WebServer).get(`${UsersConstants.ApiPath}/${testUserID}`);
+    res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}/${testUserID}`)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.body.id).to.equal(testUserID);

@@ -54,7 +54,8 @@ describe('Professors Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${ProfessorsConstants.ApiPath}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -91,7 +92,8 @@ describe('Professors Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${ProfessorsConstants.ApiPath}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -116,7 +118,8 @@ describe('Professors Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${ProfessorsConstants.ApiPath}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -140,7 +143,8 @@ describe('Professors Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${ProfessorsConstants.ApiPath}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -171,7 +175,8 @@ describe('Professors Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${ProfessorsConstants.ApiPath}/${testProfessor.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -203,7 +208,8 @@ describe('Professors Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${ProfessorsConstants.ApiPath}/${testProfessor.id}?projection=id,name`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -230,7 +236,8 @@ describe('Professors Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${ProfessorsConstants.ApiPath}/${testProfessor.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -255,7 +262,8 @@ describe('Professors Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${ProfessorsConstants.ApiPath}/${testProfessor.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -280,7 +288,8 @@ describe('Professors Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${ProfessorsConstants.ApiPath}/${testProfessor.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -310,6 +319,7 @@ describe('Professors Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .post(`${ProfessorsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testProfessor });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -338,6 +348,7 @@ describe('Professors Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .post(`${ProfessorsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testProfessor });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -364,6 +375,7 @@ describe('Professors Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .post(`${ProfessorsConstants.ApiPath}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testProfessor });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -393,7 +405,8 @@ describe('Professors Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .delete(`${ProfessorsConstants.ApiPath}/${testProfessor.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -420,7 +433,8 @@ describe('Professors Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .delete(`${ProfessorsConstants.ApiPath}/${testProfessor.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -445,7 +459,8 @@ describe('Professors Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .delete(`${ProfessorsConstants.ApiPath}/${testProfessor.id}`)
-      .set('x-tenant-id', _ctx.tenantID);
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
@@ -475,6 +490,7 @@ describe('Professors Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .put(`${ProfessorsConstants.ApiPath}/${testProfessor.id}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testProfessor });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -503,6 +519,7 @@ describe('Professors Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .put(`${ProfessorsConstants.ApiPath}/${testProfessor.id}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testProfessor });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -529,6 +546,7 @@ describe('Professors Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .put(`${ProfessorsConstants.ApiPath}/${testProfessor.id}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...testProfessor });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -559,6 +577,7 @@ describe('Professors Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .patch(`${ProfessorsConstants.ApiPath}/${testProfessor.id}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ set: { ...testProfessor } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -587,6 +606,7 @@ describe('Professors Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .patch(`${ProfessorsConstants.ApiPath}/${testProfessor.id}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ set: { ...testProfessor } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -613,6 +633,7 @@ describe('Professors Controller', function () {
     let res = await supertest(TestConstants.WebServer)
       .patch(`${ProfessorsConstants.ApiPath}/${testProfessor.id}`)
       .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ set: { ...testProfessor } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -642,6 +663,8 @@ describe('Professors Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${ProfessorsConstants.ApiPathInternal}/notifications`)
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -667,6 +690,8 @@ describe('Professors Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${ProfessorsConstants.ApiPathInternal}/notifications`)
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -692,6 +717,8 @@ describe('Professors Controller', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${ProfessorsConstants.ApiPathInternal}/notifications`)
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
       .send({ ...notif });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 

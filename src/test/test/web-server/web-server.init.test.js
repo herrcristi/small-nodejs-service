@@ -47,7 +47,7 @@ describe('Web Server', function () {
     // check
     chai.expect(web.app.mountpath).to.equal('/');
 
-    let res = await supertest(`http://localhost:${port}`).get(`${path}`);
+    let res = await supertest(`http://localhost:${port}`).get(`${path}`).set('Origin', `http://localhost:${port}`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     chai.expect(res.status).to.equal(200);
