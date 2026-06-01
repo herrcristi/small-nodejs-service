@@ -1,5 +1,5 @@
 /**
- * Request middleware
+ * Cors middleware
  */
 const CommonUtils = require('../utils/common.utils.js');
 
