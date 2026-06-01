@@ -53,4 +53,33 @@ describe('Web Server', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(res.body).to.deep.equal({ success: true });
   }).timeout(10000);
+
+  /**
+   * cors validation fails
+   */
+  it('should cors validation fails', async () => {
+    const port = 8091;
+    const path = '/test/webserver';
+
+    const router = express.Router();
+    router.route(path).get(async (req, res) => {
+      console.log(`\nRoute path ${path} called\n`);
+      res.status(200).json({ success: true });
+      res.end();
+    });
+
+    // call
+    let web = await WebServer.init(port);
+    web.app.use(router);
+    server = web?.server;
+
+    // check
+    chai.expect(web.app.mountpath).to.equal('/');
+
+    let res = await supertest(`http://localhost:${port}`).get(`${path}`).set('Origin', `blabla`);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    chai.expect(res.status).to.equal(500);
+    chai.expect(res.body.error.message).to.include('CORS policy violation');
+  }).timeout(10000);
 });
