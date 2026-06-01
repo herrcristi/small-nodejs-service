@@ -353,7 +353,6 @@ const Public = {
       query: `method=${objInfo.method}&route=${encodeURIComponent(objInfo.route)}`,
       headers: {
         cookie: `${cookieTokenName}=${objInfo.token}`,
-        authorization: `Bearer ${objInfo.token}`,
       },
       localCall: { fn: 'validate', params: { objInfo } },
     };

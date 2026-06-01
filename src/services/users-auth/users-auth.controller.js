@@ -40,8 +40,6 @@ const Public = {
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({
         ...r.value,
-        token: r.token,
-        expires: expires.toISOString(),
       });
     } catch (e) {
       return res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
@@ -78,8 +76,6 @@ const Public = {
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({
         ...r.value,
-        token: 'token',
-        expires: expires.toISOString(),
       });
     } catch (e) {
       return res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
@@ -100,8 +96,8 @@ const Public = {
         `\n${_ctx.serviceName}: Validate called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
 
-      // get token from cookie or from authorization header
-      const token = req.cookies[UsersAuthConstants.AuthToken] || req.headers['authorization']?.split('Bearer ')[1];
+      // get token from cookie
+      const token = req.cookies[UsersAuthConstants.AuthToken];
       const method = req.query['method'];
       const route = req.query['route'];
 
@@ -319,8 +315,6 @@ const Public = {
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({
         ...r.value,
-        token: 'token',
-        expires: expires.toISOString(),
       });
     } catch (e) {
       return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
@@ -391,8 +385,6 @@ const Public = {
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({
         ...r.value,
-        token: 'token',
-        expires: expires.toISOString(),
       });
     } catch (e) {
       return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));

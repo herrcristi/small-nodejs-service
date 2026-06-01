@@ -139,8 +139,12 @@ Router.beforeEach((to, from, next) => {
     return next();
   }
 
+  // get token from cookie
+  const tokenFromCookie = document.cookie.split('; ').find((row) => row.startsWith('token='));
+  const token = tokenFromCookie?.split('=')[1];
+  // const token = authStore?.token || authStore?.raw?.id || authStore?.raw?.email;
+
   const authStore = useAuthStore();
-  const token = authStore?.token || authStore?.raw?.id || authStore?.raw?.email;
   const tenantID = useAppStore()?.tenantID;
   const nextPath = encodeURIComponent(to.fullPath || to.path || '/');
 

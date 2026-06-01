@@ -12,7 +12,8 @@ export async function processLoginResponse(response, options = {}) {
 
     // Persist minimal user info in-memory. Cookie-only mode: do not persist tokens.
     const s = useAuthStore();
-    s.save({ token: null, expires: data?.expires, raw: data });
+    s.save({ expires: data?.expires, raw: data });
+
     // if only one school is active, set it as current tenantID
     let tenantID = null;
     if (Array.isArray(data?.schools) && data.schools.length == 1 && data.schools[0].status === 'active') {
