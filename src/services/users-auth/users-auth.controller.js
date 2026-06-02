@@ -100,7 +100,10 @@ const Public = {
       }
 
       // validate token and get user details (use a route allowed for all)
-      const r = await UsersAuthService.validate({ token, method: 'PUT', route: '/api/v1/users-auth/id' }, _ctx);
+      const r = await UsersAuthService.validate(
+        { token, method: 'GET', route: `${UsersAuthConstants.ApiPath}/me` },
+        _ctx
+      );
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }

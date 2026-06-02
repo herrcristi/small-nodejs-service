@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useAuthStore, useAppStore } from '../stores/stores.js';
-import { processLoginResponse } from '../auth.js';
+import { processLoginResponse, getRolesPermissions } from '../auth.js';
 
 import { SMALL_API_URL, SMALL_API_CORS_ORIGIN } from './api.url.js';
 
@@ -53,6 +53,7 @@ instance.interceptors.response.use(
 /**
  * Bootstrap: restore session from cookie on app init (after page refresh)
  * Calls /users-auth/me to validate cookie and get current user data
+ * Restores tenantID from localStorage if it's valid (in user's schools list)
  * If cookie is invalid, returns error (interceptor will redirect to login)
  */
 export async function bootstrapAuthFromCookie() {
@@ -61,6 +62,22 @@ export async function bootstrapAuthFromCookie() {
     if (response.status === 200) {
       // restore auth store with user data (schools, username, etc.)
       processLoginResponse(response, { useCookies: true });
+
+      // try to restore tenantID from localStorage with validation
+      const appStore = useAppStore();
+      const savedTenantID = appStore?.tenantID;
+      if (savedTenantID && Array.isArray(response.data?.schools)) {
+        // validate that tenantID is in user's schools and is active
+        const isValid = response.data.schools.some((s) => s.id === savedTenantID && s.status === 'active');
+        if (isValid) {
+          // restore tenant from localStorage
+          appStore.saveTenant(savedTenantID, getRolesPermissions(savedTenantID, response.data));
+        } else {
+          // invalid tenantID; clear it
+          appStore.saveTenant(null, null);
+        }
+      }
+
       return { status: 200, user: response.data };
     }
   } catch (e) {

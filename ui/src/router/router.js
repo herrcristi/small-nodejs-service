@@ -17,6 +17,13 @@ import Profile from '../components/api.user.profile.vue';
 
 import { useAuthStore, useAppStore } from '../stores/stores.js';
 
+// Flag to track if bootstrap is complete
+let isBootstrapComplete = false;
+
+export function setBootstrapComplete() {
+  isBootstrapComplete = true;
+}
+
 const Router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -137,6 +144,11 @@ const Router = createRouter({
 // cookie is sent automatically by browser; 401 responses are caught by interceptors
 Router.beforeEach((to, from, next) => {
   if (!to.meta || to.meta.requiresAuth === false) {
+    return next();
+  }
+
+  // skip auth checks until bootstrap is complete
+  if (!isBootstrapComplete) {
     return next();
   }
 

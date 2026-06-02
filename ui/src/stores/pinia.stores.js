@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { localAuthStore, localAppStore } from './memStorage.stores.js';
+import { localAuthStore, localAppStore } from './appstorage.stores.js';
 
 export const piniaAuthStore = defineStore('auth', {
   /**

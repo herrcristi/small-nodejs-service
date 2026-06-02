@@ -2,11 +2,11 @@ import { createApp } from 'vue';
 import { createI18n } from 'vue-i18n';
 import { createPinia } from 'pinia';
 import { useAuthStore, useAppStore } from './stores/stores.js';
-import Api, { bootstrapAuthFromCookie } from './api/api.js';
+import Api from './api/api.js';
 
 import App from './app.vue';
 import './styles.css';
-import Router from './router/router.js';
+import Router, { setBootstrapComplete } from './router/router.js';
 
 // Vuetify
 import 'vuetify/styles';
@@ -42,9 +42,7 @@ app.use(pinia);
 
 // load auth store into pinia
 const authStore = useAuthStore();
-authStore.load();
 const appStore = useAppStore();
-appStore.load();
 
 app.config.errorHandler = (err) => {
   console.error(err);
@@ -55,12 +53,16 @@ app.use(Router);
 app.use(vuetify);
 
 // bootstrap: restore session from cookie (if user refreshed page), then mount app
-bootstrapAuthFromCookie()
+Api.bootstrapAuthFromCookie()
   .then(() => {
-    // reload stores after bootstrap completes
+    // reload both stores after bootstrap completes (tenantID restored from localStorage)
     authStore.load();
+    appStore.load();
   })
   .finally(() => {
+    // signal that bootstrap is complete so router guard can check tenantID
+    setBootstrapComplete();
+
     // wait for router to be ready, then mount app
     Router.isReady().then(() => {
       app.mount('#app');
