@@ -135,7 +135,6 @@ describe('Users Auth Controller', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect({ ...res.body, expires: '' }).to.deep.equal({
-      token: 'token',
       expires: '', // ignore expires for testing
     });
   }).timeout(10000);
@@ -185,6 +184,170 @@ describe('Users Auth Controller', function () {
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body.message).to.include('An unknown error has occured');
     chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * get current user with success
+   */
+  it('should get current user with success', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
+    const testToken = _.cloneDeep(TestConstants.UsersToken)[0];
+
+    sinon.restore(); // restore validation to override the validate again in this test
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'validate').callsFake(() => {
+      console.log(`\nUsersAuthService.validate called\n`);
+      return {
+        status: 200,
+        value: {
+          userID: testUser.id,
+          username: testUser.email,
+          name: testUser.name,
+          schools: testUser.schools,
+        },
+      };
+    });
+
+    // call
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPath}/me`)
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testToken.token}`)
+      .set('Origin', TestConstants.WebServer);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubService.callCount).to.equal(2); // 2 calls to validate are made
+    chai.expect(res.body.userID).to.equal(testUser.id);
+    chai.expect(res.body.username).to.equal(testUser.email);
+    chai.expect(res.body.name).to.equal(testUser.name);
+    chai.expect(res.body.schools).to.deep.equal(testUser.schools);
+    chai.expect(res.body.expires).to.exist;
+    // verify expires is a valid date in the future
+    chai.expect(new Date(res.body.expires).getTime()).to.be.greaterThan(Date.now());
+  }).timeout(10000);
+
+  /**
+   * get current user with no token
+   */
+  it('should get current user fail with no token', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
+
+    sinon.restore(); // restore validation
+
+    // call - no cookie set
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPath}/me`)
+      .set('Origin', TestConstants.WebServer);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(401);
+    chai.expect(res.body.error).to.include('Failed to validate schema');
+  }).timeout(10000);
+
+  /**
+   * get current user with validation failure
+   */
+  it('should get current user fail with validation error', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
+    const testToken = _.cloneDeep(TestConstants.UsersToken)[0];
+
+    sinon.restore(); // restore validation
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'validate').callsFake(() => {
+      console.log(`\nUsersAuthService.validate called\n`);
+      return {
+        status: 401,
+        error: { message: 'Invalid token', error: new Error('Token validation failed') },
+      };
+    });
+
+    // call
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPath}/me`)
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testToken.token}`)
+      .set('Origin', TestConstants.WebServer);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(401);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Token validation failed');
+  }).timeout(10000);
+
+  /**
+   * get current user with exception
+   */
+  it('should get current user fail with exception', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
+    const testToken = _.cloneDeep(TestConstants.UsersToken)[0];
+
+    sinon.restore(); // restore validation to override the validate again in this test
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'validate').callsFake(() => {
+      console.log(`\nUsersAuthService.validate called\n`);
+      throw new Error('Test error message');
+    });
+
+    // call
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPath}/me`)
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testToken.token}`)
+      .set('Origin', TestConstants.WebServer);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(401);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * get current user with empty schools
+   */
+  it('should get current user with empty schools', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
+    const testToken = _.cloneDeep(TestConstants.UsersToken)[0];
+
+    sinon.restore(); // restore validation to override the validate again in this test
+
+    // stub
+    let stubService = sinon.stub(UsersAuthService, 'validate').callsFake(() => {
+      console.log(`\nUsersAuthService.validate called\n`);
+      return {
+        status: 200,
+        value: {
+          userID: testUser.id,
+          username: testUser.email,
+          name: testUser.name,
+          // no schools provided
+        },
+      };
+    });
+
+    // call
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPath}/me`)
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testToken.token}`)
+      .set('Origin', TestConstants.WebServer);
+    console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubService.callCount).to.be.greaterThan(1);
+    chai.expect(res.body.userID).to.equal(testUser.id);
+    chai.expect(res.body.schools).to.deep.equal([]);
+    chai.expect(res.body.expires).to.exist;
   }).timeout(10000);
 
   /**
@@ -997,7 +1160,6 @@ describe('Users Auth Controller', function () {
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect({ ...res.body, expires: '' }).to.deep.equal({
       ...testUser,
-      token: 'token',
       expires: '', // ignore expires for testing
     });
   }).timeout(10000);
@@ -1167,7 +1329,6 @@ describe('Users Auth Controller', function () {
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect({ ...res.body, expires: '' }).to.deep.equal({
       ...testUser,
-      token: 'token',
       expires: '', // ignore expires for testing
     });
   }).timeout(10000);
