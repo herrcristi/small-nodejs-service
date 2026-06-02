@@ -17,6 +17,13 @@ import Profile from '../components/api.user.profile.vue';
 
 import { useAuthStore, useAppStore } from '../stores/stores.js';
 
+// Flag to track if bootstrap is complete
+let isBootstrapComplete = false;
+
+export function setBootstrapComplete() {
+  isBootstrapComplete = true;
+}
+
 const Router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -134,35 +141,31 @@ const Router = createRouter({
 });
 
 // navigation guard - redirect to /login if route requires auth and user is not authenticated
+// cookie is sent automatically by browser; 401 responses are caught by interceptors
 Router.beforeEach((to, from, next) => {
   if (!to.meta || to.meta.requiresAuth === false) {
     return next();
   }
 
-  const token = useAuthStore()?.token;
+  // skip auth checks until bootstrap is complete
+  if (!isBootstrapComplete) {
+    return next();
+  }
+
   const tenantID = useAppStore()?.tenantID;
   const nextPath = encodeURIComponent(to.fullPath || to.path || '/');
 
-  // check auth
-  if (token) {
-    // check tenant
-    if (tenantID) {
-      return next();
-    }
-
-    // redirect to tenant select
-    if (to.path === '/tenants') {
-      next();
-    }
-    return next({ path: '/tenants', query: { next: nextPath } });
+  // check tenant
+  if (tenantID) {
+    return next();
   }
 
-  // reset tenantID if no auth
-  useAppStore()?.saveTenant(null, null); // reset it
+  // redirect to tenant select if authenticated but no tenant selected
+  if (to.path === '/tenants') {
+    return next();
+  }
 
-  // pass tenant and if in tenant selection tenant will be changed
-  // then the next should be cleared
-  return next({ path: '/login', query: { tenantID, next: nextPath } });
+  return next({ path: '/tenants', query: { next: nextPath } });
 });
 
 export default Router;

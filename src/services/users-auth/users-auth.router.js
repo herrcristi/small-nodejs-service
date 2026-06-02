@@ -21,6 +21,7 @@ const loginLimiter = rateLimit(RateLimiterMiddleware.loginLimiter);
  */
 router.route(`${UsersAuthConstants.ApiPath}/login`).post(loginLimiter, UsersAuthController.login); // public dont require authentication
 router.route(`${UsersAuthConstants.ApiPath}/logout`).post(UsersAuthController.logout); // logout the current login user
+router.route(`${UsersAuthConstants.ApiPath}/me`).get(UsersAuthController.getCurrentUser); // get current user (from cookie) - used on app bootstrap
 //router.route(`${UsersAuthConstants.ApiPath}/signup`).post(UsersAuthSignupController.signup); // may be done by anonymous user
 router.route(`${UsersAuthConstants.ApiPath}/reset-password`).post(UsersAuthController.resetPassword); // public dont require authentication
 

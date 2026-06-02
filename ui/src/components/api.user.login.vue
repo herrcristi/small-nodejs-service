@@ -21,7 +21,7 @@
                 outlined
                 dense
               />
-              <v-checkbox v-model="withCreds" :label="t('login.remember_me') || 'Remember me (send cookies)'" />
+              <!-- cookie-based auth is used by default; no client-side "remember me" persistence -->
             </v-form>
             <v-alert type="error" v-if="error" dense text>
               {{ error }}
@@ -57,7 +57,8 @@ const props = defineProps({
 
 const username = ref('');
 const password = ref('');
-const withCreds = ref(false);
+// Always use cookies for authentication (HttpOnly) by default
+const withCreds = ref(true);
 const loading = ref(false);
 const error = ref(null);
 const valid = ref(true);
@@ -90,8 +91,8 @@ async function submit() {
     // call the backend login
     const resp = await Api.login({ username: username.value, password: password.value }, withCreds.value);
 
-    // process the response
-    const r = await processLoginResponse(resp);
+    // process the response; if user asked to send cookies, treat auth as cookie-based
+    const r = await processLoginResponse(resp, { useCookies: withCreds.value });
     if (r.error) {
       throw r.error.error;
     }

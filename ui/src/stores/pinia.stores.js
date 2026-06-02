@@ -1,13 +1,11 @@
 import { defineStore } from 'pinia';
-import { localAuthStore, localAppStore } from './localstorage.stores.js';
+import { localAuthStore, localAppStore } from './appstorage.stores.js';
 
 export const piniaAuthStore = defineStore('auth', {
   /**
    * state
    */
   state: () => ({
-    token: null,
-    expires: null,
     raw: null,
   }),
 
@@ -21,8 +19,6 @@ export const piniaAuthStore = defineStore('auth', {
     load() {
       const obj = localAuthStore.load();
 
-      this.token = obj?.token || null;
-      this.expires = obj?.expires || null;
       this.raw = obj?.raw || null;
       return obj;
     },
@@ -33,8 +29,6 @@ export const piniaAuthStore = defineStore('auth', {
     save(obj) {
       const payload = localAuthStore.save(obj);
 
-      this.token = payload?.token || null;
-      this.expires = payload?.expires || null;
       this.raw = payload?.raw || null;
     },
 
@@ -44,8 +38,6 @@ export const piniaAuthStore = defineStore('auth', {
     clear() {
       localAuthStore.clear();
 
-      this.token = null;
-      this.expires = null;
       this.raw = null;
     },
   },

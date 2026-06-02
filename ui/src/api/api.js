@@ -1,54 +1,29 @@
 import axios from 'axios';
-import { processLoginResponse, getAuthToken } from '../auth.js';
 import { useAuthStore, useAppStore } from '../stores/stores.js';
+import { processLoginResponse, getRolesPermissions } from '../auth.js';
 
 import { SMALL_API_URL, SMALL_API_CORS_ORIGIN } from './api.url.js';
 
-// Do NOT send credentials by default to avoid CORS preflight failure when server
-// returns Access-Control-Allow-Origin: * while withCredentials is true.
-// If you need to send cookies, pass { withCredentials: true } explicitly to the call
+// Default to sending credentials (cookies). Server must allow credentials and a specific origin.
 const instance = axios.create({
   baseURL: SMALL_API_URL,
-  withCredentials: false,
+  withCredentials: true,
 });
-
-/**
- * Token refresh handling
- */
-const Refresh = {
-  isRefreshing: false,
-  refreshQueue: [],
-
-  enqueueRefresh: (cb) => {
-    refreshQueue.push(cb);
-  },
-
-  processQueue: (error, token = null) => {
-    refreshQueue.forEach((cb) => cb(error, token));
-    refreshQueue = [];
-  },
-};
 
 /**
  * request
  */
 instance.interceptors.request.use((config) => {
   try {
-    // token
-    const token = useAuthStore()?.token;
-
-    // tenantID
     const tenantID = useAppStore()?.tenantID;
-
-    // add to headers
-    if (token) {
+    if (tenantID) {
       config.headers = config.headers || {};
-      config.headers['Authorization'] = `Bearer ${token}`;
-      if (tenantID) {
-        config.headers['x-tenant-id'] = tenantID;
-      }
+      config.headers['x-tenant-id'] = tenantID;
     }
-  } catch (e) {}
+    // Do NOT add Authorization header; authentication is cookie-based (HttpOnly).
+  } catch (e) {
+    // ignore
+  }
   return config;
 });
 
@@ -58,58 +33,6 @@ instance.interceptors.request.use((config) => {
 instance.interceptors.response.use(
   (res) => res,
   async (err) => {
-    const originalRequest = err.config;
-
-    let useRefresh = false;
-
-    try {
-      if (useRefresh && err.response?.status === 401 && !originalRequest._retry) {
-        originalRequest._retry = true;
-
-        // attempt to refresh token if possible
-        if (!Refresh.isRefreshing) {
-          Refresh.isRefreshing = true;
-          try {
-            // call refresh endpoint
-            const refreshResp = await instance.post('/auth/refresh');
-            // let auth processing save token into store/localStorage
-            const rLogin = await processLoginResponse(refreshResp);
-            if (rLogin.error || !rLogin.token) {
-              return Promise.reject(rLogin.error.error);
-            }
-
-            const newToken = rLogin.token;
-            Refresh.processQueue(null, newToken);
-            Refresh.isRefreshing = false;
-            return instance(originalRequest);
-          } catch (refreshErr) {
-            Refresh.processQueue(refreshErr, null);
-            Refresh.isRefreshing = false;
-            // redirect to login
-            const current = globalThis.location.pathname + globalThis.location.search;
-            const tenantID = useAppStore()?.tenantID;
-            const loginUrl = `/login?tenantID=${encodeURIComponent(tenantID)}&next=${encodeURIComponent(current)}`;
-            globalThis.location.href = loginUrl;
-
-            return Promise.reject(refreshErr);
-          }
-        }
-
-        // queue the request until refresh finishes
-        return new Promise((resolve, reject) => {
-          Refresh.enqueueRefresh((error, token) => {
-            if (error) {
-              return reject(error);
-            }
-            originalRequest.headers['Authorization'] = `Bearer ${token}`;
-            resolve(instance(originalRequest));
-          });
-        });
-      }
-    } catch (e) {
-      // fall through
-    }
-
     try {
       if (err.response?.status === 401) {
         const current = globalThis.location.pathname + globalThis.location.search;
@@ -120,10 +43,52 @@ instance.interceptors.response.use(
           globalThis.location.href = loginUrl;
         }
       }
-    } catch (e) {}
+    } catch (e) {
+      // ignore
+    }
     return Promise.reject(err);
   }
 );
+
+/**
+ * Bootstrap: restore session from cookie on app init (after page refresh)
+ * Calls /users-auth/me to validate cookie and get current user data
+ * Restores tenantID from localStorage if it's valid (in user's schools list)
+ * If cookie is invalid, returns error (interceptor will redirect to login)
+ */
+export async function bootstrapAuthFromCookie() {
+  try {
+    const response = await instance.get('/users-auth/me');
+    if (response.status === 200) {
+      // restore auth store with user data (schools, username, etc.)
+      processLoginResponse(response, { useCookies: true });
+
+      // try to restore tenantID from localStorage with validation
+      const appStore = useAppStore();
+      const savedTenantID = appStore?.tenantID;
+      if (savedTenantID && Array.isArray(response.data?.schools)) {
+        // validate that tenantID is in user's schools and is active
+        const isValid = response.data.schools.some((s) => s.id === savedTenantID && s.status === 'active');
+        if (isValid) {
+          // restore tenant from localStorage
+          appStore.saveTenant(savedTenantID, getRolesPermissions(savedTenantID, response.data));
+        } else {
+          // invalid tenantID; clear it
+          appStore.saveTenant(null, null);
+        }
+      }
+
+      return { status: 200, user: response.data };
+    }
+  } catch (e) {
+    if (e.response?.status === 401) {
+      // no valid cookie; user is not authenticated
+      return { status: 401, error: 'Not authenticated' };
+    }
+
+    return { status: 401, error: e.message };
+  }
+}
 
 const Api = {
   // Schools API
@@ -301,10 +266,10 @@ const Api = {
   updateUser: (id, data) => instance.put(`/users/${id}`, data),
 
   // Auth
-  // Pass withCreds=true if you need to send cookies (server must allow credentials)
-  login: (credentials, withCreds = false) =>
+  // Cookie-based auth by default (withCredentials true)
+  login: (credentials, withCreds = true) =>
     instance.post('/users-auth/login', credentials, { withCredentials: withCreds }),
-  logout: (withCreds = false) => instance.post('/users-auth/logout', {}, { withCredentials: withCreds }),
+  logout: (withCreds = true) => instance.post('/users-auth/logout', {}, { withCredentials: withCreds }),
 
   resetUserPassword: (data) => instance.post(`/users-auth/reset-password`, data),
 

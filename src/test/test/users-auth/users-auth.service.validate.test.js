@@ -82,7 +82,10 @@ describe('Users Auth Service', function () {
       value: {
         userID: testInfoUser.id,
         username: testAuthUser.id,
+        status: testInfoUser.status,
         tenantName: testInfoUser.schools[0].name,
+        name: testInfoUser.name,
+        schools: testInfoUser.schools,
       },
     });
   }).timeout(10000);
@@ -142,7 +145,10 @@ describe('Users Auth Service', function () {
       value: {
         userID: testInfoUser.id,
         username: testAuthUser.id,
+        status: testInfoUser.status,
         tenantName: 'school-high2',
+        name: testInfoUser.name,
+        schools: testInfoUser.schools,
       },
     });
   }).timeout(10000);
@@ -202,7 +208,10 @@ describe('Users Auth Service', function () {
       value: {
         userID: testInfoUser.id,
         username: testAuthUser.id,
+        status: testInfoUser.status,
         tenantName: 'school-high2',
+        name: testInfoUser.name,
+        schools: testInfoUser.schools,
       },
     });
   }).timeout(10000);

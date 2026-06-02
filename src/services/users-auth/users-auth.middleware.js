@@ -25,6 +25,7 @@ const Public = {
     // is whitelisted
     const whitelistRoutes = [
       `${UsersAuthRest.Constants.ApiPath}/login`,
+      `${UsersAuthRest.Constants.ApiPath}/me`,
       `${UsersAuthRest.Constants.ApiPath}/reset-password`,
       `${UsersAuthRest.Constants.ApiPath}/reset-token/validate`,
       `${UsersAuthRest.Constants.ApiPath}/reset-token/password`,
@@ -36,7 +37,7 @@ const Public = {
 
     // user authentication with token
     try {
-      const token = req.cookies[UsersAuthRest.Constants.AuthToken] || req.headers['authorization']?.split('Bearer ')[1];
+      const token = req.cookies[UsersAuthRest.Constants.AuthToken];
 
       const objValidation = {
         method: req.method,

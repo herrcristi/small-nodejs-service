@@ -175,6 +175,7 @@ async function doLogout() {
     // ignore logout errors
   } finally {
     authStore.clear();
+    appStore.clear(); // also clears tenantID from localStorage
     router.push(`/login?tenantID=${encodeURIComponent(tenantID || '')}&next=${encodeURIComponent(current)}`);
   }
 }

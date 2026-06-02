@@ -37,11 +37,9 @@ const Public = {
         httpOnly: true,
       });
 
-      // add token and expires to response due to CORS limitations
+      // browser will auto-send cookie with subsequent requests; token is not returned to client
       res.status(r.status).json({
         ...r.value,
-        token: r.token,
-        expires: expires.toISOString(),
       });
     } catch (e) {
       return res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
@@ -78,8 +76,46 @@ const Public = {
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({
         ...r.value,
-        token: 'token',
-        expires: expires.toISOString(),
+      });
+    } catch (e) {
+      return res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * get current user (from cookie)
+   * called on app bootstrap to restore session after page refresh
+   */
+  getCurrentUser: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersAuthConstants.ServiceName;
+
+    try {
+      // get token from cookie
+      const token = req.cookies[UsersAuthConstants.AuthToken];
+      if (!token) {
+        return res.status(401).json(await RestMessagesUtils.notAuthorized('No auth token', _ctx));
+      }
+
+      // validate token and get user details (use a route allowed for all)
+      const r = await UsersAuthService.validate(
+        { token, method: 'GET', route: `${UsersAuthConstants.ApiPath}/me` },
+        _ctx
+      );
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      // return current user data (will be used to restore auth store on bootstrap)
+      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000 /*1d*/);
+      res.status(200).json({
+        userID: r.value.userID,
+        username: r.value.username,
+        name: r.value.name,
+        schools: r.value.schools || [],
+        expires,
       });
     } catch (e) {
       return res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
@@ -100,8 +136,8 @@ const Public = {
         `\n${_ctx.serviceName}: Validate called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
 
-      // get token from cookie or from authorization header
-      const token = req.cookies[UsersAuthConstants.AuthToken] || req.headers['authorization']?.split('Bearer ')[1];
+      // get token from cookie
+      const token = req.cookies[UsersAuthConstants.AuthToken];
       const method = req.query['method'];
       const route = req.query['route'];
 
@@ -319,8 +355,6 @@ const Public = {
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({
         ...r.value,
-        token: 'token',
-        expires: expires.toISOString(),
       });
     } catch (e) {
       return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
@@ -391,8 +425,6 @@ const Public = {
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({
         ...r.value,
-        token: 'token',
-        expires: expires.toISOString(),
       });
     } catch (e) {
       return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
@@ -416,7 +448,6 @@ const Public = {
           2
         )} body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
       );
-
       const userID = req.params.uid;
 
       // patch
