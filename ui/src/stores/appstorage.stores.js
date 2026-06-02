@@ -73,15 +73,14 @@ const Store = {
 
 export const localAuthStore = {
   load() {
-    return Store.load(SMALL_AUTH_KEY, memStorage, true /* checkExpiry */);
+    return Store.load(SMALL_AUTH_KEY, memStorage, false /* checkExpiry */);
   },
 
   save(obj) {
     const payload = {
-      expires: obj.expires || null,
       raw: obj.raw || obj || null,
     };
-    return Store.save(payload, SMALL_AUTH_KEY, memStorage, true /* checkExpiry */);
+    return Store.save(payload, SMALL_AUTH_KEY, memStorage, false /* checkExpiry */);
   },
 
   clear() {
