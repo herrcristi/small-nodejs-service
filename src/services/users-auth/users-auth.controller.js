@@ -96,7 +96,7 @@ const Public = {
       // get token from cookie
       const token = req.cookies[UsersAuthConstants.AuthToken];
       if (!token) {
-        return res.status(401).json(await RestMessagesUtils.statusError(401, 'No auth token', _ctx));
+        return res.status(401).json(await RestMessagesUtils.notAuthorized('No auth token', _ctx));
       }
 
       // validate token and get user details (use a route allowed for all)
@@ -111,8 +111,8 @@ const Public = {
       // return current user data (will be used to restore auth store on bootstrap)
       const expires = new Date(Date.now() + 24 * 60 * 60 * 1000 /*1d*/);
       res.status(200).json({
-        userID: _ctx.userID,
-        username: _ctx.username,
+        userID: r.value.userID,
+        username: r.value.username,
         name: r.value.name,
         schools: r.value.schools || [],
         expires,

@@ -25,6 +25,7 @@ const Public = {
     // is whitelisted
     const whitelistRoutes = [
       `${UsersAuthRest.Constants.ApiPath}/login`,
+      `${UsersAuthRest.Constants.ApiPath}/me`,
       `${UsersAuthRest.Constants.ApiPath}/reset-password`,
       `${UsersAuthRest.Constants.ApiPath}/reset-token/validate`,
       `${UsersAuthRest.Constants.ApiPath}/reset-token/password`,

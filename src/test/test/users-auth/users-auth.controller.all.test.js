@@ -219,12 +219,14 @@ describe('Users Auth Controller', function () {
 
     // check
     chai.expect(res.status).to.equal(200);
-    chai.expect(stubService.callCount).to.equal(2); // 2 calls to validate are made
-    chai.expect(res.body.userID).to.equal(testUser.id);
-    chai.expect(res.body.username).to.equal(testUser.email);
-    chai.expect(res.body.name).to.equal(testUser.name);
-    chai.expect(res.body.schools).to.deep.equal(testUser.schools);
-    chai.expect(res.body.expires).to.exist;
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect({ ...res.body, expires: '' }).to.deep.equal({
+      userID: testUser.id,
+      username: testUser.email,
+      name: testUser.name,
+      schools: testUser.schools,
+      expires: '', // ignore expires for testing
+    });
     // verify expires is a valid date in the future
     chai.expect(new Date(res.body.expires).getTime()).to.be.greaterThan(Date.now());
   }).timeout(10000);
@@ -246,7 +248,7 @@ describe('Users Auth Controller', function () {
 
     // check
     chai.expect(res.status).to.equal(401);
-    chai.expect(res.body.error).to.include('Failed to validate schema');
+    chai.expect(res.body.error).to.include('No auth token');
   }).timeout(10000);
 
   /**
@@ -278,7 +280,7 @@ describe('Users Auth Controller', function () {
     // check
     chai.expect(res.status).to.equal(401);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error).to.include('Token validation failed');
+    chai.expect(res.body.error).to.include('Invalid token');
   }).timeout(10000);
 
   /**
@@ -344,9 +346,14 @@ describe('Users Auth Controller', function () {
 
     // check
     chai.expect(res.status).to.equal(200);
-    chai.expect(stubService.callCount).to.be.greaterThan(1);
-    chai.expect(res.body.userID).to.equal(testUser.id);
-    chai.expect(res.body.schools).to.deep.equal([]);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect({ ...res.body, expires: '' }).to.deep.equal({
+      userID: testUser.id,
+      username: testUser.email,
+      name: testUser.name,
+      schools: [], // default to empty array if not provided
+      expires: '', // ignore expires for testing
+    });
     chai.expect(res.body.expires).to.exist;
   }).timeout(10000);
 
