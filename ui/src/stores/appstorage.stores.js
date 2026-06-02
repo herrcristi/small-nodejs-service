@@ -6,15 +6,15 @@ const memStorage = {
   [SMALL_AUTH_KEY]: null,
   [SMALL_APP_KEY]: null,
 
-  getItem: (key) => {
+  getItem(key) {
     return this[key] || null;
   },
 
-  setItem: (key, value) => {
+  setItem(key, value) {
     this[key] = value;
   },
 
-  removeItem: (key) => {
+  removeItem(key) {
     this[key] = null;
   },
 };
@@ -48,17 +48,12 @@ const Store = {
    */
   save(obj, key, storage /* = memStorage */, checkExpiry = true) {
     try {
-      const payload = {
-        expires: obj.expires || null,
-        raw: obj.raw || obj || null,
-      };
-
-      if (checkExpiry && (!payload.expires || new Date(payload.expires) < new Date())) {
+      if (checkExpiry && (!obj.expires || new Date(obj.expires) < new Date())) {
         this.clear(key, storage);
         return null;
       }
-      storage.setItem(key, JSON.stringify(payload));
-      return payload;
+      storage.setItem(key, JSON.stringify(obj));
+      return obj;
     } catch (e) {
       console.error(`Failed to save ${key} in store`, e);
     }
@@ -82,7 +77,11 @@ export const localAuthStore = {
   },
 
   save(obj) {
-    return Store.save(obj, SMALL_AUTH_KEY, memStorage, true /* checkExpiry */);
+    const payload = {
+      expires: obj.expires || null,
+      raw: obj.raw || obj || null,
+    };
+    return Store.save(payload, SMALL_AUTH_KEY, memStorage, true /* checkExpiry */);
   },
 
   clear() {
@@ -102,6 +101,7 @@ export const localAppStore = {
     if (localData) {
       r = { ...r, ...localData };
     }
+
     return r;
   },
 
