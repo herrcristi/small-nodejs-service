@@ -2,7 +2,7 @@ import { createApp } from 'vue';
 import { createI18n } from 'vue-i18n';
 import { createPinia } from 'pinia';
 import { useAuthStore, useAppStore } from './stores/stores.js';
-import Api from './api/api.js';
+import Api, { bootstrapAuthFromCookie } from './api/api.js';
 
 import App from './app.vue';
 import './styles.css';
@@ -53,7 +53,7 @@ app.use(Router);
 app.use(vuetify);
 
 // bootstrap: restore session from cookie (if user refreshed page), then mount app
-Api.bootstrapAuthFromCookie()
+bootstrapAuthFromCookie()
   .then(() => {
     // reload both stores after bootstrap completes (tenantID restored from localStorage)
     authStore.load();
