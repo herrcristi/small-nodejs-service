@@ -13,6 +13,8 @@ const UsersAuthService = require('../../../services/users-auth/users-auth.servic
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 const EmailsUtils = require('../../../core/utils/emails.utils.js');
+const JwtUtils = require('../../../core/utils/jwt.utils.js');
+const UsersAuthServiceFirebase = require('../../../services/users-auth/users-firebase-auth.service.js');
 
 describe('Users Auth Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
@@ -165,5 +167,37 @@ describe('Users Auth Service', function () {
         type: testUser.type,
       },
     });
+  }).timeout(10000);
+
+  /**
+   * resetPassword with the firebase provider does not send the token email (firebase sends it)
+   */
+  it('should resetPassword with the firebase provider without sending the email', async () => {
+    const testUser = _.cloneDeep(TestConstants.UsersAuth[0]);
+    const authProviderType = process.env.SMALL_API_AUTH_PROVIDER_TYPE;
+
+    // switch the provider to firebase
+    sinon.stub(JwtUtils, 'init');
+    sinon.stub(EmailsUtils, 'init');
+    sinon.stub(UsersAuthServiceFirebase, 'init').resolves();
+    process.env.SMALL_API_AUTH_PROVIDER_TYPE = 'firebase';
+    await UsersAuthService.init();
+
+    try {
+      const stubFirebase = sinon.stub(UsersAuthServiceFirebase, 'resetPassword').resolves({ status: 200, value: {} });
+      const stubEvent = sinon.stub(EventsRest, 'raiseEventForObject');
+      const stubEmail = sinon.stub(EmailsUtils, 'sendEmail');
+
+      const res = await UsersAuthService.resetPassword({ username: testUser.id }, _ctx);
+
+      chai.expect(stubFirebase.callCount).to.equal(1);
+      chai.expect(stubEmail.callCount).to.equal(0);
+      chai.expect(stubEvent.callCount).to.equal(1);
+      chai.expect(res).to.deep.equal({ status: 200, value: { username: testUser.id, type: testUser.type } });
+    } finally {
+      // back to the provider of the other tests
+      process.env.SMALL_API_AUTH_PROVIDER_TYPE = authProviderType;
+      await UsersAuthService.init();
+    }
   }).timeout(10000);
 });

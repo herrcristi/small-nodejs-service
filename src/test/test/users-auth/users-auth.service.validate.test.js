@@ -1,3 +1,4 @@
+const fs = require('fs');
 const _ = require('lodash');
 const assert = require('assert');
 const sinon = require('sinon');
@@ -6,6 +7,7 @@ const supertest = require('supertest');
 
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const JwtUtils = require('../../../core/utils/jwt.utils.js');
+const EmailsUtils = require('../../../core/utils/emails.utils.js');
 
 const TestConstants = require('../../test-constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
@@ -173,6 +175,61 @@ describe('Users Auth Service', function () {
     );
 
     chai.expect(res.status).to.equal(200);
+  }).timeout(10000);
+
+  /**
+   * validate a current-user route for users-auth :id (the id is the username), only for the current user
+   */
+  it('should validate a current-user users-auth route only for the current user', async () => {
+    const testAuthUser = _.cloneDeep(TestConstants.UsersAuth[0]);
+    const testInfoUser = _.cloneDeep(TestConstants.Users[0]);
+    for (const school of testInfoUser.schools) {
+      school.name = school.id;
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+
+    // there is no users-auth/:id route for current-user in config.roles.json, so add one when the roles are loaded
+    const route = '/api/v1/users-auth/:id';
+    const readFileSync = fs.readFileSync;
+    sinon.stub(fs, 'readFileSync').callsFake((...args) => {
+      const content = readFileSync(...args);
+      if (!`${args[0]}`.endsWith('config.roles.json')) {
+        return content;
+      }
+      const roles = JSON.parse(content);
+      roles.roles['current-user']['users-auth'] = { GET: [route] };
+      return JSON.stringify(roles);
+    });
+    sinon.stub(JwtUtils, 'init');
+    sinon.stub(EmailsUtils, 'init');
+    await UsersAuthService.init();
+    fs.readFileSync.restore();
+
+    try {
+      sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 200, value: testInfoUser });
+      sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'decoded' });
+      sinon.stub(UsersLocalAuthService, 'validateToken').returns({
+        status: 200,
+        value: { username: testAuthUser.id, userID: testInfoUser.id },
+      });
+
+      _ctx.tenantID = testInfoUser.schools[0].id;
+      _ctx.userID = testInfoUser.id;
+      _ctx.username = testAuthUser.id;
+
+      // the current user
+      _ctx.reqUrl = `/api/v1/users-auth/${encodeURIComponent(testAuthUser.id)}`;
+      let res = await UsersAuthService.validate({ token: 'token', method: 'get', route }, _ctx);
+      chai.expect(res.status).to.equal(200);
+
+      // another user
+      _ctx.reqUrl = '/api/v1/users-auth/another.user@testdomain.test';
+      res = await UsersAuthService.validate({ token: 'token', method: 'get', route }, _ctx);
+      chai.expect(res.status).to.equal(403);
+    } finally {
+      // load back the roles from config.roles.json for the other tests
+      await UsersAuthService.init();
+    }
   }).timeout(10000);
 
   /**

@@ -22,3 +22,5 @@ require('./database-manager.utils/database-manager.utils.all.tests.js');
 
 require('./emails.utils/emails.utils.all.test.js');
 require('./web-server.utils/web-server.utils.all.tests.js');
+
+require('./https.middleware/https.middleware.all.tests.js');
