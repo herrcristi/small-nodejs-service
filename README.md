@@ -1,29 +1,79 @@
 # small-nodejs-service
 
-A Node.js microservice and Vue application for managing multiple schools from one portal.
+A Node.js backend and a Vue application for running **many schools from one portal**.
 
-The service demonstrates a multi-tenant school domain where users can hold different roles in different schools. Its backend provides REST controllers, service-to-service communication, MongoDB persistence, role-based authentication, reference expansion, notifications, translations, email flows, and unit tests.
+One person can belong to several schools with a different role in each (for example professor in one school, student in another). Each school only sees its own data. The project is also a reference for a small set of cooperating services that keep their data in MongoDB and talk to each other through REST wrappers and notifications.
 
-## Project Overview
+## Contents
 
-The backend is an Express application in `src/`. The Vue 3 frontend is in `ui/`. Backend services use MongoDB; user-facing authentication uses an HttpOnly cookie. The selected school is sent as `x-tenant-id` on tenant-scoped requests.
+- [At a glance](#at-a-glance)
+- [How a request flows](#how-a-request-flows)
+- [Domain model](#domain-model)
+- [The Portal School](#the-portal-school)
+- [Design principles](#design-principles)
+- [Data modes: joins or notifications](#data-modes-joins-or-notifications)
+- [Local development](#local-development)
+- [Authentication](#authentication)
+- [API conventions](#api-conventions)
+- [Walkthrough: from a new school to a schedule](#walkthrough-from-a-new-school-to-a-schedule)
+- [Services and examples](#services-and-examples)
+- [Code map](#code-map)
+
+## At a glance
+
+| Topic          | Summary                                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------------------------- |
+| Backend        | Express application in `src/`, MongoDB for storage                                                      |
+| Frontend       | Vue 3 application in `ui/`                                                                              |
+| Multi-tenancy  | Every school is a tenant. The selected school is sent as the `x-tenant-id` header                       |
+| Authentication | Username and password, a signed token in an HttpOnly cookie                                             |
+| Authorization  | The route-to-role matrix in `src/services/config.roles.json`, checked on every request                  |
+| Roles          | `admin`, `professor`, `student` inside a school, and `portal-admin` in the Portal School                |
+| Cross-service  | REST wrappers (`src/services/rest/`), events, and notifications                                         |
+| Data modes     | Resolve references with **joins on read**, or keep copies up to date with **notifications** (see below) |
+
+## How a request flows
+
+Every request goes through the same checks before it reaches a controller. The backend is authoritative: the UI hides what a user cannot do, but it never decides.
 
 ```mermaid
-flowchart LR
-  Browser[Vue UI] -->|Cookie + x-tenant-id| API[Express API]
-  API --> Auth[Auth middleware]
-  Auth --> Roles[Route and membership checks]
-  Roles --> Controllers[Service controllers]
-  Controllers --> Services[Domain services]
-  Services --> Mongo[(MongoDB)]
-  Services --> Rest[REST communication layer]
-  Rest --> Services
-  Services --> Events[Events and notifications]
+sequenceDiagram
+  participant B as Vue UI
+  participant M as Auth middleware
+  participant A as Users auth service
+  participant U as Users service
+  participant C as Controller and service
+  participant D as MongoDB
+  B->>M: GET /api/v1/students (cookie and x-tenant-id)
+  M->>A: validate token, method, route and tenant
+  A->>U: load the user and school memberships
+  U-->>A: user with schools and roles
+  A->>A: is the user a member of this tenant, and does the role allow the route
+  A-->>M: allowed (or 401 / 403)
+  M->>C: continue with the request context
+  C->>D: read or write the data of this tenant
+  D-->>C: result
+  C-->>B: JSON response
 ```
 
-## Domain Model
+1. **Token:** the browser sends the HttpOnly cookie automatically. The token proves who the user is.
+2. **Tenant:** `x-tenant-id` says which school the request is for. The user must be an active member of it.
+3. **Route and role:** `config.roles.json` lists which roles may call which route. The role is the one the user has _in that school_.
+4. **Context:** the controller receives the resolved user and tenant as `req._ctx`, and services use it to pick the tenant's data.
 
-Users are global identities. Their roles are attached to school memberships, not to the user globally. Students, professors, and admins are user-backed school records. Classes, locations, groups, and schedules belong to a school; groups and schedules refer to other records by ID.
+## Domain model
+
+**Users are global, roles belong to a school membership.** A user is one identity. The list of schools they belong to, and their roles in each, is stored on the user.
+
+| Concept                   | Scope      | What it is                                                                        |
+| ------------------------- | ---------- | --------------------------------------------------------------------------------- |
+| User                      | global     | A person: name, email, status, and the list of school memberships                 |
+| School                    | global     | A tenant. Has a name, description, and a status (`pending`, `active`, `disabled`) |
+| Admin, Professor, Student | one school | The school record of a user with that role. It points to the user                 |
+| Class                     | one school | A subject, for example "Mathematics 1A"                                           |
+| Location                  | one school | A room, with an address                                                           |
+| Group                     | one school | A set of students                                                                 |
+| Schedule                  | one school | When a class takes place: its professors, groups, students, times, and locations  |
 
 ```mermaid
 erDiagram
@@ -32,56 +82,159 @@ erDiagram
   USER ||--o| ADMIN : may_have
   USER ||--o| STUDENT : may_have
   USER ||--o| PROFESSOR : may_have
-  SCHOOL ||--o{ CLASS : contains
+  SCHOOL ||--o{ SCHOOL_CLASS : contains
   SCHOOL ||--o{ LOCATION : contains
-  SCHOOL ||--o{ GROUP : contains
+  SCHOOL ||--o{ STUDENT_GROUP : contains
   SCHOOL ||--o{ SCHEDULE : contains
-  CLASS ||--o{ SCHEDULE : scheduled_as
-  LOCATION ||--o{ SCHEDULE_LOCATION : hosts
-  SCHEDULE ||--o{ SCHEDULE_LOCATION : has_times
+  SCHOOL_CLASS ||--o{ SCHEDULE : scheduled_as
+  LOCATION ||--o{ SCHEDULE_TIME : hosts
+  SCHEDULE ||--o{ SCHEDULE_TIME : has_times
   PROFESSOR ||--o{ SCHEDULE : teaches
-  GROUP ||--o{ SCHEDULE : participates
-  STUDENT ||--o{ GROUP : member_of
+  STUDENT_GROUP ||--o{ SCHEDULE : participates
+  STUDENT ||--o{ STUDENT_GROUP : member_of
   STUDENT ||--o{ SCHEDULE : attends
 ```
 
-`USER_SCHOOL` and `SCHEDULE_LOCATION` describe embedded membership/reference data, not separate MongoDB collections.
+`USER_SCHOOL` and `SCHEDULE_TIME` are not collections: they are the school memberships stored inside the user, and the list of times stored inside the schedule. `SCHOOL_CLASS` and `STUDENT_GROUP` are the class and group records. The diagram does not call them `CLASS` or `GROUP` because `CLASS` is a reserved word in Mermaid's ER diagrams and stops GitHub from rendering the diagram.
 
-`admin`, `professor`, and `student` are school roles. `portal-admin` is a separate role stored on a membership in the Portal School. A portal admin does not also need the school-level `admin` role. The Portal School is a tenant like any other school (users select it after login and invite users into it), but it is configured only on the backend, must remain active, and is omitted from the managed-school list. Inviting a user to the Portal School gives that user the `portal-admin` role; `portal-admin` cannot be given on any other school, and nothing else can be given on the Portal School.
+### Memberships and roles
 
-## Design Principles
+This is what the user record looks like. The same person is `admin` in one school and `professor` and `student` in another:
 
-- **Tenant context:** authenticated tenant requests must include an active school membership in `x-tenant-id`. Controllers receive the resolved context as `req._ctx`; tenant-scoped services validate required context before database access.
-- **Authorization:** `src/services/config.roles.json` maps HTTP routes to roles. The auth service checks both the route and the user's role in the selected school. The UI hides privileged navigation and guards routes for usability, but backend authorization is authoritative.
-- **Layered services:** routers register routes, controllers translate HTTP, services validate and orchestrate domain behavior, database modules provide collections/indexes, and `src/services/rest/` wraps inter-service calls.
-- **Shared persistence helpers:** services use Joi schemas, `RestApiUtils` for list filters, `DbOpsUtils` for MongoDB operations, and reference utilities for resolving related records.
-- **Events and notifications:** successful mutations raise domain events and notifications. Subscribers update dependent service records; internal notification routes are not public client APIs. See [Data Modes](#data-modes-joins-or-notifications) for when to join on read and when to copy on write.
-- **Internal communication:** services call other services through `RestCommsUtils`, using local dispatch or the internal REST route and service-to-service authentication.
-- **Status lifecycle:** records use `pending`, `active`, and `disabled` states where applicable. A first successful login activates pending user/school records. The tenant selector offers only active schools.
-- **Translations and email:** response fields are translated through the translation utilities; localized strings and email templates live in `src/translations/`.
-- **Authentication:** browser clients send the HttpOnly cookie automatically. Do not copy the auth token into a JavaScript `Authorization` header.
-- **Transport and abuse controls:** CORS uses the configured origin allowlist with credentials; the web server adds security headers; login is limited to three attempts per IP per 15-minute window outside debug mode.
-- **Password policy:** newly set passwords require at least eight characters with uppercase, lowercase, a digit, and a special character. Password and email changes require the current password.
-- **Tests:** Mocha tests use Sinon stubs for service dependencies and follow the per-service suites in `src/test/test/`. Database-backed functional tests are separate from the default unit suite.
+```jsonc
+{
+  "id": "user-1",
+  "email": "ada@example.test",
+  "name": "Ada Lovelace",
+  "schools": [
+    { "id": "school-north", "name": "North School", "status": "active", "roles": ["admin"] },
+    { "id": "school-south", "name": "South School", "status": "active", "roles": ["professor", "student"] },
+  ],
+}
+```
 
-## Data Modes: Joins or Notifications
+After login the UI shows the active schools. The school the user picks becomes `x-tenant-id`, and from then on only the roles of that school count.
 
-Records refer to each other (a schedule refers to a class, professors, groups, and students; a group refers to students; a user lists its school memberships). A `GET` that must show the referenced names and statuses can get them in two ways. The project supports both, and they are configured with the same `references` declaration of each service.
+| Role           | Where             | What it can do                                                                                                                              |
+| -------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `admin`        | a school          | Everything inside the school: manage classes, locations, groups, schedules, admins, professors, and students; invite users; edit the school |
+| `professor`    | a school          | Read the school data: classes, locations, schedules, groups, and the lists of professors and students                                       |
+| `student`      | a school          | The same read-only access as a professor                                                                                                    |
+| `portal-admin` | the Portal School | Runs the portal: creates schools and manages the other portal admins (next section)                                                         |
 
-|                        | Mode 1: joins on read (classical)                      | Mode 2: notifications (read-optimized)                                                    |
-| ---------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| Stored in the document | only the referenced ids                                | the ids **plus a projected copy** of the referenced record (for example `name`, `status`) |
-| Work done by `GET`     | extra lookups to resolve the references on every read  | none: one read of one collection                                                          |
-| Work done by a change  | none: only the changed record is written               | the owner raises a notification and every subscribed service updates its copies           |
-| Freshness              | always current                                         | current once the notification was processed (see the caveats below)                       |
-| Duplicated data        | none                                                   | yes, limited to the declared projection                                                   |
-| Best when              | data changes often, reads are rare or need every field | data changes rarely and the system is optimized for `GET`                                 |
+On top of the role, some routes use the special rule **current user**: any member can read and update **their own** user record (and their own student or professor record), because the id in the path must match the logged-in user. This is how a student edits their own profile without being an admin.
 
-A rule of thumb: Mode 2 pays on writes to make reads cheap. If a record is read hundreds of times for every change (a class name, a location address, a user's name), copy it. If it changes about as often as it is read, join it.
+The exact routes of each role are in `src/services/config.roles.json`. A route not listed for a role is refused with `403`.
+
+## The Portal School
+
+The portal needs somewhere to keep its own administrators. Instead of a special case, that place is **a school like the others**: the Portal School.
+
+- Users select it after login, like any other school.
+- Inviting a user to it makes that user a **portal admin** (the `portal-admin` role).
+- Its id is configured only on the backend (`SMALL_API_PORTAL_SCHOOL_ID`). It is never part of the UI source.
+- It always stays active, it cannot be deleted, and it is **not** listed with the managed schools.
+
+Two rules keep it separate from the normal schools, and the backend enforces both:
+
+1. `portal-admin` can only be given on the Portal School.
+2. Nothing but `portal-admin` can be given on the Portal School.
+
+```mermaid
+flowchart TD
+  start["Startup"] --> school["Create the Portal School if it is missing"]
+  school --> any{"Is there a portal admin already?"}
+  any -->|"no, and SMALL_API_PORTAL_ADMIN_EMAIL is set"| invite["Invite that email as portal admin"]
+  any -->|"yes"| ready["Ready"]
+  invite --> mail["The user gets the password setup email"]
+  mail --> login["Portal admin logs in and selects the Portal School"]
+  ready --> login
+  login --> manage["Manage the portal"]
+  manage --> a["Create schools (signup)"]
+  manage --> b["Edit schools"]
+  manage --> c["Invite portal admins"]
+  manage --> d["List and remove portal admins"]
+```
+
+| Action                 | Route                                                  | Who can do it                                               |
+| ---------------------- | ------------------------------------------------------ | ----------------------------------------------------------- |
+| Create a school        | `POST /users-auth/signup`                              | Portal admin (it invites the first admin of the new school) |
+| List managed schools   | `GET /schools`                                         | Portal admin                                                |
+| Edit a school          | `PUT` or `PATCH /schools/:id`                          | Portal admin; a school admin for their own school           |
+| Read the Portal School | `GET /schools/portal`                                  | Portal admin                                                |
+| Invite a portal admin  | `POST /users-auth/invite` with role `portal-admin`     | Portal admin                                                |
+| List portal admins     | `GET /users/portal-admins`                             | Portal admin                                                |
+| Remove a portal admin  | `PATCH /users-auth/school/user/:uid` (remove the role) | Portal admin (not for their own role)                       |
+
+A portal admin cannot remove their own role, so the Portal School always keeps at least one admin. Removing the role keeps the user account.
+
+**The first portal admin.** Set `SMALL_API_PORTAL_ADMIN_EMAIL` and the first start invites that address through the normal invite flow. The person receives the password setup email, so no password is ever stored in the configuration. It does nothing once a portal admin exists, so it is safe on every restart. There is deliberately no public portal-admin signup.
+
+In the UI, the Schools page has three lists: the Portal School (one entry, with the invite action), the portal admins (with remove), and the managed schools.
+
+## Design principles
+
+| Principle                | What it means                                                                                                                                                                      |
+| ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tenant context           | Tenant requests need an active membership in `x-tenant-id`. Services check the context before they touch the database                                                              |
+| Authorization in the API | `config.roles.json` maps routes to roles. The UI hides and guards for convenience only                                                                                             |
+| Layers                   | Router (routes) → controller (HTTP) → service (validation and rules) → database module (collections and indexes). Other services are reached through `src/services/rest/` wrappers |
+| Shared helpers           | Joi schemas for input, `RestApiUtils` for list filters, `DbOpsUtils` for MongoDB, reference utilities for related records                                                          |
+| Events and notifications | A successful change raises an event and a notification. Subscribers update their copies. Notification routes are internal. See [Data modes](#data-modes-joins-or-notifications)    |
+| Internal calls           | Services call each other through `RestCommsUtils`: a direct call when they run in the same process, or the internal REST route with service-to-service authentication              |
+| Status lifecycle         | `pending`, `active`, `disabled`. The first successful login activates a pending user and school. The tenant selector offers only active schools                                    |
+| Translations and email   | Response fields are translated by the translation utilities. Strings and email templates are in `src/translations/`                                                                |
+| Cookie authentication    | The browser sends the HttpOnly cookie. Never copy the token into a JavaScript `Authorization` header                                                                               |
+| Transport and abuse      | CORS allow-list with credentials, security headers, HTTPS redirect in production, and a login limit of three attempts per IP per 15 minutes (outside debug mode)                   |
+| Password policy          | At least eight characters with uppercase, lowercase, a digit, and a special character. Changing the password or the email needs the current password                               |
+| Tests                    | Mocha with Sinon stubs, one suite per service in `src/test/test/`. Database-backed tests are separate (`npm run testdb`)                                                           |
+
+## Data modes: joins or notifications
+
+### The problem
+
+Records point to each other. A schedule points to a class, professors, groups, and students. When the UI lists schedules it shows the _names_ of those things, not just their ids. Where do the names come from?
+
+```jsonc
+// what the list must show
+{ "name": "Mathematics 1A - Monday", "class": "Mathematics 1A", "professor": "Ada Lovelace" }
+```
+
+There are two answers, and the project supports both. They use the same `references` declaration in each service, and you pick one per reference.
+
+```mermaid
+flowchart LR
+  subgraph m1 [Mode 1 - joins on read]
+    direction LR
+    g1["GET /schedules"] --> s1["Schedules service"]
+    s1 --> db1[("schedules: ids only")]
+    s1 -.->|"look up names on every read"| o1["Classes and Professors services"]
+  end
+  subgraph m2 [Mode 2 - notifications]
+    direction LR
+    g2["GET /schedules"] --> s2["Schedules service"]
+    s2 --> db2[("schedules: ids and copied names")]
+    o2["Classes and Professors services"] -.->|"update the copies when a name changes"| db2
+  end
+```
+
+|                        | Mode 1: joins on read (classical)                      | Mode 2: notifications (read-optimized)                                                |
+| ---------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------- |
+| Stored in the document | only the ids of the referenced records                 | the ids **plus a small copy** of the referenced record (for example `name`, `status`) |
+| Work done by a `GET`   | extra lookups to fill in the references, on every read | none: one read of one collection                                                      |
+| Work done by a change  | none: only the changed record is written               | the owner raises a notification and the subscribers update their copies               |
+| Freshness              | always current                                         | current once the notification has been processed (see the caveats)                    |
+| Duplicated data        | none                                                   | yes, limited to the declared projection                                               |
+| Filter and sort on it  | not in the database                                    | yes, it is a stored field                                                             |
+| Best when              | the data changes often, or reads are rare              | the data changes rarely and the system is optimized for `GET`                         |
+
+**Rule of thumb:** mode 2 pays on the write so that every read is cheap. A class name is read thousands of times for each rename, so copy it. Something that changes about as often as it is read should be joined.
+
+> **Illustrative numbers.** A school shows its schedule list 2,000 times a day, each list needs a class and a professor name, and one class is renamed per day. Mode 1 makes about 4,000 extra lookups a day. Mode 2 makes a few `updateMany` writes when the class is renamed, and no extra lookups.
 
 ### Mode 1: joins on read
 
-Documents hold only ids. The read path resolves the references in bulk: one `getAllByIDs` call per reference field for the whole page of results, not one call per row.
+Documents hold only ids. The read path fills in the references in bulk: **one lookup per reference field for the whole page of results**, not one per row.
 
 ```mermaid
 sequenceDiagram
@@ -90,72 +243,87 @@ sequenceDiagram
   participant DB as schedules collection
   participant C as Classes service
   participant P as Professors service
-  UI->>S: GET /schedules?limit=20
-  S->>DB: find (documents with ids only)
-  DB-->>S: [{ class: { id }, professors: [{ id }] }]
-  S->>C: getAllByIDs(class ids)
-  C-->>S: [{ id, name, status }]
-  S->>P: getAllByIDs(professor ids)
-  P-->>S: [{ id, name, user }]
+  UI->>S: GET /schedules
+  S->>DB: find the page of schedules
+  DB-->>S: schedules with ids only
+  S->>C: getAllByIDs for the class ids
+  C-->>S: id, name, status
+  S->>P: getAllByIDs for the professor ids
+  P-->>S: id, name, user
   S-->>UI: schedules with class and professors filled in
 ```
 
-What is stored and returned:
-
 ```jsonc
-// stored in schedules: ids only
+// stored in the schedules collection: ids only
 { "id": "sch-1", "name": "Mathematics 1A - Monday", "class": { "id": "class-1" }, "professors": [{ "id": "prof-1" }] }
 
-// returned by GET after the joins
-{ "id": "sch-1", "name": "Mathematics 1A - Monday",
+// returned by GET, after the lookups
+{
+  "id": "sch-1",
+  "name": "Mathematics 1A - Monday",
   "class": { "id": "class-1", "name": "Mathematics 1A", "status": "active" },
-  "professors": [{ "id": "prof-1", "name": "Ada Lovelace" }] }
+  "professors": [{ "id": "prof-1", "name": "Ada Lovelace" }],
+}
 ```
 
-Renaming the class touches only the `classes` collection; the next `GET /schedules` already shows the new name. The cost is that every `GET /schedules` also queries classes, professors, groups, students, and locations, so its latency depends on all of those services.
+**What you get:** renaming the class touches only the `classes` collection, and the next `GET /schedules` already shows the new name. Nothing is duplicated and nothing can become stale.
 
-A second cost is that the database cannot filter or sort on a field that is not stored. Today `GET /students` can be sorted by `user.name` and filtered by `user.email` or `classes.name` because those copies are stored in the student document; in Mode 1 such a query would have to be resolved in the service (or dropped).
+**What it costs:**
 
-> **Current state:** the shipped services are wired for Mode 2. Mode 1 uses the same building blocks (the `references` configuration and `ReferencesUtils.populateReferences`), but the call has to be moved from the write path to the read path of a service. There is no global switch yet. For a service that should use Mode 1:
+- Every `GET /schedules` also queries the classes, professors, groups, students, and locations services, so its speed depends on all of them.
+- The database cannot filter or sort on a field it does not store. Today `GET /students` can be sorted by `user.name` and filtered by `classes.name` because those copies are stored in the student document. In mode 1 such a query would have to be resolved in the service, or dropped.
+
+> **Current state.** The shipped services are wired for mode 2. Mode 1 uses the same building blocks (the `references` configuration and `ReferencesUtils.populateReferences`), but the call has to move from the write path to the read path of a service. There is no global switch yet. For a service that should use mode 1:
 >
-> 1. Do not call `ReferencesUtils.populateReferences({ ...config, fillReferences: true }, ...)` in `post`/`put`/`patch`, so only ids are stored.
-> 2. Call it on the results of `getAll`/`getOne` (and on the values returned by the write calls, if the response must be expanded), so the references are joined on read:
+> 1. Do not call `ReferencesUtils.populateReferences({ ...config, fillReferences: true }, ...)` in `post`, `put`, and `patch`, so only ids are stored.
+> 2. Call it on the results of `getAll` and `getOne` (and on the values returned by the write calls, if the response must be expanded):
 >
 >    ```js
 >    const r = await Public.getAll(filter, _ctx);
 >    await ReferencesUtils.populateReferences({ ...config, fillReferences: true }, r.value, _ctx);
 >    ```
 >
-> 3. Do not register the service as a subscriber in `src/services/config.services.js`, so no copies need to be maintained.
+> 3. Do not register the service as a subscriber in `src/services/config.services.js`, because there are no copies to maintain.
 
 ### Mode 2: notifications
 
-The referenced data is copied into the referring document when it is written, and kept current by notifications. `GET` does no joins.
+The referenced data is **copied into the referring document when it is written**, and kept current by notifications. A `GET` does no joins at all.
+
+This is what happens when a class is renamed:
 
 ```mermaid
-flowchart LR
-  subgraph write [Write path]
-    direction LR
-    W[PUT /classes/class-1] --> CS[Classes service]
-    CS -->|1. update class| CDB[(classes)]
-    CS -->|2. raiseNotification modified| N{{Subscribers from config.services.js}}
-    N -->|3. update copies| SS[Schedules service]
-    N -->|3. update copies| PS[Professors service]
-    N -->|3. update copies| STS[Students service]
-    SS --> SDB[(schedules)]
-    PS --> PDB[(professors)]
-    STS --> STDB[(students)]
-  end
-  subgraph read [Read path]
-    direction LR
-    R[GET /schedules] --> SS2[Schedules service] --> SDB2[(schedules)]
-  end
+sequenceDiagram
+  participant UI as Vue UI
+  participant C as Classes service
+  participant CDB as classes collection
+  participant S as Schedules service
+  participant SDB as schedules collection
+  UI->>C: PUT /classes/class-1 with the new name
+  C->>CDB: save the class
+  C->>C: raise a modified notification (id, name, status, credits...)
+  C->>S: notification to every subscriber
+  S->>SDB: updateMany, every schedule whose class id is class-1
+  SDB-->>S: copies updated
+  C-->>UI: 200 OK
 ```
 
-What is stored: the projection declared in the service's `references` (here, the schedule keeps `id`, `name`, `type`, `status`, `description`, `credits`, and `required` of its class):
+And this is a read afterwards: one collection, no lookups.
+
+```mermaid
+sequenceDiagram
+  participant UI as Vue UI
+  participant S as Schedules service
+  participant SDB as schedules collection
+  UI->>S: GET /schedules
+  S->>SDB: find the page of schedules
+  SDB-->>S: schedules, already containing class and professor names
+  S-->>UI: JSON
+```
+
+What is stored is the **projection** declared for the reference. Here the schedule keeps `id`, `name`, `type`, `status`, `description`, `credits`, and `required` of its class:
 
 ```jsonc
-// stored in schedules: ids plus the projected copy; GET returns it as it is
+// stored in the schedules collection: ids plus the copy. GET returns it as it is.
 {
   "id": "sch-1",
   "name": "Mathematics 1A - Monday",
@@ -171,104 +339,148 @@ What is stored: the projection declared in the service's `references` (here, the
 }
 ```
 
-How it is configured, in three places:
+#### How it is configured
 
-1. **What to copy:** the `references` of the service that stores the copy, in its `getConfig`. `fieldName` is the field that holds the reference (`class`, `professors[]`, `schedules[].location`) and `projection` selects the copied fields.
+There are three places, and each answers one question.
 
-   ```js
-   // src/services/schedules/schedules.service.js
-   references: [
-     { fieldName: 'class', service: ClassesRest, projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 } },
-     { fieldName: 'professors[]', service: ProfessorsRest, projection: { id: 1, name: 1, type: 1, status: 1, user: 1 } },
-   ],
-   ```
+**1. What is copied?** The `references` in the `getConfig` of the service that stores the copy. `fieldName` is the field that holds the reference (`class`, `professors[]`, `schedules[].location`), and `projection` selects the copied fields.
 
-2. **Who is told:** the owner raises a notification after each successful `post`, `put`, `patch`, and `delete` (`ClassesRest.raiseNotification('modified', [class])`), and `config.services.js` subscribes the dependent services to it. The projection of the subscription selects what is sent:
+```js
+// src/services/schedules/schedules.service.js
+references: [
+  { fieldName: 'class', service: ClassesRest, projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 } },
+  { fieldName: 'professors[]', service: ProfessorsRest, projection: { id: 1, name: 1, type: 1, status: 1, user: 1 } },
+],
+```
 
-   ```js
-   // src/services/config.services.js
-   for (const rest of [StudentsRest, ProfessorsRest, SchedulesRest]) {
-     const projection = { ...notifyProjection, description: 1, credits: 1, required: 1 };
-     await ClassesRest.subscribe({ callback: rest.notification, projection });
-   }
-   ```
+**2. Who is told?** The owner raises a notification after each successful `post`, `put`, `patch`, and `delete`. `config.services.js` subscribes the dependent services, and the subscription projection selects what is sent.
 
-3. **What happens on receipt:** each subscriber's `notification` handler calls `ReferencesUtils.onNotificationReferences`, which applies `added`, `modified`, and `removed` to every stored copy with one `updateMany` per changed record and reference (`DbOpsUtils.updateManyReferences`, and the matching add/delete helpers).
+```js
+// src/services/config.services.js
+for (const rest of [StudentsRest, ProfessorsRest, SchedulesRest]) {
+  const projection = { ...notifyProjection, description: 1, credits: 1, required: 1 };
+  await ClassesRest.subscribe({ callback: rest.notification, projection });
+}
+```
 
-Real chains in this project: a class rename updates the copies in schedules, students, and professors; a student change updates groups and schedules; a school rename or status change updates the school memberships stored in each user, which is why the login response and the tenant selector need no school lookup.
+**3. What happens on receipt?** The subscriber's `notification` handler calls `ReferencesUtils.onNotificationReferences`. It applies `added`, `modified`, and `removed` to every stored copy, with one `updateMany` for each changed record and reference (`DbOpsUtils.updateManyReferences`, and the matching add and delete helpers).
+
+#### Who notifies whom
+
+An arrow means: "the source raises notifications, and the target uses them to update its copies". The exact lists are in `src/services/config.services.js`.
 
 ```mermaid
 flowchart LR
-  Schools --> Users
-  Users --> Admins & Students & Professors & UsersAuth[Users auth]
-  Classes --> Students & Professors & Schedules
-  Groups --> Students & Schedules
-  Students --> Groups & Schedules
-  Professors --> Schedules
-  Locations --> Schedules
-  Schedules --> Professors & Groups & Students
+  schools_n["Schools"] --> users_n["Users"]
+  users_n --> admins_n["Admins"]
+  users_n --> students_n["Students"]
+  users_n --> professors_n["Professors"]
+  users_n --> usersauth_n["Users auth"]
+  classes_n["Classes"] --> students_n
+  classes_n --> professors_n
+  classes_n --> schedules_n["Schedules"]
+  groups_n["Groups"] --> students_n
+  groups_n --> schedules_n
+  students_n --> groups_n
+  students_n --> schedules_n
+  professors_n --> schedules_n
+  locations_n["Locations"] --> schedules_n
+  schedules_n --> professors_n
+  schedules_n --> groups_n
+  schedules_n --> students_n
 ```
 
-An arrow means "raises notifications that the target uses to update its copies" (the exact lists are in `src/services/config.services.js`).
+Examples from this project:
 
-Things to know before choosing Mode 2:
+- A class rename updates the copies in schedules, students, and professors.
+- A student change updates groups and schedules.
+- A school rename or status change updates the school memberships stored in every user. That is why the login response and the tenant selector need no school lookup.
 
-- **Write amplification:** one change fans out to every collection that copies it, and the copies can chain (user → student → group → schedule). Keep projections small; the notification projection of the owner limits what is sent.
-- **Consistency:** notifications are delivered synchronously, in the same process, right after the write. Errors in a subscriber are logged and not rolled back, so a failed propagation leaves a stale copy. The queue-based asynchronous delivery (`broadcast` and `consume` in `base-service.notifications.utils.js`) is a placeholder and is not implemented yet.
-- **Copy only what lists need:** fields that are read in `GET` and almost never change (names, statuses, addresses). Fields that change often should be joined (Mode 1) or fetched with the detail request.
-- **Mixed use is fine:** the choice is made per reference. A service may copy the class (rarely changes, shown in every row) and join the students (large, change often).
+#### Caveats
 
-## Local Development
+- **Write amplification:** one change fans out to every collection that copies it, and copies can chain (user → student → group → schedule). Keep the projections small. The notification projection of the owner limits what is sent.
+- **Consistency:** notifications are delivered synchronously, in the same process, right after the write. A failure in a subscriber is logged and not rolled back, so a failed update leaves a stale copy. The queue-based asynchronous delivery (`broadcast` and `consume` in `base-service.notifications.utils.js`) is a placeholder and is not implemented yet.
+- **Copy only what lists need:** fields that are shown in `GET` and rarely change (names, statuses, addresses). Fields that change often should be joined (mode 1) or fetched with the detail request.
 
-Use Node.js, npm, Docker Compose, and MongoDB. Backend and frontend dependencies are installed separately:
+### Choosing a mode
+
+The choice is made **per reference**, not per project. A service can copy the class (small, rarely changes, shown in every row) and join the students (large, changes often).
+
+```mermaid
+flowchart TD
+  q0["A list shows data that another service owns"] --> q1{"Is it read much more often than it changes?"}
+  q1 -->|"no"| join["Mode 1: join on read"]
+  q1 -->|"yes"| q2{"Do you need to filter or sort by it?"}
+  q2 -->|"yes"| copy["Mode 2: copy it and notify"]
+  q2 -->|"no"| q3{"Is the copy small, like a name or a status?"}
+  q3 -->|"yes"| copy
+  q3 -->|"no"| join
+```
+
+## Local development
+
+Use Node.js, npm, Docker Compose, and MongoDB. Install the backend and the frontend separately:
 
 ```sh
 cd src && npm install
 cd ../ui && npm install
 ```
 
-The backend requires the values shown in [src/.env.example](src/.env.example). That file is a template: `src/index.js` reads values from the process environment and does not load `.env` itself. Configure the values in your shell, container, or process manager. In particular:
+### Backend configuration
 
-- Set `SMALL_API_AUTH_PROVIDER_TYPE=local` for local username/password authentication.
-- Set database URL, database name, signing secrets, SMTP configuration, port, URL, and CORS origin.
-- Set `SMALL_API_PORTAL_SCHOOL_ID` to a UUID. Startup creates the active Portal School record if it is missing.
-- Set `SMALL_API_PORTAL_ADMIN_EMAIL` to the email of the first portal admin. At startup, if the Portal School has no portal admin yet, that email is invited with the normal invite flow: the user receives the password setup email and nothing secret is configured. It is skipped when a portal admin already exists, so it is safe on every restart; if the address was wrong, fix the variable and restart while there is still no portal admin. There is intentionally no anonymous portal-admin signup and no initial password setting (SMTP must be configured to deliver the email).
+The backend reads its settings from the **process environment**. [src/.env.example](src/.env.example) is only a template: `src/index.js` does not load a `.env` file, so set the values in your shell, container, or process manager.
 
-Start the local MongoDB container from `src/`:
+| Setting                        | What to set                                                                                                                                                                                              |
+| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `SMALL_API_AUTH_PROVIDER_TYPE` | `local` for username and password authentication                                                                                                                                                         |
+| Database                       | `SMALL_API_DATABASE_URL` and `SMALL_API_DATABASE_DB`                                                                                                                                                     |
+| Secrets                        | the signing and service-to-service secrets from the template                                                                                                                                             |
+| SMTP                           | the mail server. Invitations and password setup are sent by email, so it is required                                                                                                                     |
+| Server                         | port, public URL, and the CORS origin                                                                                                                                                                    |
+| `SMALL_API_PORTAL_SCHOOL_ID`   | a UUID. The Portal School is created with this id at startup if it is missing                                                                                                                            |
+| `SMALL_API_PORTAL_ADMIN_EMAIL` | optional. The email of the first portal admin. If the Portal School has no portal admin yet, it is invited at startup and receives the password setup email. See [The Portal School](#the-portal-school) |
 
-```sh
-cd src && npm run up
-```
-
-After supplying the backend environment values, start the API:
-
-```sh
-cd src && npm start
-```
-
-For UI development, configure [ui/.env.example](ui/.env.example) and run:
+### Run it
 
 ```sh
-cd ui && npm run serve
+cd src && npm run up     # start the local MongoDB container
+cd src && npm start      # start the API (after setting the environment)
+cd ui && npm run serve   # start the Vue development server (configure ui/.env.example first)
+cd ui && npm run build   # production build of the frontend
 ```
 
-The Vue development server uses the configured UI port and API URL. For a production frontend build, run `npm run build` in `ui/`.
-
-Run backend tests from `src/`:
+### Tests
 
 ```sh
-npm test
+cd src && npm test       # unit tests (Mocha and Sinon), no database needed
+cd src && npm run testdb # database-backed tests, needs a running MongoDB test database
 ```
 
-The database-backed suite is `npm run testdb` and requires a running MongoDB test database. Local test fixture credentials in `src/test/test-constants.js` are for tests only; they are not provisioned application accounts.
+The fixture credentials in `src/test/test-constants.js` are for tests only. They are not accounts of the application.
 
-## Authentication First
+## Authentication
 
-The local provider authenticates a username and password against the local auth collection. A user must already exist, normally through an invitation or a trusted bootstrap. Login does not require a tenant header. It returns the user's school memberships and their current statuses, then sets the HttpOnly `SmallApp-token` cookie; the token itself is not returned in JSON.
+The local provider checks a username and password against the local auth collection. **The user must already exist**: users are created by an invitation (or, for the very first portal admin, by the startup setting above), never by a public signup.
 
-### UI Login
+```mermaid
+sequenceDiagram
+  participant U as Person
+  participant UI as Vue UI
+  participant API as API
+  U->>UI: email and password
+  UI->>API: POST /users-auth/login (no tenant needed)
+  API-->>UI: user, schools and roles, and the HttpOnly cookie
+  UI->>U: choose a school (skipped when there is only one)
+  U->>UI: North School
+  UI->>API: GET /students with the cookie and x-tenant-id
+  API-->>UI: the students of North School
+```
 
-The login component uses the shared API wrapper and processes the response before navigating to the tenant selector:
+Login does not need a tenant. It returns the school memberships with their statuses and sets the HttpOnly `SmallApp-token` cookie. **The token itself is never returned in the JSON body.**
+
+### UI login
+
+The login component uses the shared API wrapper and processes the response before it opens the tenant selector:
 
 ```js
 import Api from '../api/api.js';
@@ -278,11 +490,11 @@ const response = await Api.login({ username, password });
 const result = await processLoginResponse(response);
 ```
 
-`Api.login` enables credentialed requests. If the user has one active school, the UI selects it; otherwise the user chooses an active school. The API wrapper then adds that school ID as `x-tenant-id` on subsequent requests.
+`Api.login` sends credentials. If the user has one active school, the UI selects it. Otherwise the user chooses. From then on the API wrapper adds the school id as `x-tenant-id`.
 
-### Local Login with curl
+### Login with curl
 
-Set the API URL for your local backend, then save the cookie returned by login:
+Set the API address, then save the cookie that login returns:
 
 ```sh
 API='http://localhost:8080/api/v1'
@@ -295,7 +507,7 @@ curl --include --cookie-jar cookies.txt \
   "$API/users-auth/login"
 ```
 
-The response body includes `userID`, `username`, `status`, `name`, and `schools`. Choose an active membership ID from `schools`; use it on every tenant-scoped request:
+The response contains `userID`, `username`, `status`, `name`, and `schools`. Pick the id of an active school from `schools` and send it on every tenant request:
 
 ```sh
 TENANT_ID='school-id-from-login'
@@ -306,35 +518,69 @@ curl --cookie cookies.txt \
   "$API/students?limit=20&skip=0"
 ```
 
-To restore the current session, call `GET /users-auth/me` with the cookie. To log out, call `POST /users-auth/logout` with the cookie.
+To restore the session call `GET /users-auth/me` with the cookie. To log out call `POST /users-auth/logout`.
 
-## API Conventions
+## API conventions
 
-- Public routes use the `/api/v1` prefix. Internal service routes use `/api/internal_v1` and are not for browser or third-party clients.
-- Authenticated requests use the HttpOnly cookie and, for tenant-scoped routes, `x-tenant-id`.
-- Collection GET responses contain `data` and `meta` (`count`, `limit`, `skip`, and `sort`). A partial collection may return HTTP `206`.
-- List queries support the `api-query-params` syntax used by the backend, including `limit`, `skip`, `sort`, `projection`, and supported field filters.
-- JSON request bodies are validated by the owning service. Unknown fields and invalid relationships are rejected.
-- `PATCH` uses service-specific `set`, `add`, `remove`, or `unset` structures. See the examples below for relationship updates.
+| Topic          | Rule                                                                                                                                |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| Prefixes       | Public routes use `/api/v1`. Internal service routes use `/api/internal_v1` and are not for browsers or third parties               |
+| Authentication | The HttpOnly cookie, plus `x-tenant-id` on tenant routes                                                                            |
+| Lists          | `GET` on a collection returns `{ data, meta }`, where `meta` has `count`, `limit`, `skip`, and `sort`. A partial list returns `206` |
+| Queries        | The `api-query-params` syntax: `limit`, `skip`, `sort`, `projection`, and the filters a service allows                              |
+| Input          | The owning service validates the JSON body. Unknown fields and invalid relations are rejected                                       |
+| `PATCH`        | Uses `set`, `add`, `remove`, or `unset`, depending on the service. The examples below show relation updates                         |
 
-## Services and Examples
+Example list response:
 
-All UI examples use the shared `Api` object from `ui/src/api/api.js`. Its Axios instance sends the cookie and selected tenant header automatically. Curl examples use the `API`, `TENANT_ID`, and `cookies.txt` values from the login section.
+```json
+{
+  "data": [{ "id": "class-1", "name": "Mathematics 1A", "status": "active" }],
+  "meta": { "count": 1, "limit": 20, "skip": 0 }
+}
+```
+
+## Walkthrough: from a new school to a schedule
+
+This is the usual order of things, from the point of view of the people involved. The sections below show each call in detail.
+
+```mermaid
+sequenceDiagram
+  participant PA as Portal admin
+  participant AD as School admin
+  participant API as API
+  PA->>API: POST /users-auth/signup (email, school name) in the Portal School
+  API-->>AD: school created as pending, invitation email to the first admin
+  AD->>API: login, then select the new school
+  Note over API: the school and the admin become active
+  AD->>API: POST /users-auth/invite with role professor, then student
+  AD->>API: POST /classes, /locations, /groups
+  AD->>API: POST /schedules (class, professors, groups, locations)
+  API-->>AD: the schedule, with class and professor names already filled in
+```
+
+1. **A portal admin creates the school** (the Portal School is the selected tenant). The first admin is invited by email.
+2. **The school admin logs in**, sets a password from the email, and selects the school. This activates the admin and the school.
+3. **The admin invites people** by role. Each invitation creates (or updates) the user and adds the school membership.
+4. **The admin creates the school data:** classes, locations, and groups.
+5. **The admin creates schedules** that point to those records. The response and later lists contain the names of the referenced records, as explained in [Data modes](#data-modes-joins-or-notifications).
+
+## Services and examples
+
+All UI examples use the shared `Api` object from `ui/src/api/api.js`. Its Axios instance sends the cookie and selected tenant header automatically. Curl examples use the `API`, `ORIGIN`, `TENANT_ID`, and `cookies.txt` values from [Login with curl](#login-with-curl).
 
 ### Schools
 
-There are two kinds of schools, kept apart in the API and in the UI:
+There are two kinds of schools. They are listed separately in the API and in the UI, and the [Portal School](#the-portal-school) section explains why.
 
-| Kind              | How it is listed                                                  | How users are invited                                                                                                                                                  |
-| ----------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Managed schools   | `GET /schools` (portal admins only; the Portal School is omitted) | A new school is created with `POST /users-auth/signup`, which invites its first admin. Later admins are invited by that school's admins with `POST /users-auth/invite` |
-| The Portal School | `GET /schools/portal` (a single entry, portal admins only)        | `POST /users-auth/invite` with the role `portal-admin`; the selected tenant must be the Portal School                                                                  |
+| Kind              | How it is listed                                                  | How users are added                                                                                                                                       |
+| ----------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Managed schools   | `GET /schools` (portal admins only, the Portal School is omitted) | A school is created with `POST /users-auth/signup`, which also invites its first admin. That admin then invites the others with `POST /users-auth/invite` |
+| The Portal School | `GET /schools/portal` (one entry, portal admins only)             | `POST /users-auth/invite` with the role `portal-admin`, while the Portal School is the selected tenant                                                    |
 
-There is no school-specific "invite admin" route: every invitation goes through the same `UsersAuthRest.invite` / `POST /users-auth/invite` flow, and the school comes from the selected tenant (`x-tenant-id`). New users receive the signup/password setup email, while existing users receive the invite email.
+**There is no school-specific "invite admin" route.** Every invitation uses the same `POST /users-auth/invite` flow (`UsersAuthRest.invite`), and the school comes from the selected tenant. A new user receives the signup and password setup email. An existing user receives the invite email.
 
-Portal admins must have the Portal School selected as their tenant. In the UI, the Schools page therefore shows separate lists: the Portal School as a list with one entry (with the "Invite Portal Admin" action), the portal admins (with remove), and the managed schools list (add through signup, edit).
-
-Portal admins are listed with `GET /users/portal-admins` (portal admins only, with the usual `limit`, `skip`, `sort`, and filters; only `id`, `name`, `email`, and `status` are returned) and removed with the existing `PATCH /users-auth/school/user/:uid` using `{"remove":{"roles":["portal-admin"]}}`, which removes the role, not the account. A portal admin cannot remove their own role, so the Portal School always keeps an admin. The first portal admin is created at startup from `SMALL_API_PORTAL_ADMIN_EMAIL` (see Local Development).
+A new school starts as `pending` and becomes `active` when its first admin logs in. A school can be disabled, and a disabled school is no longer offered in the tenant selector. The Portal School cannot be deleted or disabled, and portal admins cannot delete schools.
 
 ```js
 // managed schools
@@ -547,7 +793,7 @@ await Api.getEvents('limit=20&skip=0');
 curl --cookie cookies.txt -H "Origin: $ORIGIN" -H "x-tenant-id: $TENANT_ID" "$API/events?limit=20&skip=0"
 ```
 
-## Code Map
+## Code map
 
 | Area                                                          | Location                                                     |
 | ------------------------------------------------------------- | ------------------------------------------------------------ |
