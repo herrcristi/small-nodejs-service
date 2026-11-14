@@ -11,6 +11,7 @@ const Public = {
   // service name
   ServiceName: 'users-auth',
   ServiceNameInternal: 'users-auth-internal',
+  ServiceNameSignupInternal: 'users-auth-signup-internal',
 
   // type
   Type: 'user-auth',

@@ -15,6 +15,7 @@ const SchoolsRest = require('./rest/schools.rest.js');
 
 const UsersAuthConstants = require('./users-auth/users-auth.constants.js');
 const UsersAuthService = require('./users-auth/users-auth.service.js');
+const UsersAuthSignupService = require('./users-auth/users-auth.signup.service.js');
 const UsersAuthDatabase = require('./users-auth/users-local-auth.database.js');
 const UsersAuthRouter = require('./users-auth/users-auth.router.js');
 const UsersAuthRest = require('./rest/users-auth.rest.js');
@@ -185,6 +186,7 @@ const Public = {
         // internal calls only
         [SchoolsConstants.ServiceNameInternal]: SchoolsService,
         [UsersAuthConstants.ServiceNameInternal]: UsersAuthService,
+        [UsersAuthConstants.ServiceNameSignupInternal]: UsersAuthSignupService,
         [UsersConstants.ServiceNameInternal]: UsersService,
         [EventsConstants.ServiceNameInternal]: EventsService,
         [AdminsConstants.ServiceNameInternal]: AdminsService,
@@ -276,6 +278,12 @@ const Public = {
           host: 'localhost',
           port: port,
           path: UsersAuthConstants.ApiPathInternal,
+        },
+        [UsersAuthConstants.ServiceNameSignupInternal]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: port,
+          path: `${UsersAuthConstants.ApiPathInternal}/signup`,
         },
         [UsersConstants.ServiceNameInternal]: {
           protocol: 'http',

@@ -30,7 +30,6 @@ const Schema = {
       description: Joi.string().min(0).max(1024).allow(null),
     }),
   }),
-
   Invite: Joi.object().keys({
     email: Joi.string()
       .email({ tlds: { allow: false } })
@@ -138,7 +137,7 @@ const Private = {
 
 const Public = {
   /**
-   * signup
+   * signup a school and invite its first admin
    */
   signup: async (objInfo, _ctx) => {
     // validate
@@ -147,9 +146,9 @@ const Public = {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
-    // This route is authorized by portal-admin membership in the Portal School.
+    // this route is authorized for portal admin only, so the tenantID is the portal school ID
 
-    // signup has 3 steps
+    // signup has 2 steps: create school and invite first admin
     const errorO = {
       id: objInfo.email,
       email: objInfo.email,
@@ -157,8 +156,8 @@ const Public = {
       type: UsersAuthConstants.Type,
       school: objInfo.school.name,
     };
-
-    // create school (with default status pending)
+    // create school (with default status pending) and get the id
+    // it will be activated when the first admin accepts the invitation
     const rSchool = await SchoolsRest.post(objInfo.school, _ctx);
     if (rSchool.error) {
       // raise event for invalid signup

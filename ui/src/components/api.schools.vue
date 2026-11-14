@@ -165,7 +165,11 @@ const fieldsSet = ref(new Set([]));
 
 const apiFn = {
   getAll: Api.getSchools,
-  create: Api.createSchool,
+  create: (data) =>
+    Api.signup({
+      email: data.email,
+      school: { name: data.name, description: data.description },
+    }),
   update: Api.updateSchool,
 };
 
