@@ -150,6 +150,32 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
+   * validate a global route (for all, no tenant role needed)
+   */
+  it('should validate a global route for any role', async () => {
+    const testAuthUser = _.cloneDeep(TestConstants.UsersAuth[0]);
+    const testInfoUser = _.cloneDeep(TestConstants.Users[0]);
+
+    sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 200, value: testInfoUser });
+    sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'decoded' });
+    sinon.stub(UsersLocalAuthService, 'validateToken').returns({
+      status: 200,
+      value: { username: testAuthUser.id, userID: testInfoUser.id },
+    });
+
+    _ctx.tenantID = 'tenant-without-membership';
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = '/api/v1/users-auth/me';
+    const res = await UsersAuthService.validate(
+      { token: 'token', method: 'get', route: '/api/v1/users-auth/me' },
+      _ctx
+    );
+
+    chai.expect(res.status).to.equal(200);
+  }).timeout(10000);
+
+  /**
    * validate invite route (shared with portal-admin) for a normal school admin
    */
   it('should validate invite route for a school admin', async () => {

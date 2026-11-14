@@ -870,4 +870,62 @@ describe('Users Controller', function () {
     chai.expect(res.body.message).to.include('An unknown error has occured');
     chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
+
+  /**
+   * getPortalAdmins with success
+   */
+  it('should getPortalAdmins with success', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const stubService = sinon.stub(UsersService, 'getPortalAdminsForReq').resolves({
+      status: 200,
+      value: { data: testUsers, meta: { count: testUsers.length, skip: 0, limit: 0 } },
+    });
+
+    const res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}/portal-admins`)
+      .set('Origin', TestConstants.WebServer);
+
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body).to.deep.equal({
+      data: [...testUsers],
+      meta: { count: testUsers.length, limit: 0, skip: 0 },
+    });
+  }).timeout(10000);
+
+  /**
+   * getPortalAdmins fail
+   */
+  it('should getPortalAdmins fail', async () => {
+    const stubService = sinon.stub(UsersService, 'getPortalAdminsForReq').resolves({
+      status: 403,
+      error: { message: 'Test error message', error: new Error('Test error') },
+    });
+
+    const res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}/portal-admins`)
+      .set('Origin', TestConstants.WebServer);
+
+    chai.expect(res.status).to.equal(403);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * getPortalAdmins fail exception
+   */
+  it('should getPortalAdmins fail exception', async () => {
+    const stubService = sinon.stub(UsersService, 'getPortalAdminsForReq').callsFake(() => {
+      throw new Error('Test error message');
+    });
+
+    const res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}/portal-admins`)
+      .set('Origin', TestConstants.WebServer);
+
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(res.body.message).to.include('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
 });

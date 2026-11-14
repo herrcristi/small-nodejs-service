@@ -102,6 +102,49 @@ describe('Schools Service', function () {
   }).timeout(10000);
 
   /**
+   * getAllForReq excludes the portal school when the request has no other filter
+   */
+  it('should exclude the portal school when the request has no other filter', async () => {
+    sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
+      status: 200,
+      value: { projection: { _id: 0 }, limit: 0, skip: 0 },
+    });
+    const expectedFilter = { $and: [{}, { id: { $ne: TestConstants.PortalSchoolID } }] };
+    sinon.stub(DbOpsUtils, 'getAll').callsFake((config, filter) => {
+      chai.expect(filter.filter).to.deep.equal(expectedFilter);
+      return { status: 200, value: [] };
+    });
+    sinon.stub(DbOpsUtils, 'getAllCount').returns({ status: 200, value: 0 });
+
+    const result = await SchoolsService.getAllForReq({ query: {} }, _ctx);
+
+    chai.expect(result.status).to.equal(200);
+  }).timeout(10000);
+
+  /**
+   * getAllForReq keeps the filter as it is when the portal school is not configured
+   */
+  it('should not change the filter when the portal school is not configured', async () => {
+    const testSchools = _.cloneDeep(TestConstants.Schools);
+    sinon.stub(process, 'env').value({ ...process.env, SMALL_API_PORTAL_SCHOOL_ID: '' });
+
+    sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
+      status: 200,
+      value: { filter: { name: 'x' }, projection: { _id: 0 }, limit: 0, skip: 0 },
+    });
+    const stubGetAll = sinon.stub(DbOpsUtils, 'getAll').callsFake((config, filter) => {
+      chai.expect(filter.filter).to.deep.equal({ name: 'x' });
+      return { status: 200, value: testSchools };
+    });
+    sinon.stub(DbOpsUtils, 'getAllCount').returns({ status: 200, value: testSchools.length });
+
+    const result = await SchoolsService.getAllForReq({ query: {} }, _ctx);
+
+    chai.expect(stubGetAll.calledOnce).to.equal(true);
+    chai.expect(result.value.data).to.deep.equal(testSchools);
+  }).timeout(10000);
+
+  /**
    * getAllForReq failed buildFilterFromReq
    */
   it('should getAllForReq failed buildFilterFromReq', async () => {

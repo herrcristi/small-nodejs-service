@@ -97,4 +97,27 @@ describe('Users Auth Setup Service', function () {
     }
     chai.expect(error?.message).to.equal('bad email');
   });
+
+  /**
+   * default messages when the errors have none
+   */
+  it('uses default messages when the errors have no message', async () => {
+    const stubGetAll = sinon.stub(UsersRest, 'getAll').resolves({ status: 500, error: {} });
+    let error = null;
+    try {
+      await UsersAuthSetupService.init();
+    } catch (e) {
+      error = e;
+    }
+    chai.expect(error?.message).to.equal('Failed to check the portal admins');
+
+    stubGetAll.resolves({ status: 200, value: [] });
+    sinon.stub(UsersAuthSignupService, 'invite').resolves({ status: 500, error: {} });
+    try {
+      await UsersAuthSetupService.init();
+    } catch (e) {
+      error = e;
+    }
+    chai.expect(error?.message).to.equal('Failed to invite the first portal admin');
+  });
 });

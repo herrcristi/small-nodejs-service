@@ -114,6 +114,34 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
+   * getPortalAdminsForReq when the request has no other filter
+   */
+  it('should getPortalAdminsForReq without other filters', async () => {
+    sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
+      status: 200,
+      value: { projection: { _id: 0 }, limit: 0, skip: 0 },
+    });
+    const check = (config, filter) => {
+      chai.expect(filter.filter).to.deep.equal({
+        $and: [{}, { schools: { $elemMatch: { id: TestConstants.PortalSchoolID, roles: 'portal-admin' } } }],
+      });
+    };
+    sinon.stub(DbOpsUtils, 'getAll').callsFake((config, filter) => {
+      check(config, filter);
+      return { status: 200, value: [] };
+    });
+    sinon.stub(DbOpsUtils, 'getAllCount').callsFake((config, filter) => {
+      check(config, filter);
+      return { status: 200, value: 0 };
+    });
+
+    const res = await UsersService.getPortalAdminsForReq({ query: {} }, { ..._ctx, tenantID: TestConstants.PortalSchoolID });
+
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.value.data).to.deep.equal([]);
+  }).timeout(10000);
+
+  /**
    * getAllForReq failed buildFilterFromReq
    */
   it('should getAllForReq failed buildFilterFromReq', async () => {

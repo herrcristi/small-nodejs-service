@@ -64,4 +64,55 @@ describe('Schools Setup Service', function () {
       chai.expect(error.message).to.equal('Portal school must remain active');
     }
   });
+
+  /**
+   * test that it fails if the portal school cannot be loaded
+   */
+  it('fails startup if loading the portal school fails', async () => {
+    sinon.stub(SchoolsRest, 'getOne').resolves({ status: 500, error: { message: 'db down' } });
+    const stubPost = sinon.stub(SchoolsRest, 'post');
+
+    let error = null;
+    try {
+      await SchoolsSetupService.init();
+    } catch (e) {
+      error = e;
+    }
+    chai.expect(error?.message).to.equal('db down');
+    chai.expect(stubPost.called).to.equal(false);
+
+    // without a message
+    SchoolsRest.getOne.resolves({ status: 500, error: {} });
+    try {
+      await SchoolsSetupService.init();
+    } catch (e) {
+      error = e;
+    }
+    chai.expect(error?.message).to.equal('Failed to load portal school');
+  });
+
+  /**
+   * test that it fails if the portal school cannot be created
+   */
+  it('fails startup if creating the portal school fails', async () => {
+    sinon.stub(SchoolsRest, 'getOne').resolves({ status: 404, error: { message: 'Not found' } });
+    const stubPost = sinon.stub(SchoolsRest, 'post').resolves({ status: 400, error: { message: 'bad school' } });
+
+    let error = null;
+    try {
+      await SchoolsSetupService.init();
+    } catch (e) {
+      error = e;
+    }
+    chai.expect(error?.message).to.equal('bad school');
+
+    // without a message
+    stubPost.resolves({ status: 500, error: {} });
+    try {
+      await SchoolsSetupService.init();
+    } catch (e) {
+      error = e;
+    }
+    chai.expect(error?.message).to.equal('Failed to create portal school');
+  });
 });
