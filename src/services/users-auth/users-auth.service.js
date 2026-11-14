@@ -243,17 +243,20 @@ const Private = {
   },
 
   /**
-   * validate a portal-admin-only route
+   * validate a route granted to portal-admin
+   * this only grants access: the user must be an active portal-admin and the selected tenant must be the portal school
+   * returns null for everything else, so the normal school role validation (and its errors) is applied
    */
   validatePortalAdminRoute: (user, method, route, _ctx) => {
     if (!Private.isValidRouteForRoles(['portal-admin'], method, route)) {
       return null;
     }
+
     const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
     if (!Private.isPortalAdmin(user) || _ctx.tenantID !== portalSchoolID) {
-      const msg = 'Portal-admin access required';
-      return { status: 403, error: { message: msg, error: new Error(msg) } };
+      return null;
     }
+
     const portalSchool = user.schools.find((school) => school.id === portalSchoolID);
     return { status: 200, value: true, tenantName: portalSchool.name };
   },
@@ -815,7 +818,7 @@ const Public = {
   },
 
   /**
-   * invite user to school
+   * send the invitation email to an existing user (the invite flow is in UsersAuthSignupService.invite)
    * objInfo: { username }
    */
   sendInvite: async (objInfo, _ctx) => {
@@ -845,15 +848,6 @@ const Public = {
 
     // success
     return { status: 200, value: { username, type: UsersAuthConstants.Type } };
-  },
-
-  /**
-   * route local REST-wrapper calls through the signup invitation flow
-   * objInfo: { username }
-   */
-  invite: async (objInfo, _ctx) => {
-    const UsersAuthSignupService = require('./users-auth.signup.service.js');
-    return await UsersAuthSignupService.invite(objInfo, _ctx);
   },
 
   /**

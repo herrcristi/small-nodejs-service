@@ -9,6 +9,9 @@ const NotificationsUtils = require('../../../core/utils/base-service.notificatio
 
 const TestConstants = require('../../test-constants.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
+const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
+const UsersAuthSignupService = require('../../../services/users-auth/users-auth.signup.service.js');
+const UsersAuthLocal = require('../../../services/users-auth/users-auth.local.js');
 
 describe('Users Auth Rest', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
@@ -91,12 +94,31 @@ describe('Users Auth Rest', function () {
     });
 
     // call
-    let res = await UsersAuthRest.invite('id1', { email: 'email', school: { role: 'admin' } }, _ctx);
+    let res = await UsersAuthRest.invite({ email: 'email', school: { role: 'admin' } }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
     chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal('dummy');
+  }).timeout(10000);
+
+  /**
+   * local calls of signup + invite reach the signup service (the same flow as the public routes)
+   */
+  it('should route local signup and invite calls to the signup service', async () => {
+    const stubSignup = sinon.stub(UsersAuthSignupService, 'signup').resolves({ status: 201, value: 'signup' });
+    const stubInvite = sinon.stub(UsersAuthSignupService, 'invite').resolves({ status: 201, value: 'invite' });
+
+    // UsersAuthRest.invite / signup use localCall { fn: 'invite' | 'signup' } on the users-auth local service
+    const inviteInfo = { email: 'email', school: { role: 'admin' } };
+    chai.expect((await UsersAuthLocal.invite(inviteInfo, _ctx)).value).to.equal('invite');
+    chai.expect((await UsersAuthLocal.signup({ email: 'email' }, _ctx)).value).to.equal('signup');
+    chai.expect(stubInvite.calledOnceWithExactly(inviteInfo, _ctx)).to.equal(true);
+    chai.expect(stubSignup.calledOnce).to.equal(true);
+
+    // the other users-auth functions still come from the users-auth service
+    chai.expect(UsersAuthLocal.login).to.equal(UsersAuthService.login);
+    chai.expect(UsersAuthLocal.sendInvite).to.equal(UsersAuthService.sendInvite);
   }).timeout(10000);
 
   /**

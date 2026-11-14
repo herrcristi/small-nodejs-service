@@ -12,19 +12,31 @@
 
     "portal-admin": {
       "users-auth": {
-        "POST": ["/api/v1/users-auth/signup"]
+        "POST": ["/api/v1/users-auth/signup", "/api/v1/users-auth/invite"]
       },
       "schools": {
         "GET": ["/api/v1/schools", "/api/v1/schools/:id", "/api/v1/schools/portal"],
         "PUT": ["/api/v1/schools/:id"],
         "PATCH": ["/api/v1/schools/:id"]
-      },
-      "users-auth": {
-        "POST": ["/api/v1/users-auth/signup", "/api/v1/users-auth/invite"]
+      }
+    },
+
+    "deny-not-current-school": {
+      "schools": {
+        "GET": ["/api/v1/schools/:id"],
+        "DELETE": ["/api/v1/schools/:id"],
+        "PUT": ["/api/v1/schools/:id"],
+        "PATCH": ["/api/v1/schools/:id"]
       }
     },
 
     "admin": {
+      "schools": {
+        "GET": ["/api/v1/schools/:id"],
+        "DELETE": ["/api/v1/schools/:id"],
+        "PUT": ["/api/v1/schools/:id"],
+        "PATCH": ["/api/v1/schools/:id"]
+      },
       "users-auth": {
         "POST": ["/api/v1/users-auth/invite"],
         "PATCH": ["/api/v1/users-auth/school/user/:uid"]

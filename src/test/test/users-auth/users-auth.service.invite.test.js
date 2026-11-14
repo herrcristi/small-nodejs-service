@@ -29,20 +29,6 @@ describe('Users Auth Service', function () {
   after(async function () {});
 
   /**
-   * route invite wrapper calls through the signup invitation flow
-   */
-  it('routes invite wrapper calls through the signup invitation flow', async () => {
-    const inviteInfo = { email: 'admin@example.test', school: { role: 'admin' } };
-    const expected = { status: 201, value: { userID: 'user-id' } };
-    const stubInvite = sinon.stub(UsersAuthSignupService, 'invite').resolves(expected);
-
-    const result = await UsersAuthService.invite(inviteInfo, _ctx);
-
-    chai.expect(stubInvite.calledOnceWithExactly(inviteInfo, _ctx)).to.equal(true);
-    chai.expect(result).to.deep.equal(expected);
-  });
-
-  /**
    * send invite with success
    */
   it('should send invite with success', async () => {

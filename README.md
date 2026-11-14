@@ -47,7 +47,7 @@ erDiagram
 
 `USER_SCHOOL` and `SCHEDULE_LOCATION` describe embedded membership/reference data, not separate MongoDB collections.
 
-`admin`, `professor`, and `student` are school roles. `portal-admin` is a separate role stored on a membership in the Portal School. A portal admin does not also need the school-level `admin` role. The Portal School is configured only on the backend, must remain active, and is omitted from the managed-school list.
+`admin`, `professor`, and `student` are school roles. `portal-admin` is a separate role stored on a membership in the Portal School. A portal admin does not also need the school-level `admin` role. The Portal School is a tenant like any other school (users select it after login and invite users into it), but it is configured only on the backend, must remain active, and is omitted from the managed-school list. Inviting a user to the Portal School gives that user the `portal-admin` role; `portal-admin` cannot be given on any other school, and nothing else can be given on the Portal School.
 
 ## Design Principles
 
@@ -55,7 +55,7 @@ erDiagram
 - **Authorization:** `src/services/config.roles.json` maps HTTP routes to roles. The auth service checks both the route and the user's role in the selected school. The UI hides privileged navigation and guards routes for usability, but backend authorization is authoritative.
 - **Layered services:** routers register routes, controllers translate HTTP, services validate and orchestrate domain behavior, database modules provide collections/indexes, and `src/services/rest/` wraps inter-service calls.
 - **Shared persistence helpers:** services use Joi schemas, `RestApiUtils` for list filters, `DbOpsUtils` for MongoDB operations, and reference utilities for resolving related records.
-- **Events and notifications:** successful mutations raise domain events and notifications. Subscribers update dependent service records; internal notification routes are not public client APIs.
+- **Events and notifications:** successful mutations raise domain events and notifications. Subscribers update dependent service records; internal notification routes are not public client APIs. See [Data Modes](#data-modes-joins-or-notifications) for when to join on read and when to copy on write.
 - **Internal communication:** services call other services through `RestCommsUtils`, using local dispatch or the internal REST route and service-to-service authentication.
 - **Status lifecycle:** records use `pending`, `active`, and `disabled` states where applicable. A first successful login activates pending user/school records. The tenant selector offers only active schools.
 - **Translations and email:** response fields are translated through the translation utilities; localized strings and email templates live in `src/translations/`.
@@ -63,6 +63,160 @@ erDiagram
 - **Transport and abuse controls:** CORS uses the configured origin allowlist with credentials; the web server adds security headers; login is limited to three attempts per IP per 15-minute window outside debug mode.
 - **Password policy:** newly set passwords require at least eight characters with uppercase, lowercase, a digit, and a special character. Password and email changes require the current password.
 - **Tests:** Mocha tests use Sinon stubs for service dependencies and follow the per-service suites in `src/test/test/`. Database-backed functional tests are separate from the default unit suite.
+
+## Data Modes: Joins or Notifications
+
+Records refer to each other (a schedule refers to a class, professors, groups, and students; a group refers to students; a user lists its school memberships). A `GET` that must show the referenced names and statuses can get them in two ways. The project supports both, and they are configured with the same `references` declaration of each service.
+
+|                        | Mode 1: joins on read (classical)                      | Mode 2: notifications (read-optimized)                                                    |
+| ---------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
+| Stored in the document | only the referenced ids                                | the ids **plus a projected copy** of the referenced record (for example `name`, `status`) |
+| Work done by `GET`     | extra lookups to resolve the references on every read  | none: one read of one collection                                                          |
+| Work done by a change  | none: only the changed record is written               | the owner raises a notification and every subscribed service updates its copies           |
+| Freshness              | always current                                         | current once the notification was processed (see the caveats below)                       |
+| Duplicated data        | none                                                   | yes, limited to the declared projection                                                   |
+| Best when              | data changes often, reads are rare or need every field | data changes rarely and the system is optimized for `GET`                                 |
+
+A rule of thumb: Mode 2 pays on writes to make reads cheap. If a record is read hundreds of times for every change (a class name, a location address, a user's name), copy it. If it changes about as often as it is read, join it.
+
+### Mode 1: joins on read
+
+Documents hold only ids. The read path resolves the references in bulk: one `getAllByIDs` call per reference field for the whole page of results, not one call per row.
+
+```mermaid
+sequenceDiagram
+  participant UI as Vue UI
+  participant S as Schedules service
+  participant DB as schedules collection
+  participant C as Classes service
+  participant P as Professors service
+  UI->>S: GET /schedules?limit=20
+  S->>DB: find (documents with ids only)
+  DB-->>S: [{ class: { id }, professors: [{ id }] }]
+  S->>C: getAllByIDs(class ids)
+  C-->>S: [{ id, name, status }]
+  S->>P: getAllByIDs(professor ids)
+  P-->>S: [{ id, name, user }]
+  S-->>UI: schedules with class and professors filled in
+```
+
+What is stored and returned:
+
+```jsonc
+// stored in schedules: ids only
+{ "id": "sch-1", "name": "Mathematics 1A - Monday", "class": { "id": "class-1" }, "professors": [{ "id": "prof-1" }] }
+
+// returned by GET after the joins
+{ "id": "sch-1", "name": "Mathematics 1A - Monday",
+  "class": { "id": "class-1", "name": "Mathematics 1A", "status": "active" },
+  "professors": [{ "id": "prof-1", "name": "Ada Lovelace" }] }
+```
+
+Renaming the class touches only the `classes` collection; the next `GET /schedules` already shows the new name. The cost is that every `GET /schedules` also queries classes, professors, groups, students, and locations, so its latency depends on all of those services.
+
+A second cost is that the database cannot filter or sort on a field that is not stored. Today `GET /students` can be sorted by `user.name` and filtered by `user.email` or `classes.name` because those copies are stored in the student document; in Mode 1 such a query would have to be resolved in the service (or dropped).
+
+> **Current state:** the shipped services are wired for Mode 2. Mode 1 uses the same building blocks (the `references` configuration and `ReferencesUtils.populateReferences`), but the call has to be moved from the write path to the read path of a service. There is no global switch yet. For a service that should use Mode 1:
+>
+> 1. Do not call `ReferencesUtils.populateReferences({ ...config, fillReferences: true }, ...)` in `post`/`put`/`patch`, so only ids are stored.
+> 2. Call it on the results of `getAll`/`getOne` (and on the values returned by the write calls, if the response must be expanded), so the references are joined on read:
+>
+>    ```js
+>    const r = await Public.getAll(filter, _ctx);
+>    await ReferencesUtils.populateReferences({ ...config, fillReferences: true }, r.value, _ctx);
+>    ```
+>
+> 3. Do not register the service as a subscriber in `src/services/config.services.js`, so no copies need to be maintained.
+
+### Mode 2: notifications
+
+The referenced data is copied into the referring document when it is written, and kept current by notifications. `GET` does no joins.
+
+```mermaid
+flowchart LR
+  subgraph write [Write path]
+    direction LR
+    W[PUT /classes/class-1] --> CS[Classes service]
+    CS -->|1. update class| CDB[(classes)]
+    CS -->|2. raiseNotification modified| N{{Subscribers from config.services.js}}
+    N -->|3. update copies| SS[Schedules service]
+    N -->|3. update copies| PS[Professors service]
+    N -->|3. update copies| STS[Students service]
+    SS --> SDB[(schedules)]
+    PS --> PDB[(professors)]
+    STS --> STDB[(students)]
+  end
+  subgraph read [Read path]
+    direction LR
+    R[GET /schedules] --> SS2[Schedules service] --> SDB2[(schedules)]
+  end
+```
+
+What is stored: the projection declared in the service's `references` (here, the schedule keeps `id`, `name`, `type`, `status`, `description`, `credits`, and `required` of its class):
+
+```jsonc
+// stored in schedules: ids plus the projected copy; GET returns it as it is
+{
+  "id": "sch-1",
+  "name": "Mathematics 1A - Monday",
+  "class": { "id": "class-1", "name": "Mathematics 1A", "status": "active", "credits": 3, "required": "required" },
+  "professors": [
+    {
+      "id": "prof-1",
+      "name": "Ada Lovelace",
+      "status": "active",
+      "user": { "id": "user-1", "email": "ada@example.test" },
+    },
+  ],
+}
+```
+
+How it is configured, in three places:
+
+1. **What to copy:** the `references` of the service that stores the copy, in its `getConfig`. `fieldName` is the field that holds the reference (`class`, `professors[]`, `schedules[].location`) and `projection` selects the copied fields.
+
+   ```js
+   // src/services/schedules/schedules.service.js
+   references: [
+     { fieldName: 'class', service: ClassesRest, projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 } },
+     { fieldName: 'professors[]', service: ProfessorsRest, projection: { id: 1, name: 1, type: 1, status: 1, user: 1 } },
+   ],
+   ```
+
+2. **Who is told:** the owner raises a notification after each successful `post`, `put`, `patch`, and `delete` (`ClassesRest.raiseNotification('modified', [class])`), and `config.services.js` subscribes the dependent services to it. The projection of the subscription selects what is sent:
+
+   ```js
+   // src/services/config.services.js
+   for (const rest of [StudentsRest, ProfessorsRest, SchedulesRest]) {
+     const projection = { ...notifyProjection, description: 1, credits: 1, required: 1 };
+     await ClassesRest.subscribe({ callback: rest.notification, projection });
+   }
+   ```
+
+3. **What happens on receipt:** each subscriber's `notification` handler calls `ReferencesUtils.onNotificationReferences`, which applies `added`, `modified`, and `removed` to every stored copy with one `updateMany` per changed record and reference (`DbOpsUtils.updateManyReferences`, and the matching add/delete helpers).
+
+Real chains in this project: a class rename updates the copies in schedules, students, and professors; a student change updates groups and schedules; a school rename or status change updates the school memberships stored in each user, which is why the login response and the tenant selector need no school lookup.
+
+```mermaid
+flowchart LR
+  Schools --> Users
+  Users --> Admins & Students & Professors & UsersAuth[Users auth]
+  Classes --> Students & Professors & Schedules
+  Groups --> Students & Schedules
+  Students --> Groups & Schedules
+  Professors --> Schedules
+  Locations --> Schedules
+  Schedules --> Professors & Groups & Students
+```
+
+An arrow means "raises notifications that the target uses to update its copies" (the exact lists are in `src/services/config.services.js`).
+
+Things to know before choosing Mode 2:
+
+- **Write amplification:** one change fans out to every collection that copies it, and the copies can chain (user → student → group → schedule). Keep projections small; the notification projection of the owner limits what is sent.
+- **Consistency:** notifications are delivered synchronously, in the same process, right after the write. Errors in a subscriber are logged and not rolled back, so a failed propagation leaves a stale copy. The queue-based asynchronous delivery (`broadcast` and `consume` in `base-service.notifications.utils.js`) is a placeholder and is not implemented yet.
+- **Copy only what lists need:** fields that are read in `GET` and almost never change (names, statuses, addresses). Fields that change often should be joined (Mode 1) or fetched with the detail request.
+- **Mixed use is fine:** the choice is made per reference. A service may copy the class (rarely changes, shown in every row) and join the students (large, change often).
 
 ## Local Development
 
@@ -169,16 +323,30 @@ All UI examples use the shared `Api` object from `ui/src/api/api.js`. Its Axios 
 
 ### Schools
 
-Portal admins can list and edit managed schools. The Portal School itself is not returned. Create a school through the existing `POST /users-auth/signup` flow; it creates the school through `SchoolsRest` and invites the first school admin. New users receive the signup/password setup email, while existing users receive the invite email.
+There are two kinds of schools, kept apart in the API and in the UI:
+
+| Kind              | How it is listed                                                  | How users are invited                                                                                                                                                  |
+| ----------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Managed schools   | `GET /schools` (portal admins only; the Portal School is omitted) | A new school is created with `POST /users-auth/signup`, which invites its first admin. Later admins are invited by that school's admins with `POST /users-auth/invite` |
+| The Portal School | `GET /schools/portal` (a single entry, portal admins only)        | `POST /users-auth/invite` with the role `portal-admin`; the selected tenant must be the Portal School                                                                  |
+
+There is no school-specific "invite admin" route: every invitation goes through the same `UsersAuthRest.invite` / `POST /users-auth/invite` flow, and the school comes from the selected tenant (`x-tenant-id`). New users receive the signup/password setup email, while existing users receive the invite email.
+
+Portal admins must have the Portal School selected as their tenant. In the UI, the Schools page therefore shows two separate lists: the Portal School as a list with one entry (with the "Invite Portal Admin" action), and the managed schools list (add through signup, edit).
 
 ```js
+// managed schools
 await Api.getSchools('limit=20&skip=0');
 await Api.signup({ email: 'admin@example.test', school: { name: 'North School', description: 'North campus' } });
-await Api.inviteSchoolAdmin('school-id', 'another-admin@example.test');
 await Api.updateSchool('school-id', { name: 'North School', status: 'active' });
+
+// the Portal School (the selected tenant is the Portal School)
+await Api.getPortalSchool();
+await Api.invitePortalAdmin('another-portal-admin@example.test');
 ```
 
 ```sh
+# managed schools
 curl --cookie cookies.txt -H "Origin: $ORIGIN" -H "x-tenant-id: $TENANT_ID" "$API/schools?limit=20&skip=0"
 
 curl --cookie cookies.txt -H "x-tenant-id: $TENANT_ID" \
@@ -187,11 +355,14 @@ curl --cookie cookies.txt -H "x-tenant-id: $TENANT_ID" \
   --data '{"email":"admin@example.test","school":{"name":"North School","description":"North campus"}}' \
   "$API/users-auth/signup"
 
+# the Portal School ($TENANT_ID is the Portal School)
+curl --cookie cookies.txt -H "Origin: $ORIGIN" -H "x-tenant-id: $TENANT_ID" "$API/schools/portal"
+
 curl --cookie cookies.txt -H "x-tenant-id: $TENANT_ID" \
   -H "Origin: $ORIGIN" \
   -H 'Content-Type: application/json' \
-  --data '{"email":"another-admin@example.test"}' \
-  "$API/schools/school-id/admins"
+  --data '{"email":"another-portal-admin@example.test","school":{"role":"portal-admin"}}' \
+  "$API/users-auth/invite"
 ```
 
 School status can be edited so disabled schools are unavailable in tenant selection. The Portal School cannot be deleted or disabled. School deletion is not granted to portal admins.
@@ -335,7 +506,7 @@ curl --cookie cookies.txt -H "Origin: $ORIGIN" -H "x-tenant-id: $TENANT_ID" "$AP
 
 ### Users Auth
 
-In addition to login, logout, and `GET /users-auth/me`, the service provides `POST /users-auth/invite`, `POST /users-auth/reset-password`, `PUT /users-auth/password`, `PUT /users-auth/id`, and `PATCH /users-auth/school/user/:uid`. Signup is restricted to portal admins. Internal auth routes are not public APIs.
+In addition to login, logout, and `GET /users-auth/me`, the service provides `POST /users-auth/invite`, `POST /users-auth/reset-password`, `PUT /users-auth/password`, `PUT /users-auth/id`, and `PATCH /users-auth/school/user/:uid`. Signup is restricted to portal admins; invite is available to school admins (for their selected school) and to portal admins (for the Portal School). Internal auth routes are not public APIs.
 
 ```js
 await Api.invite({ email: 'student@example.test', school: { role: 'student' } });

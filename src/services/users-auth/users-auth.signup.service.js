@@ -200,6 +200,18 @@ const Public = {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
+    // the portal school is a tenant like the others, but its members are portal admins:
+    // portal-admin can be given only on the portal school (and nothing else can be given there)
+    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    const isPortalTenant = !!portalSchoolID && _ctx.tenantID === portalSchoolID;
+    const isPortalRole = objInfo.school.role === UsersRest.Constants.Roles.PortalAdmin;
+    if (isPortalTenant !== isPortalRole) {
+      const msg = isPortalTenant
+        ? 'Only the portal-admin role can be given on the portal school'
+        : 'The portal-admin role can be given only on the portal school';
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
+    }
+
     // invite has 2 steps
     const errorO = {
       id: objInfo.email,

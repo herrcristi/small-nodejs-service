@@ -38,6 +38,7 @@ const Validators = {
   },
 
   Post: Schema.School.fork(['name'], (x) => x.required() /*make required */).keys({
+    id: Joi.string().uuid(),
     type: Joi.string().valid(SchoolsConstants.Type),
   }),
 

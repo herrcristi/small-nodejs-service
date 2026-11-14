@@ -1,7 +1,34 @@
 <template>
   <v-card v-if="read || write">
     <!-- 
-          table
+          portal school: a list with a single entry (it is a tenant too, but it is not a managed school)
+          inviting a user here makes that user a portal admin
+    -->
+    <ApiTableServer
+      ref="portalTable"
+      class="mb-6"
+      title="schools.portal"
+      :fields="portalFields.fields"
+      :apiFn="portalApiFn"
+      :read="read"
+      :write="write"
+    >
+      <template #top.add>
+        <v-btn
+          v-if="write"
+          class="me-2"
+          color="primary"
+          prepend-icon="mdi-account-plus"
+          rounded="lg"
+          border
+          @click="openInvitePortalAdmin"
+          >{{ t('schools.portal.invite') }}</v-btn
+        >
+      </template>
+    </ApiTableServer>
+
+    <!-- 
+          managed schools (the portal school is not part of this list)
     -->
     <ApiTableServer
       ref="tableServer"
@@ -19,21 +46,6 @@
       @editItem="openEdit($event)"
       @detailsItem="openDetails($event)"
     >
-      <template #item.actions="{ item }">
-        <v-btn
-          v-if="item.status === 'active'"
-          icon
-          size="small"
-          variant="text"
-          :title="t('schools.invite_admin')"
-          @click.stop="openInvite(item)"
-        >
-          <v-icon>mdi-account-plus</v-icon>
-        </v-btn>
-        <v-btn icon size="small" variant="text" :title="t('edit')" @click.stop="openEdit(item)">
-          <v-icon>mdi-pencil</v-icon>
-        </v-btn>
-      </template>
     </ApiTableServer>
 
     <!-- 
@@ -43,7 +55,7 @@
       <v-dialog v-model="dialog" max-width="800px" v-if="write">
         <v-card>
           <v-card-title>
-            {{ editing ? t('edit') : t('add') }}
+            {{ dialogTitle }}
           </v-card-title>
 
           <v-card-text>
@@ -100,27 +112,6 @@
         </v-card>
       </v-dialog>
 
-      <v-dialog v-model="inviteDialog" max-width="480px">
-        <v-card>
-          <v-card-title>{{ t('schools.invite_admin') }}</v-card-title>
-          <v-card-text>
-            <v-form ref="inviteForm" v-model="inviteFormValid">
-              <v-text-field
-                v-model="inviteEmail"
-                :label="t('email')"
-                :rules="[emailReqRule, emailValidRule]"
-                required
-              />
-            </v-form>
-          </v-card-text>
-          <v-card-actions>
-            <v-spacer />
-            <v-btn text @click="inviteDialog = false">{{ t('cancel') }}</v-btn>
-            <v-btn color="primary" :disabled="!inviteFormValid" @click="handleInvite">{{ t('invite') }}</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-
       <!-- 
         snackbar for notifications
       -->
@@ -161,6 +152,11 @@ const apiFields = {
   editFields: ['name', 'status', 'description'],
 };
 
+const portalFields = {
+  fields: ['name', 'status', 'description'],
+  inviteFields: ['email'],
+};
+
 const fieldsSet = ref(new Set([]));
 
 const apiFn = {
@@ -173,6 +169,15 @@ const apiFn = {
   update: Api.updateSchool,
 };
 
+// the portal school is a single entry, inviting there makes the user a portal admin
+const portalApiFn = {
+  getAll: async () => {
+    const response = await Api.getPortalSchool();
+    return { data: { data: [response.data], meta: { count: 1 } } };
+  },
+  create: (data) => Api.invitePortalAdmin(data.email),
+};
+
 /**
  * edit
  */
@@ -182,15 +187,18 @@ const editingItemID = ref(null);
 const dialog = ref(false);
 const editForm = ref(null);
 const formValid = ref(false);
-const inviteDialog = ref(false);
-const inviteForm = ref(null);
-const inviteFormValid = ref(false);
-const inviteEmail = ref('');
-const inviteSchoolID = ref(null);
+const dialogMode = ref('school'); // 'school' (add/edit managed school) or 'portal' (invite portal admin)
 
 const snackbar = ref(false);
 const snackbarText = ref('');
 const snackbarColor = ref('');
+
+const dialogTitle = computed(() => {
+  if (dialogMode.value === 'portal') {
+    return t('schools.portal.invite');
+  }
+  return editing.value ? t('edit') : t('add');
+});
 
 const statusItems = computed(() =>
   ComponentsUtils.Edit.statusItems(t, {
@@ -231,9 +239,11 @@ async function handleSubmit() {
   const payload = { ...itemData };
   const snackbarO = { ref: snackbar, text: snackbarText, color: snackbarColor };
 
-  // add/update
+  // add/update (or invite portal admin)
   let ok = false;
-  if (editing.value) {
+  if (dialogMode.value === 'portal') {
+    ok = await ComponentsUtils.Edit.add(portalApiFn, payload, snackbarO, t);
+  } else if (editing.value) {
     ok = await ComponentsUtils.Edit.update(apiFn, editingItemID.value, payload, snackbarO, t);
   } else {
     ok = await ComponentsUtils.Edit.add(apiFn, payload, snackbarO, t);
@@ -257,6 +267,7 @@ function openAdd() {
   }
 
   resetForm();
+  dialogMode.value = 'school';
   fieldsSet.value = new Set(apiFields.addFields);
 
   editing.value = false;
@@ -272,6 +283,7 @@ function openEdit(item) {
   }
 
   resetForm();
+  dialogMode.value = 'school';
   fieldsSet.value = new Set(apiFields.editFields);
 
   // set
@@ -291,37 +303,19 @@ function openEdit(item) {
 }
 
 /**
- * open invite dialog
+ * open invite portal admin dialog (the user is invited to the portal school, which is the selected tenant)
  */
-function openInvite(item) {
-  inviteSchoolID.value = item.id;
-  inviteEmail.value = '';
-  inviteFormValid.value = false;
-  inviteDialog.value = true;
-}
-
-/**
- * handle invite for school admin
- */
-async function handleInvite() {
-  if (inviteForm.value && typeof inviteForm.value.validate === 'function') {
-    const result = await inviteForm.value.validate();
-    if (!result.valid) {
-      return;
-    }
+function openInvitePortalAdmin() {
+  if (!write) {
+    return;
   }
 
-  try {
-    await Api.inviteSchoolAdmin(inviteSchoolID.value, inviteEmail.value.trim());
-    snackbarText.value = t('invite.sent');
-    snackbarColor.value = 'success';
-    snackbar.value = true;
-    inviteDialog.value = false;
-  } catch (e) {
-    snackbarText.value = e.response?.data?.error || e.message || t('error');
-    snackbarColor.value = 'error';
-    snackbar.value = true;
-  }
+  resetForm();
+  dialogMode.value = 'portal';
+  fieldsSet.value = new Set(portalFields.inviteFields);
+
+  editing.value = false;
+  dialog.value = true;
 }
 
 /**

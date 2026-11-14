@@ -137,7 +137,8 @@ describe('Users Auth Service', function () {
       { token: 'token', method: 'get', route: '/api/v1/schools' },
       _ctx
     );
-    chai.expect(wrongTenantResult.status).to.equal(403);
+    chai.expect(wrongTenantResult.status).to.equal(401);
+    chai.expect(wrongTenantResult.error.message).to.equal('Failed to validate school');
     _ctx.tenantID = portalSchoolID;
     testInfoUser.schools[0].roles = [];
     const nonAdminResult = await UsersAuthService.validate(
@@ -145,6 +146,38 @@ describe('Users Auth Service', function () {
       _ctx
     );
     chai.expect(nonAdminResult.status).to.equal(403);
+    chai.expect(nonAdminResult.error.message).to.equal('Route is not accesible: get /api/v1/schools');
+  }).timeout(10000);
+
+  /**
+   * validate invite route (shared with portal-admin) for a normal school admin
+   */
+  it('should validate invite route for a school admin', async () => {
+    const testAuthUser = _.cloneDeep(TestConstants.UsersAuth[0]);
+    const testInfoUser = _.cloneDeep(TestConstants.Users[0]);
+    for (const school of testInfoUser.schools) {
+      school.name = school.id;
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+
+    sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 200, value: testInfoUser });
+    sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'decoded' });
+    sinon.stub(UsersLocalAuthService, 'validateToken').returns({
+      status: 200,
+      value: { username: testAuthUser.id, userID: testInfoUser.id },
+    });
+
+    _ctx.tenantID = testInfoUser.schools[1].id; // where is admin
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = '/api/v1/users-auth/invite';
+    const res = await UsersAuthService.validate(
+      { token: 'token', method: 'post', route: '/api/v1/users-auth/invite' },
+      _ctx
+    );
+
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.value.tenantName).to.equal(_ctx.tenantID);
   }).timeout(10000);
 
   /**
@@ -196,8 +229,18 @@ describe('Users Auth Service', function () {
     chai.expect(stubUsersGet.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
     chai.expect(stubDecrypt.callCount).to.equal(1);
-    chai.expect(res.status).to.equal(403);
-    chai.expect(res.error.message).to.equal('Portal-admin access required');
+
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: {
+        userID: testInfoUser.id,
+        username: testAuthUser.id,
+        status: testInfoUser.status,
+        tenantName: 'school-high2',
+        name: testInfoUser.name,
+        schools: testInfoUser.schools,
+      },
+    });
   }).timeout(10000);
 
   /**
@@ -735,8 +778,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 403,
       error: {
-        message: 'Portal-admin access required',
-        error: new Error('Portal-admin access required'),
+        message: 'school :id restriction applied',
+        error: new Error('school :id restriction applied'),
       },
     });
   }).timeout(10000);
@@ -853,10 +896,10 @@ describe('Users Auth Service', function () {
     chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 403,
+      status: 401,
       error: {
-        message: 'Portal-admin access required',
-        error: new Error('Portal-admin access required'),
+        message: 'Failed to validate school',
+        error: new Error('Failed to validate school'),
       },
     });
   }).timeout(10000);
@@ -911,10 +954,10 @@ describe('Users Auth Service', function () {
     chai.expect(stubToken.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
-      status: 403,
+      status: 401,
       error: {
-        message: 'Portal-admin access required',
-        error: new Error('Portal-admin access required'),
+        message: 'School is disabled',
+        error: new Error('School is disabled'),
       },
     });
   }).timeout(10000);
