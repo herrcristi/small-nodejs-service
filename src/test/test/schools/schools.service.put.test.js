@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 
@@ -81,6 +80,17 @@ describe('Schools Service', function () {
         description: testSchool.description,
       },
     });
+  }).timeout(10000);
+
+  /**
+   * put should not change the portal school status
+   */
+  it('should not change the portal school status', async () => {
+    const stubPut = sinon.stub(DbOpsUtils, 'put');
+    const result = await SchoolsService.put(TestConstants.PortalSchoolID, { status: 'disabled' }, _ctx);
+
+    chai.expect(stubPut.called).to.equal(false);
+    chai.expect(result.status).to.equal(403);
   }).timeout(10000);
 
   /**

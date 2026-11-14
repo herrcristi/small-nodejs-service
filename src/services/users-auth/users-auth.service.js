@@ -227,6 +227,38 @@ const Private = {
   },
 
   /**
+   * check portal-admin membership on the configured portal school
+   */
+  isPortalAdmin: (user) => {
+    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    return (
+      !!portalSchoolID &&
+      user.schools?.some(
+        (school) =>
+          school.id === portalSchoolID &&
+          school.status === SchoolsRest.Constants.Status.Active &&
+          school.roles?.includes(UsersRest.Constants.Roles.PortalAdmin)
+      )
+    );
+  },
+
+  /**
+   * validate a portal-admin-only route
+   */
+  validatePortalAdminRoute: (user, method, route, _ctx) => {
+    if (!Private.isValidRouteForRoles(['portal-admin'], method, route)) {
+      return null;
+    }
+    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    if (!Private.isPortalAdmin(user) || _ctx.tenantID !== portalSchoolID) {
+      const msg = 'Portal-admin access required';
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
+    }
+    const portalSchool = user.schools.find((school) => school.id === portalSchoolID);
+    return { status: 200, value: true, tenantName: portalSchool.name };
+  },
+
+  /**
    * validate route
    * _ctx: { userID, username, tenantID }
    */
@@ -237,13 +269,9 @@ const Private = {
       return { status: 200, value: true };
     }
 
-    // validate portal-admin route
-    const isPortalAdmin = false; // TODO signup can be done only by portal admin
-    if (isPortalAdmin) {
-      const validPortalAdminRole = Private.isValidRouteForRoles(['portal-admin'], method, route);
-      if (validPortalAdminRole) {
-        return { status: 200, value: true };
-      }
+    const portalAdminRoute = Private.validatePortalAdminRoute(user, method, route, _ctx);
+    if (portalAdminRoute) {
+      return portalAdminRoute;
     }
 
     // some routes are only for current school

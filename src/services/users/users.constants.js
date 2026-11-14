@@ -24,6 +24,7 @@ const Public = {
 
   // roles (must match the services types)
   Roles: {
+    PortalAdmin: 'portal-admin',
     Admin: 'admin',
     Professor: 'professor',
     Student: 'student',

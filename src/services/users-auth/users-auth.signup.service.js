@@ -147,7 +147,7 @@ const Public = {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
 
-    // currently signup can be done only by portal admin not by anonymous otherwise // _ctx.userID = objInfo.email; // _ctx.username = objInfo.email;
+    // This route is authorized by portal-admin membership in the Portal School.
 
     // signup has 3 steps
     const errorO = {

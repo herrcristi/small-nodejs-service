@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const BaseServiceUtils = require('../../../core/utils/base-service.utils.js');
 const TranslationsUtils = require('../../../core/utils/translations.utils.js');
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
@@ -71,6 +70,17 @@ describe('Schools Service', function () {
         description: testSchool.description,
       },
     });
+  }).timeout(10000);
+
+  /**
+   * delete should not delete the portal school
+   */
+  it('should not delete the portal school', async () => {
+    const stubDelete = sinon.stub(DbOpsUtils, 'delete');
+    const result = await SchoolsService.delete(TestConstants.PortalSchoolID, _ctx);
+
+    chai.expect(stubDelete.called).to.equal(false);
+    chai.expect(result.status).to.equal(403);
   }).timeout(10000);
 
   /**

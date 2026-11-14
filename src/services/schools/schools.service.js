@@ -54,6 +54,20 @@ const Private = {
   Notification: NotificationsUtils.Constants.Notification,
 
   /**
+   * check whether the ID belongs to the protected portal school
+   */
+  isPortalSchool: (schoolID) =>
+    !!process.env.SMALL_API_PORTAL_SCHOOL_ID && schoolID === process.env.SMALL_API_PORTAL_SCHOOL_ID,
+
+  /**
+   * return the error used for forbidden portal school status and delete changes
+   */
+  errorPortalSchoolMutation: () => {
+    const msg = 'The portal school cannot be deactivated or deleted';
+    return { status: 403, error: { message: msg, error: new Error(msg) } };
+  },
+
+  /**
    * config
    * returns { serviceName, collection, schema, translate, references, fillReferences, events }
    */
@@ -86,6 +100,13 @@ const Public = {
       return rf;
     }
     const filter = rf.value;
+
+    // exclude the portal school from the managed list
+    if (process.env.SMALL_API_PORTAL_SCHOOL_ID) {
+      filter.filter = {
+        $and: [filter.filter || {}, { id: { $ne: process.env.SMALL_API_PORTAL_SCHOOL_ID } }],
+      };
+    }
 
     // get all (and expanded too)
     let r = await Public.getAll(filter, _ctx);
@@ -195,6 +216,11 @@ const Public = {
    * delete
    */
   delete: async (objID, _ctx) => {
+    // prevent deletion of the portal school
+    if (Private.isPortalSchool(objID)) {
+      return Private.errorPortalSchoolMutation();
+    }
+
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
 
@@ -223,6 +249,11 @@ const Public = {
     const v = Validators.Put.validate(objInfo);
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+
+    // prevent changing the portal school status
+    if (Private.isPortalSchool(objID) && objInfo.status && objInfo.status !== SchoolsConstants.Status.Active) {
+      return Private.errorPortalSchoolMutation();
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -263,6 +294,15 @@ const Public = {
     const v = Validators.Patch.validate(patchInfo);
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
+    }
+
+    // prevent changing the portal school status
+    if (
+      Private.isPortalSchool(objID) &&
+      patchInfo.set?.status &&
+      patchInfo.set.status !== SchoolsConstants.Status.Active
+    ) {
+      return Private.errorPortalSchoolMutation();
     }
 
     // { serviceName, collection, references, notifications.projection }

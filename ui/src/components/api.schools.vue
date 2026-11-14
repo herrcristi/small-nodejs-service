@@ -19,6 +19,21 @@
       @editItem="openEdit($event)"
       @detailsItem="openDetails($event)"
     >
+      <template #item.actions="{ item }">
+        <v-btn
+          v-if="item.status === 'active'"
+          icon
+          size="small"
+          variant="text"
+          :title="t('schools.invite_admin')"
+          @click.stop="openInvite(item)"
+        >
+          <v-icon>mdi-account-plus</v-icon>
+        </v-btn>
+        <v-btn icon size="small" variant="text" :title="t('edit')" @click.stop="openEdit(item)">
+          <v-icon>mdi-pencil</v-icon>
+        </v-btn>
+      </template>
     </ApiTableServer>
 
     <!-- 
@@ -39,6 +54,16 @@
                   v-model="itemData.name"
                   :label="t('name')"
                   :rules="[nameRule]"
+                  required
+                />
+              </slot>
+
+              <slot name="edit.email" :itemData="itemData" :fieldsSet="fieldsSet">
+                <v-text-field
+                  v-if="fieldsSet.has('email')"
+                  v-model="itemData.email"
+                  :label="t('email')"
+                  :rules="[emailReqRule, emailValidRule]"
                   required
                 />
               </slot>
@@ -71,6 +96,27 @@
             <v-spacer />
             <v-btn text @click="closeDialog">{{ t('cancel') }}</v-btn>
             <v-btn color="primary" :disabled="!formValid" @click="handleSubmit">{{ t('save') }}</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <v-dialog v-model="inviteDialog" max-width="480px">
+        <v-card>
+          <v-card-title>{{ t('schools.invite_admin') }}</v-card-title>
+          <v-card-text>
+            <v-form ref="inviteForm" v-model="inviteFormValid">
+              <v-text-field
+                v-model="inviteEmail"
+                :label="t('email')"
+                :rules="[emailReqRule, emailValidRule]"
+                required
+              />
+            </v-form>
+          </v-card-text>
+          <v-card-actions>
+            <v-spacer />
+            <v-btn text @click="inviteDialog = false">{{ t('cancel') }}</v-btn>
+            <v-btn color="primary" :disabled="!inviteFormValid" @click="handleInvite">{{ t('invite') }}</v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -111,7 +157,7 @@ const apiFields = {
   projectionFields: ['name', 'status', 'description'],
   sortFields: ['name', 'status'],
   filterFields: ['name', '_lang_en.status', 'description'],
-  addFields: ['name', 'status', 'description'],
+  addFields: ['name', 'email', 'description'],
   editFields: ['name', 'status', 'description'],
 };
 
@@ -121,7 +167,6 @@ const apiFn = {
   getAll: Api.getSchools,
   create: Api.createSchool,
   update: Api.updateSchool,
-  delete: Api.deleteSchool,
 };
 
 /**
@@ -133,6 +178,11 @@ const editingItemID = ref(null);
 const dialog = ref(false);
 const editForm = ref(null);
 const formValid = ref(false);
+const inviteDialog = ref(false);
+const inviteForm = ref(null);
+const inviteFormValid = ref(false);
+const inviteEmail = ref('');
+const inviteSchoolID = ref(null);
 
 const snackbar = ref(false);
 const snackbarText = ref('');
@@ -149,6 +199,8 @@ const statusItems = computed(() =>
  */
 const nameRule = (v) => ComponentsUtils.Edit.Rules.name(v, t);
 const statusRule = (v) => ComponentsUtils.Edit.Rules.status(v, t);
+const emailReqRule = (v) => ComponentsUtils.Edit.Rules.emailReq(v, t);
+const emailValidRule = (v) => ComponentsUtils.Edit.Rules.emailValid(v, t);
 
 /**
  * ApiTableServer event open details
@@ -203,11 +255,6 @@ function openAdd() {
   resetForm();
   fieldsSet.value = new Set(apiFields.addFields);
 
-  // defaults for new
-  if (fieldsSet.value.has('status')) {
-    itemData.status = 'active';
-  }
-
   editing.value = false;
   dialog.value = true;
 }
@@ -237,6 +284,40 @@ function openEdit(item) {
   editing.value = true;
   editingItemID.value = item.id;
   dialog.value = true;
+}
+
+/**
+ * open invite dialog
+ */
+function openInvite(item) {
+  inviteSchoolID.value = item.id;
+  inviteEmail.value = '';
+  inviteFormValid.value = false;
+  inviteDialog.value = true;
+}
+
+/**
+ * handle invite for school admin
+ */
+async function handleInvite() {
+  if (inviteForm.value && typeof inviteForm.value.validate === 'function') {
+    const result = await inviteForm.value.validate();
+    if (!result.valid) {
+      return;
+    }
+  }
+
+  try {
+    await Api.inviteSchoolAdmin(inviteSchoolID.value, inviteEmail.value.trim());
+    snackbarText.value = t('invite.sent');
+    snackbarColor.value = 'success';
+    snackbar.value = true;
+    inviteDialog.value = false;
+  } catch (e) {
+    snackbarText.value = e.response?.data?.error || e.message || t('error');
+    snackbarColor.value = 'error';
+    snackbar.value = true;
+  }
 }
 
 /**

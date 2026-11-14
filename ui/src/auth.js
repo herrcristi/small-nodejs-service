@@ -62,7 +62,6 @@ export function getRolesPermissions(tenantID, loginData) {
         isAtLeast.teacher = 1;
         isAtLeast.admin = 1;
       } else if (role == 'portal-admin') {
-        // portal-admin does not have access to school internal data
         isAtLeast.portalAdmin = 1;
       }
     }

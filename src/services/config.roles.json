@@ -13,25 +13,16 @@
     "portal-admin": {
       "users-auth": {
         "POST": ["/api/v1/users-auth/signup"]
-      }
-    },
-
-    "deny-not-current-school": {
+      },
       "schools": {
-        "GET": ["/api/v1/schools/:id"],
-        "DELETE": ["/api/v1/schools/:id"],
+        "GET": ["/api/v1/schools", "/api/v1/schools/:id"],
+        "POST": ["/api/v1/schools", "/api/v1/schools/:id/admins"],
         "PUT": ["/api/v1/schools/:id"],
         "PATCH": ["/api/v1/schools/:id"]
       }
     },
 
     "admin": {
-      "schools": {
-        "GET": ["/api/v1/schools/:id"],
-        "DELETE": ["/api/v1/schools/:id"],
-        "PUT": ["/api/v1/schools/:id"],
-        "PATCH": ["/api/v1/schools/:id"]
-      },
       "users-auth": {
         "POST": ["/api/v1/users-auth/invite"],
         "PATCH": ["/api/v1/users-auth/school/user/:uid"]
@@ -96,9 +87,6 @@
     },
 
     "professor": {
-      "schools": {
-        "GET": ["/api/v1/schols/:id"]
-      },
       "classes": {
         "GET": ["/api/v1/classes", "/api/v1/classes/:id"]
       },
@@ -120,9 +108,6 @@
     },
 
     "student": {
-      "schools": {
-        "GET": ["/api/v1/schols/:id"]
-      },
       "classes": {
         "GET": ["/api/v1/classes", "/api/v1/classes/:id"]
       },

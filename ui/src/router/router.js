@@ -15,7 +15,7 @@ import Login from '../components/api.user.login.vue';
 import TenantSelect from '../components/base.tenant.select.vue';
 import Profile from '../components/api.user.profile.vue';
 
-import { useAuthStore, useAppStore } from '../stores/stores.js';
+import { useAppStore } from '../stores/stores.js';
 
 // Flag to track if bootstrap is complete
 let isBootstrapComplete = false;
@@ -42,6 +42,7 @@ const Router = createRouter({
       component: Schools,
       meta: {
         requiresAuth: true,
+        requiresPortalAdmin: true,
         breadcrumbs: [{ text: 'Schools', to: '/schools' }],
       },
     },
@@ -152,11 +153,15 @@ Router.beforeEach((to, from, next) => {
     return next();
   }
 
-  const tenantID = useAppStore()?.tenantID;
+  const appStore = useAppStore();
+  const tenantID = appStore?.tenantID;
   const nextPath = encodeURIComponent(to.fullPath || to.path || '/');
 
   // check tenant
   if (tenantID) {
+    if (to.meta.requiresPortalAdmin && !appStore?.rolesPermissions?.schools?.read) {
+      return next('/');
+    }
     return next();
   }
 

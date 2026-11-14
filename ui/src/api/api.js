@@ -95,6 +95,7 @@ const Api = {
   getSchools: (params) => instance.get(`/schools?${params}`),
   getSchool: (id) => instance.get(`/schools/${id}`),
   createSchool: (data) => instance.post(`/schools`, data),
+  inviteSchoolAdmin: (id, email) => instance.post(`/schools/${id}/admins`, { email }),
   updateSchool: (id, data) => instance.put(`/schools/${id}`, data),
   deleteSchool: (id) => instance.delete(`/schools/${id}`),
 
