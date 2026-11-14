@@ -177,13 +177,16 @@ const Public = {
    * req: { query }
    * returns: { status, value: {data, meta} } or { status, error }
    */
-  getAllForReq: async (req, _ctx) => {
+  getAllForReq: async (req, _ctx, restrictFilter = null) => {
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
     const rf = await RestApiUtils.buildFilterFromReq(req, Validators.Get, _ctx);
     if (rf.error) {
       return rf;
     }
     const filter = rf.value;
+
+    // optional restriction applied by the caller (like the portal admins list)
+    restrictFilter?.(filter);
 
     // get all (and expanded too)
     let r = await Public.getAll(filter, _ctx);
@@ -206,6 +209,32 @@ const Public = {
         meta: metaInfo.meta,
       },
     };
+  },
+
+  /**
+   * get all portal admins (users with the portal-admin role on the portal school)
+   * called only by portal admins (route role) and returns only what the portal admins list needs
+   * req: { query }
+   * returns: { status, value: {data, meta} } or { status, error }
+   */
+  getPortalAdminsForReq: async (req, _ctx) => {
+    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    if (!portalSchoolID || _ctx.tenantID !== portalSchoolID) {
+      const msg = 'Portal school access required';
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
+    }
+
+    return await Public.getAllForReq(req, _ctx, (filter) => {
+      filter.filter = {
+        $and: [
+          filter.filter || {},
+          { schools: { $elemMatch: { id: portalSchoolID, roles: UsersConstants.Roles.PortalAdmin } } },
+        ],
+      };
+
+      // other memberships of these users are not part of the portal admins list
+      filter.projection = { _id: 0, id: 1, name: 1, email: 1, status: 1, _lang_en: 1 };
+    });
   },
 
   /**

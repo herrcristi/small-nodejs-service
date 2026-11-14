@@ -232,7 +232,7 @@ The backend requires the values shown in [src/.env.example](src/.env.example). T
 - Set `SMALL_API_AUTH_PROVIDER_TYPE=local` for local username/password authentication.
 - Set database URL, database name, signing secrets, SMTP configuration, port, URL, and CORS origin.
 - Set `SMALL_API_PORTAL_SCHOOL_ID` to a UUID. Startup creates the active Portal School record if it is missing.
-- Provision the first Portal School user with the `portal-admin` membership role through a trusted operator/bootstrap process. There is intentionally no anonymous portal-admin signup.
+- Set `SMALL_API_PORTAL_ADMIN_EMAIL` to the email of the first portal admin. At startup, if the Portal School has no portal admin yet, that email is invited with the normal invite flow: the user receives the password setup email and nothing secret is configured. It is skipped when a portal admin already exists, so it is safe on every restart; if the address was wrong, fix the variable and restart while there is still no portal admin. There is intentionally no anonymous portal-admin signup and no initial password setting (SMTP must be configured to deliver the email).
 
 Start the local MongoDB container from `src/`:
 
@@ -332,7 +332,9 @@ There are two kinds of schools, kept apart in the API and in the UI:
 
 There is no school-specific "invite admin" route: every invitation goes through the same `UsersAuthRest.invite` / `POST /users-auth/invite` flow, and the school comes from the selected tenant (`x-tenant-id`). New users receive the signup/password setup email, while existing users receive the invite email.
 
-Portal admins must have the Portal School selected as their tenant. In the UI, the Schools page therefore shows two separate lists: the Portal School as a list with one entry (with the "Invite Portal Admin" action), and the managed schools list (add through signup, edit).
+Portal admins must have the Portal School selected as their tenant. In the UI, the Schools page therefore shows separate lists: the Portal School as a list with one entry (with the "Invite Portal Admin" action), the portal admins (with remove), and the managed schools list (add through signup, edit).
+
+Portal admins are listed with `GET /users/portal-admins` (portal admins only, with the usual `limit`, `skip`, `sort`, and filters; only `id`, `name`, `email`, and `status` are returned) and removed with the existing `PATCH /users-auth/school/user/:uid` using `{"remove":{"roles":["portal-admin"]}}`, which removes the role, not the account. A portal admin cannot remove their own role, so the Portal School always keeps an admin. The first portal admin is created at startup from `SMALL_API_PORTAL_ADMIN_EMAIL` (see Local Development).
 
 ```js
 // managed schools
@@ -343,6 +345,8 @@ await Api.updateSchool('school-id', { name: 'North School', status: 'active' });
 // the Portal School (the selected tenant is the Portal School)
 await Api.getPortalSchool();
 await Api.invitePortalAdmin('another-portal-admin@example.test');
+await Api.getPortalAdmins('limit=20&skip=0');
+await Api.removePortalAdmin('user-id');
 ```
 
 ```sh
@@ -363,6 +367,14 @@ curl --cookie cookies.txt -H "x-tenant-id: $TENANT_ID" \
   -H 'Content-Type: application/json' \
   --data '{"email":"another-portal-admin@example.test","school":{"role":"portal-admin"}}' \
   "$API/users-auth/invite"
+
+curl --cookie cookies.txt -H "Origin: $ORIGIN" -H "x-tenant-id: $TENANT_ID" "$API/users/portal-admins?limit=20&skip=0"
+
+curl --cookie cookies.txt -H "x-tenant-id: $TENANT_ID" \
+  -H "Origin: $ORIGIN" \
+  -H 'Content-Type: application/json' -X PATCH \
+  --data '{"remove":{"roles":["portal-admin"]}}' \
+  "$API/users-auth/school/user/user-id"
 ```
 
 School status can be edited so disabled schools are unavailable in tenant selection. The Portal School cannot be deleted or disabled. School deletion is not granted to portal admins.

@@ -12,7 +12,11 @@
 
     "portal-admin": {
       "users-auth": {
-        "POST": ["/api/v1/users-auth/signup", "/api/v1/users-auth/invite"]
+        "POST": ["/api/v1/users-auth/signup", "/api/v1/users-auth/invite"],
+        "PATCH": ["/api/v1/users-auth/school/user/:uid"]
+      },
+      "users": {
+        "GET": ["/api/v1/users/portal-admins"]
       },
       "schools": {
         "GET": ["/api/v1/schools", "/api/v1/schools/:id", "/api/v1/schools/portal"],

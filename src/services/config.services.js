@@ -15,6 +15,8 @@ const SchoolsRest = require('./rest/schools.rest.js');
 
 const UsersAuthConstants = require('./users-auth/users-auth.constants.js');
 const UsersAuthService = require('./users-auth/users-auth.service.js');
+const UsersAuthSignupService = require('./users-auth/users-auth.signup.service.js');
+const UsersAuthSetupService = require('./users-auth/users-auth.setup.service.js');
 const UsersAuthDatabase = require('./users-auth/users-local-auth.database.js');
 const UsersAuthRouter = require('./users-auth/users-auth.router.js');
 const UsersAuthRest = require('./rest/users-auth.rest.js');
@@ -172,7 +174,12 @@ const Public = {
 
       local: {
         [SchoolsConstants.ServiceName]: SchoolsService,
-        [UsersAuthConstants.ServiceName]: UsersAuthService,
+        // signup + invite are implemented in the signup service, so expand the users-auth service with them
+        // (prototype lookup keeps the other functions delegated to UsersAuthService)
+        [UsersAuthConstants.ServiceName]: Object.assign(Object.create(UsersAuthService), {
+          signup: UsersAuthSignupService.signup,
+          invite: UsersAuthSignupService.invite,
+        }),
         [UsersConstants.ServiceName]: UsersService,
         [EventsConstants.ServiceName]: EventsService,
         [AdminsConstants.ServiceName]: AdminsService,
@@ -338,6 +345,9 @@ const Public = {
 
     // setup the portal school through its REST wrapper
     await SchoolsSetupService.init();
+
+    // bootstrap the first portal admin (if configured and there is none yet), needs the portal school
+    await UsersAuthSetupService.init();
   },
 
   /**

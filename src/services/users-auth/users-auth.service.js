@@ -779,6 +779,29 @@ const Public = {
   },
 
   /**
+   * check the roles that can be given on the selected tenant
+   * the portal school is a tenant like the others, but its members are portal admins:
+   * portal-admin can be given only on the portal school (and nothing else can be given there)
+   * returns null when valid or an error { status, error }
+   */
+  validateTenantRoles: (roles, _ctx) => {
+    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    const isPortalTenant = !!portalSchoolID && _ctx.tenantID === portalSchoolID;
+
+    for (const role of roles) {
+      const isPortalRole = role === UsersRest.Constants.Roles.PortalAdmin;
+      if (isPortalTenant !== isPortalRole) {
+        const msg = isPortalTenant
+          ? 'Only the portal-admin role can be given on the portal school'
+          : 'The portal-admin role can be given only on the portal school';
+        return { status: 403, error: { message: msg, error: new Error(msg) } };
+      }
+    }
+
+    return null;
+  },
+
+  /**
    * patch called by admin to add/remove user to school (_ctx.tenantID)
    * patchInfo: { roles }
    */
@@ -789,7 +812,8 @@ const Public = {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
-    // here route is already validated that the current _ctx.username is the admin of the school (_ctx.tenantID)
+    // here route is already validated that the current _ctx.username is the admin (or the portal admin for the
+    // portal school) of the school (_ctx.tenantID)
 
     // add the school id
     const patchSchoolInfo = {};
@@ -799,9 +823,17 @@ const Public = {
       }
       let roles = patchInfo[op].roles;
 
-      // prevent removing itself as admin
+      // portal-admin only on the portal school
+      const rRoles = Public.validateTenantRoles(roles, _ctx);
+      if (rRoles) {
+        return rRoles;
+      }
+
+      // prevent removing itself as admin (or portal admin), so there is always someone to manage the school
       if (op === 'remove' && _ctx.userID === userID) {
-        roles = roles.filter((item) => item !== UsersRest.Constants.Roles.Admin);
+        roles = roles.filter(
+          (item) => item !== UsersRest.Constants.Roles.Admin && item !== UsersRest.Constants.Roles.PortalAdmin
+        );
       }
       if (!roles.length) {
         continue;

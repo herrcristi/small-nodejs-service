@@ -284,6 +284,10 @@ const Api = {
 
   updateUserSchool: (uid, data) => instance.patch(`/users-auth/school/user/${uid}`, data),
 
+  // Portal admins (members of the portal school, selected tenant), portal admin only
+  getPortalAdmins: (params) => instance.get(`/users/portal-admins?${params}`),
+  removePortalAdmin: (userID) => Api.updateUserSchool(userID, { remove: { roles: ['portal-admin'] } }),
+
   // Auth for portal admin
   // invite a user to the portal school (selected tenant), the user becomes portal admin
   invitePortalAdmin: (email) => Api.invite({ email, school: { role: 'portal-admin' } }),

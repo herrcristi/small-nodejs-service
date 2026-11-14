@@ -9,9 +9,13 @@ const NotificationsUtils = require('../../../core/utils/base-service.notificatio
 
 const TestConstants = require('../../test-constants.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
+const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
 const UsersAuthSignupService = require('../../../services/users-auth/users-auth.signup.service.js');
-const UsersAuthLocal = require('../../../services/users-auth/users-auth.local.js');
+const UsersAuthSetupService = require('../../../services/users-auth/users-auth.setup.service.js');
+const SchoolsSetupService = require('../../../services/schools/schools.setup.service.js');
+const EmailsUtils = require('../../../core/utils/emails.utils.js');
+const ConfigServices = require('../../../services/config.services.js');
 
 describe('Users Auth Rest', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
@@ -106,19 +110,30 @@ describe('Users Auth Rest', function () {
    * local calls of signup + invite reach the signup service (the same flow as the public routes)
    */
   it('should route local signup and invite calls to the signup service', async () => {
+    // stubbed before init because the local services keep the function references
     const stubSignup = sinon.stub(UsersAuthSignupService, 'signup').resolves({ status: 201, value: 'signup' });
     const stubInvite = sinon.stub(UsersAuthSignupService, 'invite').resolves({ status: 201, value: 'invite' });
 
-    // UsersAuthRest.invite / signup use localCall { fn: 'invite' | 'signup' } on the users-auth local service
+    let localConfig = null;
+    sinon.stub(RestCommsUtils, 'init').callsFake((config) => {
+      localConfig = config;
+    });
+    sinon.stub(EmailsUtils, 'init').resolves();
+    sinon.stub(SchoolsSetupService, 'init').resolves(true);
+    sinon.stub(UsersAuthSetupService, 'init').resolves(false);
+    await ConfigServices.init();
+
+    // UsersAuthRest.invite / signup use localCall { fn: 'invite' | 'signup' } on the users-auth service
+    const local = localConfig.local[UsersAuthConstants.ServiceName];
     const inviteInfo = { email: 'email', school: { role: 'admin' } };
-    chai.expect((await UsersAuthLocal.invite(inviteInfo, _ctx)).value).to.equal('invite');
-    chai.expect((await UsersAuthLocal.signup({ email: 'email' }, _ctx)).value).to.equal('signup');
+    chai.expect((await local.invite(inviteInfo, _ctx)).value).to.equal('invite');
+    chai.expect((await local.signup({ email: 'email' }, _ctx)).value).to.equal('signup');
     chai.expect(stubInvite.calledOnceWithExactly(inviteInfo, _ctx)).to.equal(true);
     chai.expect(stubSignup.calledOnce).to.equal(true);
 
     // the other users-auth functions still come from the users-auth service
-    chai.expect(UsersAuthLocal.login).to.equal(UsersAuthService.login);
-    chai.expect(UsersAuthLocal.sendInvite).to.equal(UsersAuthService.sendInvite);
+    chai.expect(local.login).to.equal(UsersAuthService.login);
+    chai.expect(local.sendInvite).to.equal(UsersAuthService.sendInvite);
   }).timeout(10000);
 
   /**

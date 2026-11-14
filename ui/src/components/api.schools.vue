@@ -28,6 +28,34 @@
     </ApiTableServer>
 
     <!-- 
+          portal admins: the users invited to the portal school (they can also be removed, except the current user)
+    -->
+    <ApiTableServer
+      ref="portalAdminsTable"
+      class="mb-6"
+      title="schools.portal.admins"
+      :fields="portalAdminsFields.fields"
+      :projectionFields="portalAdminsFields.projectionFields"
+      :sortFields="portalAdminsFields.sortFields"
+      :filterFields="portalAdminsFields.filterFields"
+      :apiFn="portalAdminsApiFn"
+      :read="read"
+      :write="write"
+    >
+      <template #item.actions="{ item }">
+        <v-icon
+          v-if="write && item.id !== currentUserID"
+          small
+          class="mr-2"
+          size="small"
+          :title="t('delete')"
+          @click="portalAdminsTable.confirmDelete(item.id)"
+          >mdi-delete</v-icon
+        >
+      </template>
+    </ApiTableServer>
+
+    <!-- 
           managed schools (the portal school is not part of this list)
     -->
     <ApiTableServer
@@ -123,7 +151,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
 import Api from '../api/api.js';
-import { useAppStore } from '../stores/stores.js';
+import { useAppStore, useAuthStore } from '../stores/stores.js';
 import ApiTableServer from './api.base.table.server.vue';
 import { useI18n } from 'vue-i18n';
 import ComponentsUtils from './components.utils.js';
@@ -133,8 +161,12 @@ const { t } = useI18n();
  * props
  */
 const tableServer = ref();
+const portalAdminsTable = ref();
 const details = null; // true for details column
 const expand = null; // true for expand column
+
+const auth = useAuthStore();
+const currentUserID = auth?.raw?.userID;
 
 const app = useAppStore();
 const read = app?.rolesPermissions?.schools?.read;
@@ -157,6 +189,13 @@ const portalFields = {
   inviteFields: ['email'],
 };
 
+const portalAdminsFields = {
+  fields: ['name', 'email', 'status'],
+  projectionFields: ['name', 'email', 'status'],
+  sortFields: ['name'],
+  filterFields: ['name', 'email'],
+};
+
 const fieldsSet = ref(new Set([]));
 
 const apiFn = {
@@ -167,6 +206,12 @@ const apiFn = {
       school: { name: data.name, description: data.description },
     }),
   update: Api.updateSchool,
+};
+
+// the portal admins, removing one removes only the portal-admin role (the user account is kept)
+const portalAdminsApiFn = {
+  getAll: Api.getPortalAdmins,
+  delete: Api.removePortalAdmin,
 };
 
 // the portal school is a single entry, inviting there makes the user a portal admin
@@ -250,11 +295,12 @@ async function handleSubmit() {
   }
 
   if (ok) {
+    const wasPortal = dialogMode.value === 'portal';
     dialog.value = false;
     resetForm();
 
     // refresh
-    await tableServer.value.refresh();
+    await (wasPortal ? portalAdminsTable : tableServer).value.refresh();
   }
 }
 
