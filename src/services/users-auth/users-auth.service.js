@@ -818,7 +818,7 @@ const Public = {
    * invite user to school
    * objInfo: { username }
    */
-  invite: async (objInfo, _ctx) => {
+  sendInvite: async (objInfo, _ctx) => {
     // validate
     const v = Validators.Invite.validate(objInfo);
     if (v.error) {
@@ -845,6 +845,15 @@ const Public = {
 
     // success
     return { status: 200, value: { username, type: UsersAuthConstants.Type } };
+  },
+
+  /**
+   * route local REST-wrapper calls through the signup invitation flow
+   * objInfo: { username }
+   */
+  invite: async (objInfo, _ctx) => {
+    const UsersAuthSignupService = require('./users-auth.signup.service.js');
+    return await UsersAuthSignupService.invite(objInfo, _ctx);
   },
 
   /**

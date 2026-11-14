@@ -236,7 +236,7 @@ const Public = {
     if (isNewUser) {
       /* const rr = */ await UsersAuth.resetPassword(userInfo, _ctx, UsersAuthConstants.ResetTokenType.Signup);
     } else {
-      /* const rr = */ await UsersAuth.invite(userInfo, _ctx);
+      /* const rr = */ await UsersAuth.sendInvite(userInfo, _ctx);
     }
 
     return rUser;

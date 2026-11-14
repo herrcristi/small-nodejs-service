@@ -10,6 +10,7 @@ const NotificationsUtils = require('../../../core/utils/base-service.notificatio
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
+const UsersAuthSignupService = require('../../../services/users-auth/users-auth.signup.service.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 const EmailsUtils = require('../../../core/utils/emails.utils.js');
@@ -28,9 +29,23 @@ describe('Users Auth Service', function () {
   after(async function () {});
 
   /**
-   * invite with success
+   * route invite wrapper calls through the signup invitation flow
    */
-  it('should invite with success', async () => {
+  it('routes invite wrapper calls through the signup invitation flow', async () => {
+    const inviteInfo = { email: 'admin@example.test', school: { role: 'admin' } };
+    const expected = { status: 201, value: { userID: 'user-id' } };
+    const stubInvite = sinon.stub(UsersAuthSignupService, 'invite').resolves(expected);
+
+    const result = await UsersAuthService.invite(inviteInfo, _ctx);
+
+    chai.expect(stubInvite.calledOnceWithExactly(inviteInfo, _ctx)).to.equal(true);
+    chai.expect(result).to.deep.equal(expected);
+  });
+
+  /**
+   * send invite with success
+   */
+  it('should send invite with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
@@ -47,7 +62,7 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.invite(postReq, _ctx);
+    let res = await UsersAuthService.sendInvite(postReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -63,9 +78,9 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * invite fail validation
+   * send invite fail validation
    */
-  it('should invite fail validation', async () => {
+  it('should send invite fail validation', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
@@ -75,7 +90,7 @@ describe('Users Auth Service', function () {
     };
 
     // call
-    let res = await UsersAuthService.invite(postReq, _ctx);
+    let res = await UsersAuthService.sendInvite(postReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

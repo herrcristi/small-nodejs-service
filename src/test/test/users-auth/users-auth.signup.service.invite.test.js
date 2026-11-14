@@ -113,7 +113,7 @@ describe('Users Auth Service', function () {
       };
     });
 
-    let stubUsersAuthInvite = sinon.stub(UsersAuthService, 'invite').callsFake((objInfo) => {
+    let stubUsersAuthInvite = sinon.stub(UsersAuthService, 'sendInvite').callsFake((objInfo) => {
       console.log(`\nUsersAuth.invite called with ${JSON.stringify(objInfo, null, 2)}`);
 
       chai.expect(objInfo).to.deep.equal({
@@ -291,7 +291,7 @@ describe('Users Auth Service', function () {
       };
     });
 
-    let stubUsersAuthInvite = sinon.stub(UsersAuthService, 'invite').callsFake((objInfo) => {
+    let stubUsersAuthInvite = sinon.stub(UsersAuthService, 'sendInvite').callsFake((objInfo) => {
       console.log(`\nUsersAuth.invite called with ${JSON.stringify(objInfo, null, 2)}`);
 
       chai.expect(objInfo).to.deep.equal({
@@ -500,7 +500,7 @@ describe('Users Auth Service', function () {
       };
     });
 
-    let stubUsersAuthInvite = sinon.stub(UsersAuthService, 'invite').callsFake((objInfo) => {
+    let stubUsersAuthInvite = sinon.stub(UsersAuthService, 'sendInvite').callsFake((objInfo) => {
       console.log(`\nUsersAuth.invite called with ${JSON.stringify(objInfo, null, 2)}`);
 
       chai.expect(objInfo).to.deep.equal({

@@ -15,10 +15,12 @@
         "POST": ["/api/v1/users-auth/signup"]
       },
       "schools": {
-        "GET": ["/api/v1/schools", "/api/v1/schools/:id"],
-        "POST": ["/api/v1/schools", "/api/v1/schools/:id/admins"],
+        "GET": ["/api/v1/schools", "/api/v1/schools/:id", "/api/v1/schools/portal"],
         "PUT": ["/api/v1/schools/:id"],
         "PATCH": ["/api/v1/schools/:id"]
+      },
+      "users-auth": {
+        "POST": ["/api/v1/users-auth/signup", "/api/v1/users-auth/invite"]
       }
     },
 
