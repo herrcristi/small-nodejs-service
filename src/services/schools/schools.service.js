@@ -5,9 +5,10 @@ const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
-const RestApiUtils = require('../../core/utils/rest-api.utils');
+const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
-const CommonUtils = require('../../core/utils/common.utils');
+const CommonUtils = require('../../core/utils/common.utils.js');
+
 const ReferencesUtils = require('../../core/utils/base-service.references.utils.js');
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 
@@ -58,14 +59,6 @@ const Private = {
    */
   isPortalSchool: (schoolID) =>
     !!process.env.SMALL_API_PORTAL_SCHOOL_ID && schoolID === process.env.SMALL_API_PORTAL_SCHOOL_ID,
-
-  /**
-   * return the error used for forbidden portal school status and delete changes
-   */
-  errorPortalSchoolMutation: () => {
-    const msg = 'The portal school cannot be deactivated or deleted';
-    return { status: 403, error: { message: msg, error: new Error(msg) } };
-  },
 
   /**
    * config
@@ -218,7 +211,8 @@ const Public = {
   delete: async (objID, _ctx) => {
     // prevent deletion of the portal school
     if (Private.isPortalSchool(objID)) {
-      return Private.errorPortalSchoolMutation();
+      const msg = 'The portal school cannot be deleted';
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -253,7 +247,8 @@ const Public = {
 
     // prevent changing the portal school status
     if (Private.isPortalSchool(objID) && objInfo.status && objInfo.status !== SchoolsConstants.Status.Active) {
-      return Private.errorPortalSchoolMutation();
+      const msg = 'The portal school cannot be deactivated';
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -302,7 +297,8 @@ const Public = {
       patchInfo.set?.status &&
       patchInfo.set.status !== SchoolsConstants.Status.Active
     ) {
-      return Private.errorPortalSchoolMutation();
+      const msg = 'The portal school cannot be deactivated';
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
     }
 
     // { serviceName, collection, references, notifications.projection }

@@ -9,7 +9,7 @@ const WebConstants = require('../web-server/web-server.constants.js');
 const SchoolsConstants = require('./schools/schools.constants.js');
 const SchoolsService = require('./schools/schools.service.js');
 const SchoolsDatabase = require('./schools/schools.database.js');
-const SchoolsSetup = require('./schools/schools.setup.js');
+const SchoolsSetupService = require('./schools/schools.setup.service.js');
 const SchoolsRouter = require('./schools/schools.router.js');
 const SchoolsRest = require('./rest/schools.rest.js');
 
@@ -96,9 +96,6 @@ const Public = {
     ]) {
       await database.init();
     }
-
-    // setup the portal school
-    await SchoolsSetup.init();
 
     // init services
     for (const service of [
@@ -338,6 +335,9 @@ const Public = {
     };
 
     await RestCommsUtils.init(config);
+
+    // setup the portal school through its REST wrapper
+    await SchoolsSetupService.init();
   },
 
   /**

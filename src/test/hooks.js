@@ -35,6 +35,16 @@ exports.mochaHooks = {
           console.log(`\nMock db connection to ${dbUrl} ${dbName}`);
           return { collection: () => null };
         });
+
+        const SchoolsRest = require('../services/rest/schools.rest.js');
+        sinon.stub(SchoolsRest, 'getOne').resolves({
+          status: 200,
+          value: {
+            id: process.env.SMALL_API_PORTAL_SCHOOL_ID,
+            name: 'Portal School',
+            status: 'active',
+          },
+        });
       }
 
       // stub mailer
