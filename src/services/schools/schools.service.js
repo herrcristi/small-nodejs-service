@@ -164,18 +164,6 @@ const Public = {
   },
 
   /**
-   * get portal school
-   */
-  getPortalSchool: async (_ctx) => {
-    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
-    if (!portalSchoolID || _ctx.tenantID !== portalSchoolID) {
-      const msg = 'Portal school access required';
-      return { status: 403, error: { message: msg, error: new Error(msg) } };
-    }
-    return await Public.getOne(portalSchoolID, null, _ctx);
-  },
-
-  /**
    * post
    */
   post: async (objInfo, _ctx) => {

@@ -14,6 +14,25 @@ const RateLimiterMiddleware = require('./rate-limiter.middleware.js');
 const HttpsMiddleware = require('./https.middleware.js');
 const SecurityHeadersMiddleware = require('./security-headers.middleware.js');
 
+const Private = {
+  /**
+   * run the middleware only for the first route that matches the request
+   * the middlewares are added for every route, and express continues to the next matching route after next(),
+   * so '/users/portal-admins' would be checked a second time as '/users/:id' (with 'portal-admins' as the id)
+   * routers are ordered with the specific routes first, so the first match is the right one
+   */
+  runOnce: (middleware) => {
+    const ran = Symbol('ran'); // one flag for each middleware
+    return (req, res, next) => {
+      if (req[ran]) {
+        return next();
+      }
+      req[ran] = true;
+      return middleware(req, res, next);
+    };
+  },
+};
+
 const Public = {
   /**
    * init a webserver
@@ -61,14 +80,19 @@ const Public = {
     if (!Array.isArray(routers)) {
       routers = [routers];
     }
+    // one wrapper for each middleware, shared by all the routes (the flag is per middleware and request)
+    const authMiddlewares = Array.isArray(usersAuthMiddleware)
+      ? usersAuthMiddleware.map((middleware) => Private.runOnce(middleware?.middleware || middleware))
+      : null;
+
     routers.forEach((route) => {
       // add users auth middlewares
-      if (Array.isArray(usersAuthMiddleware)) {
+      if (authMiddlewares) {
         route.stack.forEach((layer) => {
           Object.keys(layer.route.methods).forEach((method) => {
             // add middleware to routes here to have access to req.route.path
-            usersAuthMiddleware.forEach((middleware) => {
-              app[method](layer.route.path, middleware?.middleware || middleware);
+            authMiddlewares.forEach((middleware) => {
+              app[method](layer.route.path, middleware);
             });
           });
         });

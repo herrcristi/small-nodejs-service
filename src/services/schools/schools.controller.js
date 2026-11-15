@@ -14,26 +14,6 @@ const SchoolsService = require('./schools.service.js');
  */
 const Public = {
   /**
-   * get portal school for the current portal-admin tenant
-   */
-  getPortal: async (req, res, next) => {
-    const _ctx = req._ctx;
-    _ctx.serviceName = SchoolsConstants.ServiceName;
-
-    try {
-      const r = await SchoolsService.getPortalSchool(_ctx);
-      if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
-      }
-      res.status(r.status).json(r.value);
-    } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
-    } finally {
-      res.end();
-    }
-  },
-
-  /**
    * get all
    */
   getAll: async (req, res, next) => {
@@ -193,7 +173,11 @@ const Public = {
 
     try {
       console.log(
-        `\n${_ctx.serviceName}: Internal post called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+        `\n${_ctx.serviceName}: Internal post called, body ${JSON.stringify(
+          CommonUtils.protectData(req.body),
+          null,
+          2
+        )}`
       );
       const r = await SchoolsService.post(req.body, _ctx);
       if (r.error) {

@@ -108,8 +108,8 @@ This is what the user record looks like. The same person is `admin` in one schoo
   "name": "Ada Lovelace",
   "schools": [
     { "id": "school-north", "name": "North School", "status": "active", "roles": ["admin"] },
-    { "id": "school-south", "name": "South School", "status": "active", "roles": ["professor", "student"] },
-  ],
+    { "id": "school-south", "name": "South School", "status": "active", "roles": ["professor", "student"] }
+  ]
 }
 ```
 
@@ -156,21 +156,21 @@ flowchart TD
   manage --> d["List and remove portal admins"]
 ```
 
-| Action                 | Route                                                  | Who can do it                                               |
-| ---------------------- | ------------------------------------------------------ | ----------------------------------------------------------- |
-| Create a school        | `POST /users-auth/signup`                              | Portal admin (it invites the first admin of the new school) |
-| List managed schools   | `GET /schools`                                         | Portal admin                                                |
-| Edit a school          | `PUT` or `PATCH /schools/:id`                          | Portal admin; a school admin for their own school           |
-| Read the Portal School | `GET /schools/portal`                                  | Portal admin                                                |
-| Invite a portal admin  | `POST /users-auth/invite` with role `portal-admin`     | Portal admin                                                |
-| List portal admins     | `GET /users/portal-admins`                             | Portal admin                                                |
-| Remove a portal admin  | `PATCH /users-auth/school/user/:uid` (remove the role) | Portal admin (not for their own role)                       |
+| Action                      | Route                                                  | Who can do it                                               |
+| --------------------------- | ------------------------------------------------------ | ----------------------------------------------------------- |
+| Create a school             | `POST /users-auth/signup`                              | Portal admin (it invites the first admin of the new school) |
+| List managed schools        | `GET /schools`                                         | Portal admin                                                |
+| Edit a school               | `PUT` or `PATCH /schools/:id`                          | Portal admin; a school admin for their own school           |
+| Invite a portal admin       | `POST /users-auth/invite` with role `portal-admin`     | Portal admin                                                |
+| List portal admins          | `GET /users/portal-admins`                             | Portal admin                                                |
+| List the admins of a school | `GET /users/school-admins/:schoolId`                   | Portal admin                                                |
+| Remove a portal admin       | `PATCH /users-auth/school/user/:uid` (remove the role) | Portal admin (not for their own role)                       |
 
 A portal admin cannot remove their own role, so the Portal School always keeps at least one admin. Removing the role keeps the user account.
 
 **The first portal admin.** Set `SMALL_API_PORTAL_ADMIN_EMAIL` and the first start invites that address through the normal invite flow. The person receives the password setup email, so no password is ever stored in the configuration. It does nothing once a portal admin exists, so it is safe on every restart. There is deliberately no public portal-admin signup.
 
-In the UI, the Schools page has three lists: the Portal School (one entry, with the invite action), the portal admins (with remove), and the managed schools.
+In the UI, the Schools page has two lists: the **portal admins** and the **managed schools**. The Portal School itself is not shown, because it is always the same: the portal admins list has a **+** to invite a new portal admin and a delete action to remove one. Each managed school can be expanded to show its admins.
 
 ## Design principles
 
@@ -333,9 +333,9 @@ What is stored is the **projection** declared for the reference. Here the schedu
       "id": "prof-1",
       "name": "Ada Lovelace",
       "status": "active",
-      "user": { "id": "user-1", "email": "ada@example.test" },
-    },
-  ],
+      "user": { "id": "user-1", "email": "ada@example.test" }
+    }
+  ]
 }
 ```
 
@@ -576,7 +576,7 @@ There are two kinds of schools. They are listed separately in the API and in the
 | Kind              | How it is listed                                                  | How users are added                                                                                                                                       |
 | ----------------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Managed schools   | `GET /schools` (portal admins only, the Portal School is omitted) | A school is created with `POST /users-auth/signup`, which also invites its first admin. That admin then invites the others with `POST /users-auth/invite` |
-| The Portal School | `GET /schools/portal` (one entry, portal admins only)             | `POST /users-auth/invite` with the role `portal-admin`, while the Portal School is the selected tenant                                                    |
+| The Portal School | Not listed. Its admins are listed with `GET /users/portal-admins` | `POST /users-auth/invite` with the role `portal-admin`, while the Portal School is the selected tenant                                                    |
 
 **There is no school-specific "invite admin" route.** Every invitation uses the same `POST /users-auth/invite` flow (`UsersAuthRest.invite`), and the school comes from the selected tenant. A new user receives the signup and password setup email. An existing user receives the invite email.
 
@@ -588,8 +588,7 @@ await Api.getSchools('limit=20&skip=0');
 await Api.signup({ email: 'admin@example.test', school: { name: 'North School', description: 'North campus' } });
 await Api.updateSchool('school-id', { name: 'North School', status: 'active' });
 
-// the Portal School (the selected tenant is the Portal School)
-await Api.getPortalSchool();
+// the portal admins (the selected tenant is the Portal School)
 await Api.invitePortalAdmin('another-portal-admin@example.test');
 await Api.getPortalAdmins('limit=20&skip=0');
 await Api.removePortalAdmin('user-id');
@@ -605,8 +604,7 @@ curl --cookie cookies.txt -H "x-tenant-id: $TENANT_ID" \
   --data '{"email":"admin@example.test","school":{"name":"North School","description":"North campus"}}' \
   "$API/users-auth/signup"
 
-# the Portal School ($TENANT_ID is the Portal School)
-curl --cookie cookies.txt -H "Origin: $ORIGIN" -H "x-tenant-id: $TENANT_ID" "$API/schools/portal"
+# the portal admins ($TENANT_ID is the Portal School)
 
 curl --cookie cookies.txt -H "x-tenant-id: $TENANT_ID" \
   -H "Origin: $ORIGIN" \

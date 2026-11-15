@@ -10,6 +10,7 @@ import Locations from '../components/api.locations.vue';
 import Events from '../components/api.events.vue';
 import Classes from '../components/api.classes.vue';
 import Schedules from '../components/api.schedules.vue';
+import Dashboard from '../components/base.dashboard.vue';
 
 import Login from '../components/api.user.login.vue';
 import TenantSelect from '../components/base.tenant.select.vue';
@@ -30,7 +31,7 @@ const Router = createRouter({
     {
       path: '/',
       name: 'Home',
-      component: Schedules,
+      component: Dashboard, // the schools for the portal school, the schedules for the other schools
       meta: {
         requiresAuth: true,
         breadcrumbs: [{ text: 'Dashboard', to: '/' }],

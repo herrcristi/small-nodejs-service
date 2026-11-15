@@ -73,6 +73,33 @@ const Public = {
   },
 
   /**
+   * get all admins of a school
+   */
+  getSchoolAdmins: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Get school admins called, params ${JSON.stringify(
+          CommonUtils.protectData(req.params)
+        )}, query ${JSON.stringify(CommonUtils.protectData(req.query), CommonUtils.stringifyFilter, 2)}`
+      );
+
+      const r = await UsersService.getSchoolAdminsForReq(req.params.schoolId, req, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
    * get one
    */
   getOne: async (req, res, next) => {

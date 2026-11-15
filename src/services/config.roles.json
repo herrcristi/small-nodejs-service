@@ -16,10 +16,10 @@
         "PATCH": ["/api/v1/users-auth/school/user/:uid"]
       },
       "users": {
-        "GET": ["/api/v1/users/portal-admins"]
+        "GET": ["/api/v1/users/portal-admins", "/api/v1/users/school-admins/:schoolId"]
       },
       "schools": {
-        "GET": ["/api/v1/schools", "/api/v1/schools/:id", "/api/v1/schools/portal"],
+        "GET": ["/api/v1/schools", "/api/v1/schools/:id"],
         "PUT": ["/api/v1/schools/:id"],
         "PATCH": ["/api/v1/schools/:id"]
       }

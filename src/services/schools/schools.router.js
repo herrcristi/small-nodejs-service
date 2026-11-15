@@ -13,7 +13,6 @@ const router = express.Router();
  * Schools
  */
 router.route(`${SchoolsConstants.ApiPath}`).get(SchoolsController.getAll);
-router.route(`${SchoolsConstants.ApiPath}/portal`).get(SchoolsController.getPortal);
 router.route(`${SchoolsConstants.ApiPath}/:id`).get(SchoolsController.getOne);
 
 router.route(`${SchoolsConstants.ApiPath}/:id`).delete(SchoolsController.delete);

@@ -1,34 +1,8 @@
 <template>
   <v-card v-if="read || write">
     <!-- 
-          portal school: a list with a single entry (it is a tenant too, but it is not a managed school)
-          inviting a user here makes that user a portal admin
-    -->
-    <ApiTableServer
-      ref="portalTable"
-      class="mb-6"
-      title="schools.portal"
-      :fields="portalFields.fields"
-      :apiFn="portalApiFn"
-      :read="read"
-      :write="write"
-    >
-      <template #top.add>
-        <v-btn
-          v-if="write"
-          class="me-2"
-          color="primary"
-          prepend-icon="mdi-account-plus"
-          rounded="lg"
-          border
-          @click="openInvitePortalAdmin"
-          >{{ t('schools.portal.invite') }}</v-btn
-        >
-      </template>
-    </ApiTableServer>
-
-    <!-- 
-          portal admins: the users invited to the portal school (they can also be removed, except the current user)
+          portal admins: the users of the portal school (the portal school is always the same, so it is not shown)
+          the + invites a user as portal admin, and an admin can be removed (except the current user)
     -->
     <ApiTableServer
       ref="portalAdminsTable"
@@ -41,6 +15,7 @@
       :apiFn="portalAdminsApiFn"
       :read="read"
       :write="write"
+      @addItem="openInvitePortalAdmin"
     >
       <template #item.actions="{ item }">
         <v-icon
@@ -74,6 +49,18 @@
       @editItem="openEdit($event)"
       @detailsItem="openDetails($event)"
     >
+      <!-- 
+        more info: the admins of the school
+      -->
+      <template v-slot:expanded-row="{ item, columns }">
+        <tr>
+          <td :colspan="columns.length" class="py-2">
+            <v-sheet rounded="lg" border>
+              <ApiSchoolMoreInfo :itemID="item.id" />
+            </v-sheet>
+          </td>
+        </tr>
+      </template>
     </ApiTableServer>
 
     <!-- 
@@ -153,6 +140,7 @@ import { ref, reactive, computed } from 'vue';
 import Api from '../api/api.js';
 import { useAppStore, useAuthStore } from '../stores/stores.js';
 import ApiTableServer from './api.base.table.server.vue';
+import ApiSchoolMoreInfo from './api.school.moreinfo.vue';
 import { useI18n } from 'vue-i18n';
 import ComponentsUtils from './components.utils.js';
 const { t } = useI18n();
@@ -163,7 +151,7 @@ const { t } = useI18n();
 const tableServer = ref();
 const portalAdminsTable = ref();
 const details = null; // true for details column
-const expand = null; // true for expand column
+const expand = true; // true for expand column
 
 const auth = useAuthStore();
 const currentUserID = auth?.raw?.userID;
@@ -184,16 +172,12 @@ const apiFields = {
   editFields: ['name', 'status', 'description'],
 };
 
-const portalFields = {
-  fields: ['name', 'status', 'description'],
-  inviteFields: ['email'],
-};
-
 const portalAdminsFields = {
   fields: ['name', 'email', 'status'],
   projectionFields: ['name', 'email', 'status'],
   sortFields: ['name'],
   filterFields: ['name', 'email'],
+  inviteFields: ['email'],
 };
 
 const fieldsSet = ref(new Set([]));
@@ -208,19 +192,12 @@ const apiFn = {
   update: Api.updateSchool,
 };
 
-// the portal admins, removing one removes only the portal-admin role (the user account is kept)
+// the portal admins: create invites the user to the portal school (the user becomes portal admin)
+// and delete removes only the portal-admin role (the user account is kept)
 const portalAdminsApiFn = {
   getAll: Api.getPortalAdmins,
-  delete: Api.removePortalAdmin,
-};
-
-// the portal school is a single entry, inviting there makes the user a portal admin
-const portalApiFn = {
-  getAll: async () => {
-    const response = await Api.getPortalSchool();
-    return { data: { data: [response.data], meta: { count: 1 } } };
-  },
   create: (data) => Api.invitePortalAdmin(data.email),
+  delete: Api.removePortalAdmin,
 };
 
 /**
@@ -287,7 +264,7 @@ async function handleSubmit() {
   // add/update (or invite portal admin)
   let ok = false;
   if (dialogMode.value === 'portal') {
-    ok = await ComponentsUtils.Edit.add(portalApiFn, payload, snackbarO, t);
+    ok = await ComponentsUtils.Edit.add(portalAdminsApiFn, payload, snackbarO, t);
   } else if (editing.value) {
     ok = await ComponentsUtils.Edit.update(apiFn, editingItemID.value, payload, snackbarO, t);
   } else {
@@ -358,7 +335,7 @@ function openInvitePortalAdmin() {
 
   resetForm();
   dialogMode.value = 'portal';
-  fieldsSet.value = new Set(portalFields.inviteFields);
+  fieldsSet.value = new Set(portalAdminsFields.inviteFields);
 
   editing.value = false;
   dialog.value = true;

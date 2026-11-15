@@ -212,12 +212,12 @@ const Public = {
   },
 
   /**
-   * get all portal admins (users with the portal-admin role on the portal school)
-   * called only by portal admins (route role) and returns only what the portal admins list needs
+   * get all the users that have a role on a school, only for the portal school tenant (portal admins)
+   * returns only what a members list needs, other memberships of the users are not exposed
    * req: { query }
    * returns: { status, value: {data, meta} } or { status, error }
    */
-  getPortalAdminsForReq: async (req, _ctx) => {
+  getSchoolMembersForReq: async (schoolID, role, req, _ctx) => {
     const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
     if (!portalSchoolID || _ctx.tenantID !== portalSchoolID) {
       const msg = 'Portal school access required';
@@ -226,15 +226,33 @@ const Public = {
 
     return await Public.getAllForReq(req, _ctx, (filter) => {
       filter.filter = {
-        $and: [
-          filter.filter || {},
-          { schools: { $elemMatch: { id: portalSchoolID, roles: UsersConstants.Roles.PortalAdmin } } },
-        ],
+        $and: [filter.filter || {}, { schools: { $elemMatch: { id: schoolID, roles: role } } }],
       };
 
-      // other memberships of these users are not part of the portal admins list
+      // other memberships of these users are not part of the list
       filter.projection = { _id: 0, id: 1, name: 1, email: 1, status: 1, _lang_en: 1 };
     });
+  },
+
+  /**
+   * get all portal admins (users with the portal-admin role on the portal school)
+   * called only by portal admins (route role)
+   */
+  getPortalAdminsForReq: async (req, _ctx) => {
+    return await Public.getSchoolMembersForReq(
+      process.env.SMALL_API_PORTAL_SCHOOL_ID,
+      UsersConstants.Roles.PortalAdmin,
+      req,
+      _ctx
+    );
+  },
+
+  /**
+   * get all admins of a school
+   * called only by portal admins (route role)
+   */
+  getSchoolAdminsForReq: async (schoolID, req, _ctx) => {
+    return await Public.getSchoolMembersForReq(schoolID, UsersConstants.Roles.Admin, req, _ctx);
   },
 
   /**

@@ -135,10 +135,54 @@ describe('Users Service', function () {
       return { status: 200, value: 0 };
     });
 
-    const res = await UsersService.getPortalAdminsForReq({ query: {} }, { ..._ctx, tenantID: TestConstants.PortalSchoolID });
+    const res = await UsersService.getPortalAdminsForReq(
+      { query: {} },
+      { ..._ctx, tenantID: TestConstants.PortalSchoolID }
+    );
 
     chai.expect(res.status).to.equal(200);
     chai.expect(res.value.data).to.deep.equal([]);
+  }).timeout(10000);
+
+  /**
+   * getSchoolAdminsForReq returns only the admins of that school, only for the portal school tenant
+   */
+  it('should getSchoolAdminsForReq only for the portal school and only the admins of the school', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const portalCtx = { ..._ctx, tenantID: TestConstants.PortalSchoolID };
+
+    sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
+      status: 200,
+      value: { filter: { name: 'x' }, projection: { _id: 0, schools: 1 }, limit: 0, skip: 0 },
+    });
+    const check = (config, filter) => {
+      chai.expect(filter.filter).to.deep.equal({
+        $and: [{ name: 'x' }, { schools: { $elemMatch: { id: 'school-1', roles: 'admin' } } }],
+      });
+      chai.expect(filter.projection).to.deep.equal({ _id: 0, id: 1, name: 1, email: 1, status: 1, _lang_en: 1 });
+    };
+    const stubGetAll = sinon.stub(DbOpsUtils, 'getAll').callsFake((config, filter) => {
+      check(config, filter);
+      return { status: 200, value: testUsers };
+    });
+    sinon.stub(DbOpsUtils, 'getAllCount').callsFake((config, filter) => {
+      check(config, filter);
+      return { status: 200, value: testUsers.length };
+    });
+
+    const res = await UsersService.getSchoolAdminsForReq('school-1', { query: {} }, portalCtx);
+
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.value.data).to.deep.equal(testUsers);
+
+    // another tenant (like the admin of another school) is denied
+    const denied = await UsersService.getSchoolAdminsForReq(
+      'school-1',
+      { query: {} },
+      { ..._ctx, tenantID: 'school-2' }
+    );
+    chai.expect(denied.status).to.equal(403);
+    chai.expect(stubGetAll.calledOnce).to.equal(true);
   }).timeout(10000);
 
   /**

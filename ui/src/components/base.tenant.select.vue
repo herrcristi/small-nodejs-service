@@ -9,9 +9,11 @@
     <v-row>
       <v-col cols="12" md="5" v-for="t in tenants" :key="t.id">
         <v-card
-          class="tenant-card"
-          :elevation="selected === t.id ? 8 : 2"
-          :outlined="selected !== t.id"
+          class="tenant-card h-100"
+          :class="{ 'tenant-selected': selected === t.id }"
+          elevation="2"
+          rounded="lg"
+          hover
           @click="selectTenant(t)"
         >
           <v-card-title>
@@ -82,12 +84,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* all the cards have the same shadow, the selected one is marked with a border (not with a different shadow) */
 .tenant-card {
   cursor: pointer;
-  transition: transform 0.12s ease-in-out;
+  border: 2px solid transparent;
 }
-.tenant-card:hover {
-  /* transform: translateY(-4px); */
+.tenant-selected {
+  border-color: rgb(var(--v-theme-primary));
 }
 .tenant-name {
   font-weight: 600;

@@ -94,7 +94,6 @@ const Api = {
   // Schools API
   getSchools: (params) => instance.get(`/schools?${params}`),
   getSchool: (id) => instance.get(`/schools/${id}`),
-  getPortalSchool: () => instance.get(`/schools/portal`), // portal admin only
   updateSchool: (id, data) => instance.put(`/schools/${id}`, data),
   deleteSchool: (id) => instance.delete(`/schools/${id}`),
 
@@ -286,6 +285,7 @@ const Api = {
 
   // Portal admins (members of the portal school, selected tenant), portal admin only
   getPortalAdmins: (params) => instance.get(`/users/portal-admins?${params}`),
+  getSchoolAdmins: (schoolID, params) => instance.get(`/users/school-admins/${schoolID}?${params}`), // portal admin only
   removePortalAdmin: (userID) => Api.updateUserSchool(userID, { remove: { roles: ['portal-admin'] } }),
 
   // Auth for portal admin
