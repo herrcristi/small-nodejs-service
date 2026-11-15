@@ -6,29 +6,41 @@
       </v-col>
     </v-row>
 
+    <!-- 
+          the Portal School first (only for portal admins), then a separator, then the other schools
+    -->
     <v-row>
-      <v-col cols="12" md="5" v-for="t in tenants" :key="t.id">
-        <v-card
-          class="tenant-card"
-          :elevation="selected === t.id ? 8 : 2"
-          :outlined="selected !== t.id"
-          @click="selectTenant(t)"
-        >
-          <v-card-title>
-            <div>
-              <div class="tenant-name">{{ t.name }}</div>
-              <div class="tenant-desc">{{ t.description }}</div>
-            </div>
-          </v-card-title>
-        </v-card>
-      </v-col>
+      <template v-for="(group, index) in tenantGroups" :key="index">
+        <v-col cols="12" v-if="index > 0">
+          <v-divider />
+        </v-col>
+
+        <v-col cols="12" md="5" v-for="tenant in group" :key="tenant.id">
+          <v-card
+            class="tenant-card h-100"
+            :class="{ 'tenant-selected': selected === tenant.id }"
+            elevation="2"
+            rounded="lg"
+            hover
+            @click="selectTenant(tenant)"
+          >
+            <v-card-title>
+              <div>
+                <div class="tenant-name">{{ tenant.name }}</div>
+                <div class="tenant-desc">{{ tenant.description }}</div>
+              </div>
+            </v-card-title>
+          </v-card>
+        </v-col>
+      </template>
     </v-row>
   </v-container>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { getRolesPermissions } from '../auth.js';
+import { bootstrapAuthFromCookie } from '../api/api.js';
 import { useAppStore, useAuthStore } from '../stores/stores.js';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -43,7 +55,23 @@ const router = useRouter();
 const route = useRoute();
 const selected = ref(appStore.tenantID || null);
 
+/**
+ * the schools in groups: the Portal School first (the one where the user is portal admin), then the other schools
+ * the portal school id is only known by the backend, so it is recognized by the role of the membership
+ */
+const tenantGroups = computed(() => {
+  const isPortal = (tenant) => tenant.roles.includes('portal-admin');
+  const portal = tenants.value.filter((tenant) => isPortal(tenant));
+  const others = tenants.value.filter((tenant) => !isPortal(tenant));
+  return [portal, others].filter((group) => group.length);
+});
+
 async function loadTenants() {
+  // refresh the schools of the user, the list saved at login does not include the schools added after the login
+  // (an invitation, or a new school that was pending). If it fails the saved list is used
+  await bootstrapAuthFromCookie();
+  selected.value = appStore.tenantID || null;
+
   tenants.value =
     useAuthStore()?.raw?.schools?.map((tenant) => {
       return {
@@ -51,6 +79,7 @@ async function loadTenants() {
         name: tenant.name,
         status: tenant.status,
         description: tenant.description,
+        roles: tenant.roles || [],
       };
     }) || [];
 
@@ -82,12 +111,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* all the cards have the same shadow, the selected one is marked with a border (not with a different shadow) */
 .tenant-card {
   cursor: pointer;
-  transition: transform 0.12s ease-in-out;
+  border: 2px solid transparent;
 }
-.tenant-card:hover {
-  /* transform: translateY(-4px); */
+.tenant-selected {
+  border-color: rgb(var(--v-theme-primary));
 }
 .tenant-name {
   font-weight: 600;

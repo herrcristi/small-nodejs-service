@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const TestConstants = require('../../test-constants.js');
 const UsersConstants = require('../../../services/users/users.constants.js');
 const UsersService = require('../../../services/users/users.service.js');
@@ -173,7 +172,7 @@ describe('Users Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai
       .expect(res.error.details[0].message)
-      .to.include('"schools[0].roles[0]" must be one of [admin, professor, student]');
+      .to.include('"schools[0].roles[0]" must be one of [portal-admin, admin, professor, student]');
 
     // schools roles must be strings
     postReq.schools = [{ id: 'id1', roles: [''] }];
@@ -181,7 +180,7 @@ describe('Users Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai
       .expect(res.error.details[0].message)
-      .to.include('"schools[0].roles[0]" must be one of [admin, professor, student]');
+      .to.include('"schools[0].roles[0]" must be one of [portal-admin, admin, professor, student]');
   }).timeout(10000);
 
   /**

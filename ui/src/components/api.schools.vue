@@ -1,7 +1,37 @@
 <template>
   <v-card v-if="read || write">
     <!-- 
-          table
+          portal admins: the users of the portal school (the portal school is always the same, so it is not shown)
+          the + invites a user as portal admin, and an admin can be removed (except the current user)
+    -->
+    <ApiTableServer
+      ref="portalAdminsTable"
+      class="mb-6"
+      title="schools.portal.admins"
+      :fields="portalAdminsFields.fields"
+      :projectionFields="portalAdminsFields.projectionFields"
+      :sortFields="portalAdminsFields.sortFields"
+      :filterFields="portalAdminsFields.filterFields"
+      :apiFn="portalAdminsApiFn"
+      :read="read"
+      :write="write"
+      @addItem="openInvitePortalAdmin"
+    >
+      <template #item.actions="{ item }">
+        <v-icon
+          v-if="write && item.id !== currentUserID"
+          small
+          class="mr-2"
+          size="small"
+          :title="t('delete')"
+          @click="portalAdminsTable.confirmDelete(item.id)"
+          >mdi-delete</v-icon
+        >
+      </template>
+    </ApiTableServer>
+
+    <!-- 
+          managed schools (the portal school is not part of this list)
     -->
     <ApiTableServer
       ref="tableServer"
@@ -19,6 +49,18 @@
       @editItem="openEdit($event)"
       @detailsItem="openDetails($event)"
     >
+      <!-- 
+        more info: the admins of the school
+      -->
+      <template v-slot:expanded-row="{ item, columns }">
+        <tr>
+          <td :colspan="columns.length" class="py-2">
+            <v-sheet rounded="lg" border>
+              <ApiSchoolMoreInfo :itemID="item.id" />
+            </v-sheet>
+          </td>
+        </tr>
+      </template>
     </ApiTableServer>
 
     <!-- 
@@ -28,7 +70,7 @@
       <v-dialog v-model="dialog" max-width="800px" v-if="write">
         <v-card>
           <v-card-title>
-            {{ editing ? t('edit') : t('add') }}
+            {{ dialogTitle }}
           </v-card-title>
 
           <v-card-text>
@@ -39,6 +81,16 @@
                   v-model="itemData.name"
                   :label="t('name')"
                   :rules="[nameRule]"
+                  required
+                />
+              </slot>
+
+              <slot name="edit.email" :itemData="itemData" :fieldsSet="fieldsSet">
+                <v-text-field
+                  v-if="fieldsSet.has('email')"
+                  v-model="itemData.email"
+                  :label="t('email')"
+                  :rules="[emailReqRule, emailValidRule]"
                   required
                 />
               </slot>
@@ -86,8 +138,9 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
 import Api from '../api/api.js';
-import { useAppStore } from '../stores/stores.js';
+import { useAppStore, useAuthStore } from '../stores/stores.js';
 import ApiTableServer from './api.base.table.server.vue';
+import ApiSchoolMoreInfo from './api.school.moreinfo.vue';
 import { useI18n } from 'vue-i18n';
 import ComponentsUtils from './components.utils.js';
 const { t } = useI18n();
@@ -96,8 +149,12 @@ const { t } = useI18n();
  * props
  */
 const tableServer = ref();
+const portalAdminsTable = ref();
 const details = null; // true for details column
-const expand = null; // true for expand column
+const expand = true; // true for expand column
+
+const auth = useAuthStore();
+const currentUserID = auth?.raw?.userID;
 
 const app = useAppStore();
 const read = app?.rolesPermissions?.schools?.read;
@@ -111,17 +168,36 @@ const apiFields = {
   projectionFields: ['name', 'status', 'description'],
   sortFields: ['name', 'status'],
   filterFields: ['name', '_lang_en.status', 'description'],
-  addFields: ['name', 'status', 'description'],
+  addFields: ['name', 'email', 'description'],
   editFields: ['name', 'status', 'description'],
+};
+
+const portalAdminsFields = {
+  fields: ['name', 'email', 'status'],
+  projectionFields: ['name', 'email', 'status'],
+  sortFields: ['name'],
+  filterFields: ['name', 'email'],
+  inviteFields: ['email'],
 };
 
 const fieldsSet = ref(new Set([]));
 
 const apiFn = {
   getAll: Api.getSchools,
-  create: Api.createSchool,
+  create: (data) =>
+    Api.signup({
+      email: data.email,
+      school: { name: data.name, description: data.description },
+    }),
   update: Api.updateSchool,
-  delete: Api.deleteSchool,
+};
+
+// the portal admins: create invites the user to the portal school (the user becomes portal admin)
+// and delete removes only the portal-admin role (the user account is kept)
+const portalAdminsApiFn = {
+  getAll: Api.getPortalAdmins,
+  create: (data) => Api.invitePortalAdmin(data.email),
+  delete: Api.removePortalAdmin,
 };
 
 /**
@@ -133,10 +209,18 @@ const editingItemID = ref(null);
 const dialog = ref(false);
 const editForm = ref(null);
 const formValid = ref(false);
+const dialogMode = ref('school'); // 'school' (add/edit managed school) or 'portal' (invite portal admin)
 
 const snackbar = ref(false);
 const snackbarText = ref('');
 const snackbarColor = ref('');
+
+const dialogTitle = computed(() => {
+  if (dialogMode.value === 'portal') {
+    return t('schools.portal.invite');
+  }
+  return editing.value ? t('edit') : t('add');
+});
 
 const statusItems = computed(() =>
   ComponentsUtils.Edit.statusItems(t, {
@@ -149,6 +233,8 @@ const statusItems = computed(() =>
  */
 const nameRule = (v) => ComponentsUtils.Edit.Rules.name(v, t);
 const statusRule = (v) => ComponentsUtils.Edit.Rules.status(v, t);
+const emailReqRule = (v) => ComponentsUtils.Edit.Rules.emailReq(v, t);
+const emailValidRule = (v) => ComponentsUtils.Edit.Rules.emailValid(v, t);
 
 /**
  * ApiTableServer event open details
@@ -175,20 +261,23 @@ async function handleSubmit() {
   const payload = { ...itemData };
   const snackbarO = { ref: snackbar, text: snackbarText, color: snackbarColor };
 
-  // add/update
+  // add/update (or invite portal admin)
   let ok = false;
-  if (editing.value) {
+  if (dialogMode.value === 'portal') {
+    ok = await ComponentsUtils.Edit.add(portalAdminsApiFn, payload, snackbarO, t);
+  } else if (editing.value) {
     ok = await ComponentsUtils.Edit.update(apiFn, editingItemID.value, payload, snackbarO, t);
   } else {
     ok = await ComponentsUtils.Edit.add(apiFn, payload, snackbarO, t);
   }
 
   if (ok) {
+    const wasPortal = dialogMode.value === 'portal';
     dialog.value = false;
     resetForm();
 
     // refresh
-    await tableServer.value.refresh();
+    await (wasPortal ? portalAdminsTable : tableServer).value.refresh();
   }
 }
 
@@ -201,12 +290,8 @@ function openAdd() {
   }
 
   resetForm();
+  dialogMode.value = 'school';
   fieldsSet.value = new Set(apiFields.addFields);
-
-  // defaults for new
-  if (fieldsSet.value.has('status')) {
-    itemData.status = 'active';
-  }
 
   editing.value = false;
   dialog.value = true;
@@ -221,6 +306,7 @@ function openEdit(item) {
   }
 
   resetForm();
+  dialogMode.value = 'school';
   fieldsSet.value = new Set(apiFields.editFields);
 
   // set
@@ -236,6 +322,22 @@ function openEdit(item) {
 
   editing.value = true;
   editingItemID.value = item.id;
+  dialog.value = true;
+}
+
+/**
+ * open invite portal admin dialog (the user is invited to the portal school, which is the selected tenant)
+ */
+function openInvitePortalAdmin() {
+  if (!write) {
+    return;
+  }
+
+  resetForm();
+  dialogMode.value = 'portal';
+  fieldsSet.value = new Set(portalAdminsFields.inviteFields);
+
+  editing.value = false;
   dialog.value = true;
 }
 

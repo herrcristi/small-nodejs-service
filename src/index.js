@@ -44,6 +44,7 @@ const Public = {
 
       'SMALL_API_DATABASE_URL',
       'SMALL_API_DATABASE_DB',
+      'SMALL_API_PORTAL_SCHOOL_ID',
     ];
 
     for (const val of expectedValues) {
@@ -52,6 +53,16 @@ const Public = {
         process.exit(1);
         return false;
       }
+    }
+
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        process.env.SMALL_API_PORTAL_SCHOOL_ID
+      )
+    ) {
+      console.log('Env var SMALL_API_PORTAL_SCHOOL_ID must be a UUID');
+      process.exit(1);
+      return false;
     }
 
     return true;

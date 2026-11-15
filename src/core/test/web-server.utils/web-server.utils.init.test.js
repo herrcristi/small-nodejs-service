@@ -209,4 +209,37 @@ describe('Web Server Utils', function () {
     chai.expect(res.body.error.message).to.include('Test error');
     chai.expect(res.body.error.error).to.not.exist;
   }).timeout(10000);
+
+  /**
+   * the auth middleware runs once, for the first matching route
+   */
+  it('should run the auth middleware once when a later route also matches', async () => {
+    const port = 8091;
+
+    // '/test/items/special' is also matched by '/test/items/:id', registered after it
+    const router = express.Router();
+    router.route('/test/items/special').get((req, res) => res.status(200).json({ route: 'special' }));
+    router.route('/test/items/:id').get((req, res) => res.status(200).json({ route: 'id' }));
+
+    const routes = [];
+    const authMiddlewares = [
+      sinon.stub().callsFake((req, res, next) => {
+        routes.push(req.route.path);
+        next();
+      }),
+    ];
+
+    let web = await WebServer.init(port, [router], [], authMiddlewares);
+    server = web?.server;
+
+    let res = await supertest(`http://localhost:${port}`)
+      .get('/test/items/special')
+      .set('Origin', TestConstants.WebServer);
+    chai.expect(res.body).to.deep.equal({ route: 'special' });
+    chai.expect(routes).to.deep.equal(['/test/items/special']);
+
+    res = await supertest(`http://localhost:${port}`).get('/test/items/abc').set('Origin', TestConstants.WebServer);
+    chai.expect(res.body).to.deep.equal({ route: 'id' });
+    chai.expect(routes).to.deep.equal(['/test/items/special', '/test/items/:id']);
+  }).timeout(10000);
 });

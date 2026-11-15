@@ -232,6 +232,60 @@ describe('Users Auth Controller', function () {
   }).timeout(10000);
 
   /**
+   * get current user makes the pending schools active (schools added after the login)
+   */
+  it('should get current user and make the pending schools active', async () => {
+    const testUser = _.cloneDeep(TestConstants.Users)[0];
+    const testToken = _.cloneDeep(TestConstants.UsersToken)[0];
+    const schools = [{ id: 'school1', name: 'School 1', status: 'pending', roles: ['admin'] }];
+
+    sinon.stub(UsersAuthService, 'validate').resolves({
+      status: 200,
+      value: { userID: testUser.id, username: testUser.email, name: testUser.name, schools },
+    });
+    const stubActive = sinon.stub(UsersAuthService, 'activatePendingSchools').callsFake((user) => {
+      user.schools.forEach((school) => (school.status = 'active'));
+      return { status: 200, value: true };
+    });
+
+    const res = await supertest(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPath}/me`)
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testToken.token}`)
+      .set('Origin', TestConstants.WebServer);
+
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubActive.callCount).to.equal(1);
+    chai.expect(res.body.schools[0].status).to.equal('active');
+  }).timeout(10000);
+
+  /**
+   * get current user does not fail when the schools cannot be made active
+   */
+  it('should get current user even if the pending schools cannot be made active', async () => {
+    const testUser = _.cloneDeep(TestConstants.Users)[0];
+    const testToken = _.cloneDeep(TestConstants.UsersToken)[0];
+    const schools = [{ id: 'school1', name: 'School 1', status: 'pending', roles: ['admin'] }];
+
+    sinon.stub(UsersAuthService, 'validate').resolves({
+      status: 200,
+      value: { userID: testUser.id, username: testUser.email, name: testUser.name, schools },
+    });
+    const stubActive = sinon.stub(UsersAuthService, 'activatePendingSchools').resolves({
+      status: 500,
+      error: { message: 'Failed to make school active', error: new Error('Failed to make school active') },
+    });
+
+    const res = await supertest(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPath}/me`)
+      .set('cookie', `${UsersAuthConstants.AuthToken}=${testToken.token}`)
+      .set('Origin', TestConstants.WebServer);
+
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubActive.callCount).to.equal(1);
+    chai.expect(res.body.schools[0].status).to.equal('pending');
+  }).timeout(10000);
+
+  /**
    * get current user with no token
    */
   it('should get current user fail with no token', async () => {

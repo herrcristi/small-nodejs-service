@@ -5,9 +5,10 @@ const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
-const RestApiUtils = require('../../core/utils/rest-api.utils');
+const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
-const CommonUtils = require('../../core/utils/common.utils');
+const CommonUtils = require('../../core/utils/common.utils.js');
+
 const ReferencesUtils = require('../../core/utils/base-service.references.utils.js');
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 
@@ -37,6 +38,7 @@ const Validators = {
   },
 
   Post: Schema.School.fork(['name'], (x) => x.required() /*make required */).keys({
+    id: Joi.string().uuid(),
     type: Joi.string().valid(SchoolsConstants.Type),
   }),
 
@@ -52,6 +54,12 @@ const Validators = {
 const Private = {
   Action: BaseServiceUtils.Constants.Action,
   Notification: NotificationsUtils.Constants.Notification,
+
+  /**
+   * check whether the ID belongs to the protected portal school
+   */
+  isPortalSchool: (schoolID) =>
+    !!process.env.SMALL_API_PORTAL_SCHOOL_ID && schoolID === process.env.SMALL_API_PORTAL_SCHOOL_ID,
 
   /**
    * config
@@ -86,6 +94,13 @@ const Public = {
       return rf;
     }
     const filter = rf.value;
+
+    // exclude the portal school from the managed list
+    if (process.env.SMALL_API_PORTAL_SCHOOL_ID) {
+      filter.filter = {
+        $and: [filter.filter || {}, { id: { $ne: process.env.SMALL_API_PORTAL_SCHOOL_ID } }],
+      };
+    }
 
     // get all (and expanded too)
     let r = await Public.getAll(filter, _ctx);
@@ -195,6 +210,12 @@ const Public = {
    * delete
    */
   delete: async (objID, _ctx) => {
+    // prevent deletion of the portal school
+    if (Private.isPortalSchool(objID)) {
+      const msg = 'The portal school cannot be deleted';
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
+    }
+
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
 
@@ -223,6 +244,12 @@ const Public = {
     const v = Validators.Put.validate(objInfo);
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+
+    // prevent changing the portal school status
+    if (Private.isPortalSchool(objID) && objInfo.status && objInfo.status !== SchoolsConstants.Status.Active) {
+      const msg = 'The portal school cannot be deactivated';
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -263,6 +290,16 @@ const Public = {
     const v = Validators.Patch.validate(patchInfo);
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
+    }
+
+    // prevent changing the portal school status
+    if (
+      Private.isPortalSchool(objID) &&
+      patchInfo.set?.status &&
+      patchInfo.set.status !== SchoolsConstants.Status.Active
+    ) {
+      const msg = 'The portal school cannot be deactivated';
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
     }
 
     // { serviceName, collection, references, notifications.projection }

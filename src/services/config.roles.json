@@ -12,7 +12,16 @@
 
     "portal-admin": {
       "users-auth": {
-        "POST": ["/api/v1/users-auth/signup"]
+        "POST": ["/api/v1/users-auth/signup", "/api/v1/users-auth/invite"],
+        "PATCH": ["/api/v1/users-auth/school/user/:uid"]
+      },
+      "users": {
+        "GET": ["/api/v1/users/portal-admins", "/api/v1/users/school-admins/:schoolId"]
+      },
+      "schools": {
+        "GET": ["/api/v1/schools", "/api/v1/schools/:id"],
+        "PUT": ["/api/v1/schools/:id"],
+        "PATCH": ["/api/v1/schools/:id"]
       }
     },
 
@@ -96,9 +105,6 @@
     },
 
     "professor": {
-      "schools": {
-        "GET": ["/api/v1/schols/:id"]
-      },
       "classes": {
         "GET": ["/api/v1/classes", "/api/v1/classes/:id"]
       },
@@ -120,9 +126,6 @@
     },
 
     "student": {
-      "schools": {
-        "GET": ["/api/v1/schols/:id"]
-      },
       "classes": {
         "GET": ["/api/v1/classes", "/api/v1/classes/:id"]
       },

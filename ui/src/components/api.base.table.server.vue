@@ -545,7 +545,7 @@ async function refresh() {
 /**
  * expose
  */
-defineExpose({ refresh });
+defineExpose({ refresh, confirmDelete });
 </script>
 
 <style scoped>

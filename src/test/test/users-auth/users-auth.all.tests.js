@@ -15,6 +15,9 @@ require('./users-auth.rest.test.js');
 require('./users-auth.service.all.test.js');
 require('./users-auth.signup.service.all.test.js');
 
+// setup tests
+require('./users-auth.setup.service.test.js');
+
 // schema tests
 require('./users-auth.service.schema.test.js');
 require('./users-auth.signup.service.schema.test.js');

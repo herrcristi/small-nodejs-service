@@ -72,4 +72,22 @@ describe('Index', function () {
     chai.expect(res).to.equal(false);
     chai.expect(stubProcessExit.callCount).to.equal(1);
   }).timeout(10000);
+
+  /**
+   * initEnv portal school id must be a UUID
+   */
+  it('should initEnv fail for a portal school id that is not a UUID', async () => {
+    sinon.stub(process, 'env').value({
+      ...process.env,
+      SMALL_API_PORTAL_SCHOOL_ID: 'not-a-uuid',
+    });
+    const stubProcessExit = sinon.stub(process, 'exit').callsFake((code) => {
+      console.log(`\nProcess exit called with code ${code}`);
+    });
+
+    const res = await Index.initEnv();
+
+    chai.expect(res).to.equal(false);
+    chai.expect(stubProcessExit.callCount).to.equal(1);
+  }).timeout(10000);
 });

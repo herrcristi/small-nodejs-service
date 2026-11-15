@@ -94,7 +94,6 @@ const Api = {
   // Schools API
   getSchools: (params) => instance.get(`/schools?${params}`),
   getSchool: (id) => instance.get(`/schools/${id}`),
-  createSchool: (data) => instance.post(`/schools`, data),
   updateSchool: (id, data) => instance.put(`/schools/${id}`, data),
   deleteSchool: (id) => instance.delete(`/schools/${id}`),
 
@@ -284,9 +283,17 @@ const Api = {
 
   updateUserSchool: (uid, data) => instance.patch(`/users-auth/school/user/${uid}`, data),
 
+  // Portal admins (members of the portal school, selected tenant), portal admin only
+  getPortalAdmins: (params) => instance.get(`/users/portal-admins?${params}`),
+  getSchoolAdmins: (schoolID, params) => instance.get(`/users/school-admins/${schoolID}?${params}`), // portal admin only
+  removePortalAdmin: (userID) => Api.updateUserSchool(userID, { remove: { roles: ['portal-admin'] } }),
+
   // Auth for portal admin
+  // invite a user to the portal school (selected tenant), the user becomes portal admin
+  invitePortalAdmin: (email) => Api.invite({ email, school: { role: 'portal-admin' } }),
+
   // signup new school
-  signup: (data) => instance.post(`/users-auth/invite`, data),
+  signup: (data) => instance.post(`/users-auth/signup`, data),
 };
 
 export default Api;

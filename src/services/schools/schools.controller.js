@@ -76,32 +76,6 @@ const Public = {
   },
 
   /**
-   * post
-   */
-  post: async (req, res, next) => {
-    let _ctx = req._ctx;
-    _ctx.serviceName = SchoolsConstants.ServiceName;
-
-    try {
-      console.log(
-        `\n${_ctx.serviceName}: Post called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
-      );
-
-      // post
-      const r = await SchoolsService.post(req.body, _ctx);
-      if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
-      }
-
-      res.status(r.status).json(r.value);
-    } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
-    } finally {
-      res.end();
-    }
-  },
-
-  /**
    * delete
    */
   delete: async (req, res, next) => {
@@ -182,6 +156,33 @@ const Public = {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
 
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * internal service endpoints
+   */
+  post: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = SchoolsConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Internal post called, body ${JSON.stringify(
+          CommonUtils.protectData(req.body),
+          null,
+          2
+        )}`
+      );
+      const r = await SchoolsService.post(req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
       res.status(r.status).json(r.value);
     } catch (e) {
       return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));

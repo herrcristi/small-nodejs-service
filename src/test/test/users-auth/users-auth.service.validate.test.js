@@ -1,3 +1,4 @@
+const fs = require('fs');
 const _ = require('lodash');
 const assert = require('assert');
 const sinon = require('sinon');
@@ -6,6 +7,7 @@ const supertest = require('supertest');
 
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const JwtUtils = require('../../../core/utils/jwt.utils.js');
+const EmailsUtils = require('../../../core/utils/emails.utils.js');
 
 const TestConstants = require('../../test-constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
@@ -88,6 +90,177 @@ describe('Users Auth Service', function () {
         schools: testInfoUser.schools,
       },
     });
+  }).timeout(10000);
+
+  /**
+   * validate portal routes by portal-admin membership
+   */
+  it('should validate portal routes by portal-admin membership', async () => {
+    const portalSchoolID = 'portal-school-test';
+    const previousPortalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    process.env.SMALL_API_PORTAL_SCHOOL_ID = portalSchoolID;
+
+    const testAuthUser = _.cloneDeep(TestConstants.UsersAuth[0]);
+    const testInfoUser = _.cloneDeep(TestConstants.Users[0]);
+    testInfoUser.schools = [
+      {
+        id: portalSchoolID,
+        name: 'Portal School',
+        status: SchoolsRest.Constants.Status.Active,
+        roles: [UsersRest.Constants.Roles.PortalAdmin],
+      },
+    ];
+
+    sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 200, value: testInfoUser });
+    sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'decoded' });
+    sinon.stub(UsersLocalAuthService, 'validateToken').returns({
+      status: 200,
+      value: { username: testAuthUser.id, userID: testInfoUser.id },
+    });
+
+    _ctx.tenantID = portalSchoolID;
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = '/api/v1/schools';
+    const result = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/schools' }, _ctx);
+
+    if (previousPortalSchoolID === undefined) {
+      delete process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    } else {
+      process.env.SMALL_API_PORTAL_SCHOOL_ID = previousPortalSchoolID;
+    }
+
+    chai.expect(result.status).to.equal(200);
+    chai.expect(result.value.tenantName).to.equal('Portal School');
+    chai.expect(result.value.schools[0].roles).to.deep.equal([UsersRest.Constants.Roles.PortalAdmin]);
+
+    _ctx.tenantID = 'another-school';
+    const wrongTenantResult = await UsersAuthService.validate(
+      { token: 'token', method: 'get', route: '/api/v1/schools' },
+      _ctx
+    );
+    chai.expect(wrongTenantResult.status).to.equal(401);
+    chai.expect(wrongTenantResult.error.message).to.equal('Failed to validate school');
+    _ctx.tenantID = portalSchoolID;
+    testInfoUser.schools[0].roles = [];
+    const nonAdminResult = await UsersAuthService.validate(
+      { token: 'token', method: 'get', route: '/api/v1/schools' },
+      _ctx
+    );
+    chai.expect(nonAdminResult.status).to.equal(403);
+    chai.expect(nonAdminResult.error.message).to.equal('Route is not accesible: get /api/v1/schools');
+  }).timeout(10000);
+
+  /**
+   * validate a global route (for all, no tenant role needed)
+   */
+  it('should validate a global route for any role', async () => {
+    const testAuthUser = _.cloneDeep(TestConstants.UsersAuth[0]);
+    const testInfoUser = _.cloneDeep(TestConstants.Users[0]);
+
+    sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 200, value: testInfoUser });
+    sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'decoded' });
+    sinon.stub(UsersLocalAuthService, 'validateToken').returns({
+      status: 200,
+      value: { username: testAuthUser.id, userID: testInfoUser.id },
+    });
+
+    _ctx.tenantID = 'tenant-without-membership';
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = '/api/v1/users-auth/me';
+    const res = await UsersAuthService.validate(
+      { token: 'token', method: 'get', route: '/api/v1/users-auth/me' },
+      _ctx
+    );
+
+    chai.expect(res.status).to.equal(200);
+  }).timeout(10000);
+
+  /**
+   * validate a current-user route for users-auth :id (the id is the username), only for the current user
+   */
+  it('should validate a current-user users-auth route only for the current user', async () => {
+    const testAuthUser = _.cloneDeep(TestConstants.UsersAuth[0]);
+    const testInfoUser = _.cloneDeep(TestConstants.Users[0]);
+    for (const school of testInfoUser.schools) {
+      school.name = school.id;
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+
+    // there is no users-auth/:id route for current-user in config.roles.json, so add one when the roles are loaded
+    const route = '/api/v1/users-auth/:id';
+    const readFileSync = fs.readFileSync;
+    sinon.stub(fs, 'readFileSync').callsFake((...args) => {
+      const content = readFileSync(...args);
+      if (!`${args[0]}`.endsWith('config.roles.json')) {
+        return content;
+      }
+      const roles = JSON.parse(content);
+      roles.roles['current-user']['users-auth'] = { GET: [route] };
+      return JSON.stringify(roles);
+    });
+    sinon.stub(JwtUtils, 'init');
+    sinon.stub(EmailsUtils, 'init');
+    await UsersAuthService.init();
+    fs.readFileSync.restore();
+
+    try {
+      sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 200, value: testInfoUser });
+      sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'decoded' });
+      sinon.stub(UsersLocalAuthService, 'validateToken').returns({
+        status: 200,
+        value: { username: testAuthUser.id, userID: testInfoUser.id },
+      });
+
+      _ctx.tenantID = testInfoUser.schools[0].id;
+      _ctx.userID = testInfoUser.id;
+      _ctx.username = testAuthUser.id;
+
+      // the current user
+      _ctx.reqUrl = `/api/v1/users-auth/${encodeURIComponent(testAuthUser.id)}`;
+      let res = await UsersAuthService.validate({ token: 'token', method: 'get', route }, _ctx);
+      chai.expect(res.status).to.equal(200);
+
+      // another user
+      _ctx.reqUrl = '/api/v1/users-auth/another.user@testdomain.test';
+      res = await UsersAuthService.validate({ token: 'token', method: 'get', route }, _ctx);
+      chai.expect(res.status).to.equal(403);
+    } finally {
+      // load back the roles from config.roles.json for the other tests
+      await UsersAuthService.init();
+    }
+  }).timeout(10000);
+
+  /**
+   * validate invite route (shared with portal-admin) for a normal school admin
+   */
+  it('should validate invite route for a school admin', async () => {
+    const testAuthUser = _.cloneDeep(TestConstants.UsersAuth[0]);
+    const testInfoUser = _.cloneDeep(TestConstants.Users[0]);
+    for (const school of testInfoUser.schools) {
+      school.name = school.id;
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+
+    sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 200, value: testInfoUser });
+    sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'decoded' });
+    sinon.stub(UsersLocalAuthService, 'validateToken').returns({
+      status: 200,
+      value: { username: testAuthUser.id, userID: testInfoUser.id },
+    });
+
+    _ctx.tenantID = testInfoUser.schools[1].id; // where is admin
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = '/api/v1/users-auth/invite';
+    const res = await UsersAuthService.validate(
+      { token: 'token', method: 'post', route: '/api/v1/users-auth/invite' },
+      _ctx
+    );
+
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.value.tenantName).to.equal(_ctx.tenantID);
   }).timeout(10000);
 
   /**

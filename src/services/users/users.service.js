@@ -177,13 +177,16 @@ const Public = {
    * req: { query }
    * returns: { status, value: {data, meta} } or { status, error }
    */
-  getAllForReq: async (req, _ctx) => {
+  getAllForReq: async (req, _ctx, restrictFilter = null) => {
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
     const rf = await RestApiUtils.buildFilterFromReq(req, Validators.Get, _ctx);
     if (rf.error) {
       return rf;
     }
     const filter = rf.value;
+
+    // optional restriction applied by the caller (like the portal admins list)
+    restrictFilter?.(filter);
 
     // get all (and expanded too)
     let r = await Public.getAll(filter, _ctx);
@@ -206,6 +209,50 @@ const Public = {
         meta: metaInfo.meta,
       },
     };
+  },
+
+  /**
+   * get all the users that have a role on a school, only for the portal school tenant (portal admins)
+   * returns only what a members list needs, other memberships of the users are not exposed
+   * req: { query }
+   * returns: { status, value: {data, meta} } or { status, error }
+   */
+  getSchoolMembersForReq: async (schoolID, role, req, _ctx) => {
+    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    if (!portalSchoolID || _ctx.tenantID !== portalSchoolID) {
+      const msg = 'Portal school access required';
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
+    }
+
+    return await Public.getAllForReq(req, _ctx, (filter) => {
+      filter.filter = {
+        $and: [filter.filter || {}, { schools: { $elemMatch: { id: schoolID, roles: role } } }],
+      };
+
+      // other memberships of these users are not part of the list
+      filter.projection = { _id: 0, id: 1, name: 1, email: 1, status: 1, _lang_en: 1 };
+    });
+  },
+
+  /**
+   * get all portal admins (users with the portal-admin role on the portal school)
+   * called only by portal admins (route role)
+   */
+  getPortalAdminsForReq: async (req, _ctx) => {
+    return await Public.getSchoolMembersForReq(
+      process.env.SMALL_API_PORTAL_SCHOOL_ID,
+      UsersConstants.Roles.PortalAdmin,
+      req,
+      _ctx
+    );
+  },
+
+  /**
+   * get all admins of a school
+   * called only by portal admins (route role)
+   */
+  getSchoolAdminsForReq: async (schoolID, req, _ctx) => {
+    return await Public.getSchoolMembersForReq(schoolID, UsersConstants.Roles.Admin, req, _ctx);
   },
 
   /**

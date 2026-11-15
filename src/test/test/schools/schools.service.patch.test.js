@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 
@@ -83,6 +82,17 @@ describe('Schools Service', function () {
         description: testSchool.description,
       },
     });
+  }).timeout(10000);
+
+  /**
+   * patch should not patch the portal school status
+   */
+  it('should not patch the portal school status', async () => {
+    const stubPatch = sinon.stub(DbOpsUtils, 'patch');
+    const result = await SchoolsService.patch(TestConstants.PortalSchoolID, { set: { status: 'disabled' } }, _ctx);
+
+    chai.expect(stubPatch.called).to.equal(false);
+    chai.expect(result.status).to.equal(403);
   }).timeout(10000);
 
   /**

@@ -25,6 +25,46 @@ describe('Users Auth Service', function () {
   after(async function () {});
 
   /**
+   * patchUserSchool portal-admin role only on the portal school
+   */
+  it('should patchUserSchool fail portal-admin role on a normal school and other roles on the portal school', async () => {
+    const stubPatch = sinon.stub(UsersRest, 'patchSchool');
+
+    let res = await UsersAuthService.patchUserSchool('user1', { add: { roles: ['portal-admin'] } }, _ctx);
+    chai.expect(res.status).to.equal(403);
+    chai.expect(res.error.message).to.equal('The portal-admin role can be given only on the portal school');
+
+    res = await UsersAuthService.patchUserSchool(
+      'user1',
+      { remove: { roles: ['admin'] } },
+      { ..._ctx, tenantID: TestConstants.PortalSchoolID }
+    );
+    chai.expect(res.status).to.equal(403);
+    chai.expect(res.error.message).to.equal('Only the portal-admin role can be given on the portal school');
+
+    chai.expect(stubPatch.callCount).to.equal(0);
+  }).timeout(10000);
+
+  /**
+   * patchUserSchool remove another portal admin, but not itself
+   */
+  it('should patchUserSchool remove another portal admin but skip removing itself', async () => {
+    const portalCtx = { ..._ctx, tenantID: TestConstants.PortalSchoolID, userID: 'portal-admin-1' };
+    const stubPatch = sinon.stub(UsersRest, 'patchSchool').resolves({ status: 200, value: {} });
+
+    await UsersAuthService.patchUserSchool('portal-admin-2', { remove: { roles: ['portal-admin'] } }, portalCtx);
+    chai.expect(stubPatch.callCount).to.equal(1);
+    chai.expect(stubPatch.firstCall.args[0]).to.equal('portal-admin-2');
+    chai.expect(stubPatch.firstCall.args[1]).to.deep.equal({
+      remove: { schools: [{ id: TestConstants.PortalSchoolID, roles: ['portal-admin'] }] },
+    });
+
+    // itself: the role is skipped, nothing to patch
+    await UsersAuthService.patchUserSchool('portal-admin-1', { remove: { roles: ['portal-admin'] } }, portalCtx);
+    chai.expect(stubPatch.secondCall.args[1]).to.deep.equal({});
+  }).timeout(10000);
+
+  /**
    * patchUserSchool with success
    */
   it('should patchUserSchool with success', async () => {

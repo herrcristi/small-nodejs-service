@@ -12,6 +12,8 @@ const router = express.Router();
 /**
  * Users
  */
+router.route(`${UsersConstants.ApiPath}/portal-admins`).get(UsersController.getPortalAdmins); // portal admins only
+router.route(`${UsersConstants.ApiPath}/school-admins/:schoolId`).get(UsersController.getSchoolAdmins); // portal admins only
 router.route(`${UsersConstants.ApiPath}/:id`).get(UsersController.getOne);
 router.route(`${UsersConstants.ApiPath}/:id`).put(UsersController.put);
 router.route(`${UsersConstants.ApiPath}/:id`).patch(UsersController.patch);

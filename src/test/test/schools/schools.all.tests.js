@@ -12,6 +12,7 @@ require('./schools.rest.test.js');
 
 // service tests
 require('./schools.service.all.test.js');
+require('./schools.setup.service.test.js');
 
 // schema tests
 require('./schools.service.schema.test.js');

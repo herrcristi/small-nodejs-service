@@ -312,6 +312,8 @@ describe('Users Auth Service', function () {
     };
     res = UsersAuthService.Validators.PatchUserSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"add.roles[0]" must be one of [admin, professor, student]');
+    chai
+      .expect(res.error.details[0].message)
+      .to.include('"add.roles[0]" must be one of [portal-admin, admin, professor, student]');
   }).timeout(10000);
 });

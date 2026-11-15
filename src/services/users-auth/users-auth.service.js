@@ -227,6 +227,41 @@ const Private = {
   },
 
   /**
+   * check portal-admin membership on the configured portal school
+   */
+  isPortalAdmin: (user) => {
+    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    return (
+      !!portalSchoolID &&
+      user.schools?.some(
+        (school) =>
+          school.id === portalSchoolID &&
+          school.status === SchoolsRest.Constants.Status.Active &&
+          school.roles?.includes(UsersRest.Constants.Roles.PortalAdmin)
+      )
+    );
+  },
+
+  /**
+   * validate a route granted to portal-admin
+   * this only grants access: the user must be an active portal-admin and the selected tenant must be the portal school
+   * returns null for everything else, so the normal school role validation (and its errors) is applied
+   */
+  validatePortalAdminRoute: (user, method, route, _ctx) => {
+    if (!Private.isValidRouteForRoles(['portal-admin'], method, route)) {
+      return null;
+    }
+
+    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    if (!Private.isPortalAdmin(user) || _ctx.tenantID !== portalSchoolID) {
+      return null;
+    }
+
+    const portalSchool = user.schools.find((school) => school.id === portalSchoolID);
+    return { status: 200, value: true, tenantName: portalSchool.name };
+  },
+
+  /**
    * validate route
    * _ctx: { userID, username, tenantID }
    */
@@ -237,13 +272,9 @@ const Private = {
       return { status: 200, value: true };
     }
 
-    // validate portal-admin route
-    const isPortalAdmin = false; // TODO signup can be done only by portal admin
-    if (isPortalAdmin) {
-      const validPortalAdminRole = Private.isValidRouteForRoles(['portal-admin'], method, route);
-      if (validPortalAdminRole) {
-        return { status: 200, value: true };
-      }
+    const portalAdminRoute = Private.validatePortalAdminRoute(user, method, route, _ctx);
+    if (portalAdminRoute) {
+      return portalAdminRoute;
     }
 
     // some routes are only for current school
@@ -404,15 +435,9 @@ const Public = {
     }
 
     // if school pending make active
-    for (const school of user.schools) {
-      if (school.status === SchoolsRest.Constants.Status.Pending) {
-        school.status = SchoolsRest.Constants.Status.Active;
-        const rS = await SchoolsRest.put(school.id, { status: SchoolsRest.Constants.Status.Active }, _ctx);
-        if (rS.error) {
-          const msg = 'Failed to make school active';
-          return { status: 500, error: { message: msg, error: new Error(msg) } };
-        }
-      }
+    const rActive = await Public.activatePendingSchools(user, _ctx);
+    if (rActive.error) {
+      return rActive;
     }
 
     ///
@@ -559,6 +584,29 @@ const Public = {
         schools: user.schools,
       },
     };
+  },
+
+  /**
+   * make active the pending schools of the user (a school is pending until a user of the school is authenticated)
+   * called at login and when the session is refreshed, to also get the schools that were added after the login
+   * user: { schools: [ { id, status } ] } the statuses are updated
+   * returns { status, value } or { status, error }
+   */
+  activatePendingSchools: async (user, _ctx) => {
+    for (const school of user.schools || []) {
+      if (school.status === SchoolsRest.Constants.Status.Pending) {
+        const rS = await SchoolsRest.put(school.id, { status: SchoolsRest.Constants.Status.Active }, _ctx);
+        if (rS.error) {
+          const msg = 'Failed to make school active';
+          return { status: 500, error: { message: msg, error: new Error(msg) } };
+        }
+
+        // update only after it was saved, so the returned statuses are the saved ones
+        school.status = SchoolsRest.Constants.Status.Active;
+      }
+    }
+
+    return { status: 200, value: true };
   },
 
   /**
@@ -748,6 +796,29 @@ const Public = {
   },
 
   /**
+   * check the roles that can be given on the selected tenant
+   * the portal school is a tenant like the others, but its members are portal admins:
+   * portal-admin can be given only on the portal school (and nothing else can be given there)
+   * returns null when valid or an error { status, error }
+   */
+  validateTenantRoles: (roles, _ctx) => {
+    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    const isPortalTenant = !!portalSchoolID && _ctx.tenantID === portalSchoolID;
+
+    for (const role of roles) {
+      const isPortalRole = role === UsersRest.Constants.Roles.PortalAdmin;
+      if (isPortalTenant !== isPortalRole) {
+        const msg = isPortalTenant
+          ? 'Only the portal-admin role can be given on the portal school'
+          : 'The portal-admin role can be given only on the portal school';
+        return { status: 403, error: { message: msg, error: new Error(msg) } };
+      }
+    }
+
+    return null;
+  },
+
+  /**
    * patch called by admin to add/remove user to school (_ctx.tenantID)
    * patchInfo: { roles }
    */
@@ -758,7 +829,8 @@ const Public = {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
 
-    // here route is already validated that the current _ctx.username is the admin of the school (_ctx.tenantID)
+    // here route is already validated that the current _ctx.username is the admin (or the portal admin for the
+    // portal school) of the school (_ctx.tenantID)
 
     // add the school id
     const patchSchoolInfo = {};
@@ -768,9 +840,17 @@ const Public = {
       }
       let roles = patchInfo[op].roles;
 
-      // prevent removing itself as admin
+      // portal-admin only on the portal school
+      const rRoles = Public.validateTenantRoles(roles, _ctx);
+      if (rRoles) {
+        return rRoles;
+      }
+
+      // prevent removing itself as admin (or portal admin), so there is always someone to manage the school
       if (op === 'remove' && _ctx.userID === userID) {
-        roles = roles.filter((item) => item !== UsersRest.Constants.Roles.Admin);
+        roles = roles.filter(
+          (item) => item !== UsersRest.Constants.Roles.Admin && item !== UsersRest.Constants.Roles.PortalAdmin
+        );
       }
       if (!roles.length) {
         continue;
@@ -787,10 +867,10 @@ const Public = {
   },
 
   /**
-   * invite user to school
+   * send the invitation email to an existing user (the invite flow is in UsersAuthSignupService.invite)
    * objInfo: { username }
    */
-  invite: async (objInfo, _ctx) => {
+  sendInvite: async (objInfo, _ctx) => {
     // validate
     const v = Validators.Invite.validate(objInfo);
     if (v.error) {

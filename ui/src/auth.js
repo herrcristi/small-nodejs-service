@@ -47,22 +47,21 @@ export function getRolesPermissions(tenantID, loginData) {
     // create roles map
     let isAtLeast = {
       student: 0,
-      teacher: 0,
+      professor: 0,
       admin: 0,
       portalAdmin: 0,
     };
     for (const role of roles) {
       if (role == 'student') {
         isAtLeast.student = 1;
-      } else if (role == 'teacher') {
+      } else if (role == 'professor') {
         isAtLeast.student = 1;
-        isAtLeast.teacher = 1;
+        isAtLeast.professor = 1;
       } else if (role == 'admin') {
         isAtLeast.student = 1;
-        isAtLeast.teacher = 1;
+        isAtLeast.professor = 1;
         isAtLeast.admin = 1;
       } else if (role == 'portal-admin') {
-        // portal-admin does not have access to school internal data
         isAtLeast.portalAdmin = 1;
       }
     }

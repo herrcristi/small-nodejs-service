@@ -108,7 +108,14 @@ const Public = {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
 
-      // return current user data (will be used to restore auth store on bootstrap)
+      // the schools can be added after the login (like a new school or an invitation), make the pending ones active
+      // as at login. Dont fail the request, the schools stay pending and it is tried again at the next refresh
+      const rActive = await UsersAuthService.activatePendingSchools(r.value, _ctx);
+      if (rActive.error) {
+        console.log(`\n${_ctx.serviceName}: Failed to make the schools active: ${rActive.error.message}`);
+      }
+
+      // return current user data (will be used to restore auth store on bootstrap and when the schools are listed)
       const expires = new Date(Date.now() + 24 * 60 * 60 * 1000 /*1d*/);
       res.status(200).json({
         userID: r.value.userID,
