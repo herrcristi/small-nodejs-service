@@ -31,6 +31,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { getRolesPermissions } from '../auth.js';
+import { bootstrapAuthFromCookie } from '../api/api.js';
 import { useAppStore, useAuthStore } from '../stores/stores.js';
 import { useRouter, useRoute } from 'vue-router';
 import { useI18n } from 'vue-i18n';
@@ -46,6 +47,11 @@ const route = useRoute();
 const selected = ref(appStore.tenantID || null);
 
 async function loadTenants() {
+  // refresh the schools of the user, the list saved at login does not include the schools added after the login
+  // (an invitation, or a new school that was pending). If it fails the saved list is used
+  await bootstrapAuthFromCookie();
+  selected.value = appStore.tenantID || null;
+
   tenants.value =
     useAuthStore()?.raw?.schools?.map((tenant) => {
       return {

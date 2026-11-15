@@ -17,6 +17,7 @@ require('./users-auth.service.patchPassword.test.js');
 require('./users-auth.service.patchID.test.js');
 require('./users-auth.service.patchUserSchool.test.js');
 require('./users-auth.service.notification.test.js');
+require('./users-auth.service.activatePendingSchools.test.js');
 
 require('./users-auth.service.login.test.js');
 require('./users-auth.service.logout.test.js');

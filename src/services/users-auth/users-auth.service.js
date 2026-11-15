@@ -435,15 +435,9 @@ const Public = {
     }
 
     // if school pending make active
-    for (const school of user.schools) {
-      if (school.status === SchoolsRest.Constants.Status.Pending) {
-        school.status = SchoolsRest.Constants.Status.Active;
-        const rS = await SchoolsRest.put(school.id, { status: SchoolsRest.Constants.Status.Active }, _ctx);
-        if (rS.error) {
-          const msg = 'Failed to make school active';
-          return { status: 500, error: { message: msg, error: new Error(msg) } };
-        }
-      }
+    const rActive = await Public.activatePendingSchools(user, _ctx);
+    if (rActive.error) {
+      return rActive;
     }
 
     ///
@@ -590,6 +584,29 @@ const Public = {
         schools: user.schools,
       },
     };
+  },
+
+  /**
+   * make active the pending schools of the user (a school is pending until a user of the school is authenticated)
+   * called at login and when the session is refreshed, to also get the schools that were added after the login
+   * user: { schools: [ { id, status } ] } the statuses are updated
+   * returns { status, value } or { status, error }
+   */
+  activatePendingSchools: async (user, _ctx) => {
+    for (const school of user.schools || []) {
+      if (school.status === SchoolsRest.Constants.Status.Pending) {
+        const rS = await SchoolsRest.put(school.id, { status: SchoolsRest.Constants.Status.Active }, _ctx);
+        if (rS.error) {
+          const msg = 'Failed to make school active';
+          return { status: 500, error: { message: msg, error: new Error(msg) } };
+        }
+
+        // update only after it was saved, so the returned statuses are the saved ones
+        school.status = SchoolsRest.Constants.Status.Active;
+      }
+    }
+
+    return { status: 200, value: true };
   },
 
   /**
