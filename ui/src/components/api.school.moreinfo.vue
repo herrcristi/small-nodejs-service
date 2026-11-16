@@ -2,8 +2,8 @@
   <!--
         more info of a school: its admins (the same compact list as the more info of the other pages)
         the invitations of school admins are done by the school admins, a school is created with its first admin
-        a portal admin can change the name and the status of an admin (see ApiUserEditDialog), and remove an admin
-        (only the admin role on this school), except the last one
+        a portal admin invites an admin (+), changes the name and the status of an admin (see ApiUserEditDialog), and
+        removes an admin (only the admin role on this school), except the last one
   -->
   <v-card>
     <v-card-text>
@@ -20,6 +20,7 @@
             :write="props.write"
             :loading="loading"
             :nodatatext="nodatatext"
+            @addItem="openInvite()"
             @editItem="openEdit($event)"
             @deleteItem="load()"
           />
@@ -27,6 +28,29 @@
       </v-row>
     </v-card-text>
   </v-card>
+
+  <!-- 
+        invite an admin of the school (a new user gets the signup email, an existing user the invitation)
+  -->
+  <v-dialog v-if="props.write" v-model="inviteDialog" max-width="600px">
+    <v-card>
+      <v-card-title>{{ t('schools.admins.invite') }}</v-card-title>
+      <v-card-text>
+        <v-form ref="inviteForm" v-model="inviteFormValid">
+          <v-text-field v-model="inviteEmail" :label="t('email')" :rules="[emailReqRule, emailValidRule]" required />
+        </v-form>
+      </v-card-text>
+      <v-card-actions>
+        <v-spacer />
+        <v-btn text @click="inviteDialog = false">{{ t('cancel') }}</v-btn>
+        <v-btn color="primary" :disabled="!inviteFormValid || inviting" :loading="inviting" @click="invite">
+          {{ t('save') }}
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ snackbarText }}</v-snackbar>
 
   <ApiUserEditDialog v-if="props.write" v-model="dialog" :user="editingUser" @saved="load()" />
 </template>
@@ -36,6 +60,9 @@ import { ref, computed, watch } from 'vue';
 import Api from '../api/api.js';
 import ApiTableData from './api.base.table.data.vue';
 import ApiUserEditDialog from './api.user.edit.dialog.vue';
+import ComponentsUtils from './components.utils.js';
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
 
 /**
  * props
@@ -90,9 +117,10 @@ async function load() {
 watch(() => props.itemID, load, { immediate: true });
 
 /**
- * the actions: edit (the dialog does the update) and delete, which is not offered for the last admin
+ * the actions: invite (+), edit (the dialog does the update) and delete, which is not offered for the last admin
  */
 const adminsApiFn = computed(() => ({
+  add: props.write ? 1 : 0,
   update: props.write ? 1 : 0,
   delete: props.write && admins.value.length > 1 ? (userID) => Api.removeSchoolAdmin(props.itemID, userID) : 0,
 }));
@@ -109,5 +137,52 @@ function openEdit(item) {
   }
   editingUser.value = { ...item };
   dialog.value = true;
+}
+
+/**
+ * invite an admin
+ */
+const inviteDialog = ref(false);
+const inviteEmail = ref('');
+const inviteForm = ref(null);
+const inviteFormValid = ref(false);
+const inviting = ref(false);
+
+const snackbar = ref(false);
+const snackbarText = ref('');
+const snackbarColor = ref('');
+
+const emailReqRule = (v) => ComponentsUtils.Edit.Rules.emailReq(v, t);
+const emailValidRule = (v) => ComponentsUtils.Edit.Rules.emailValid(v, t);
+
+function openInvite() {
+  if (!props.write) {
+    return;
+  }
+  inviteEmail.value = '';
+  inviteDialog.value = true;
+}
+
+async function invite() {
+  if (inviteForm.value && typeof inviteForm.value.validate === 'function') {
+    const ok = await inviteForm.value.validate();
+    if (!ok) {
+      return;
+    }
+  }
+
+  const apiFn = { create: (payload) => Api.inviteSchoolAdmin(props.itemID, payload.email) };
+  const snackbarO = { ref: snackbar, text: snackbarText, color: snackbarColor };
+
+  inviting.value = true;
+  try {
+    const ok = await ComponentsUtils.Edit.add(apiFn, { email: inviteEmail.value.trim() }, snackbarO, t);
+    if (ok) {
+      inviteDialog.value = false;
+      await load();
+    }
+  } finally {
+    inviting.value = false;
+  }
 }
 </script>

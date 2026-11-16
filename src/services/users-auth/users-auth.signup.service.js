@@ -31,6 +31,7 @@ const Schema = {
   Invite: Joi.object().keys({
     email: ValidationUtils.email(),
     school: Joi.object().keys({
+      id: Joi.string().pattern(ValidationUtils.IDPattern), // only a portal admin, to invite the admin of a school
       role: Joi.string()
         .min(1)
         .max(64)
@@ -50,6 +51,33 @@ const Private = {
   Action: {
     Signup: 'signup',
     Invite: 'invite',
+  },
+
+  /**
+   * the context of another school where a portal admin invites an admin (school.id), like the first admin at signup
+   * an invite is for the selected school (a school admin invites into its own school, any role of that school);
+   * only a portal admin (on the portal school) names another school, and only for the admin role
+   * returns { status, value: _ctx of the school } or { status, error }
+   */
+  getSchoolCtxForPortalInvite: async (objInfo, _ctx) => {
+    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    if (!portalSchoolID || _ctx.tenantID !== portalSchoolID) {
+      const msg = 'An invitation is for the selected school; only a portal admin can name another school';
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
+    }
+
+    const schoolID = objInfo.school.id;
+    if (objInfo.school.role !== UsersRest.Constants.Roles.Admin) {
+      const msg = 'A portal admin invites only the admins of a school';
+      return { status: 400, error: { message: msg, error: new Error(msg) } };
+    }
+
+    const rSchool = await SchoolsRest.getOne(schoolID, { id: 1, name: 1 }, _ctx);
+    if (rSchool.error) {
+      return rSchool;
+    }
+
+    return { status: 200, value: { ..._ctx, tenantID: schoolID, tenantName: rSchool.value.name } };
   },
 
   /**
@@ -186,13 +214,31 @@ const Public = {
 
   /**
    * invite
-   * objInfo: { email, school: { role } } - schoolID is _ctx.tenantID
+   * objInfo: { email, school: { role, id? } } - schoolID is _ctx.tenantID
+   * a portal admin can name a school (school.id) to invite its admin
    */
   invite: async (objInfo, _ctx) => {
     // validate
     const v = Validators.Invite.validate(objInfo);
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+
+    // the school is named (school.id)
+    if (objInfo.school.id) {
+      const { id, ...school } = objInfo.school;
+
+      // the selected school: the normal invite (a school admin invites into its own school)
+      if (id === _ctx.tenantID) {
+        return await Public.invite({ ...objInfo, school }, _ctx);
+      }
+
+      // another school: only a portal admin, to invite the admin of that school (the same invite, for that school)
+      const rCtx = await Private.getSchoolCtxForPortalInvite(objInfo, _ctx);
+      if (rCtx.error) {
+        return rCtx;
+      }
+      return await Public.invite({ ...objInfo, school }, rCtx.value);
     }
 
     // portal-admin can be given only on the portal school (and nothing else can be given there)
