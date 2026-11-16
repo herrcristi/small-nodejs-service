@@ -2,7 +2,7 @@
   <v-card v-if="read || write">
     <!-- 
           portal admins: the users of the portal school (the portal school is always the same, so it is not shown)
-          the + invites a user as portal admin, and an admin can be removed (except the current user)
+          the + invites a user as portal admin, an admin can be edited (name, status) and removed (not the current user)
     -->
     <ApiTableServer
       ref="portalAdminsTable"
@@ -18,6 +18,9 @@
       @addItem="openInvitePortalAdmin"
     >
       <template #item.actions="{ item }">
+        <v-icon v-if="write" small class="mr-2" size="small" :title="t('edit')" @click="openEditUser(item)"
+          >mdi-pencil</v-icon
+        >
         <v-icon
           v-if="canRemovePortalAdmin(item)"
           small
@@ -56,7 +59,7 @@
         <tr>
           <td :colspan="columns.length" class="py-2">
             <v-sheet rounded="lg" border>
-              <ApiSchoolMoreInfo :itemID="item.id" />
+              <ApiSchoolMoreInfo :itemID="item.id" :write="write" />
             </v-sheet>
           </td>
         </tr>
@@ -128,6 +131,11 @@
       </v-dialog>
 
       <!-- 
+        edit a portal admin (name, status)
+      -->
+      <ApiUserEditDialog v-model="userDialog" :user="editingUser" @saved="portalAdminsTable.refresh()" />
+
+      <!-- 
         snackbar for notifications
       -->
       <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ snackbarText }}</v-snackbar>
@@ -141,6 +149,7 @@ import Api from '../api/api.js';
 import { useAppStore, useAuthStore } from '../stores/stores.js';
 import ApiTableServer from './api.base.table.server.vue';
 import ApiSchoolMoreInfo from './api.school.moreinfo.vue';
+import ApiUserEditDialog from './api.user.edit.dialog.vue';
 import { useI18n } from 'vue-i18n';
 import ComponentsUtils from './components.utils.js';
 const { t } = useI18n();
@@ -211,6 +220,20 @@ const portalAdminsApiFn = {
  */
 function canRemovePortalAdmin(item) {
   return !!write && portalAdminsCount.value > 1 && item.id !== currentUserID.value;
+}
+
+/**
+ * edit a portal admin (name, status), the status of the current user can not be changed
+ */
+const userDialog = ref(false);
+const editingUser = ref(null);
+
+function openEditUser(item) {
+  if (!write) {
+    return;
+  }
+  editingUser.value = { ...item };
+  userDialog.value = true;
 }
 
 /**

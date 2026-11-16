@@ -84,10 +84,18 @@ const Public = {
   },
 
   /**
-   * put status (internal) called from users-auth to activate the user
+   * activate (internal) called from users-auth at login: a pending user becomes active, the others are not changed
+   * returns the user with its current status
    */
-  putStatus: async (objID, objInfo, _ctx) => {
-    return await RestCommsUtils.put(UsersConstants.ServiceNameInternal, objID, objInfo, _ctx, 'status');
+  activate: async (objID, _ctx) => {
+    const config = {
+      serviceName: UsersConstants.ServiceNameInternal,
+      method: 'POST',
+      path: `/${objID}/activate`,
+      body: {},
+      localCall: { fn: 'activate', params: { objID } },
+    };
+    return await RestCommsUtils.call(config, _ctx);
   },
 
   /**

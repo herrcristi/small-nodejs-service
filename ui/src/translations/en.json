@@ -137,6 +137,8 @@
   "update.success": "Update succeeded",
   "user": "User",
   "users": "Users",
+  "users.edit": "Edit User",
+  "users.status.self": "You cannot change your own status",
   "value": "Value",
   "warning": "Warning",
   "wednesday": "Wednesday",

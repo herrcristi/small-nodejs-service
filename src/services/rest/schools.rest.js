@@ -63,6 +63,21 @@ const Public = {
   },
 
   /**
+   * activate (internal) called from users-auth: a pending school becomes active, the others are not changed
+   * returns the school with its current status
+   */
+  activate: async (objID, _ctx) => {
+    const config = {
+      serviceName: SchoolsConstants.ServiceNameInternal,
+      method: 'POST',
+      path: `/${objID}/activate`,
+      body: {},
+      localCall: { fn: 'activate', params: { objID } },
+    };
+    return await RestCommsUtils.call(config, _ctx);
+  },
+
+  /**
    * (internal) notification endpoint for sync processing
    * notification: { serviceName, added?, modified?, removed? }
    */

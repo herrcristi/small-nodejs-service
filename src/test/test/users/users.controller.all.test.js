@@ -32,14 +32,49 @@ describe('Users Controller', function () {
   after(async function () {});
 
   /**
-   * getAll with success
+   * getAll (portal admins) with success, fail, exception
    */
-  it('should getAll with success', async () => {
+  it('should getAll with success, fail and exception', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const value = { data: testUsers, meta: { count: testUsers.length, skip: 0, limit: 0 } };
+
+    // success
+    let stubService = sinon.stub(UsersService, 'getAllForReq').callsFake(() => ({ status: 200, value }));
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}`)
+      .set('Origin', TestConstants.WebServer);
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal(value);
+
+    // fail
+    stubService.callsFake(() => ({ status: 403, error: { message: 'Test error message' } }));
+    res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}`)
+      .set('Origin', TestConstants.WebServer);
+    chai.expect(res.status).to.equal(403);
+    chai.expect(res.body.error).to.include('Test error message');
+
+    // exception
+    stubService.callsFake(() => {
+      throw new Error('Test error message');
+    });
+    res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}`)
+      .set('Origin', TestConstants.WebServer);
+    chai.expect(res.status).to.equal(500);
+    chai.expect(res.body.error).to.include('Test error message');
+    chai.expect(stubService.callCount).to.equal(3);
+  }).timeout(10000);
+
+  /**
+   * getAll internal with success
+   */
+  it('should getAll internal with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
 
     // stub
-    let stubService = sinon.stub(UsersService, 'getAllForReq').callsFake(() => {
-      console.log(`\nUsersService.getAllForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'getAllInternalForReq').callsFake(() => {
+      console.log(`\nUsersService.getAllInternalForReq called\n`);
       return {
         status: 200,
         value: {
@@ -69,9 +104,9 @@ describe('Users Controller', function () {
   }).timeout(10000);
 
   /**
-   * getAll validation fail
+   * getAll internal validation fail
    */
-  it('should getAll validation fail', async () => {
+  it('should getAll internal validation fail', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
 
     // stub
@@ -81,8 +116,8 @@ describe('Users Controller', function () {
       return { status: 401, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
-    let stubService = sinon.stub(UsersService, 'getAllForReq').callsFake(() => {
-      console.log(`\nUsersService.getAllForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'getAllInternalForReq').callsFake(() => {
+      console.log(`\nUsersService.getAllInternalForReq called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
@@ -100,14 +135,14 @@ describe('Users Controller', function () {
   }).timeout(10000);
 
   /**
-   * getAll fail
+   * getAll internal fail
    */
-  it('should getAll fail', async () => {
+  it('should getAll internal fail', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
 
     // stub
-    let stubService = sinon.stub(UsersService, 'getAllForReq').callsFake(() => {
-      console.log(`\nUsersService.getAllForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'getAllInternalForReq').callsFake(() => {
+      console.log(`\nUsersService.getAllInternalForReq called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
@@ -124,14 +159,14 @@ describe('Users Controller', function () {
   }).timeout(10000);
 
   /**
-   * getAll fail exception
+   * getAll internal fail exception
    */
-  it('should getAll fail exception', async () => {
+  it('should getAll internal fail exception', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
 
     // stub
-    let stubService = sinon.stub(UsersService, 'getAllForReq').callsFake(() => {
-      console.log(`\nUsersService.getAllForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'getAllInternalForReq').callsFake(() => {
+      console.log(`\nUsersService.getAllInternalForReq called\n`);
       throw new Error('Test error message');
     });
 
@@ -156,8 +191,8 @@ describe('Users Controller', function () {
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersService, 'getOneForReq').callsFake((objID, projection) => {
-      console.log(`\nUsersService.getOneForReq called ${JSON.stringify({ objID, projection }, null, 2)}\n`);
+    let stubService = sinon.stub(UsersService, 'getOne').callsFake((objID, projection) => {
+      console.log(`\nUsersService.getOne called ${JSON.stringify({ objID, projection }, null, 2)}\n`);
       chai.expect(objID).to.equal(testUser.id);
       chai.expect(projection).to.deep.equal({ _id: 0 });
       return {
@@ -188,8 +223,8 @@ describe('Users Controller', function () {
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersService, 'getOneForReq').callsFake((objID, projection) => {
-      console.log(`\nUsersService.getOneForReq called ${JSON.stringify({ objID, projection }, null, 2)}\n`);
+    let stubService = sinon.stub(UsersService, 'getOne').callsFake((objID, projection) => {
+      console.log(`\nUsersService.getOne called ${JSON.stringify({ objID, projection }, null, 2)}\n`);
       chai.expect(objID).to.equal(testUser.id);
       chai.expect(projection).to.deep.equal({ id: 1, name: 1, _id: 0 });
       return {
@@ -245,8 +280,8 @@ describe('Users Controller', function () {
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersService, 'getOneForReq').callsFake(() => {
-      console.log(`\nUsersService.getOneForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'getOne').callsFake(() => {
+      console.log(`\nUsersService.getOne called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
@@ -270,8 +305,8 @@ describe('Users Controller', function () {
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersService, 'getOneForReq').callsFake(() => {
-      console.log(`\nUsersService.getOneForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'getOne').callsFake(() => {
+      console.log(`\nUsersService.getOne called\n`);
       throw new Error('Test error message');
     });
 
@@ -461,8 +496,8 @@ describe('Users Controller', function () {
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersService, 'putForReq').callsFake(() => {
-      console.log(`\nUsersService.putForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'put').callsFake(() => {
+      console.log(`\nUsersService.put called\n`);
       return {
         status: 200,
         value: testUser,
@@ -492,8 +527,8 @@ describe('Users Controller', function () {
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersService, 'putForReq').callsFake(() => {
-      console.log(`\nUsersService.putForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'put').callsFake(() => {
+      console.log(`\nUsersService.put called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
@@ -518,8 +553,8 @@ describe('Users Controller', function () {
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersService, 'putForReq').callsFake(() => {
-      console.log(`\nUsersService.putForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'put').callsFake(() => {
+      console.log(`\nUsersService.put called\n`);
       throw new Error('Test error message');
     });
 
@@ -538,79 +573,70 @@ describe('Users Controller', function () {
   }).timeout(10000);
 
   /**
-   * put status by a portal admin with success, fail, exception
+   * put and patch status (portal admins) with success, fail, exception
    */
-  it('should put status for a request with success, fail and exception', async () => {
-    const testUsers = _.cloneDeep(TestConstants.Users);
-    const testUser = testUsers[0];
-    const url = `${UsersConstants.ApiPath}/${testUser.id}/status`;
+  for (const [method, fn, body] of [
+    ['put', 'putStatus', { status: 'disabled' }],
+    ['patch', 'patchStatus', { set: { status: 'disabled' } }],
+  ]) {
+    it(`should ${method} status with success, fail and exception`, async () => {
+      const testUsers = _.cloneDeep(TestConstants.Users);
+      const testUser = testUsers[0];
+      const url = `${UsersConstants.ApiPath}/${testUser.id}/status`;
+      const call = () =>
+        supertest(TestConstants.WebServer)[method](url).set('Origin', TestConstants.WebServer).send(body);
 
-    // success
-    let stubService = sinon.stub(UsersService, 'putStatusForReq').callsFake(() => ({ status: 200, value: testUser }));
-    let res = await supertest(TestConstants.WebServer)
-      .put(url)
-      .set('Origin', TestConstants.WebServer)
-      .send({ status: 'disabled' });
-    chai.expect(res.status).to.equal(200);
-    chai.expect(res.body).to.deep.equal({ ...testUser });
-    chai.expect(stubService.firstCall.args[1]).to.deep.equal({ status: 'disabled' });
+      // success
+      let stubService = sinon.stub(UsersService, fn).callsFake(() => ({ status: 200, value: testUser }));
+      let res = await call();
+      chai.expect(res.status).to.equal(200);
+      chai.expect(res.body).to.deep.equal({ ...testUser });
+      chai.expect(stubService.firstCall.args.slice(0, 2)).to.deep.equal([testUser.id, body]);
 
-    // fail
-    stubService.callsFake(() => ({ status: 403, error: { message: 'Test error message' } }));
-    res = await supertest(TestConstants.WebServer)
-      .put(url)
-      .set('Origin', TestConstants.WebServer)
-      .send({ status: 'disabled' });
-    chai.expect(res.status).to.equal(403);
-    chai.expect(res.body.error).to.include('Test error message');
+      // fail
+      stubService.callsFake(() => ({ status: 403, error: { message: 'Test error message' } }));
+      res = await call();
+      chai.expect(res.status).to.equal(403);
+      chai.expect(res.body.error).to.include('Test error message');
 
-    // exception
-    stubService.callsFake(() => {
-      throw new Error('Test error message');
-    });
-    res = await supertest(TestConstants.WebServer)
-      .put(url)
-      .set('Origin', TestConstants.WebServer)
-      .send({ status: 'disabled' });
-    chai.expect(res.status).to.equal(500);
-    chai.expect(res.body.error).to.include('Test error message');
-    chai.expect(stubService.callCount).to.equal(3);
-  }).timeout(10000);
+      // exception
+      stubService.callsFake(() => {
+        throw new Error('Test error message');
+      });
+      res = await call();
+      chai.expect(res.status).to.equal(500);
+      chai.expect(res.body.error).to.include('Test error message');
+      chai.expect(stubService.callCount).to.equal(3);
+    }).timeout(10000);
+  }
 
   /**
-   * put status with success, fail, exception
+   * activate (internal) with success, fail, exception
    */
-  it('should put status with success, fail and exception', async () => {
+  it('should activate with success, fail and exception', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
-    const url = `${UsersConstants.ApiPathInternal}/${testUser.id}/status`;
+    const url = `${UsersConstants.ApiPathInternal}/${testUser.id}/activate`;
+    const call = () => supertest(TestConstants.WebServer).post(url).set('Origin', TestConstants.WebServer).send({});
 
     // success
-    let stubService = sinon.stub(UsersService, 'putStatus').callsFake(() => ({ status: 200, value: testUser }));
-    let res = await supertest(TestConstants.WebServer)
-      .put(url)
-      .set('Origin', TestConstants.WebServer)
-      .send({ status: 'active' });
+    let stubService = sinon.stub(UsersService, 'activate').callsFake(() => ({ status: 200, value: testUser }));
+    let res = await call();
     chai.expect(res.status).to.equal(200);
     chai.expect(res.body).to.deep.equal({ ...testUser });
+    chai.expect(stubService.firstCall.args[0]).to.equal(testUser.id);
 
     // fail
-    stubService.callsFake(() => ({ status: 400, error: { message: 'Test error message' } }));
-    res = await supertest(TestConstants.WebServer)
-      .put(url)
-      .set('Origin', TestConstants.WebServer)
-      .send({ status: 'active' });
-    chai.expect(res.status).to.equal(400);
+    stubService.callsFake(() => ({ status: 404, error: { message: 'Test error message' } }));
+    res = await call();
+    chai.expect(res.status).to.equal(404);
     chai.expect(res.body.error).to.include('Test error message');
 
     // exception
     stubService.callsFake(() => {
       throw new Error('Test error message');
     });
-    res = await supertest(TestConstants.WebServer)
-      .put(url)
-      .set('Origin', TestConstants.WebServer)
-      .send({ status: 'active' });
+    res = await call();
     chai.expect(res.status).to.equal(500);
     chai.expect(res.body.error).to.include('Test error message');
     chai.expect(stubService.callCount).to.equal(3);
@@ -708,8 +734,8 @@ describe('Users Controller', function () {
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersService, 'patchForReq').callsFake(() => {
-      console.log(`\nUsersService.patchForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'patch').callsFake(() => {
+      console.log(`\nUsersService.patch called\n`);
       return {
         status: 200,
         value: testUser,
@@ -739,8 +765,8 @@ describe('Users Controller', function () {
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersService, 'patchForReq').callsFake(() => {
-      console.log(`\nUsersService.patchForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'patch').callsFake(() => {
+      console.log(`\nUsersService.patch called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
@@ -765,8 +791,8 @@ describe('Users Controller', function () {
     const testUser = testUsers[0];
 
     // stub
-    let stubService = sinon.stub(UsersService, 'patchForReq').callsFake(() => {
-      console.log(`\nUsersService.patchForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'patch').callsFake(() => {
+      console.log(`\nUsersService.patch called\n`);
       throw new Error('Test error message');
     });
 

@@ -261,9 +261,8 @@ const Public = {
     try {
       const returnDocument = config.returnDocument || 'after';
 
-      // an optional condition (config.condition): the object is changed only if it still matches it
       const r = await config.collection.findOneAndUpdate(
-        { ...(config.condition || {}), id: objID },
+        { id: objID },
         {
           $set: { ...objInfo, lastModifiedTimestamp: new Date().toISOString() },
           $inc: { modifiedCount: 1 },

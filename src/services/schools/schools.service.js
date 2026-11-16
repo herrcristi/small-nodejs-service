@@ -283,6 +283,25 @@ const Public = {
   },
 
   /**
+   * activate (internal) called from users-auth when a member is authenticated: a pending school becomes active
+   * the decision is taken on the school (not on the copy in the user): a school that is not pending is not changed
+   * returns { status, value } with the current status of the school, or { status, error }
+   */
+  activate: async (objID, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+
+    const rget = await DbOpsUtils.getOne(config, objID, BaseServiceUtils.getProjection(config, _ctx), _ctx);
+    if (rget.error) {
+      return rget;
+    }
+    if (rget.value.status !== SchoolsConstants.Status.Pending) {
+      return BaseServiceUtils.getProjectedResponse(rget, null /*default projection */, _ctx);
+    }
+
+    return await Public.put(objID, { status: SchoolsConstants.Status.Active }, _ctx);
+  },
+
+  /**
    * patch
    */
   patch: async (objID, patchInfo, _ctx) => {

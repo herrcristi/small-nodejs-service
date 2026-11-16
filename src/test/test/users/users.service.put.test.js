@@ -15,7 +15,8 @@ const UsersRest = require('../../../services/rest/users.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
 describe('Users Service', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
+  // the user itself (the access of a request to another user is tested in users.service.access.test.js)
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users', userID: TestConstants.Users[0].id };
 
   before(async function () {});
 

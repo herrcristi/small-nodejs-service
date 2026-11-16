@@ -50,9 +50,14 @@ const Schema = {
     address: Joi.string().min(1).max(256),
   }),
 
+  // what a portal admin can change of another user (the other profile fields are personal, the email is the login)
+  UserName: Joi.object().keys({
+    name: Joi.string().min(1).max(128),
+  }),
+
   // pending is only the initial state (set on create): a status never goes back to pending
   UserStatus: Joi.object().keys({
-    status: Joi.string().min(1).max(64).valid(UsersConstants.Status.Active, UsersConstants.Status.Disabled),
+    status: Joi.string().min(1).max(64).valid(UsersConstants.Status.Active, UsersConstants.Status.Disabled).required(),
   }),
 
   UserEmail: Joi.object().keys({
@@ -66,6 +71,12 @@ const Validators = {
     sort: { name: 1 },
   },
 
+  // the lists of a portal admin: no filter on the schools of the users
+  GetPortal: {
+    filter: ['id', 'email', 'status', 'name'],
+    sort: { name: 1 },
+  },
+
   Post: Schema.UserEmail.keys({
     name: Joi.string().min(1).max(128),
     type: Joi.string().valid(UsersConstants.Type),
@@ -74,17 +85,20 @@ const Validators = {
 
   // profile fields only: the status is global (all the schools of the user) and has its own route (portal admin)
   Put: Schema.UserProfile,
-  PutStatus: Schema.UserStatus.fork(['status'], (x) => x.required() /*make required */),
-  // the activation on login (internal): only to active
-  PutActivation: Joi.object().keys({
-    status: Joi.string().valid(UsersConstants.Status.Active).required(),
-  }),
+  PutPortal: Schema.UserName,
+  PutStatus: Schema.UserStatus,
   PutEmail: Schema.UserEmail.fork(['email'], (x) => x.required() /*make required */),
 
   Patch: Joi.object().keys({
     // for patch allowed operations are set, unset
     set: Schema.UserProfile,
     unset: Joi.array().items(Joi.string().min(1).max(128).valid('phoneNumber')),
+  }),
+  PatchPortal: Joi.object().keys({
+    set: Schema.UserName,
+  }),
+  PatchStatus: Joi.object().keys({
+    set: Schema.UserStatus.required(),
   }),
 
   PatchSchool: Joi.object().keys({
@@ -103,17 +117,90 @@ const Private = {
     ...BaseServiceUtils.Constants.Action,
     PutEmail: 'putEmail',
     PutStatus: 'putStatus',
+    PatchStatus: 'patchStatus',
     PatchSchool: 'patchSchool',
+    Activate: 'activate',
   },
   Notification: NotificationsUtils.Constants.Notification,
 
   /**
-   * the status transitions: the new status and the statuses it can be reached from
-   * pending is only the initial state: pending -> active (or disabled), and never back to pending
+   * who the caller is for the user that a request targets (/users/:id)
    */
-  StatusFrom: {
-    [UsersConstants.Status.Active]: [UsersConstants.Status.Pending, UsersConstants.Status.Disabled],
-    [UsersConstants.Status.Disabled]: [UsersConstants.Status.Pending, UsersConstants.Status.Active],
+  Access: {
+    Self: 'self', // the user itself: all its data
+    Portal: 'portal', // a portal admin (on the portal school): any user, without its schools, only the name is changed
+    Member: 'member', // an admin of the current school: a member of the school, only the current school is shown
+  },
+
+  /**
+   * what a portal admin sees of a user (not its schools and not its personal profile fields)
+   */
+  PortalProjection: {
+    _id: 0,
+    id: 1,
+    name: 1,
+    email: 1,
+    type: 1,
+    status: 1,
+    createdTimestamp: 1,
+    lastModifiedTimestamp: 1,
+    modifiedCount: 1,
+    _lang_en: 1,
+  },
+
+  /**
+   * the portal school is the tenant of the request (only portal admins can select it)
+   */
+  isPortalTenant: (_ctx) => {
+    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    return !!portalSchoolID && _ctx.tenantID === portalSchoolID;
+  },
+
+  /**
+   * error for the routes of the portal admins called on another school
+   */
+  portalRequired: () => {
+    const msg = 'Portal school access required';
+    return { status: 403, error: { message: msg, error: new Error(msg) } };
+  },
+
+  /**
+   * get all for a request with a schema of the allowed filters and an optional restriction set by the caller
+   * req: { query }
+   * returns: { status, value: {data, meta} } or { status, error }
+   */
+  getAllForReq: async (req, schema, _ctx, restrictFilter = null) => {
+    // convert query to mongo build filter: { filter, projection, limit, skip, sort }
+    const rf = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
+    if (rf.error) {
+      return rf;
+    }
+    const filter = rf.value;
+
+    // optional restriction applied by the caller (like the portal admins list)
+    restrictFilter?.(filter);
+
+    // get all (and expanded too)
+    let r = await Public.getAll(filter, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // get corresponding count
+    let rCount = await Public.getAllCount(filter, _ctx);
+    if (rCount.error) {
+      return rCount;
+    }
+
+    // success
+    const metaInfo = RestApiUtils.getMetaInfo(filter, rCount.value, _ctx);
+    return {
+      status: metaInfo.status,
+      value: {
+        data: r.value,
+        meta: metaInfo.meta,
+      },
+    };
   },
 
   /**
@@ -139,13 +226,18 @@ const Private = {
   },
 
   /**
-   * a request can reach only itself or a member of the current school (tenant)
+   * the access of the caller to the user of a request (/users/:id)
+   * the user itself, a portal admin (any user), or an admin of the current school (a member of the school; the route
+   * roles allow /users/:id only to admins, and to the user itself)
    * the others are reported as not found (their existence is not disclosed)
-   * returns { status, value } or { status, error }
+   * returns { status, value: Access } or { status, error }
    */
-  checkTargetForReq: async (config, objID, _ctx) => {
+  getAccess: async (config, objID, _ctx) => {
     if (objID === _ctx.userID) {
-      return { status: 200, value: { self: true } };
+      return { status: 200, value: Private.Access.Self };
+    }
+    if (Private.isPortalTenant(_ctx)) {
+      return { status: 200, value: Private.Access.Portal };
     }
 
     const notFound = () => {
@@ -164,18 +256,41 @@ const Private = {
       return notFound();
     }
 
-    return { status: 200, value: { self: false } };
+    return { status: 200, value: Private.Access.Member };
   },
 
   /**
-   * the memberships of another user are not part of the response, only the current school
+   * the projection to read a user for an access: a portal admin reads only the fields of the portal projection
    */
-  limitToTenantForReq: (r, check, _ctx) => {
-    if (r.error || check.self || !Array.isArray(r.value?.schools)) {
+  getProjectionForAccess: (projection, access) => {
+    if (access !== Private.Access.Portal) {
+      return projection;
+    }
+
+    const fields = Object.keys(projection || {}).filter(
+      (field) => projection[field] && Private.PortalProjection[field]
+    );
+    if (!fields.length) {
+      return Private.PortalProjection;
+    }
+    return { _id: 0, ...Object.fromEntries(fields.map((field) => [field, 1])) };
+  },
+
+  /**
+   * the response for an access: the schools of another user are not shown (a member: only the current school)
+   */
+  getResponseForAccess: (r, access, _ctx) => {
+    if (r.error || access === Private.Access.Self || !Array.isArray(r.value?.schools)) {
       return r;
     }
 
-    return { ...r, value: { ...r.value, schools: r.value.schools.filter((school) => school.id === _ctx.tenantID) } };
+    const schools =
+      access === Private.Access.Member ? r.value.schools.filter((s) => s.id === _ctx.tenantID) : undefined;
+    const value = { ...r.value, schools };
+    if (!schools) {
+      delete value.schools;
+    }
+    return { ...r, value };
   },
 
   /**
@@ -229,42 +344,28 @@ const Public = {
   init: async () => {},
 
   /**
-   * get all for a request
+   * get all users for a request: only portal admins (on the portal school), for the users page
+   * the schools of the users are not shown and can not be filtered
    * req: { query }
    * returns: { status, value: {data, meta} } or { status, error }
    */
-  getAllForReq: async (req, _ctx, restrictFilter = null) => {
-    // convert query to mongo build filter: { filter, projection, limit, skip, sort }
-    const rf = await RestApiUtils.buildFilterFromReq(req, Validators.Get, _ctx);
-    if (rf.error) {
-      return rf;
-    }
-    const filter = rf.value;
-
-    // optional restriction applied by the caller (like the portal admins list)
-    restrictFilter?.(filter);
-
-    // get all (and expanded too)
-    let r = await Public.getAll(filter, _ctx);
-    if (r.error) {
-      return r;
+  getAllForReq: async (req, _ctx) => {
+    if (!Private.isPortalTenant(_ctx)) {
+      return Private.portalRequired();
     }
 
-    // get corresponding count
-    let rCount = await Public.getAllCount(filter, _ctx);
-    if (rCount.error) {
-      return rCount;
-    }
+    return await Private.getAllForReq(req, Validators.GetPortal, _ctx, (filter) => {
+      filter.projection = Private.getProjectionForAccess(filter.projection, Private.Access.Portal);
+    });
+  },
 
-    // success
-    const metaInfo = RestApiUtils.getMetaInfo(filter, rCount.value, _ctx);
-    return {
-      status: metaInfo.status,
-      value: {
-        data: r.value,
-        meta: metaInfo.meta,
-      },
-    };
+  /**
+   * get all for an internal request (called from signup / invite by email)
+   * req: { query }
+   * returns: { status, value: {data, meta} } or { status, error }
+   */
+  getAllInternalForReq: async (req, _ctx) => {
+    return await Private.getAllForReq(req, Validators.Get, _ctx);
   },
 
   /**
@@ -274,13 +375,11 @@ const Public = {
    * returns: { status, value: {data, meta} } or { status, error }
    */
   getSchoolMembersForReq: async (schoolID, role, req, _ctx) => {
-    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
-    if (!portalSchoolID || _ctx.tenantID !== portalSchoolID) {
-      const msg = 'Portal school access required';
-      return { status: 403, error: { message: msg, error: new Error(msg) } };
+    if (!Private.isPortalTenant(_ctx)) {
+      return Private.portalRequired();
     }
 
-    return await Public.getAllForReq(req, _ctx, (filter) => {
+    return await Private.getAllForReq(req, Validators.GetPortal, _ctx, (filter) => {
       filter.filter = {
         $and: [filter.filter || {}, { schools: { $elemMatch: { id: schoolID, roles: role } } }],
       };
@@ -341,54 +440,19 @@ const Public = {
   },
 
   /**
-   * get one
+   * get one for a request: the user itself, any user for a portal admin, or a member of the current school
    * returns { status, value } or { status, error }
    */
   getOne: async (objID, projection, _ctx) => {
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    return await DbOpsUtils.getOne(config, objID, projection, _ctx);
-  },
-
-  /**
-   * get one for a request: the user itself or a member of the current school
-   */
-  getOneForReq: async (objID, projection, _ctx) => {
-    const config = await Private.getConfig(_ctx);
-    const check = await Private.checkTargetForReq(config, objID, _ctx);
-    if (check.error) {
-      return check;
+    const rAccess = await Private.getAccess(config, objID, _ctx);
+    if (rAccess.error) {
+      return rAccess;
     }
+    const access = rAccess.value;
 
-    const r = await DbOpsUtils.getOne(config, objID, projection, _ctx);
-    return Private.limitToTenantForReq(r, check.value, _ctx);
-  },
-
-  /**
-   * put for a request: the user itself or a member of the current school (profile fields only)
-   */
-  putForReq: async (objID, objInfo, _ctx) => {
-    const config = await Private.getConfig(_ctx);
-    const check = await Private.checkTargetForReq(config, objID, _ctx);
-    if (check.error) {
-      return check;
-    }
-
-    const r = await Public.putInternal(objID, objInfo, Validators.Put, Private.Action.Put, _ctx);
-    return Private.limitToTenantForReq(r, check.value, _ctx);
-  },
-
-  /**
-   * patch for a request: the user itself or a member of the current school (profile fields only)
-   */
-  patchForReq: async (objID, patchInfo, _ctx) => {
-    const config = await Private.getConfig(_ctx);
-    const check = await Private.checkTargetForReq(config, objID, _ctx);
-    if (check.error) {
-      return check;
-    }
-
-    const r = await Public.patchInternal(objID, patchInfo, Validators.Patch, Private.Action.Patch, _ctx);
-    return Private.limitToTenantForReq(r, check.value, _ctx);
+    const r = await DbOpsUtils.getOne(config, objID, Private.getProjectionForAccess(projection, access), _ctx);
+    return Private.getResponseForAccess(r, access, _ctx);
   },
 
   /**
@@ -464,7 +528,7 @@ const Public = {
   /**
    * put
    */
-  putInternal: async (objID, objInfo, validator, action, _ctx, condition = null) => {
+  putInternal: async (objID, objInfo, validator, action, _ctx) => {
     // validation is done in caller functions
     const v = validator.validate(objInfo);
     if (v.error) {
@@ -498,14 +562,9 @@ const Public = {
     // translate
     await Public.translate(objInfo, _ctx);
 
-    // put (with a condition the change is applied only if the stored object still matches it)
-    const r = await DbOpsUtils.put(condition ? { ...config, condition } : config, objID, objInfo, projection, _ctx);
+    // put
+    const r = await DbOpsUtils.put(config, objID, objInfo, projection, _ctx);
     if (r.error) {
-      if (condition && r.status === 404) {
-        // not changed: it does not exist or it does not match the condition anymore, return how it is now
-        const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
-        return rget.error ? rget : { ...BaseServiceUtils.getProjectedResponse(rget, null, _ctx), changed: false };
-      }
       return r;
     }
 
@@ -522,48 +581,54 @@ const Public = {
     return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
   },
 
+  /**
+   * put for a request: the user itself or a member of the current school (profile fields), or a portal admin (the name)
+   */
   put: async (objID, objInfo, _ctx) => {
-    return await Public.putInternal(objID, objInfo, Validators.Put, Private.Action.Put, _ctx);
+    const config = await Private.getConfig(_ctx);
+    const rAccess = await Private.getAccess(config, objID, _ctx);
+    if (rAccess.error) {
+      return rAccess;
+    }
+    const access = rAccess.value;
+
+    const validator = access === Private.Access.Portal ? Validators.PutPortal : Validators.Put;
+    const r = await Public.putInternal(objID, objInfo, validator, Private.Action.Put, _ctx);
+    return Private.getResponseForAccess(r, access, _ctx);
   },
 
   /**
-   * put status (internal) called from users-auth on login to activate a pending user
-   * the change is done in the database only if the user is still pending: a user disabled while the login runs stays
-   * disabled (the response has the current status, the caller checks it)
+   * put status: only a portal admin (on the portal school), for any user
+   * active <-> disabled, pending -> active | disabled, never back to pending; a portal admin can not disable itself
    */
   putStatus: async (objID, objInfo, _ctx) => {
-    const condition = { status: UsersConstants.Status.Pending };
-    return await Public.putInternal(
-      objID,
-      objInfo,
-      Validators.PutActivation,
-      Private.Action.PutStatus,
-      _ctx,
-      condition
-    );
+    if (!Private.isPortalTenant(_ctx)) {
+      return Private.portalRequired();
+    }
+
+    // the response has the default projection (not the schools of the user)
+    return await Public.putInternal(objID, objInfo, Validators.PutStatus, Private.Action.PutStatus, _ctx);
   },
 
   /**
-   * put status for a request: only a portal admin (route role, on the portal school), for any user
-   * pending -> active | disabled, active <-> disabled, never back to pending; a portal admin can not disable itself
-   * setting the status that the user already has changes nothing (200)
+   * activate (internal) called from users-auth at login: a pending user becomes active
+   * a user that is not pending is not changed (an active user stays active, a disabled user stays disabled)
+   * returns { status, value } with the current status of the user, or { status, error }
    */
-  putStatusForReq: async (objID, objInfo, _ctx) => {
-    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
-    if (!portalSchoolID || _ctx.tenantID !== portalSchoolID) {
-      const msg = 'Portal school access required';
-      return { status: 403, error: { message: msg, error: new Error(msg) } };
+  activate: async (objID, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+
+    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
+    if (rget.error) {
+      return rget;
+    }
+    if (rget.value.status !== UsersConstants.Status.Pending) {
+      return BaseServiceUtils.getProjectedResponse(rget, null /*default projection */, _ctx);
     }
 
-    // the condition is built from the validated status only
-    const v = Validators.PutStatus.validate(objInfo);
-    if (v.error) {
-      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
-    }
-    const condition = { status: { $in: Private.StatusFrom[objInfo.status] } };
-
-    // the response has the default projection (not the schools of the user)
-    return await Public.putInternal(objID, objInfo, Validators.PutStatus, Private.Action.PutStatus, _ctx, condition);
+    const objInfo = { status: UsersConstants.Status.Active };
+    return await Public.putInternal(objID, objInfo, Validators.PutStatus, Private.Action.Activate, _ctx);
   },
 
   putEmail: async (objID, objInfo, _ctx) => {
@@ -579,6 +644,18 @@ const Public = {
     const v = validator.validate(patchInfo);
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
+    }
+
+    // if current user is trying to change the status to disabled, skip it for himself
+    if (objID === _ctx.userID && patchInfo.set?.status === UsersConstants.Status.Disabled) {
+      console.log(`\nSkipping disabling status of current user ${objID}`);
+      return {
+        error: {
+          message: 'Skipping disabling status of current user',
+          error: new Error('Skipping disabling status of current user'),
+        },
+        status: 400,
+      };
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -625,8 +702,33 @@ const Public = {
     return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
   },
 
+  /**
+   * patch for a request: the user itself or a member of the current school (profile fields), or a portal admin (the name)
+   */
   patch: async (objID, patchInfo, _ctx) => {
-    return await Public.patchInternal(objID, patchInfo, Validators.Patch, Private.Action.Patch, _ctx);
+    const config = await Private.getConfig(_ctx);
+    const rAccess = await Private.getAccess(config, objID, _ctx);
+    if (rAccess.error) {
+      return rAccess;
+    }
+    const access = rAccess.value;
+
+    const validator = access === Private.Access.Portal ? Validators.PatchPortal : Validators.Patch;
+    const r = await Public.patchInternal(objID, patchInfo, validator, Private.Action.Patch, _ctx);
+    return Private.getResponseForAccess(r, access, _ctx);
+  },
+
+  /**
+   * patch status: only a portal admin (on the portal school), for any user
+   * active <-> disabled, pending -> active | disabled, never back to pending; a portal admin can not disable itself
+   */
+  patchStatus: async (objID, patchInfo, _ctx) => {
+    if (!Private.isPortalTenant(_ctx)) {
+      return Private.portalRequired();
+    }
+
+    const r = await Public.patchInternal(objID, patchInfo, Validators.PatchStatus, Private.Action.PatchStatus, _ctx);
+    return Private.getResponseForAccess(r, Private.Access.Portal, _ctx);
   },
 
   patchSchool: async (objID, patchInfo, _ctx) => {

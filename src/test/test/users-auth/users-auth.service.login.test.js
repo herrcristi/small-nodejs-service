@@ -76,19 +76,17 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
-    let stubUsersActive = sinon.stub(UsersRest, 'putStatus').callsFake((objID, objInfo) => {
-      console.log(`\nUsersRest.put called for ${JSON.stringify({ objID, objInfo }, null, 2)}\n`);
+    let stubUsersActive = sinon.stub(UsersRest, 'activate').callsFake((objID) => {
+      console.log(`\nUsersRest.activate called for ${objID}\n`);
 
       chai.expect(objID).to.equal(testInfoUser.id);
-      chai.expect(objInfo).to.deep.equal({ status: 'active' });
       return { status: 200, value: { id: objID } };
     });
 
-    let stubSchoolsActive = sinon.stub(SchoolsRest, 'put').callsFake((objID, objInfo) => {
-      console.log(`\nSchoolsRest.put called for ${JSON.stringify({ objID, objInfo }, null, 2)}\n`);
+    let stubSchoolsActive = sinon.stub(SchoolsRest, 'activate').callsFake((objID) => {
+      console.log(`\nSchoolsRest.activate called for ${objID}\n`);
 
       chai.expect(objID).to.be.oneOf(testInfoUser.schools.map((item) => item.id));
-      chai.expect(objInfo).to.deep.equal({ status: 'active' });
       return { status: 200, value: { id: objID } };
     });
 
@@ -183,19 +181,17 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
-    let stubUsersActive = sinon.stub(UsersRest, 'putStatus').callsFake((objID, objInfo) => {
-      console.log(`\nUsersRest.put called for ${JSON.stringify({ objID, objInfo }, null, 2)}\n`);
+    let stubUsersActive = sinon.stub(UsersRest, 'activate').callsFake((objID) => {
+      console.log(`\nUsersRest.activate called for ${objID}\n`);
 
       chai.expect(objID).to.equal(testInfoUser.id);
-      chai.expect(objInfo).to.deep.equal({ status: 'active' });
       return { status: 200, value: { id: objID } };
     });
 
-    let stubSchoolsActive = sinon.stub(SchoolsRest, 'put').callsFake((objID, objInfo) => {
-      console.log(`\nSchoolsRest.put called for ${JSON.stringify({ objID, objInfo }, null, 2)}\n`);
+    let stubSchoolsActive = sinon.stub(SchoolsRest, 'activate').callsFake((objID) => {
+      console.log(`\nSchoolsRest.activate called for ${objID}\n`);
 
       chai.expect(objID).to.be.oneOf(testInfoUser.schools.map((item) => item.id));
-      chai.expect(objInfo).to.deep.equal({ status: 'active' });
       return { status: 200, value: { id: objID } };
     });
 
@@ -566,11 +562,10 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
-    let stubUsersActive = sinon.stub(UsersRest, 'putStatus').callsFake((objID, objInfo) => {
-      console.log(`\nUsersRest.put called for ${JSON.stringify({ objID, objInfo }, null, 2)}\n`);
+    let stubUsersActive = sinon.stub(UsersRest, 'activate').callsFake((objID) => {
+      console.log(`\nUsersRest.activate called for ${objID}\n`);
 
       chai.expect(objID).to.equal(testInfoUser.id);
-      chai.expect(objInfo).to.deep.equal({ status: 'active' });
       return { status: 404, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
@@ -624,11 +619,10 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
-    let stubUsersActive = sinon.stub(UsersRest, 'putStatus').callsFake((objID, objInfo) => {
-      console.log(`\nUsersRest.put called for ${JSON.stringify({ objID, objInfo }, null, 2)}\n`);
+    let stubUsersActive = sinon.stub(UsersRest, 'activate').callsFake((objID) => {
+      console.log(`\nUsersRest.activate called for ${objID}\n`);
 
       chai.expect(objID).to.equal(testInfoUser.id);
-      chai.expect(objInfo).to.deep.equal({ status: 'active' });
       // not changed: somebody disabled the user, the answer has the current status
       return { status: 200, value: { id: objID, status: 'disabled' }, changed: false };
     });
@@ -684,11 +678,10 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
-    let stubSchoolsActive = sinon.stub(SchoolsRest, 'put').callsFake((objID, objInfo) => {
-      console.log(`\nSchoolsRest.put called for ${JSON.stringify({ objID, objInfo }, null, 2)}\n`);
+    let stubSchoolsActive = sinon.stub(SchoolsRest, 'activate').callsFake((objID) => {
+      console.log(`\nSchoolsRest.activate called for ${objID}\n`);
 
       chai.expect(objID).to.be.oneOf(testInfoUser.schools.map((item) => item.id));
-      chai.expect(objInfo).to.deep.equal({ status: 'active' });
       return { status: 404, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 

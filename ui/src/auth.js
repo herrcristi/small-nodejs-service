@@ -68,6 +68,7 @@ export function getRolesPermissions(tenantID, loginData) {
 
     const permissions = {
       schools: { read: isAtLeast.portalAdmin, write: isAtLeast.portalAdmin },
+      users: { read: isAtLeast.portalAdmin, write: isAtLeast.portalAdmin }, // all the users of the portal
 
       admins: { read: isAtLeast.admin, write: isAtLeast.admin },
       students: { read: isAtLeast.student, write: isAtLeast.admin },

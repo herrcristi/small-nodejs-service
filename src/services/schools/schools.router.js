@@ -23,6 +23,7 @@ router.route(`${SchoolsConstants.ApiPath}/:id`).patch(SchoolsController.patch);
  * Internal
  */
 router.route(`${SchoolsConstants.ApiPathInternal}`).post(SchoolsController.post); // called only from signup
+router.route(`${SchoolsConstants.ApiPathInternal}/:id/activate`).post(SchoolsController.activate); // called from users-auth
 
 router.route(`${SchoolsConstants.ApiPathInternal}/notifications`).post(SchoolsController.notification);
 

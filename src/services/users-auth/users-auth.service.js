@@ -415,8 +415,8 @@ const Public = {
 
     // if user pending make active
     if (user.status === UsersRest.Constants.Status.Pending) {
-      // the activation is done only if the user is still pending, the answer has the current status
-      const rP = await UsersRest.putStatus(user.id, { status: UsersRest.Constants.Status.Active }, _ctx);
+      // only a pending user is activated, the answer has the current status
+      const rP = await UsersRest.activate(user.id, _ctx);
       if (rP.error) {
         const msg = 'Failed to make user active';
         return { status: 500, error: { message: msg, error: new Error(msg) } };
@@ -592,14 +592,15 @@ const Public = {
   activatePendingSchools: async (user, _ctx) => {
     for (const school of user.schools || []) {
       if (school.status === SchoolsRest.Constants.Status.Pending) {
-        const rS = await SchoolsRest.put(school.id, { status: SchoolsRest.Constants.Status.Active }, _ctx);
+        // only a pending school is activated (decided on the school, not on this copy), the answer has its status
+        const rS = await SchoolsRest.activate(school.id, _ctx);
         if (rS.error) {
           const msg = 'Failed to make school active';
           return { status: 500, error: { message: msg, error: new Error(msg) } };
         }
 
-        // update only after it was saved, so the returned statuses are the saved ones
-        school.status = SchoolsRest.Constants.Status.Active;
+        // update only after it was saved, so the returned statuses are the saved ones (a disabled school stays disabled)
+        school.status = rS.value?.status || SchoolsRest.Constants.Status.Active;
       }
     }
 

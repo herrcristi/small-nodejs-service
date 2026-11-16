@@ -222,20 +222,26 @@ describe('Users Rest', function () {
   }).timeout(10000);
 
   /**
-   * rest putStatus
+   * rest activate: an internal call (POST /:id/activate), the local function is activate
    */
-  it('should put status call via rest', async () => {
+  it('should activate call via rest', async () => {
     // stub
-    let stub = sinon.stub(RestCommsUtils, 'put').callsFake(() => {
-      console.log(`\nRestCommUtils.put called\n`);
+    let stub = sinon.stub(RestCommsUtils, 'call').callsFake(() => {
+      console.log(`\nRestCommUtils.call called\n`);
       return { status: 200, value: 'dummy' };
     });
 
     // call
-    let res = await UsersRest.putStatus('id1', { status: 'active' }, _ctx);
+    let res = await UsersRest.activate('id1', _ctx);
 
     // check
-    chai.expect(stub.firstCall.args[4]).to.equal('status');
+    chai.expect(stub.firstCall.args[0]).to.deep.equal({
+      serviceName: 'users-internal',
+      method: 'POST',
+      path: '/id1/activate',
+      body: {},
+      localCall: { fn: 'activate', params: { objID: 'id1' } },
+    });
     chai.expect(res?.value).to.equal('dummy');
   }).timeout(10000);
 

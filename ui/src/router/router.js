@@ -2,6 +2,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 
 import Schools from '../components/api.schools.vue';
+import Users from '../components/api.users.vue';
 import Admins from '../components/api.admins.vue';
 import Students from '../components/api.students.vue';
 import Professors from '../components/api.professors.vue';
@@ -45,6 +46,16 @@ const Router = createRouter({
         requiresAuth: true,
         requiresPortalAdmin: true,
         breadcrumbs: [{ text: 'Schools', to: '/schools' }],
+      },
+    },
+    {
+      path: '/users',
+      name: 'Users',
+      component: Users,
+      meta: {
+        requiresAuth: true,
+        requiresPortalAdmin: true,
+        breadcrumbs: [{ text: 'Users', to: '/users' }],
       },
     },
     {

@@ -15,7 +15,8 @@ const UsersRest = require('../../../services/rest/users.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
 describe('Users Service', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
+  // the user itself (the access of a request to another user is tested in users.service.access.test.js)
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users', userID: TestConstants.Users[0].id };
 
   before(async function () {});
 
@@ -296,7 +297,7 @@ describe('Users Service', function () {
     });
 
     // call
-    let res = await UsersService.patch(testUser.id, patchReq, { _ctx, userID: testUser.id });
+    let res = await UsersService.patch(testUser.id, patchReq, { ..._ctx, userID: testUser.id });
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

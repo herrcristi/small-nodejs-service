@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const RestCommsUtils = require('../../../core/utils/rest-communications.utils.js');
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
 
@@ -111,6 +110,24 @@ describe('Schools Rest', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
+    chai.expect(res?.value).to.equal('dummy');
+  }).timeout(10000);
+
+  /**
+   * rest activate: an internal call (POST /:id/activate), the local function is activate
+   */
+  it('should activate call via rest', async () => {
+    let stub = sinon.stub(RestCommsUtils, 'call').callsFake(() => ({ status: 200, value: 'dummy' }));
+
+    let res = await SchoolsRest.activate('id1', _ctx);
+
+    chai.expect(stub.firstCall.args[0]).to.deep.equal({
+      serviceName: 'schools-internal',
+      method: 'POST',
+      path: '/id1/activate',
+      body: {},
+      localCall: { fn: 'activate', params: { objID: 'id1' } },
+    });
     chai.expect(res?.value).to.equal('dummy');
   }).timeout(10000);
 
