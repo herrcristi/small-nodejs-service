@@ -121,7 +121,7 @@ describe('Schools Service', function () {
 
 The functional tests run the real services against a real database.
 
-1. Start MongoDB: `cd src && npm run up` (uses `tools/local/docker-compose.yaml`; set the root user and password in your environment first).
+1. Start MongoDB: `cd src && npm run up` (uses `tools/local/docker-compose.yaml`; set `MONGODB_ROOT_USERNAME` and `MONGODB_ROOT_PASSWORD` in your environment first; the data is kept in a Docker volume, or in the folder named by `MONGODB_DATA_DIR` if you set it).
 2. Point the tests at a **dedicated test database**: they create and delete data. The database URL and name come from the test constants.
 3. `cd src && npm run testdb`.
 
