@@ -14,7 +14,8 @@ const Public = {
    */
   middleware: async (req, res, next) => {
     const _ctx = req._ctx;
-    _ctx.tenantName = req.headers['x-tenant-name'];
+    // the tenant name is never taken from the headers: it comes from the signed service token (restValidation)
+    // or from the verified membership (users-auth middleware)
 
     const route = req.route?.path;
 

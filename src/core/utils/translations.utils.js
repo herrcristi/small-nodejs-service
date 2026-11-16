@@ -16,8 +16,9 @@ const Private = {
 
   /**
    * expand args {0}...
+   * transform is applied to every value that is inserted (for example an escape)
    */
-  expandArgs: (val, args, _ctx) => {
+  expandArgs: (val, args, _ctx, transform = (v) => v) => {
     if (!val) {
       return val;
     }
@@ -25,10 +26,31 @@ const Private = {
     // it works for array and for object with names too
     // [ 'a', 'b' ] and { a: valA, b: valB }
     for (let key in args) {
-      val = val.replaceAll(`{${key}}`, args[key]);
+      // a function replacement: the value is inserted as it is (a '$&' in it has no special meaning)
+      val = val.replaceAll(`{${key}}`, () => transform(`${args[key]}`));
     }
 
     return val;
+  },
+
+  /**
+   * escape a value that is inserted in html (the body of an email)
+   * the values are names and urls that come from users: they must stay text
+   */
+  escapeHtml: (val) => {
+    return `${val}`
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  },
+
+  /**
+   * a value that is inserted in a subject: a single line
+   */
+  singleLine: (val) => {
+    return `${val}`.replace(/[\r\n]+/g, ' ');
   },
 };
 
@@ -111,8 +133,9 @@ const Public = {
       if (template) {
         r[lang] = {};
         for (const key in template) {
-          r[lang][key] =
-            typeof template[key] === 'string' ? Private.expandArgs(template[key], args, _ctx) : template[key];
+          // the subject is text (one line), the other parts (the body) are html: escape what is inserted
+          const transform = key === 'subject' ? Private.singleLine : Private.escapeHtml;
+          r[lang][key] = Private.expandArgs(template[key], args, _ctx, transform);
         }
       }
     }

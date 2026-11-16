@@ -1099,4 +1099,77 @@ describe('Users Auth Service', function () {
       },
     });
   }).timeout(10000);
+
+  /**
+   * a tenant header that looks like a regular expression is only compared as text (it must not block the process)
+   */
+  it('should not run a regular expression from the tenant on a route that depends on the school', async () => {
+    const testAuthUser = _.cloneDeep(TestConstants.UsersAuth[0]);
+    const testInfoUser = _.cloneDeep(TestConstants.Users[0]);
+    for (const school of testInfoUser.schools) {
+      school.name = school.id;
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+    sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 200, value: testInfoUser });
+    sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'decoded' });
+    sinon.stub(UsersLocalAuthService, 'validateToken').returns({
+      status: 200,
+      value: { username: testAuthUser.id, userID: testInfoUser.id },
+    });
+
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.tenantID = '(a+)+$'; // catastrophic when compiled as a pattern
+    _ctx.reqUrl = `/api/v1/schools/${'a'.repeat(40)}!`;
+
+    const started = Date.now();
+    const res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/schools/:id' }, _ctx);
+    const elapsed = Date.now() - started;
+
+    chai.expect(elapsed).to.be.lessThan(500);
+    chai.expect(res.status).to.equal(403);
+    chai.expect(res.error.message).to.equal('school :id restriction applied');
+
+    // characters that are special in a pattern or in a replacement are only text
+    for (const tenant of ['(', '.*', 'a|b', '$&', '[', '\\']) {
+      _ctx.tenantID = tenant;
+      _ctx.reqUrl = `/api/v1/schools/${tenant}`;
+      const r = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/schools/:id' }, _ctx);
+      chai.expect([401, 403], tenant).to.include(r.status);
+    }
+  }).timeout(10000);
+
+  /**
+   * the own school url is valid with a query string
+   */
+  it('should validate the url of the own school with a query string', async () => {
+    const testAuthUser = _.cloneDeep(TestConstants.UsersAuth[0]);
+    const testInfoUser = _.cloneDeep(TestConstants.Users[0]);
+    for (const school of testInfoUser.schools) {
+      school.name = school.id;
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+    sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 200, value: testInfoUser });
+    sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'decoded' });
+    sinon.stub(UsersLocalAuthService, 'validateToken').returns({
+      status: 200,
+      value: { username: testAuthUser.id, userID: testInfoUser.id },
+    });
+
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.tenantID = testInfoUser.schools[1].id; // where is admin
+
+    // with a query string, with a sub path, and with the id as a prefix of another id (must be refused)
+    for (const [url, expected] of [
+      [`/api/v1/schools/${_ctx.tenantID}?x=1`, 200],
+      [`/api/v1/schools/${_ctx.tenantID}/`, 200],
+      [`/api/v1/schools/${_ctx.tenantID}x`, 403],
+      [`/api/v1/schools/other-school`, 403],
+    ]) {
+      _ctx.reqUrl = url;
+      const r = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/schools/:id' }, _ctx);
+      chai.expect(r.status, url).to.equal(expected);
+    }
+  }).timeout(10000);
 });

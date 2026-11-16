@@ -8,6 +8,10 @@
 require('./users-auth.controller.all.test.js');
 require('./users-auth.signup.controller.all.test.js');
 
+// middleware tests
+require('./users-auth.middleware.test.js');
+require('./service2service-auth.middleware.test.js');
+
 // rest tests
 require('./users-auth.rest.test.js');
 

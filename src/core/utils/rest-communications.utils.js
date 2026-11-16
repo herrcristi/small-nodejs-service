@@ -168,6 +168,7 @@ const Public = {
 
     // some properties should be kept from original request
     _ctx.tenantID = s2sData._ctx.tenantID;
+    _ctx.tenantName = s2sData._ctx.tenantName;
     _ctx.reqID = s2sData._ctx.reqID;
     _ctx.lang = s2sData._ctx.lang;
     _ctx.ipAddress = s2sData._ctx.ipAddress;

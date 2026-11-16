@@ -7,6 +7,7 @@ const Joi = require('joi');
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const CommonUtils = require('../../core/utils/common.utils.js');
+const ValidationUtils = require('../../core/utils/validation.utils.js');
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 
 const EventsRest = require('../rest/events.rest.js');
@@ -21,20 +22,14 @@ const UsersAuthConstants = require('./users-auth.constants.js');
  */
 const Schema = {
   Signup: Joi.object().keys({
-    email: Joi.string()
-      .email({ tlds: { allow: false } })
-      .min(1)
-      .max(128),
+    email: ValidationUtils.email(),
     school: Joi.object().keys({
       name: Joi.string().min(1).max(64).required(),
       description: Joi.string().min(0).max(1024).allow(null),
     }),
   }),
   Invite: Joi.object().keys({
-    email: Joi.string()
-      .email({ tlds: { allow: false } })
-      .min(1)
-      .max(128),
+    email: ValidationUtils.email(),
     school: Joi.object().keys({
       role: Joi.string()
         .min(1)

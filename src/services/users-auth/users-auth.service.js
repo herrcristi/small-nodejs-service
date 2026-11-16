@@ -9,6 +9,7 @@ const Joi = require('joi');
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const CommonUtils = require('../../core/utils/common.utils.js');
+const ValidationUtils = require('../../core/utils/validation.utils.js');
 const JwtUtils = require('../../core/utils/jwt.utils.js');
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 
@@ -35,20 +36,12 @@ const NewPassword = Joi.string()
 
 const Schema = {
   Login: Joi.object().keys({
-    username: Joi.string()
-      .email({ tlds: { allow: false } })
-      .min(1)
-      .max(128)
-      .required(),
+    username: ValidationUtils.email().required(),
     password: CurrentPassword.required(),
   }),
 
   User: Joi.object().keys({
-    username: Joi.string()
-      .email({ tlds: { allow: false } })
-      .min(1)
-      .max(128)
-      .required(),
+    username: ValidationUtils.email().required(),
     password: NewPassword.required(),
     userID: Joi.string().min(1).max(64).required(),
   }),
@@ -59,9 +52,7 @@ const Schema = {
   }),
 
   UserName: Joi.object().keys({
-    username: Joi.string()
-      .email({ tlds: { allow: false } })
-      .required(),
+    username: ValidationUtils.email().required(),
     password: CurrentPassword.required(),
   }),
 
@@ -111,17 +102,11 @@ const Validators = {
   }),
 
   Invite: Joi.object().keys({
-    username: Joi.string()
-      .email({ tlds: { allow: false } })
-      .min(1)
-      .max(128),
+    username: ValidationUtils.email(),
   }),
 
   ResetPassword: Joi.object().keys({
-    username: Joi.string()
-      .email({ tlds: { allow: false } })
-      .min(1)
-      .max(128),
+    username: ValidationUtils.email(),
   }),
 
   ResetToken: Joi.object().keys({
@@ -213,11 +198,15 @@ const Private = {
    * check if matching param
    */
   isValidRouteForParam: (route, paramID, _ctx) => {
+    // compare as strings (never build a regular expression from a value that comes from the request)
+    // the path of the url, without the query string
+    const urlPath = `${_ctx.reqUrl}`.split('?')[0].split('#')[0];
+
     for (const checkid of [paramID, encodeURIComponent(paramID)]) {
-      const expandRoute = `${route}`.replace(':id', checkid);
+      const expandRoute = `${route}`.replace(':id', () => checkid);
 
       // either is equal or it starts with expandedRoute/
-      if (new RegExp(`^${expandRoute}([/]|$)`).test(_ctx.reqUrl)) {
+      if (urlPath === expandRoute || urlPath.startsWith(`${expandRoute}/`)) {
         // valid route
         return true;
       }

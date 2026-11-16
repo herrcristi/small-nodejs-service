@@ -2,6 +2,7 @@
  * Request middleware
  */
 const CommonUtils = require('../utils/common.utils.js');
+const ValidationUtils = require('../utils/validation.utils.js');
 
 const Public = {
   /**
@@ -9,14 +10,18 @@ const Public = {
    */
   middleware: (req, res, next) => {
     // add _ctx to request
+    // the values from the headers are untrusted: they are used in queries, collection names and logs,
+    // so only well formed ones are kept
+    // userID, username and tenantName are NEVER taken from the headers of a request: they are set by the
+    // authentication middlewares from the verified token (users and service to service)
     req._ctx = {
-      tenantID: req.headers['x-tenant-id'],
+      tenantID: ValidationUtils.safeID(req.headers['x-tenant-id']),
       tenantName: undefined, // must be filled in middleware: users-auth and service2service
-      reqID: req.headers['x-request-id'] || CommonUtils.uuidc(),
-      lang: req.headers['x-lang'] || 'en',
+      reqID: ValidationUtils.safeID(req.headers['x-request-id']) || CommonUtils.uuidc(),
+      lang: /^[a-z]{2}(-[A-Za-z]{2})?$/.test(req.headers['x-lang']) ? req.headers['x-lang'] : 'en',
       ipAddress: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
-      userID: req.headers['x-user-id'],
-      username: req.headers['x-user-name'],
+      userID: undefined,
+      username: undefined,
       reqMethod: req.method?.toUpperCase(),
       reqUrl: req.originalUrl,
       reqPath: req.path,
