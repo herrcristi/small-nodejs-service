@@ -99,7 +99,7 @@
         <div class="">
           <v-chip
             :color="ComponentUtils.getStatusColor(item.status)"
-            :text="item._lang_en?.status || item.status"
+            :text="ComponentUtils.getStatusText(item.status, item._lang_en?.status, t, te)"
             size="small"
             label
           ></v-chip>
@@ -113,7 +113,7 @@
         <div class="">
           <v-chip
             :color="ComponentUtils.getStatusColor(item.user?.status)"
-            :text="item._lang_en?.user?.status || item.user?.status"
+            :text="ComponentUtils.getStatusText(item.user?.status, item._lang_en?.user?.status, t, te)"
             size="small"
             label
           ></v-chip>
@@ -322,7 +322,7 @@ import { ref, reactive, computed, watch } from 'vue';
 import ConfirmDialog from './base.confirm.dialog.vue';
 import ComponentUtils from './components.utils.js';
 import { useI18n } from 'vue-i18n';
-const { t } = useI18n();
+const { t, te } = useI18n();
 
 /**
  * state

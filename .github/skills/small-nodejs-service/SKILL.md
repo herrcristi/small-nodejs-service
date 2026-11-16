@@ -52,6 +52,7 @@ description: 'Use when creating, reviewing, testing, or documenting backend or U
 - Derive page/menu permissions with `getRolesPermissions` from the selected active school membership. Also protect privileged routes with the router guard; backend checks remain authoritative.
 - Reuse the `ApiTableServer` and `ComponentsUtils.Edit` patterns for CRUD pages. Use existing invite flows for user-backed records rather than making duplicate user-creation endpoints.
 - Keep API methods in `ui/src/api/api.js` and use translations from `ui/src/translations/` for visible labels.
+- Show a status with the UI translations (`ComponentUtils.getStatusText`, the same keys as the edit dialogs), not with the label translated by the server (`_lang_en`), which is always English; the server label is only a fallback for a value the UI does not know.
 - The Admins, Students and Professors pages edit only the name of a person, never its status. Portal admins edit users (name and status) with the shared `ApiUserEditDialog` (`api.user.edit.dialog.vue`), which calls the profile route for the name and the status route for the status, and hides the status for the current user. It is used by the Users page (`/users`, permission `users`), the portal admins list, and the admins of a school on the Schools page.
 
 ## Tests
