@@ -103,4 +103,39 @@ describe('Translations Utils', function () {
     chai.expect(first.en.subject).to.equal('You have been invited to School One');
     chai.expect(second.en.subject).to.equal('You have been invited to School Two');
   }).timeout(10000);
+
+  /**
+   * the values inserted in an email are text: markup is escaped in the body, the subject is one line
+   */
+  it('should escape the arguments in the body and keep the subject on one line', async () => {
+    const school = '<a href="https://link.testdomain.test">Sign in</a> & "more" \'x\'';
+    const res = TranslationsUtils.email('invite', _ctx, { school });
+
+    for (const lang of ['en', 'ro']) {
+      // body: no markup from the argument
+      chai.expect(res[lang].email).to.not.include('<a href="https://link.testdomain.test">');
+      chai
+        .expect(res[lang].email)
+        .to.include(
+          '&lt;a href=&quot;https://link.testdomain.test&quot;&gt;Sign in&lt;/a&gt; &amp; &quot;more&quot; &#39;x&#39;'
+        );
+
+      // subject: text as it is (not html), one line
+      chai.expect(res[lang].subject).to.equal(`You have been invited to ${school}`);
+    }
+
+    // a line break in a value can not add a header to the subject
+    const res2 = TranslationsUtils.email('invite', _ctx, { school: 'School\r\nBcc: other.user@testdomain.test' });
+    chai.expect(res2.en.subject).to.equal('You have been invited to School Bcc: other.user@testdomain.test');
+    chai.expect(res2.en.subject).to.not.match(/[\r\n]/);
+  }).timeout(10000);
+
+  /**
+   * a value with a special replacement pattern is inserted as it is
+   */
+  it('should insert values that look like replacement patterns as they are', async () => {
+    const res = TranslationsUtils.email('invite', _ctx, { school: "$& $1 $' $`" });
+
+    chai.expect(res.en.subject).to.equal("You have been invited to $& $1 $' $`");
+  }).timeout(10000);
 });

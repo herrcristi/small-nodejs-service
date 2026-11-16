@@ -619,4 +619,47 @@ describe('Users Rest', function () {
     // check
     chai.expect(res).to.deep.equal([]);
   }).timeout(10000);
+
+  /**
+   * rest getOneByEmail: the email is a value, it can not add or change filters
+   */
+  it('should call getOneByEmail with the email encoded as a single value', async () => {
+    const queryLikeEmail = 'x&email=portal.admin%40example.test&sort=x@testdomain.test';
+    let stub = sinon.stub(RestCommsUtils, 'getAll').callsFake((serviceName, queryParams) => {
+      const parsed = new URLSearchParams(queryParams);
+      // exactly one email parameter, with the whole text, and nothing else was added
+      chai.expect(parsed.getAll('email')).to.deep.equal([queryLikeEmail]);
+      chai.expect(parsed.has('sort')).to.equal(false);
+      chai.expect([...parsed.keys()].sort()).to.deep.equal(['email', 'limit']);
+      return { status: 200, value: [{ id: 'user1', email: queryLikeEmail }] };
+    });
+
+    let res = await UsersRest.getOneByEmail(queryLikeEmail, null, _ctx);
+
+    chai.expect(stub.callCount).to.equal(1);
+    chai.expect(res.value.id).to.equal('user1');
+
+    // a plus is a plus (not a space)
+    stub.restore();
+    stub = sinon.stub(RestCommsUtils, 'getAll').callsFake((serviceName, queryParams) => {
+      chai.expect(new URLSearchParams(queryParams).get('email')).to.equal('john+tag@school.test');
+      return { status: 200, value: [{ id: 'user2', email: 'john+tag@school.test' }] };
+    });
+    res = await UsersRest.getOneByEmail('john+tag@school.test', null, _ctx);
+    chai.expect(res.value.id).to.equal('user2');
+  }).timeout(10000);
+
+  /**
+   * rest getOneByEmail: the user that comes back must have exactly the requested email
+   */
+  it('should call getOneByEmail and refuse a user with another email', async () => {
+    sinon.stub(RestCommsUtils, 'getAll').callsFake(() => {
+      return { status: 200, value: [{ id: 'portal-admin-id', email: 'portal.admin@example.test' }], time: 0 };
+    });
+
+    const res = await UsersRest.getOneByEmail('student@example.test', { id: 1, email: 1 }, _ctx);
+
+    chai.expect(res.status).to.equal(404);
+    chai.expect(res.error.message).to.equal('Not found student@example.test');
+  }).timeout(10000);
 });

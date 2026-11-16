@@ -316,4 +316,23 @@ describe('Users Auth Service', function () {
       .expect(res.error.details[0].message)
       .to.include('"add.roles[0]" must be one of [portal-admin, admin, professor, student]');
   }).timeout(10000);
+
+  /**
+   * an email can not carry characters that change a query (query string injection)
+   */
+  it('should refuse a username that is an injected query', async () => {
+    const queryLikeEmail = 'x&email=portal.admin%40example.test&sort=x@testdomain.test';
+
+    for (const [name, validator, body] of [
+      ['login', UsersAuthService.Validators.Login, { username: queryLikeEmail, password: 'Aa1!aaaaaa' }],
+      ['reset password', UsersAuthService.Validators.ResetPassword, { username: queryLikeEmail }],
+    ]) {
+      const v = validator.validate(body);
+      chai.expect(v.error, name).to.not.equal(undefined);
+    }
+
+    // a normal username with a plus still validates
+    const ok = UsersAuthService.Validators.Login.validate({ username: 'john+tag@school.test', password: 'Aa1!aaaaaa' });
+    chai.expect(ok.error).to.equal(undefined);
+  }).timeout(10000);
 });

@@ -9,6 +9,7 @@ const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
 const CommonUtils = require('../../core/utils/common.utils');
+const ValidationUtils = require('../../core/utils/validation.utils.js');
 const ReferencesUtils = require('../../core/utils/base-service.references.utils.js');
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 
@@ -53,10 +54,7 @@ const Schema = {
   }),
 
   UserEmail: Joi.object().keys({
-    email: Joi.string()
-      .email({ tlds: { allow: false } })
-      .min(1)
-      .max(128),
+    email: ValidationUtils.email(),
   }),
 };
 

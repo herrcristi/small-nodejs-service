@@ -73,4 +73,19 @@ describe('Common Utils', function () {
       },
     });
   }).timeout(10000);
+
+  /**
+   * patch2obj does not build objects with keys that change the prototype
+   */
+  it('should patch2obj skip the keys that change the prototype', async () => {
+    const body = JSON.parse(
+      '{"name":"x","__proto__":{"id":"inherited"},"a.__proto__.b":1,"c.constructor":2,"d":{"prototype":3}}'
+    );
+    const res = CommonUtils.patch2obj(body);
+
+    chai.expect(Object.keys(res).sort()).to.deep.equal(['d', 'name']);
+    chai.expect(res.id).to.equal(undefined);
+    chai.expect(Object.getPrototypeOf(res)).to.equal(Object.prototype);
+    chai.expect(Object.keys(res.d)).to.deep.equal([]);
+  }).timeout(10000);
 });

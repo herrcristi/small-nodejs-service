@@ -24,3 +24,5 @@ require('./emails.utils/emails.utils.all.test.js');
 require('./web-server.utils/web-server.utils.all.tests.js');
 
 require('./https.middleware/https.middleware.all.tests.js');
+
+require('./validation.utils/validation.utils.all.tests.js');

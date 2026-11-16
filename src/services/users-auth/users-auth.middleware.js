@@ -32,6 +32,10 @@ const Public = {
     ];
     if (whitelistRoutes.includes(route)) {
       console.log(`\nRoute whitelisted: ${route}`);
+
+      // nobody verified the tenant of this request (no membership check): do not use it, or an anonymous request
+      // could write events into any school (and create collections for made up tenants)
+      _ctx.tenantID = undefined;
       return next();
     }
 

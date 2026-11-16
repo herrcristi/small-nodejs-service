@@ -13,6 +13,7 @@ const CorsMiddleware = require('./cors.middleware.js');
 const RateLimiterMiddleware = require('./rate-limiter.middleware.js');
 const HttpsMiddleware = require('./https.middleware.js');
 const SecurityHeadersMiddleware = require('./security-headers.middleware.js');
+const SanitizeMiddleware = require('./sanitize.middleware.js');
 
 const Private = {
   /**
@@ -71,6 +72,7 @@ const Public = {
 
     // add middlewares
     app.use(RequestMiddleware.middleware); // adds a req._ctx
+    app.use(SanitizeMiddleware.middleware); // refuses a body with keys that change the prototype of an object
 
     if (Array.isArray(middlewares)) {
       middlewares.forEach((middleware) => app.use(middleware?.middleware || middleware));

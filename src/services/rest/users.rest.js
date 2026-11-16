@@ -37,11 +37,13 @@ const Public = {
    * get one (internal) called from users-auth
    */
   getOneByEmail: async (email, projection, _ctx) => {
-    let queryParams = `email=${email}&limit=1`;
+    // the email is a VALUE: encode it, so characters like & = % + # can never add or change a filter
+    // (the email format is also restricted by the validators, this is the second protection)
+    const query = new URLSearchParams({ email: `${email}`, limit: '1' });
     if (projection) {
-      queryParams += `&projection=${Object.keys(projection).join(',')}`;
+      query.set('projection', Object.keys(projection).join(','));
     }
-    const r = await Public.getAll(queryParams, _ctx);
+    const r = await Public.getAll(query.toString(), _ctx);
     if (r.error) {
       return r;
     }
@@ -50,6 +52,13 @@ const Public = {
       return { status: 404, error: { message: msg, error: new Error(msg) }, time: r.time };
     }
     r.value = r.value[0];
+
+    // the identity must be exactly the requested email, whatever the filter produced
+    if (r.value.email !== undefined && r.value.email !== email) {
+      const msg = `Not found ${email}`;
+      return { status: 404, error: { message: msg, error: new Error(msg) }, time: r.time };
+    }
+
     return r;
   },
 

@@ -4,6 +4,8 @@
 const crypto = require('crypto');
 const _ = require('lodash');
 
+const ValidationUtils = require('./validation.utils.js');
+
 const Public = {
   /**
    * sleep
@@ -232,6 +234,11 @@ const Public = {
 
       // split key
       const multiKeys = key.split('.');
+
+      // never build an object with a key that changes the prototype
+      if (multiKeys.some((item) => ValidationUtils.ForbiddenKeys.has(item))) {
+        continue;
+      }
 
       let p = r;
       for (let i = 0; i < multiKeys.length - 1; ++i) {

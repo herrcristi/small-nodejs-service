@@ -82,6 +82,7 @@ describe('Rest Communications Utils', function () {
         reqUrl: '/api/v1/service/id1',
         userID: 'userID',
         username: 'user@test.com',
+        tenantName: 'School A',
         ipAddress: 'ip',
       }
     );
@@ -109,6 +110,7 @@ describe('Rest Communications Utils', function () {
           reqUrl: '/api/v1/service/id1',
           userID: 'userID',
           username: 'user@test.com',
+          tenantName: 'School A',
           ipAddress: 'ip',
         },
         method: 'PATCH',
@@ -125,6 +127,7 @@ describe('Rest Communications Utils', function () {
       ipAddress: 'ip',
       userID: 'userID',
       username: 'user@test.com',
+      tenantName: 'School A',
     });
   }).timeout(10000);
 
