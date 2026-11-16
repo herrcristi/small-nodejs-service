@@ -312,7 +312,7 @@ const Public = {
     await Private.setupConfig(config, _ctx);
 
     let emailArgs = {
-      user: '',
+      user: username, // the email of the recipient ("Hi {user}")
       school: _ctx.tenantName || _ctx.tenantID,
       appUrl: `${process.env.SMALL_API_URL}`, // TODO should be the frontend url or at least router should redirect to frontend url
     };
