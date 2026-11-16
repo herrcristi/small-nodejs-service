@@ -19,7 +19,7 @@
     >
       <template #item.actions="{ item }">
         <v-icon
-          v-if="write && item.id !== currentUserID"
+          v-if="canRemovePortalAdmin(item)"
           small
           class="mr-2"
           size="small"
@@ -154,7 +154,8 @@ const details = null; // true for details column
 const expand = true; // true for expand column
 
 const auth = useAuthStore();
-const currentUserID = auth?.raw?.userID;
+// read from the store when used (computed), not when the component is created
+const currentUserID = computed(() => auth?.raw?.userID);
 
 const app = useAppStore();
 const read = app?.rolesPermissions?.schools?.read;
@@ -194,11 +195,23 @@ const apiFn = {
 
 // the portal admins: create invites the user to the portal school (the user becomes portal admin)
 // and delete removes only the portal-admin role (the user account is kept)
+const portalAdminsCount = ref(0);
 const portalAdminsApiFn = {
-  getAll: Api.getPortalAdmins,
+  getAll: async (params) => {
+    const response = await Api.getPortalAdmins(params);
+    portalAdminsCount.value = response.data?.meta?.count ?? response.data?.data?.length ?? 0;
+    return response;
+  },
   create: (data) => Api.invitePortalAdmin(data.email),
   delete: Api.removePortalAdmin,
 };
+
+/**
+ * a portal admin can be removed only by another portal admin, and the last one cannot be removed
+ */
+function canRemovePortalAdmin(item) {
+  return !!write && portalAdminsCount.value > 1 && item.id !== currentUserID.value;
+}
 
 /**
  * edit
