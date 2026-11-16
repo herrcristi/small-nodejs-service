@@ -411,6 +411,47 @@ const Public = {
   },
 
   /**
+   * delete a school admin: removes the admin role of the user on that school (the user and its other roles are kept)
+   * called only by portal admins (route role, on the portal school); the last admin of a school is not removed,
+   * so there is always someone to manage the school
+   * returns { status, value } or { status, error }
+   */
+  deleteSchoolAdmin: async (schoolID, objID, _ctx) => {
+    if (!Private.isPortalTenant(_ctx)) {
+      return Private.portalRequired();
+    }
+
+    const config = await Private.getConfig(_ctx);
+    const adminRole = UsersConstants.Roles.Admin;
+
+    // the user must be an admin of the school
+    const rUser = await DbOpsUtils.getOne(config, objID, { id: 1, schools: 1 }, _ctx);
+    if (rUser.error) {
+      return rUser;
+    }
+    if (!rUser.value.schools?.some((school) => school.id === schoolID && school.roles?.includes(adminRole))) {
+      const msg = `Not found ${objID}`;
+      return { status: 404, error: { message: msg, error: new Error(msg) } };
+    }
+
+    // keep at least one admin of the school
+    const filter = { filter: { schools: { $elemMatch: { id: schoolID, roles: adminRole } } } };
+    const rCount = await DbOpsUtils.getAllCount(config, filter, _ctx);
+    if (rCount.error) {
+      return rCount;
+    }
+    if (rCount.value <= 1) {
+      const msg = 'The last admin of a school cannot be removed';
+      return { status: 400, error: { message: msg, error: new Error(msg) } };
+    }
+
+    // remove only the admin role on that school
+    const patchInfo = { remove: { schools: [{ id: schoolID, roles: [adminRole] }] } };
+    const r = await Public.patchInternal(objID, patchInfo, Validators.PatchSchool, Private.Action.PatchSchool, _ctx);
+    return Private.getResponseForAccess(r, Private.Access.Portal, _ctx);
+  },
+
+  /**
    * get all
    * filter: { filter?, projection?, limit?, skip?, sort? }
    * returns { status, value } or { status, error }

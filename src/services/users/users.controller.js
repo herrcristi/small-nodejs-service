@@ -130,6 +130,33 @@ const Public = {
   },
 
   /**
+   * delete a school admin (removes the admin role on that school)
+   */
+  deleteSchoolAdmin: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Delete school admin called, params ${JSON.stringify(
+          CommonUtils.protectData(req.params)
+        )}`
+      );
+
+      const r = await UsersService.deleteSchoolAdmin(req.params.schoolId, req.params.id, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
    * get one
    */
   getOne: async (req, res, next) => {

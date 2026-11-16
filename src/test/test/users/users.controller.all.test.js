@@ -611,6 +611,35 @@ describe('Users Controller', function () {
   }
 
   /**
+   * delete a school admin (portal admins) with success, fail, exception
+   */
+  it('should delete school admin with success, fail and exception', async () => {
+    const url = `${UsersConstants.ApiPath}/school-admins/school1/user1`;
+    const call = () => supertest(TestConstants.WebServer).delete(url).set('Origin', TestConstants.WebServer);
+
+    // success
+    let stubService = sinon.stub(UsersService, 'deleteSchoolAdmin').callsFake(() => ({ status: 200, value: { id: 'user1' } }));
+    let res = await call();
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal({ id: 'user1' });
+    chai.expect(stubService.firstCall.args.slice(0, 2)).to.deep.equal(['school1', 'user1']);
+
+    // fail
+    stubService.callsFake(() => ({ status: 400, error: { message: 'Test error message' } }));
+    res = await call();
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.body.error).to.include('Test error message');
+
+    // exception
+    stubService.callsFake(() => {
+      throw new Error('Test error message');
+    });
+    res = await call();
+    chai.expect(res.status).to.equal(500);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
    * activate (internal) with success, fail, exception
    */
   it('should activate with success, fail and exception', async () => {

@@ -300,6 +300,90 @@ describe('Users Service access', function () {
     }
   });
 
+  describe('delete school admin (portal admins)', function () {
+    const admin = { id: 'admin2', schools: [{ id: 'schoolA', roles: ['admin', 'professor'] }] };
+
+    it('should delete a school admin only on the portal school', async () => {
+      const stubPatch = sinon.stub(DbOpsUtils, 'patch');
+
+      let res = await UsersService.deleteSchoolAdmin('schoolA', 'admin2', _ctx /* schoolA */);
+      chai.expect(res.status).to.equal(403);
+
+      delete process.env.SMALL_API_PORTAL_SCHOOL_ID;
+      res = await UsersService.deleteSchoolAdmin('schoolA', 'admin2', _ctxPortal);
+      chai.expect(res.status).to.equal(403);
+
+      chai.expect(stubPatch.callCount).to.equal(0);
+    });
+
+    it('should remove only the admin role of that school', async () => {
+      sinon.stub(DbOpsUtils, 'getOne').callsFake(() => ({ status: 200, value: _.cloneDeep(admin) }));
+      const stubCount = sinon.stub(DbOpsUtils, 'getAllCount').callsFake(() => ({ status: 200, value: 2 }));
+      const stubPatch = sinon.stub(DbOpsUtils, 'patch').callsFake(() => ({
+        status: 200,
+        value: { ...admin, schools: [{ id: 'schoolA', roles: ['professor'] }] },
+      }));
+      stubWrites();
+
+      const res = await UsersService.deleteSchoolAdmin('schoolA', 'admin2', _ctxPortal);
+
+      chai.expect(res.status).to.equal(200);
+      chai.expect(res.value.schools).to.equal(undefined); // a portal admin does not see the schools of the user
+      chai.expect(stubCount.firstCall.args[1]).to.deep.equal({
+        filter: { schools: { $elemMatch: { id: 'schoolA', roles: 'admin' } } },
+      });
+      chai.expect(stubPatch.firstCall.args[2]).to.deep.equal({
+        remove: { schools: [{ id: 'schoolA', roles: ['admin'] }] },
+      });
+    });
+
+    it('should not delete the last admin of a school', async () => {
+      sinon.stub(DbOpsUtils, 'getOne').callsFake(() => ({ status: 200, value: _.cloneDeep(admin) }));
+      sinon.stub(DbOpsUtils, 'getAllCount').callsFake(() => ({ status: 200, value: 1 }));
+      const stubPatch = sinon.stub(DbOpsUtils, 'patch');
+
+      const res = await UsersService.deleteSchoolAdmin('schoolA', 'admin2', _ctxPortal);
+
+      chai.expect(res.status).to.equal(400);
+      chai.expect(res.error.message).to.equal('The last admin of a school cannot be removed');
+      chai.expect(stubPatch.callCount).to.equal(0);
+    });
+
+    it('should answer not found for a user that is not an admin of the school', async () => {
+      const stubGet = sinon.stub(DbOpsUtils, 'getOne');
+      const stubCount = sinon.stub(DbOpsUtils, 'getAllCount');
+      const stubPatch = sinon.stub(DbOpsUtils, 'patch');
+
+      // not an admin there (another role, another school, no schools), or no such user
+      for (const value of [
+        { id: 'admin2', schools: [{ id: 'schoolA', roles: ['professor'] }] },
+        { id: 'admin2', schools: [{ id: 'schoolB', roles: ['admin'] }] },
+        { id: 'admin2' },
+      ]) {
+        stubGet.callsFake(() => ({ status: 200, value }));
+        const res = await UsersService.deleteSchoolAdmin('schoolA', 'admin2', _ctxPortal);
+        chai.expect(res.status).to.equal(404);
+      }
+      stubGet.callsFake(() => notFound('admin2'));
+      const res = await UsersService.deleteSchoolAdmin('schoolA', 'admin2', _ctxPortal);
+      chai.expect(res.status).to.equal(404);
+
+      chai.expect(stubCount.callCount).to.equal(0);
+      chai.expect(stubPatch.callCount).to.equal(0);
+    });
+
+    it('should fail when the admins can not be counted', async () => {
+      sinon.stub(DbOpsUtils, 'getOne').callsFake(() => ({ status: 200, value: _.cloneDeep(admin) }));
+      sinon.stub(DbOpsUtils, 'getAllCount').callsFake(() => ({ status: 500, error: { message: 'Test error' } }));
+      const stubPatch = sinon.stub(DbOpsUtils, 'patch');
+
+      const res = await UsersService.deleteSchoolAdmin('schoolA', 'admin2', _ctxPortal);
+
+      chai.expect(res.status).to.equal(500);
+      chai.expect(stubPatch.callCount).to.equal(0);
+    });
+  });
+
   describe('activate (internal, at login)', function () {
     it('should activate a pending user', async () => {
       sinon.stub(DbOpsUtils, 'getOne').callsFake(() => ({ status: 200, value: { ...member, status: 'pending' } }));

@@ -288,6 +288,8 @@ const Api = {
   // Portal admins (members of the portal school, selected tenant), portal admin only
   getPortalAdmins: (params) => instance.get(`/users/portal-admins?${params}`),
   getSchoolAdmins: (schoolID, params) => instance.get(`/users/school-admins/${schoolID}?${params}`), // portal admin only
+  // removes the admin role on that school (the user is kept), the last admin of a school is not removed
+  removeSchoolAdmin: (schoolID, userID) => instance.delete(`/users/school-admins/${schoolID}/${userID}`), // portal admin only
   removePortalAdmin: (userID) => Api.updateUserSchool(userID, { remove: { roles: ['portal-admin'] } }),
 
   // Auth for portal admin
