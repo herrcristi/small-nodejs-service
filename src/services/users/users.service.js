@@ -412,8 +412,8 @@ const Public = {
 
   /**
    * delete a school admin: removes the admin role of the user on that school (the user and its other roles are kept)
-   * called only by portal admins (route role, on the portal school); the last admin of a school is not removed,
-   * so there is always someone to manage the school
+   * called only by portal admins (route role, on the portal school); all the admins of a school can be removed,
+   * a portal admin can invite a new one when needed
    * returns { status, value } or { status, error }
    */
   deleteSchoolAdmin: async (schoolID, objID, _ctx) => {
@@ -432,17 +432,6 @@ const Public = {
     if (!rUser.value.schools?.some((school) => school.id === schoolID && school.roles?.includes(adminRole))) {
       const msg = `Not found ${objID}`;
       return { status: 404, error: { message: msg, error: new Error(msg) } };
-    }
-
-    // keep at least one admin of the school
-    const filter = { filter: { schools: { $elemMatch: { id: schoolID, roles: adminRole } } } };
-    const rCount = await DbOpsUtils.getAllCount(config, filter, _ctx);
-    if (rCount.error) {
-      return rCount;
-    }
-    if (rCount.value <= 1) {
-      const msg = 'The last admin of a school cannot be removed';
-      return { status: 400, error: { message: msg, error: new Error(msg) } };
     }
 
     // remove only the admin role on that school

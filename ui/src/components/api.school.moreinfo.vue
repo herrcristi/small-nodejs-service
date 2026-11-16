@@ -3,7 +3,7 @@
         more info of a school: its admins (the same compact list as the more info of the other pages)
         the invitations of school admins are done by the school admins, a school is created with its first admin
         a portal admin invites an admin (+), changes the name and the status of an admin (see ApiUserEditDialog), and
-        removes an admin (only the admin role on this school), except the last one
+        removes an admin (only the admin role on this school); all can be removed, a new one can be invited later
   -->
   <v-card>
     <v-card-text>
@@ -117,12 +117,12 @@ async function load() {
 watch(() => props.itemID, load, { immediate: true });
 
 /**
- * the actions: invite (+), edit (the dialog does the update) and delete, which is not offered for the last admin
+ * the actions: invite (+), edit (the dialog does the update) and delete (also the last admin: one can be invited later)
  */
 const adminsApiFn = computed(() => ({
   add: props.write ? 1 : 0,
   update: props.write ? 1 : 0,
-  delete: props.write && admins.value.length > 1 ? (userID) => Api.removeSchoolAdmin(props.itemID, userID) : 0,
+  delete: props.write ? (userID) => Api.removeSchoolAdmin(props.itemID, userID) : 0,
 }));
 
 /**
