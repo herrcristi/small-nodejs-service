@@ -73,27 +73,41 @@ A user is one identity. The list of schools they belong to, and their roles in e
 
 ### Relationships
 
+**People and schools.** A user joins schools through memberships. Admin, professor, and student records are the school's record of a user.
+
 ```mermaid
 erDiagram
-  SCHOOL ||--o{ USER_SCHOOL : has
-  USER ||--o{ USER_SCHOOL : joins
-  USER ||--o| ADMIN : may_have
-  USER ||--o| STUDENT : may_have
-  USER ||--o| PROFESSOR : may_have
+  USER ||--o{ USER_SCHOOL : joins_through
+  SCHOOL ||--o{ USER_SCHOOL : has_members
+  USER ||--o| ADMIN : may_be
+  USER ||--o| PROFESSOR : may_be
+  USER ||--o| STUDENT : may_be
+```
+
+**What a school holds.** Four kinds of records belong to a school.
+
+```mermaid
+erDiagram
   SCHOOL ||--o{ SCHOOL_CLASS : contains
   SCHOOL ||--o{ LOCATION : contains
   SCHOOL ||--o{ STUDENT_GROUP : contains
   SCHOOL ||--o{ SCHEDULE : contains
-  SCHOOL_CLASS ||--o{ SCHEDULE : scheduled_as
-  LOCATION ||--o{ SCHEDULE_TIME : hosts
-  SCHEDULE ||--o{ SCHEDULE_TIME : has_times
-  PROFESSOR ||--o{ SCHEDULE : teaches
-  STUDENT_GROUP ||--o{ SCHEDULE : participates
-  STUDENT ||--o{ STUDENT_GROUP : member_of
-  STUDENT ||--o{ SCHEDULE : attends
 ```
 
-A schedule points to a class, professors, groups, students, and locations. A group points to students. Admins, professors, and students are the school's records of a user. `USER_SCHOOL` (the memberships stored in the user) and `SCHEDULE_TIME` (the times stored in the schedule) are embedded, not separate collections.
+**A schedule.** It points to a class, professors, groups, and students, and has time slots that each point to a location. A group points to its students.
+
+```mermaid
+erDiagram
+  SCHEDULE }o--|| SCHOOL_CLASS : for_class
+  SCHEDULE }o--o{ PROFESSOR : taught_by
+  SCHEDULE }o--o{ STUDENT_GROUP : for_groups
+  SCHEDULE }o--o{ STUDENT : attended_by
+  SCHEDULE ||--o{ SCHEDULE_TIME : has_times
+  SCHEDULE_TIME }o--|| LOCATION : held_at
+  STUDENT_GROUP }o--o{ STUDENT : has_members
+```
+
+`USER_SCHOOL` (the memberships stored in the user) and `SCHEDULE_TIME` (the times stored in the schedule) are embedded, not separate collections.
 
 ### References are embedded
 
