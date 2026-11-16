@@ -847,13 +847,14 @@ const Public = {
       }
 
       // prevent removing itself as admin (or portal admin), so there is always someone to manage the school
-      if (op === 'remove' && _ctx.userID === userID) {
-        roles = roles.filter(
-          (item) => item !== UsersRest.Constants.Roles.Admin && item !== UsersRest.Constants.Roles.PortalAdmin
-        );
-      }
-      if (!roles.length) {
-        continue;
+      // return an error and not a success, because nothing is removed
+      if (
+        op === 'remove' &&
+        _ctx.userID === userID &&
+        roles.some((item) => [UsersRest.Constants.Roles.Admin, UsersRest.Constants.Roles.PortalAdmin].includes(item))
+      ) {
+        const msg = 'You cannot remove yourself as admin';
+        return { status: 400, error: { message: msg, error: new Error(msg) } };
       }
 
       patchSchoolInfo[op] = {

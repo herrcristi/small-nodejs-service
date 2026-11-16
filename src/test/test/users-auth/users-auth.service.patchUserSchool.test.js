@@ -46,9 +46,9 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * patchUserSchool remove another portal admin, but not itself
+   * patchUserSchool remove another portal admin, but not itself (it is an error)
    */
-  it('should patchUserSchool remove another portal admin but skip removing itself', async () => {
+  it('should patchUserSchool remove another portal admin but fail removing itself', async () => {
     const portalCtx = { ..._ctx, tenantID: TestConstants.PortalSchoolID, userID: 'portal-admin-1' };
     const stubPatch = sinon.stub(UsersRest, 'patchSchool').resolves({ status: 200, value: {} });
 
@@ -59,9 +59,15 @@ describe('Users Auth Service', function () {
       remove: { schools: [{ id: TestConstants.PortalSchoolID, roles: ['portal-admin'] }] },
     });
 
-    // itself: the role is skipped, nothing to patch
-    await UsersAuthService.patchUserSchool('portal-admin-1', { remove: { roles: ['portal-admin'] } }, portalCtx);
-    chai.expect(stubPatch.secondCall.args[1]).to.deep.equal({});
+    // itself: an error, nothing is removed
+    const res = await UsersAuthService.patchUserSchool(
+      'portal-admin-1',
+      { remove: { roles: ['portal-admin'] } },
+      portalCtx
+    );
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.error.message).to.equal('You cannot remove yourself as admin');
+    chai.expect(stubPatch.callCount).to.equal(1);
   }).timeout(10000);
 
   /**
@@ -100,40 +106,39 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * patchUserSchool with success but no admin remove
+   * patchUserSchool fail when an admin removes itself as admin
    */
-  it('should patchUserSchool with success but no admin remove', async () => {
-    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
-    const testUser = testUsers[0];
+  it('should patchUserSchool fail when the admin removes itself as admin', async () => {
+    const testUser = _.cloneDeep(TestConstants.UsersAuth)[0];
+    const stubUserDetails = sinon.stub(UsersRest, 'patchSchool');
 
-    const patchReq = {
-      remove: {
-        roles: ['admin'],
-      },
-    };
-
-    // stub
-    let stubUserDetails = sinon.stub(UsersRest, 'patchSchool').callsFake((objID, patchInfo) => {
-      console.log(`\nUsersRest.patchSchool called ${JSON.stringify({ objID, patchInfo }, null, 2)}\n`);
-      chai.expect(patchInfo).to.deep.equal({});
-
-      return { status: 200, value: { id: testUser.userID } };
-    });
-
-    // call
     _ctx.userID = testUser.userID;
     _ctx.username = testUser.id;
-    let res = await UsersAuthService.patchUserSchool(testUser.userID, patchReq, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    const res = await UsersAuthService.patchUserSchool(testUser.userID, { remove: { roles: ['admin'] } }, _ctx);
 
-    // check
+    chai.expect(stubUserDetails.callCount).to.equal(0);
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.error.message).to.equal('You cannot remove yourself as admin');
+  }).timeout(10000);
+
+  /**
+   * patchUserSchool the admin can remove its other roles
+   */
+  it('should patchUserSchool with success when the admin removes another own role', async () => {
+    const testUser = _.cloneDeep(TestConstants.UsersAuth)[0];
+    const stubUserDetails = sinon
+      .stub(UsersRest, 'patchSchool')
+      .resolves({ status: 200, value: { id: testUser.userID } });
+
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    const res = await UsersAuthService.patchUserSchool(testUser.userID, { remove: { roles: ['student'] } }, _ctx);
+
     chai.expect(stubUserDetails.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: {
-        id: testUser.userID,
-      },
+    chai.expect(stubUserDetails.firstCall.args[1]).to.deep.equal({
+      remove: { schools: [{ id: _ctx.tenantID, roles: ['student'] }] },
     });
+    chai.expect(res.status).to.equal(200);
   }).timeout(10000);
 
   /**
@@ -182,7 +187,8 @@ describe('Users Auth Service', function () {
     // call
     _ctx.userID = testUser.userID;
     _ctx.username = testUser.id;
-    let res = await UsersAuthService.patchUserSchool(testUser.userID, patchReq, _ctx);
+    // remove the admin role of another user
+    let res = await UsersAuthService.patchUserSchool('another-user-id', patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
