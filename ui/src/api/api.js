@@ -263,6 +263,7 @@ const Api = {
   // Users API
   getUser: (id) => instance.get(`/users/${id}`),
   updateUser: (id, data) => instance.put(`/users/${id}`, data),
+  updateUserStatus: (id, data) => instance.put(`/users/${id}/status`, data), // portal admin only
 
   // Auth
   // Cookie-based auth by default (withCredentials true)

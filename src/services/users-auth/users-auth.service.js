@@ -415,12 +415,20 @@ const Public = {
 
     // if user pending make active
     if (user.status === UsersRest.Constants.Status.Pending) {
-      user.status = UsersRest.Constants.Status.Active;
+      // the activation is done only if the user is still pending, the answer has the current status
       const rP = await UsersRest.putStatus(user.id, { status: UsersRest.Constants.Status.Active }, _ctx);
       if (rP.error) {
         const msg = 'Failed to make user active';
         return { status: 500, error: { message: msg, error: new Error(msg) } };
       }
+
+      // disabled while this login was running: it stays disabled
+      if (rP.value?.status === UsersRest.Constants.Status.Disabled) {
+        const eventArgs = { ...eventO, reason: 'User is disabled' };
+        await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventArgs, _ctx, failedSeverity);
+        return rError; // return generic error
+      }
+      user.status = UsersRest.Constants.Status.Active;
     }
 
     // if school pending make active

@@ -134,7 +134,7 @@ const apiFields = {
   sortFields: ['user.name', 'user.status', 'user.email'],
   filterFields: ['user.name', '_lang_en.user.status', 'user.email'],
   addFields: ['user.email'],
-  editFields: ['user.name', 'user.status'],
+  editFields: ['user.name'], // the status of a person is global: only a portal admin changes it
 };
 
 const fieldsSet = ref(new Set([]));

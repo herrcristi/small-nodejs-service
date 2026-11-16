@@ -42,6 +42,7 @@ describe('Users Service', function () {
     delete patchReq.set.email;
     delete patchReq.set.schools;
     delete patchReq.set._lang_en;
+    delete patchReq.set.status; // the status has its own route
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
@@ -132,6 +133,7 @@ describe('Users Service', function () {
     delete patchReq.set.email;
     delete patchReq.set.schools;
     delete patchReq.set._lang_en;
+    delete patchReq.set.status; // the status has its own route
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
@@ -171,6 +173,7 @@ describe('Users Service', function () {
     delete patchReq.set.email;
     delete patchReq.set.schools;
     delete patchReq.set._lang_en;
+    delete patchReq.set.status; // the status has its own route
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
@@ -218,6 +221,7 @@ describe('Users Service', function () {
     delete patchReq.set.email;
     delete patchReq.set.schools;
     delete patchReq.set._lang_en;
+    delete patchReq.set.status; // the status has its own route
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
@@ -255,9 +259,9 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * patch fail patch status disable for current user
+   * patch fail with a status (the status has its own route)
    */
-  it('should patch fail patch status disable for current user', async () => {
+  it('should patch fail with a status (the status has its own route)', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
@@ -302,8 +306,8 @@ describe('Users Service', function () {
     chai.expect(res).to.deep.equal({
       status: 400,
       error: {
-        message: 'Skipping disabling status of current user',
-        error: new Error('Skipping disabling status of current user'),
+        message: 'Failed to validate schema. Error: "set.status" is not allowed',
+        error: new Error('Failed to validate schema. Error: "set.status" is not allowed'),
       },
     });
   }).timeout(10000);

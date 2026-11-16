@@ -167,20 +167,137 @@ describe('Users Service for request', function () {
     chai.expect(stubPatch.callCount).to.equal(0);
   });
 
-  it('should put the status only from the internal function', async () => {
-    const stubPut = sinon.stub(DbOpsUtils, 'put').callsFake(() => ({ status: 200, value: _.cloneDeep(member) }));
+  it('should activate only a pending user (internal, on login)', async () => {
+    const stubPut = sinon.stub(DbOpsUtils, 'put').callsFake(() => ({ status: 200, value: { ...member } }));
     stubWrites();
 
-    // valid
+    // activated: the condition is "still pending"
     let res = await UsersService.putStatus('member1', { status: 'active' }, _ctx);
     chai.expect(res.status).to.equal(200);
-    chai.expect(stubPut.callCount).to.equal(1);
+    chai.expect(stubPut.firstCall.args[0].condition).to.deep.equal({ status: 'pending' });
 
-    // other fields or missing status are not accepted
-    res = await UsersService.putStatus('member1', { name: 'Changed' }, _ctx);
-    chai.expect(res.status).to.equal(400);
-    res = await UsersService.putStatus('member1', { status: 'unknown' }, _ctx);
-    chai.expect(res.status).to.equal(400);
+    // only to active, nothing else
+    for (const objInfo of [{ status: 'disabled' }, { status: 'pending' }, { name: 'Changed' }, {}]) {
+      res = await UsersService.putStatus('member1', objInfo, _ctx);
+      chai.expect(res.status).to.equal(400);
+    }
     chai.expect(stubPut.callCount).to.equal(1);
+  });
+
+  it('should keep a user that was disabled while the login runs disabled', async () => {
+    // the condition does not match anymore
+    sinon.stub(DbOpsUtils, 'put').callsFake(() => ({
+      status: 404,
+      error: { message: 'Not found member1', error: new Error('Not found member1') },
+    }));
+    sinon.stub(DbOpsUtils, 'getOne').callsFake(() => ({ status: 200, value: { ...member, status: 'disabled' } }));
+    stubWrites();
+
+    const res = await UsersService.putStatus('member1', { status: 'active' }, _ctx);
+
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.changed).to.equal(false);
+    chai.expect(res.value.status).to.equal('disabled');
+    chai.expect(EventsRest.raiseEventForObject.callCount).to.equal(0);
+    chai.expect(UsersRest.raiseNotification.callCount).to.equal(0);
+  });
+
+  it('should answer not found when the user does not exist and fail on a database error', async () => {
+    const notFound = { status: 404, error: { message: 'Not found x', error: new Error('Not found x') } };
+    const stubPut = sinon.stub(DbOpsUtils, 'put').callsFake(() => notFound);
+    sinon.stub(DbOpsUtils, 'getOne').callsFake(() => notFound);
+    stubWrites();
+
+    let res = await UsersService.putStatus('x', { status: 'active' }, _ctx);
+    chai.expect(res.status).to.equal(404);
+
+    // other errors are returned as they are (no reload)
+    stubPut.callsFake(() => ({ status: 500, error: { message: 'Test error', error: new Error('Test error') } }));
+    res = await UsersService.putStatus('x', { status: 'active' }, _ctx);
+    chai.expect(res.status).to.equal(500);
+    chai.expect(DbOpsUtils.getOne.callCount).to.equal(1);
+  });
+
+  describe('status by a portal admin', function () {
+    const portalSchoolID = 'portalSchool';
+    const _ctxPortal = { ..._ctx, tenantID: portalSchoolID, userID: 'portalAdmin1' };
+    let previous;
+
+    beforeEach(function () {
+      previous = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+      process.env.SMALL_API_PORTAL_SCHOOL_ID = portalSchoolID;
+    });
+
+    afterEach(function () {
+      if (previous === undefined) {
+        delete process.env.SMALL_API_PORTAL_SCHOOL_ID;
+      } else {
+        process.env.SMALL_API_PORTAL_SCHOOL_ID = previous;
+      }
+    });
+
+    it('should change the status only on the portal school', async () => {
+      const stubPut = sinon.stub(DbOpsUtils, 'put');
+
+      let res = await UsersService.putStatusForReq('member1', { status: 'disabled' }, _ctx /* schoolA */);
+      chai.expect(res.status).to.equal(403);
+
+      delete process.env.SMALL_API_PORTAL_SCHOOL_ID;
+      res = await UsersService.putStatusForReq('member1', { status: 'disabled' }, { ..._ctx, tenantID: undefined });
+      chai.expect(res.status).to.equal(403);
+
+      chai.expect(stubPut.callCount).to.equal(0);
+    });
+
+    it('should allow pending -> active | disabled and active <-> disabled, never back to pending', async () => {
+      const stubPut = sinon.stub(DbOpsUtils, 'put').callsFake((config, id, objInfo) => ({
+        status: 200,
+        value: { ...member, status: objInfo.status },
+      }));
+      stubWrites();
+
+      let res = await UsersService.putStatusForReq('member1', { status: 'disabled' }, _ctxPortal);
+      chai.expect(res.status).to.equal(200);
+      chai.expect(res.value.status).to.equal('disabled');
+      chai.expect(res.value.schools).to.equal(undefined); // not the schools of the user
+      chai.expect(stubPut.lastCall.args[0].condition).to.deep.equal({ status: { $in: ['pending', 'active'] } });
+
+      res = await UsersService.putStatusForReq('member1', { status: 'active' }, _ctxPortal);
+      chai.expect(res.status).to.equal(200);
+      chai.expect(stubPut.lastCall.args[0].condition).to.deep.equal({ status: { $in: ['pending', 'disabled'] } });
+
+      // never to pending, nothing else than the status
+      for (const objInfo of [{ status: 'pending' }, { status: 'unknown' }, { status: 'active', name: 'x' }, {}]) {
+        res = await UsersService.putStatusForReq('member1', objInfo, _ctxPortal);
+        chai.expect(res.status).to.equal(400);
+      }
+      chai.expect(stubPut.callCount).to.equal(2);
+    });
+
+    it('should not let a portal admin disable itself', async () => {
+      const stubPut = sinon.stub(DbOpsUtils, 'put');
+
+      const res = await UsersService.putStatusForReq('portalAdmin1', { status: 'disabled' }, _ctxPortal);
+
+      chai.expect(res.status).to.equal(400);
+      chai.expect(res.error.message).to.equal('Skipping disabling status of current user');
+      chai.expect(stubPut.callCount).to.equal(0);
+    });
+
+    it('should change nothing when the user already has the status', async () => {
+      sinon.stub(DbOpsUtils, 'put').callsFake(() => ({
+        status: 404,
+        error: { message: 'Not found member1', error: new Error('Not found member1') },
+      }));
+      sinon.stub(DbOpsUtils, 'getOne').callsFake(() => ({ status: 200, value: { ...member, status: 'active' } }));
+      stubWrites();
+
+      const res = await UsersService.putStatusForReq('member1', { status: 'active' }, _ctxPortal);
+
+      chai.expect(res.status).to.equal(200);
+      chai.expect(res.changed).to.equal(false);
+      chai.expect(res.value.status).to.equal('active');
+      chai.expect(EventsRest.raiseEventForObject.callCount).to.equal(0);
+    });
   });
 });

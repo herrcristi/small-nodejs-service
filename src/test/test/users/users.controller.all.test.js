@@ -538,6 +538,46 @@ describe('Users Controller', function () {
   }).timeout(10000);
 
   /**
+   * put status by a portal admin with success, fail, exception
+   */
+  it('should put status for a request with success, fail and exception', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
+    const url = `${UsersConstants.ApiPath}/${testUser.id}/status`;
+
+    // success
+    let stubService = sinon.stub(UsersService, 'putStatusForReq').callsFake(() => ({ status: 200, value: testUser }));
+    let res = await supertest(TestConstants.WebServer)
+      .put(url)
+      .set('Origin', TestConstants.WebServer)
+      .send({ status: 'disabled' });
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal({ ...testUser });
+    chai.expect(stubService.firstCall.args[1]).to.deep.equal({ status: 'disabled' });
+
+    // fail
+    stubService.callsFake(() => ({ status: 403, error: { message: 'Test error message' } }));
+    res = await supertest(TestConstants.WebServer)
+      .put(url)
+      .set('Origin', TestConstants.WebServer)
+      .send({ status: 'disabled' });
+    chai.expect(res.status).to.equal(403);
+    chai.expect(res.body.error).to.include('Test error message');
+
+    // exception
+    stubService.callsFake(() => {
+      throw new Error('Test error message');
+    });
+    res = await supertest(TestConstants.WebServer)
+      .put(url)
+      .set('Origin', TestConstants.WebServer)
+      .send({ status: 'disabled' });
+    chai.expect(res.status).to.equal(500);
+    chai.expect(res.body.error).to.include('Test error message');
+    chai.expect(stubService.callCount).to.equal(3);
+  }).timeout(10000);
+
+  /**
    * put status with success, fail, exception
    */
   it('should put status with success, fail and exception', async () => {

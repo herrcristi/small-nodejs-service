@@ -61,6 +61,26 @@ describe('DB-Ops Utils', function () {
   }).timeout(10000);
 
   /**
+   * put with a condition: the condition is part of the filter, the id is always the one given
+   */
+  it('should put with a condition', async () => {
+    let collection = {};
+    collection.findOneAndUpdate = sinon.stub().returns({ value: { id: 'id1', status: 'active' } });
+
+    // call
+    const condition = { status: 'pending', id: 'other' };
+    let res = await DbOpsUtils.put({ ...config, collection, condition }, 'id1', { status: 'active' }, null, _ctx);
+
+    // check
+    chai.expect(collection.findOneAndUpdate.firstCall.args[0]).to.deep.equal({ status: 'pending', id: 'id1' });
+    chai.expect(res.status).to.equal(200);
+
+    // without a condition only the id
+    await DbOpsUtils.put({ ...config, collection }, 'id1', { status: 'active' }, null, _ctx);
+    chai.expect(collection.findOneAndUpdate.secondCall.args[0]).to.deep.equal({ id: 'id1' });
+  }).timeout(10000);
+
+  /**
    * put not found
    */
   it('should put not found', async () => {

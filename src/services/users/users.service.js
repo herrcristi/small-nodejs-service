@@ -50,11 +50,9 @@ const Schema = {
     address: Joi.string().min(1).max(256),
   }),
 
+  // pending is only the initial state (set on create): a status never goes back to pending
   UserStatus: Joi.object().keys({
-    status: Joi.string()
-      .min(1)
-      .max(64)
-      .valid(...Object.values(UsersConstants.Status)),
+    status: Joi.string().min(1).max(64).valid(UsersConstants.Status.Active, UsersConstants.Status.Disabled),
   }),
 
   UserEmail: Joi.object().keys({
@@ -74,21 +72,18 @@ const Validators = {
     schools: SchemaSchools,
   }).fork(['email', 'schools'], (x) => x.required() /*make required */),
 
-  // for a request: profile fields only. The status is global (all the schools of the user): it is never changed by a request
-  PutReq: Schema.UserProfile,
-  PatchReq: Joi.object().keys({
-    set: Schema.UserProfile,
-    unset: Joi.array().items(Joi.string().min(1).max(128).valid('phoneNumber')),
-  }),
-
-  // internal (not reachable from a request)
-  Put: Schema.UserProfile.concat(Schema.UserStatus),
+  // profile fields only: the status is global (all the schools of the user) and has its own route (portal admin)
+  Put: Schema.UserProfile,
   PutStatus: Schema.UserStatus.fork(['status'], (x) => x.required() /*make required */),
+  // the activation on login (internal): only to active
+  PutActivation: Joi.object().keys({
+    status: Joi.string().valid(UsersConstants.Status.Active).required(),
+  }),
   PutEmail: Schema.UserEmail.fork(['email'], (x) => x.required() /*make required */),
 
   Patch: Joi.object().keys({
     // for patch allowed operations are set, unset
-    set: Schema.UserProfile.concat(Schema.UserStatus),
+    set: Schema.UserProfile,
     unset: Joi.array().items(Joi.string().min(1).max(128).valid('phoneNumber')),
   }),
 
@@ -111,6 +106,15 @@ const Private = {
     PatchSchool: 'patchSchool',
   },
   Notification: NotificationsUtils.Constants.Notification,
+
+  /**
+   * the status transitions: the new status and the statuses it can be reached from
+   * pending is only the initial state: pending -> active (or disabled), and never back to pending
+   */
+  StatusFrom: {
+    [UsersConstants.Status.Active]: [UsersConstants.Status.Pending, UsersConstants.Status.Disabled],
+    [UsersConstants.Status.Disabled]: [UsersConstants.Status.Pending, UsersConstants.Status.Active],
+  },
 
   /**
    * config
@@ -369,7 +373,7 @@ const Public = {
       return check;
     }
 
-    const r = await Public.putInternal(objID, objInfo, Validators.PutReq, Private.Action.Put, _ctx);
+    const r = await Public.putInternal(objID, objInfo, Validators.Put, Private.Action.Put, _ctx);
     return Private.limitToTenantForReq(r, check.value, _ctx);
   },
 
@@ -383,7 +387,7 @@ const Public = {
       return check;
     }
 
-    const r = await Public.patchInternal(objID, patchInfo, Validators.PatchReq, Private.Action.Patch, _ctx);
+    const r = await Public.patchInternal(objID, patchInfo, Validators.Patch, Private.Action.Patch, _ctx);
     return Private.limitToTenantForReq(r, check.value, _ctx);
   },
 
@@ -460,7 +464,7 @@ const Public = {
   /**
    * put
    */
-  putInternal: async (objID, objInfo, validator, action, _ctx) => {
+  putInternal: async (objID, objInfo, validator, action, _ctx, condition = null) => {
     // validation is done in caller functions
     const v = validator.validate(objInfo);
     if (v.error) {
@@ -494,9 +498,14 @@ const Public = {
     // translate
     await Public.translate(objInfo, _ctx);
 
-    // put
-    const r = await DbOpsUtils.put(config, objID, objInfo, projection, _ctx);
+    // put (with a condition the change is applied only if the stored object still matches it)
+    const r = await DbOpsUtils.put(condition ? { ...config, condition } : config, objID, objInfo, projection, _ctx);
     if (r.error) {
+      if (condition && r.status === 404) {
+        // not changed: it does not exist or it does not match the condition anymore, return how it is now
+        const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
+        return rget.error ? rget : { ...BaseServiceUtils.getProjectedResponse(rget, null, _ctx), changed: false };
+      }
       return r;
     }
 
@@ -517,9 +526,44 @@ const Public = {
     return await Public.putInternal(objID, objInfo, Validators.Put, Private.Action.Put, _ctx);
   },
 
+  /**
+   * put status (internal) called from users-auth on login to activate a pending user
+   * the change is done in the database only if the user is still pending: a user disabled while the login runs stays
+   * disabled (the response has the current status, the caller checks it)
+   */
   putStatus: async (objID, objInfo, _ctx) => {
-    // called from users-auth to activate the user (internal)
-    return await Public.putInternal(objID, objInfo, Validators.PutStatus, Private.Action.PutStatus, _ctx);
+    const condition = { status: UsersConstants.Status.Pending };
+    return await Public.putInternal(
+      objID,
+      objInfo,
+      Validators.PutActivation,
+      Private.Action.PutStatus,
+      _ctx,
+      condition
+    );
+  },
+
+  /**
+   * put status for a request: only a portal admin (route role, on the portal school), for any user
+   * pending -> active | disabled, active <-> disabled, never back to pending; a portal admin can not disable itself
+   * setting the status that the user already has changes nothing (200)
+   */
+  putStatusForReq: async (objID, objInfo, _ctx) => {
+    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    if (!portalSchoolID || _ctx.tenantID !== portalSchoolID) {
+      const msg = 'Portal school access required';
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
+    }
+
+    // the condition is built from the validated status only
+    const v = Validators.PutStatus.validate(objInfo);
+    if (v.error) {
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+    const condition = { status: { $in: Private.StatusFrom[objInfo.status] } };
+
+    // the response has the default projection (not the schools of the user)
+    return await Public.putInternal(objID, objInfo, Validators.PutStatus, Private.Action.PutStatus, _ctx, condition);
   },
 
   putEmail: async (objID, objInfo, _ctx) => {
@@ -535,18 +579,6 @@ const Public = {
     const v = validator.validate(patchInfo);
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
-    }
-
-    // if current user is trying to change the status to disabled, skip it for himself
-    if (objID === _ctx.userID && patchInfo.set?.status === UsersConstants.Status.Disabled) {
-      console.log(`\nSkipping disabling status of current user ${objID}`);
-      return {
-        error: {
-          message: 'Skipping disabling status of current user',
-          error: new Error('Skipping disabling status of current user'),
-        },
-        status: 400,
-      };
     }
 
     // { serviceName, collection, references, notifications.projection }

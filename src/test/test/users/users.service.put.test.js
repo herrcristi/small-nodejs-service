@@ -42,6 +42,7 @@ describe('Users Service', function () {
     delete putReq.email;
     delete putReq.schools;
     delete putReq._lang_en;
+    delete putReq.status; // the status has its own route
 
     // stub
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
@@ -133,6 +134,7 @@ describe('Users Service', function () {
     delete putReq.email;
     delete putReq.schools;
     delete putReq._lang_en;
+    delete putReq.status; // the status has its own route
 
     // stub
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
@@ -169,6 +171,7 @@ describe('Users Service', function () {
     delete putReq.email;
     delete putReq.schools;
     delete putReq._lang_en;
+    delete putReq.status; // the status has its own route
 
     // stub
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
@@ -197,9 +200,9 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * put fail put status to disabled for current user
+   * put fail with a status (the status has its own route)
    */
-  it('should put fail put status to disabled for current user', async () => {
+  it('should put fail with a status (the status has its own route)', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
@@ -233,8 +236,8 @@ describe('Users Service', function () {
     chai.expect(res).to.deep.equal({
       status: 400,
       error: {
-        message: 'Skipping disabling status of current user',
-        error: new Error('Skipping disabling status of current user'),
+        message: 'Failed to validate schema. Error: "status" is not allowed',
+        error: new Error('Failed to validate schema. Error: "status" is not allowed'),
       },
     });
   }).timeout(10000);

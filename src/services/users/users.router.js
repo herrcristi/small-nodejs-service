@@ -17,6 +17,7 @@ router.route(`${UsersConstants.ApiPath}/school-admins/:schoolId`).get(UsersContr
 router.route(`${UsersConstants.ApiPath}/:id`).get(UsersController.getOne);
 router.route(`${UsersConstants.ApiPath}/:id`).put(UsersController.put);
 router.route(`${UsersConstants.ApiPath}/:id`).patch(UsersController.patch);
+router.route(`${UsersConstants.ApiPath}/:id/status`).put(UsersController.putStatusForReq); // portal admins only
 
 /**
  * Internal
