@@ -32,14 +32,49 @@ describe('Users Controller', function () {
   after(async function () {});
 
   /**
-   * getAll with success
+   * getAll (portal admins) with success, fail, exception
    */
-  it('should getAll with success', async () => {
+  it('should getAll with success, fail and exception', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const value = { data: testUsers, meta: { count: testUsers.length, skip: 0, limit: 0 } };
+
+    // success
+    let stubService = sinon.stub(UsersService, 'getAllForReq').callsFake(() => ({ status: 200, value }));
+    let res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}`)
+      .set('Origin', TestConstants.WebServer);
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal(value);
+
+    // fail
+    stubService.callsFake(() => ({ status: 403, error: { message: 'Test error message' } }));
+    res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}`)
+      .set('Origin', TestConstants.WebServer);
+    chai.expect(res.status).to.equal(403);
+    chai.expect(res.body.error).to.include('Test error message');
+
+    // exception
+    stubService.callsFake(() => {
+      throw new Error('Test error message');
+    });
+    res = await supertest(TestConstants.WebServer)
+      .get(`${UsersConstants.ApiPath}`)
+      .set('Origin', TestConstants.WebServer);
+    chai.expect(res.status).to.equal(500);
+    chai.expect(res.body.error).to.include('Test error message');
+    chai.expect(stubService.callCount).to.equal(3);
+  }).timeout(10000);
+
+  /**
+   * getAll internal with success
+   */
+  it('should getAll internal with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
 
     // stub
-    let stubService = sinon.stub(UsersService, 'getAllForReq').callsFake(() => {
-      console.log(`\nUsersService.getAllForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'getAllInternalForReq').callsFake(() => {
+      console.log(`\nUsersService.getAllInternalForReq called\n`);
       return {
         status: 200,
         value: {
@@ -69,9 +104,9 @@ describe('Users Controller', function () {
   }).timeout(10000);
 
   /**
-   * getAll validation fail
+   * getAll internal validation fail
    */
-  it('should getAll validation fail', async () => {
+  it('should getAll internal validation fail', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
 
     // stub
@@ -81,8 +116,8 @@ describe('Users Controller', function () {
       return { status: 401, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
-    let stubService = sinon.stub(UsersService, 'getAllForReq').callsFake(() => {
-      console.log(`\nUsersService.getAllForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'getAllInternalForReq').callsFake(() => {
+      console.log(`\nUsersService.getAllInternalForReq called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
@@ -100,14 +135,14 @@ describe('Users Controller', function () {
   }).timeout(10000);
 
   /**
-   * getAll fail
+   * getAll internal fail
    */
-  it('should getAll fail', async () => {
+  it('should getAll internal fail', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
 
     // stub
-    let stubService = sinon.stub(UsersService, 'getAllForReq').callsFake(() => {
-      console.log(`\nUsersService.getAllForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'getAllInternalForReq').callsFake(() => {
+      console.log(`\nUsersService.getAllInternalForReq called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 
@@ -124,14 +159,14 @@ describe('Users Controller', function () {
   }).timeout(10000);
 
   /**
-   * getAll fail exception
+   * getAll internal fail exception
    */
-  it('should getAll fail exception', async () => {
+  it('should getAll internal fail exception', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
 
     // stub
-    let stubService = sinon.stub(UsersService, 'getAllForReq').callsFake(() => {
-      console.log(`\nUsersService.getAllForReq called\n`);
+    let stubService = sinon.stub(UsersService, 'getAllInternalForReq').callsFake(() => {
+      console.log(`\nUsersService.getAllInternalForReq called\n`);
       throw new Error('Test error message');
     });
 
@@ -535,6 +570,105 @@ describe('Users Controller', function () {
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body.message).to.include('An unknown error has occured');
     chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * put and patch status (portal admins) with success, fail, exception
+   */
+  for (const [method, fn, body] of [
+    ['put', 'putStatus', { status: 'disabled' }],
+    ['patch', 'patchStatus', { set: { status: 'disabled' } }],
+  ]) {
+    it(`should ${method} status with success, fail and exception`, async () => {
+      const testUsers = _.cloneDeep(TestConstants.Users);
+      const testUser = testUsers[0];
+      const url = `${UsersConstants.ApiPath}/${testUser.id}/status`;
+      const call = () =>
+        supertest(TestConstants.WebServer)[method](url).set('Origin', TestConstants.WebServer).send(body);
+
+      // success
+      let stubService = sinon.stub(UsersService, fn).callsFake(() => ({ status: 200, value: testUser }));
+      let res = await call();
+      chai.expect(res.status).to.equal(200);
+      chai.expect(res.body).to.deep.equal({ ...testUser });
+      chai.expect(stubService.firstCall.args.slice(0, 2)).to.deep.equal([testUser.id, body]);
+
+      // fail
+      stubService.callsFake(() => ({ status: 403, error: { message: 'Test error message' } }));
+      res = await call();
+      chai.expect(res.status).to.equal(403);
+      chai.expect(res.body.error).to.include('Test error message');
+
+      // exception
+      stubService.callsFake(() => {
+        throw new Error('Test error message');
+      });
+      res = await call();
+      chai.expect(res.status).to.equal(500);
+      chai.expect(res.body.error).to.include('Test error message');
+      chai.expect(stubService.callCount).to.equal(3);
+    }).timeout(10000);
+  }
+
+  /**
+   * delete a school admin (portal admins) with success, fail, exception
+   */
+  it('should delete school admin with success, fail and exception', async () => {
+    const url = `${UsersConstants.ApiPath}/school-admins/school1/user1`;
+    const call = () => supertest(TestConstants.WebServer).delete(url).set('Origin', TestConstants.WebServer);
+
+    // success
+    let stubService = sinon.stub(UsersService, 'deleteSchoolAdmin').callsFake(() => ({ status: 200, value: { id: 'user1' } }));
+    let res = await call();
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal({ id: 'user1' });
+    chai.expect(stubService.firstCall.args.slice(0, 2)).to.deep.equal(['school1', 'user1']);
+
+    // fail
+    stubService.callsFake(() => ({ status: 400, error: { message: 'Test error message' } }));
+    res = await call();
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.body.error).to.include('Test error message');
+
+    // exception
+    stubService.callsFake(() => {
+      throw new Error('Test error message');
+    });
+    res = await call();
+    chai.expect(res.status).to.equal(500);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * activate (internal) with success, fail, exception
+   */
+  it('should activate with success, fail and exception', async () => {
+    const testUsers = _.cloneDeep(TestConstants.Users);
+    const testUser = testUsers[0];
+    const url = `${UsersConstants.ApiPathInternal}/${testUser.id}/activate`;
+    const call = () => supertest(TestConstants.WebServer).post(url).set('Origin', TestConstants.WebServer).send({});
+
+    // success
+    let stubService = sinon.stub(UsersService, 'activate').callsFake(() => ({ status: 200, value: testUser }));
+    let res = await call();
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal({ ...testUser });
+    chai.expect(stubService.firstCall.args[0]).to.equal(testUser.id);
+
+    // fail
+    stubService.callsFake(() => ({ status: 404, error: { message: 'Test error message' } }));
+    res = await call();
+    chai.expect(res.status).to.equal(404);
+    chai.expect(res.body.error).to.include('Test error message');
+
+    // exception
+    stubService.callsFake(() => {
+      throw new Error('Test error message');
+    });
+    res = await call();
+    chai.expect(res.status).to.equal(500);
+    chai.expect(res.body.error).to.include('Test error message');
+    chai.expect(stubService.callCount).to.equal(3);
   }).timeout(10000);
 
   /**

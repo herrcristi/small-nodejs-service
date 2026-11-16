@@ -263,6 +263,8 @@ const Api = {
   // Users API
   getUser: (id) => instance.get(`/users/${id}`),
   updateUser: (id, data) => instance.put(`/users/${id}`, data),
+  updateUserStatus: (id, data) => instance.put(`/users/${id}/status`, data), // portal admin only
+  getUsers: (params) => instance.get(`/users?${params}`), // portal admin only: all the users
 
   // Auth
   // Cookie-based auth by default (withCredentials true)
@@ -286,6 +288,10 @@ const Api = {
   // Portal admins (members of the portal school, selected tenant), portal admin only
   getPortalAdmins: (params) => instance.get(`/users/portal-admins?${params}`),
   getSchoolAdmins: (schoolID, params) => instance.get(`/users/school-admins/${schoolID}?${params}`), // portal admin only
+  // invites a user as admin of that school (the same invite, for the named school)
+  inviteSchoolAdmin: (schoolID, email) => Api.invite({ email, school: { id: schoolID, role: 'admin' } }), // portal admin only
+  // removes the admin role on that school (the user is kept), also the last admin (a new one can be invited)
+  removeSchoolAdmin: (schoolID, userID) => instance.delete(`/users/school-admins/${schoolID}/${userID}`), // portal admin only
   removePortalAdmin: (userID) => Api.updateUserSchool(userID, { remove: { roles: ['portal-admin'] } }),
 
   // Auth for portal admin

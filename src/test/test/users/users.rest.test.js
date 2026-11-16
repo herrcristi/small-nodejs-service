@@ -222,6 +222,30 @@ describe('Users Rest', function () {
   }).timeout(10000);
 
   /**
+   * rest activate: an internal call (POST /:id/activate), the local function is activate
+   */
+  it('should activate call via rest', async () => {
+    // stub
+    let stub = sinon.stub(RestCommsUtils, 'call').callsFake(() => {
+      console.log(`\nRestCommUtils.call called\n`);
+      return { status: 200, value: 'dummy' };
+    });
+
+    // call
+    let res = await UsersRest.activate('id1', _ctx);
+
+    // check
+    chai.expect(stub.firstCall.args[0]).to.deep.equal({
+      serviceName: 'users-internal',
+      method: 'POST',
+      path: '/id1/activate',
+      body: {},
+      localCall: { fn: 'activate', params: { objID: 'id1' } },
+    });
+    chai.expect(res?.value).to.equal('dummy');
+  }).timeout(10000);
+
+  /**
    * rest patch
    */
   it('should patch a call via rest', async () => {

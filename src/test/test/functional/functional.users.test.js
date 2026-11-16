@@ -32,6 +32,14 @@ describe('Users Functional', function () {
     await TestsUtils.initDatabase(_ctx);
   });
 
+  /**
+   * the request is made by this user (the validation of the cookie returns it)
+   * a request reaches only the user itself, a member of the current school, or any user for a portal admin
+   */
+  const actAs = (userID, username) => {
+    UsersAuthRest.validate.callsFake(() => ({ status: 200, value: { userID, username } }));
+  };
+
   afterEach(async function () {
     sinon.restore();
     await TestsUtils.cleanupDatabase(_ctx);
@@ -191,6 +199,7 @@ describe('Users Functional', function () {
   it('should getOne with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
+    actAs(testUser.id, testUser.email);
 
     // call
     let res = await supertest(TestConstants.WebServer)
@@ -296,7 +305,8 @@ describe('Users Functional', function () {
       _ctx
     );
 
-    // do a get
+    // do a get (as the new user)
+    actAs(testUserID, 'newemail@test.com');
     res = await supertest(TestConstants.WebServer)
       .get(`${UsersConstants.ApiPath}/${testUserID}`)
       .set('Origin', TestConstants.WebServer);
@@ -327,6 +337,7 @@ describe('Users Functional', function () {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = _.cloneDeep(testUsers[0]);
     const testUserID = testUser.id;
+    actAs(testUserID, testUser.email);
 
     const { name, email, schools } = testUser;
 
@@ -335,6 +346,8 @@ describe('Users Functional', function () {
     delete testUser.email;
     delete testUser.schools;
     delete testUser._lang_en;
+    const status = testUser.status;
+    delete testUser.status; // the status is not changed through the profile (it has its own route)
 
     // events/admins/students/professors before (in each school)
     await checkSchoolsBefore({ schools }, _ctx);
@@ -351,7 +364,7 @@ describe('Users Functional', function () {
     chai.expect(res.status).to.equal(200);
 
     // events/admins/students/professors after put (in each school)
-    await checkSchoolsAfter(testUserID, { name, email, schools }, testUser.status, _ctx);
+    await checkSchoolsAfter(testUserID, { name, email, schools }, status, _ctx);
 
     // check global events before
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
@@ -401,6 +414,7 @@ describe('Users Functional', function () {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = _.cloneDeep(testUsers[0]);
     const testUserID = testUser.id;
+    actAs(testUserID, testUser.email);
 
     const { name, email, schools } = testUser;
 
@@ -410,6 +424,8 @@ describe('Users Functional', function () {
     delete testUser.email;
     delete testUser.schools;
     delete testUser._lang_en;
+    const status = testUser.status;
+    delete testUser.status; // the status is not changed through the profile (it has its own route)
 
     // global events before
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
@@ -435,7 +451,7 @@ describe('Users Functional', function () {
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
     // events/admins/students/professors after (in each school)
-    await checkSchoolsAfter(testUserID, { name: 'new name', email, schools }, testUser.status, _ctx);
+    await checkSchoolsAfter(testUserID, { name: 'new name', email, schools }, status, _ctx);
 
     // do a get
     res = await supertest(TestConstants.WebServer)
@@ -454,6 +470,7 @@ describe('Users Functional', function () {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = _.cloneDeep(testUsers[0]);
     const testUserID = testUser.id;
+    actAs(testUserID, testUser.email);
 
     const { name, email, schools } = testUser;
     const newEmail = 'newemail@test.com';
@@ -506,6 +523,7 @@ describe('Users Functional', function () {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = _.cloneDeep(testUsers[0]);
     const testUserID = testUser.id;
+    actAs(testUserID, testUser.email);
 
     const { name, email, schools } = testUser;
 
@@ -515,6 +533,8 @@ describe('Users Functional', function () {
     delete testUser.email;
     delete testUser.schools;
     delete testUser._lang_en;
+    const status = testUser.status;
+    delete testUser.status; // the status is not changed through the profile (it has its own route)
 
     // global events before
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
@@ -543,7 +563,7 @@ describe('Users Functional', function () {
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
     // events/admins/students/professors after put (in each school)
-    await checkSchoolsAfter(testUserID, { name: 'new name', email, schools }, testUser.status, _ctx);
+    await checkSchoolsAfter(testUserID, { name: 'new name', email, schools }, status, _ctx);
 
     // do a get
     res = await supertest(TestConstants.WebServer)
@@ -562,6 +582,7 @@ describe('Users Functional', function () {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = _.cloneDeep(testUsers[0]);
     const testUserID = testUser.id;
+    actAs(testUserID, testUser.email);
 
     const { name, email, schools } = testUser;
     const schoolsAfter = _.cloneDeep(schools);

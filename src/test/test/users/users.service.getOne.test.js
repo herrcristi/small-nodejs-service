@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 
@@ -12,7 +11,8 @@ const TestConstants = require('../../test-constants.js');
 const UsersService = require('../../../services/users/users.service.js');
 
 describe('Users Service', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
+  // the user itself (the access of a request to another user is tested in users.service.access.test.js)
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users', userID: TestConstants.Users[0].id };
 
   before(async function () {});
 

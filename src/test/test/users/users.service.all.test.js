@@ -3,11 +3,12 @@
  *
  * include them in order
  */
-require('./users.service.getAllForReq.test.js');
+require('./users.service.getAllInternalForReq.test.js');
 require('./users.service.getAll.test.js');
 require('./users.service.getAllCount.test.js');
 require('./users.service.getAllByIDs.test.js');
 require('./users.service.getOne.test.js');
+require('./users.service.access.test.js');
 require('./users.service.post.test.js');
 require('./users.service.delete.test.js');
 require('./users.service.put.test.js');

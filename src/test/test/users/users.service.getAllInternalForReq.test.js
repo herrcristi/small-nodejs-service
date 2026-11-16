@@ -25,9 +25,9 @@ describe('Users Service', function () {
   after(async function () {});
 
   /**
-   * getAllForReq with success
+   * getAllInternalForReq with success
    */
-  it('should getAllForReq with success', async () => {
+  it('should getAllInternalForReq with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
 
     // stub
@@ -53,7 +53,7 @@ describe('Users Service', function () {
     });
 
     // call
-    let res = await UsersService.getAllForReq({ query: {} }, _ctx);
+    let res = await UsersService.getAllInternalForReq({ query: {} }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -186,9 +186,9 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * getAllForReq failed buildFilterFromReq
+   * getAllInternalForReq failed buildFilterFromReq
    */
-  it('should getAllForReq failed buildFilterFromReq', async () => {
+  it('should getAllInternalForReq failed buildFilterFromReq', async () => {
     // stub
     let stubBuild = sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
       status: 400,
@@ -196,7 +196,7 @@ describe('Users Service', function () {
     });
 
     // call
-    let res = await UsersService.getAllForReq({ query: {} }, _ctx);
+    let res = await UsersService.getAllInternalForReq({ query: {} }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -211,9 +211,9 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * getAllForReq failed getAll
+   * getAllInternalForReq failed getAll
    */
-  it('should getAllForReq failed getAll', async () => {
+  it('should getAllInternalForReq failed getAll', async () => {
     // stub
     let stubBuild = sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
       status: 200,
@@ -226,7 +226,7 @@ describe('Users Service', function () {
     });
 
     // call
-    let res = await UsersService.getAllForReq({ query: {} }, _ctx);
+    let res = await UsersService.getAllInternalForReq({ query: {} }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -242,9 +242,9 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * getAllForReq failed getAllCount
+   * getAllInternalForReq failed getAllCount
    */
-  it('should getAllForReq failed getAllCount', async () => {
+  it('should getAllInternalForReq failed getAllCount', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
 
     // stub
@@ -264,7 +264,7 @@ describe('Users Service', function () {
     });
 
     // call
-    let res = await UsersService.getAllForReq({ query: {} }, _ctx);
+    let res = await UsersService.getAllInternalForReq({ query: {} }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

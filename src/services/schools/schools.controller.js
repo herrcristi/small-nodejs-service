@@ -192,6 +192,29 @@ const Public = {
   },
 
   /**
+   * activate (internal) called from users-auth at login and on the session refresh
+   */
+  activate: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = SchoolsConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Activate called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
+      );
+      const r = await SchoolsService.activate(req.params.id, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
    * notification
    */
   notification: async (req, res, next) => {

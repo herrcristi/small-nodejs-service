@@ -15,7 +15,8 @@ const UsersRest = require('../../../services/rest/users.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
 describe('Users Service', function () {
-  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
+  // the user itself (the access of a request to another user is tested in users.service.access.test.js)
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users', userID: TestConstants.Users[0].id };
 
   before(async function () {});
 
@@ -42,6 +43,7 @@ describe('Users Service', function () {
     delete patchReq.set.email;
     delete patchReq.set.schools;
     delete patchReq.set._lang_en;
+    delete patchReq.set.status; // the status has its own route
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
@@ -132,6 +134,7 @@ describe('Users Service', function () {
     delete patchReq.set.email;
     delete patchReq.set.schools;
     delete patchReq.set._lang_en;
+    delete patchReq.set.status; // the status has its own route
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
@@ -171,6 +174,7 @@ describe('Users Service', function () {
     delete patchReq.set.email;
     delete patchReq.set.schools;
     delete patchReq.set._lang_en;
+    delete patchReq.set.status; // the status has its own route
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
@@ -218,6 +222,7 @@ describe('Users Service', function () {
     delete patchReq.set.email;
     delete patchReq.set.schools;
     delete patchReq.set._lang_en;
+    delete patchReq.set.status; // the status has its own route
 
     // stub
     let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
@@ -255,9 +260,9 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * patch fail patch status disable for current user
+   * patch fail with a status (the status has its own route)
    */
-  it('should patch fail patch status disable for current user', async () => {
+  it('should patch fail with a status (the status has its own route)', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
     const testUser = testUsers[0];
 
@@ -292,7 +297,7 @@ describe('Users Service', function () {
     });
 
     // call
-    let res = await UsersService.patch(testUser.id, patchReq, { _ctx, userID: testUser.id });
+    let res = await UsersService.patch(testUser.id, patchReq, { ..._ctx, userID: testUser.id });
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -302,8 +307,8 @@ describe('Users Service', function () {
     chai.expect(res).to.deep.equal({
       status: 400,
       error: {
-        message: 'Skipping disabling status of current user',
-        error: new Error('Skipping disabling status of current user'),
+        message: 'Failed to validate schema. Error: "set.status" is not allowed',
+        error: new Error('Failed to validate schema. Error: "set.status" is not allowed'),
       },
     });
   }).timeout(10000);

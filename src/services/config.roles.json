@@ -16,7 +16,15 @@
         "PATCH": ["/api/v1/users-auth/school/user/:uid"]
       },
       "users": {
-        "GET": ["/api/v1/users/portal-admins", "/api/v1/users/school-admins/:schoolId"]
+        "GET": [
+          "/api/v1/users",
+          "/api/v1/users/:id",
+          "/api/v1/users/portal-admins",
+          "/api/v1/users/school-admins/:schoolId"
+        ],
+        "PUT": ["/api/v1/users/:id", "/api/v1/users/:id/status"],
+        "PATCH": ["/api/v1/users/:id", "/api/v1/users/:id/status"],
+        "DELETE": ["/api/v1/users/school-admins/:schoolId/:id"]
       },
       "schools": {
         "GET": ["/api/v1/schools", "/api/v1/schools/:id"],

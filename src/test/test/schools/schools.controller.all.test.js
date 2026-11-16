@@ -702,4 +702,35 @@ describe('Schools Controller', function () {
     chai.expect(res.body.message).to.include('An unknown error has occured');
     chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
+
+  /**
+   * activate (internal) with success, fail, exception
+   */
+  it('should activate with success, fail and exception', async () => {
+    const url = `${SchoolsConstants.ApiPathInternal}/school1/activate`;
+    const call = () => supertest(TestConstants.WebServer).post(url).set('Origin', TestConstants.WebServer).send({});
+
+    // success
+    let stubService = sinon
+      .stub(SchoolsService, 'activate')
+      .callsFake(() => ({ status: 200, value: { id: 'school1' } }));
+    let res = await call();
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal({ id: 'school1' });
+    chai.expect(stubService.firstCall.args[0]).to.equal('school1');
+
+    // fail
+    stubService.callsFake(() => ({ status: 404, error: { message: 'Test error message' } }));
+    res = await call();
+    chai.expect(res.status).to.equal(404);
+    chai.expect(res.body.error).to.include('Test error message');
+
+    // exception
+    stubService.callsFake(() => {
+      throw new Error('Test error message');
+    });
+    res = await call();
+    chai.expect(res.status).to.equal(500);
+    chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
 });

@@ -14,7 +14,7 @@ const UsersService = require('./users.service.js');
  */
 const Public = {
   /**
-   * get all
+   * get all (portal admins)
    */
   getAll: async (req, res, next) => {
     let _ctx = req._ctx;
@@ -31,6 +31,36 @@ const Public = {
 
       // get all
       const r = await UsersService.getAllForReq(req, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * get all (internal) called from signup / invite by email
+   */
+  getAllInternal: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Get all internal called, query ${JSON.stringify(
+          CommonUtils.protectData(req.query),
+          CommonUtils.stringifyFilter,
+          2
+        )}`
+      );
+
+      // get all
+      const r = await UsersService.getAllInternalForReq(req, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
@@ -87,6 +117,33 @@ const Public = {
       );
 
       const r = await UsersService.getSchoolAdminsForReq(req.params.schoolId, req, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * delete a school admin (removes the admin role on that school)
+   */
+  deleteSchoolAdmin: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Delete school admin called, params ${JSON.stringify(
+          CommonUtils.protectData(req.params)
+        )}`
+      );
+
+      const r = await UsersService.deleteSchoolAdmin(req.params.schoolId, req.params.id, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
@@ -203,6 +260,95 @@ const Public = {
 
       // put
       const r = await UsersService.put(objID, req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * put status (portal admins)
+   */
+  putStatus: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Put status called, param ${JSON.stringify(
+          CommonUtils.protectData(req.params),
+          null,
+          2
+        )}, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+      );
+      const objID = req.params.id;
+
+      // put
+      const r = await UsersService.putStatus(objID, req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * patch status (portal admins)
+   */
+  patchStatus: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Patch status called, param ${JSON.stringify(
+          CommonUtils.protectData(req.params),
+          null,
+          2
+        )}, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+      );
+      const objID = req.params.id;
+
+      // put
+      const r = await UsersService.patchStatus(objID, req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * activate (internal) called from users-auth at login
+   */
+  activate: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Activate called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
+      );
+      const objID = req.params.id;
+
+      // activate
+      const r = await UsersService.activate(objID, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }

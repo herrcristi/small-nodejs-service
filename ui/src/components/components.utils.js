@@ -93,6 +93,17 @@ const Utils = {
   },
 
   /**
+   * text for a status in the language of the UI (the same translations as the edit dialogs)
+   * the label translated by the server (_lang_en) is used only for a status the UI does not know
+   */
+  getStatusText: (status, serverText, t, te) => {
+    if (status && te(status)) {
+      return t(status);
+    }
+    return serverText || status;
+  },
+
+  /**
    * color for status
    */
   getStatusColor: (status) => {
