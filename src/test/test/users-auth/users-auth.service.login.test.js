@@ -76,7 +76,7 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
-    let stubUsersActive = sinon.stub(UsersRest, 'put').callsFake((objID, objInfo) => {
+    let stubUsersActive = sinon.stub(UsersRest, 'putStatus').callsFake((objID, objInfo) => {
       console.log(`\nUsersRest.put called for ${JSON.stringify({ objID, objInfo }, null, 2)}\n`);
 
       chai.expect(objID).to.equal(testInfoUser.id);
@@ -183,7 +183,7 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
-    let stubUsersActive = sinon.stub(UsersRest, 'put').callsFake((objID, objInfo) => {
+    let stubUsersActive = sinon.stub(UsersRest, 'putStatus').callsFake((objID, objInfo) => {
       console.log(`\nUsersRest.put called for ${JSON.stringify({ objID, objInfo }, null, 2)}\n`);
 
       chai.expect(objID).to.equal(testInfoUser.id);
@@ -566,7 +566,7 @@ describe('Users Auth Service', function () {
       return { status: 200, value: testInfoUser };
     });
 
-    let stubUsersActive = sinon.stub(UsersRest, 'put').callsFake((objID, objInfo) => {
+    let stubUsersActive = sinon.stub(UsersRest, 'putStatus').callsFake((objID, objInfo) => {
       console.log(`\nUsersRest.put called for ${JSON.stringify({ objID, objInfo }, null, 2)}\n`);
 
       chai.expect(objID).to.equal(testInfoUser.id);

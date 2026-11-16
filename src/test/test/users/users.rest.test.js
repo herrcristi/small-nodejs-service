@@ -222,6 +222,24 @@ describe('Users Rest', function () {
   }).timeout(10000);
 
   /**
+   * rest putStatus
+   */
+  it('should put status call via rest', async () => {
+    // stub
+    let stub = sinon.stub(RestCommsUtils, 'put').callsFake(() => {
+      console.log(`\nRestCommUtils.put called\n`);
+      return { status: 200, value: 'dummy' };
+    });
+
+    // call
+    let res = await UsersRest.putStatus('id1', { status: 'active' }, _ctx);
+
+    // check
+    chai.expect(stub.firstCall.args[4]).to.equal('status');
+    chai.expect(res?.value).to.equal('dummy');
+  }).timeout(10000);
+
+  /**
    * rest patch
    */
   it('should patch a call via rest', async () => {

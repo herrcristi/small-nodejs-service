@@ -8,6 +8,7 @@ require('./users.service.getAll.test.js');
 require('./users.service.getAllCount.test.js');
 require('./users.service.getAllByIDs.test.js');
 require('./users.service.getOne.test.js');
+require('./users.service.forReq.test.js');
 require('./users.service.post.test.js');
 require('./users.service.delete.test.js');
 require('./users.service.put.test.js');

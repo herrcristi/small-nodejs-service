@@ -118,7 +118,7 @@ const Public = {
       }
 
       // get
-      const r = await UsersService.getOne(objID, rf.value.projection, _ctx);
+      const r = await UsersService.getOneForReq(objID, rf.value.projection, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
@@ -202,7 +202,38 @@ const Public = {
       const objID = req.params.id;
 
       // put
-      const r = await UsersService.put(objID, req.body, _ctx);
+      const r = await UsersService.putForReq(objID, req.body, _ctx);
+      if (r.error) {
+        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * putStatus (internal) called from users-auth to activate the user
+   */
+  putStatus: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Put status called, param ${JSON.stringify(
+          CommonUtils.protectData(req.params),
+          null,
+          2
+        )}, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+      );
+      const objID = req.params.id;
+
+      // put
+      const r = await UsersService.putStatus(objID, req.body, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
@@ -264,7 +295,7 @@ const Public = {
       const objID = req.params.id;
 
       // patch
-      const r = await UsersService.patch(objID, req.body, _ctx);
+      const r = await UsersService.patchForReq(objID, req.body, _ctx);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }

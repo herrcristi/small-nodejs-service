@@ -39,11 +39,8 @@ const SchemaSchools = Joi.array().items(
 );
 
 const Schema = {
-  User: Joi.object().keys({
-    status: Joi.string()
-      .min(1)
-      .max(64)
-      .valid(...Object.values(UsersConstants.Status)),
+  // the profile fields that the user (and the admins of the school) can change
+  UserProfile: Joi.object().keys({
     name: Joi.string().min(1).max(128),
     birthday: Joi.date().iso(),
     phoneNumber: Joi.string()
@@ -51,6 +48,13 @@ const Schema = {
       .max(32)
       .regex(/^(\d|\+|\-|\.|' ')*$/), // allow 0-9 + - . in any order
     address: Joi.string().min(1).max(256),
+  }),
+
+  UserStatus: Joi.object().keys({
+    status: Joi.string()
+      .min(1)
+      .max(64)
+      .valid(...Object.values(UsersConstants.Status)),
   }),
 
   UserEmail: Joi.object().keys({
@@ -70,12 +74,21 @@ const Validators = {
     schools: SchemaSchools,
   }).fork(['email', 'schools'], (x) => x.required() /*make required */),
 
-  Put: Schema.User,
+  // for a request: profile fields only. The status is global (all the schools of the user): it is never changed by a request
+  PutReq: Schema.UserProfile,
+  PatchReq: Joi.object().keys({
+    set: Schema.UserProfile,
+    unset: Joi.array().items(Joi.string().min(1).max(128).valid('phoneNumber')),
+  }),
+
+  // internal (not reachable from a request)
+  Put: Schema.UserProfile.concat(Schema.UserStatus),
+  PutStatus: Schema.UserStatus.fork(['status'], (x) => x.required() /*make required */),
   PutEmail: Schema.UserEmail.fork(['email'], (x) => x.required() /*make required */),
 
   Patch: Joi.object().keys({
     // for patch allowed operations are set, unset
-    set: Schema.User,
+    set: Schema.UserProfile.concat(Schema.UserStatus),
     unset: Joi.array().items(Joi.string().min(1).max(128).valid('phoneNumber')),
   }),
 
@@ -94,6 +107,7 @@ const Private = {
   Action: {
     ...BaseServiceUtils.Constants.Action,
     PutEmail: 'putEmail',
+    PutStatus: 'putStatus',
     PatchSchool: 'patchSchool',
   },
   Notification: NotificationsUtils.Constants.Notification,
@@ -118,6 +132,46 @@ const Private = {
       },
     };
     return config;
+  },
+
+  /**
+   * a request can reach only itself or a member of the current school (tenant)
+   * the others are reported as not found (their existence is not disclosed)
+   * returns { status, value } or { status, error }
+   */
+  checkTargetForReq: async (config, objID, _ctx) => {
+    if (objID === _ctx.userID) {
+      return { status: 200, value: { self: true } };
+    }
+
+    const notFound = () => {
+      const msg = `Not found ${objID}`;
+      return { status: 404, error: { message: msg, error: new Error(msg) } };
+    };
+    if (!_ctx.tenantID) {
+      return notFound();
+    }
+
+    const r = await DbOpsUtils.getOne(config, objID, { id: 1, schools: 1 }, _ctx);
+    if (r.error) {
+      return r;
+    }
+    if (!r.value.schools?.some((school) => school.id === _ctx.tenantID)) {
+      return notFound();
+    }
+
+    return { status: 200, value: { self: false } };
+  },
+
+  /**
+   * the memberships of another user are not part of the response, only the current school
+   */
+  limitToTenantForReq: (r, check, _ctx) => {
+    if (r.error || check.self || !Array.isArray(r.value?.schools)) {
+      return r;
+    }
+
+    return { ...r, value: { ...r.value, schools: r.value.schools.filter((school) => school.id === _ctx.tenantID) } };
   },
 
   /**
@@ -292,6 +346,48 @@ const Public = {
   },
 
   /**
+   * get one for a request: the user itself or a member of the current school
+   */
+  getOneForReq: async (objID, projection, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    const check = await Private.checkTargetForReq(config, objID, _ctx);
+    if (check.error) {
+      return check;
+    }
+
+    const r = await DbOpsUtils.getOne(config, objID, projection, _ctx);
+    return Private.limitToTenantForReq(r, check.value, _ctx);
+  },
+
+  /**
+   * put for a request: the user itself or a member of the current school (profile fields only)
+   */
+  putForReq: async (objID, objInfo, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    const check = await Private.checkTargetForReq(config, objID, _ctx);
+    if (check.error) {
+      return check;
+    }
+
+    const r = await Public.putInternal(objID, objInfo, Validators.PutReq, Private.Action.Put, _ctx);
+    return Private.limitToTenantForReq(r, check.value, _ctx);
+  },
+
+  /**
+   * patch for a request: the user itself or a member of the current school (profile fields only)
+   */
+  patchForReq: async (objID, patchInfo, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    const check = await Private.checkTargetForReq(config, objID, _ctx);
+    if (check.error) {
+      return check;
+    }
+
+    const r = await Public.patchInternal(objID, patchInfo, Validators.PatchReq, Private.Action.Patch, _ctx);
+    return Private.limitToTenantForReq(r, check.value, _ctx);
+  },
+
+  /**
    * post
    */
   post: async (objInfo, _ctx) => {
@@ -419,6 +515,11 @@ const Public = {
 
   put: async (objID, objInfo, _ctx) => {
     return await Public.putInternal(objID, objInfo, Validators.Put, Private.Action.Put, _ctx);
+  },
+
+  putStatus: async (objID, objInfo, _ctx) => {
+    // called from users-auth to activate the user (internal)
+    return await Public.putInternal(objID, objInfo, Validators.PutStatus, Private.Action.PutStatus, _ctx);
   },
 
   putEmail: async (objID, objInfo, _ctx) => {

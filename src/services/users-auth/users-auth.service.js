@@ -416,7 +416,7 @@ const Public = {
     // if user pending make active
     if (user.status === UsersRest.Constants.Status.Pending) {
       user.status = UsersRest.Constants.Status.Active;
-      const rP = await UsersRest.put(user.id, { status: UsersRest.Constants.Status.Active }, _ctx);
+      const rP = await UsersRest.putStatus(user.id, { status: UsersRest.Constants.Status.Active }, _ctx);
       if (rP.error) {
         const msg = 'Failed to make user active';
         return { status: 500, error: { message: msg, error: new Error(msg) } };

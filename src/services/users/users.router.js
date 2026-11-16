@@ -24,6 +24,7 @@ router.route(`${UsersConstants.ApiPath}/:id`).patch(UsersController.patch);
 router.route(`${UsersConstants.ApiPathInternal}`).get(UsersController.getAll); // called from signup / invite by email
 router.route(`${UsersConstants.ApiPathInternal}`).post(UsersController.post); // called from signup / invite
 router.route(`${UsersConstants.ApiPathInternal}/:id`).delete(UsersController.delete); // called from users-auth
+router.route(`${UsersConstants.ApiPathInternal}/:id/status`).put(UsersController.putStatus); // called from users-auth to activate the user
 router.route(`${UsersConstants.ApiPathInternal}/:id/email`).put(UsersController.putEmail); // called from users-auth to change only email
 router.route(`${UsersConstants.ApiPathInternal}/:id/school`).patch(UsersController.patchSchool); // caled by admin to add/remove user from school
 

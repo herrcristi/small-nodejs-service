@@ -84,6 +84,13 @@ const Public = {
   },
 
   /**
+   * put status (internal) called from users-auth to activate the user
+   */
+  putStatus: async (objID, objInfo, _ctx) => {
+    return await RestCommsUtils.put(UsersConstants.ServiceNameInternal, objID, objInfo, _ctx, 'status');
+  },
+
+  /**
    * put email (internal) called from users-auth
    */
   putEmail: async (objID, objInfo, _ctx) => {
