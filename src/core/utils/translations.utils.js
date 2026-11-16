@@ -102,10 +102,18 @@ const Public = {
     let r = {};
     for (const lang in Private.Emails) {
       const emailTypeLowercase = emailType?.toLowerCase();
-      r[lang] = Private.Emails[lang][emailTypeLowercase] || Private.Emails['en'][emailTypeLowercase] || null;
-      // expand subject, email
-      for (const key in r[lang] || {}) {
-        r[lang][key] = Private.expandArgs(r[lang][key], args, _ctx);
+      const template = Private.Emails[lang][emailTypeLowercase] || Private.Emails['en'][emailTypeLowercase];
+
+      // expand subject, email into a NEW object
+      // the template is cached and shared (also by the languages that fall back to 'en'), so it must never be changed,
+      // otherwise the first expanded text (with its links and tokens) would be sent to every later recipient
+      r[lang] = null;
+      if (template) {
+        r[lang] = {};
+        for (const key in template) {
+          r[lang][key] =
+            typeof template[key] === 'string' ? Private.expandArgs(template[key], args, _ctx) : template[key];
+        }
       }
     }
 
