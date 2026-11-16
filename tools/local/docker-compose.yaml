@@ -13,7 +13,8 @@ services:
     ports:
       - '27017:27017'
     volumes:
-      - '/home/devel/data/mongodb:/data/db'
+      # a named volume by default; set MONGODB_DATA_DIR to a folder (absolute path) to keep the data there instead
+      - '${MONGODB_DATA_DIR:-mongodb_data}:/data/db'
     command: mongod --auth --wiredTigerCacheSizeGB 1.0
 
   # mongo-express:
@@ -33,3 +34,6 @@ services:
   #     - '5672:5672'
   #   volumes:
   #     - /tmp/data/rabbitmq:/data/rabbitmq
+
+volumes:
+  mongodb_data:
