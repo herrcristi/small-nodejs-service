@@ -102,7 +102,8 @@ async function load() {
       sort: 'name',
       limit: 100, // a school has a few admins
     });
-    const response = await Api.getSchoolAdmins(props.itemID, params.toString());
+    const query = params.toString();
+    const response = await Api.getSchoolAdmins(props.itemID, query);
     admins.value = response.data?.data || [];
     nodatatext.value = '';
   } catch (e) {
@@ -176,7 +177,8 @@ async function invite() {
 
   inviting.value = true;
   try {
-    const ok = await ComponentsUtils.Edit.add(apiFn, { email: inviteEmail.value.trim() }, snackbarO, t);
+    const payload = { email: inviteEmail.value.trim() };
+    const ok = await ComponentsUtils.Edit.add(apiFn, payload, snackbarO, t);
     if (ok) {
       inviteDialog.value = false;
       await load();

@@ -130,10 +130,38 @@ describe('Users Auth Controller', function () {
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
-    // check
-    chai.expect(res.status).to.equal(400);
+    // check: the same answer for every failed login (here an invalid request)
+    chai.expect(res.status).to.equal(401);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error).to.include('Test error message');
+    chai.expect(res.body.error).to.include('Invalid username/password');
+    chai.expect(res.body.error).to.not.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * login: the user sees the same answer whatever the real reason; a server error stays a server error
+   */
+  it('should login answer the same for every reason of a failed login', async () => {
+    const stubService = sinon.stub(UsersAuthService, 'login');
+    const login = () =>
+      supertest(TestConstants.WebServer)
+        .post(`${UsersAuthConstants.ApiPath}/login`)
+        .set('Origin', TestConstants.WebServer)
+        .send({ username: 'user@testdomain.test', password: 'Password1!' });
+
+    for (const [status, message] of [
+      [404, 'Not found user@testdomain.test'], // no such account
+      [401, 'Invalid password'], // wrong password
+      [403, 'User is disabled'],
+    ]) {
+      stubService.returns({ status, error: { message, error: new Error(message) } });
+      const res = await login();
+      chai.expect(res.status).to.equal(401);
+      chai.expect(res.body.error).to.include('Invalid username/password').and.not.include(message);
+    }
+
+    stubService.returns({ status: 500, error: { message: 'Database error', error: new Error('Database error') } });
+    const res = await login();
+    chai.expect(res.status).to.equal(500);
   }).timeout(10000);
 
   /**

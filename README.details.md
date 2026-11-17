@@ -630,7 +630,7 @@ The backend reads its settings from the **process environment**. [src/.env.examp
 | `SMALL_API_PORTAL_SCHOOL_ID`   | a UUID. The Portal School is created with this id at startup if it is missing                                                                                                                                                                                                                         |
 | `SMALL_API_PORTAL_ADMIN_EMAIL` | optional. The email of the first portal admin. If the Portal School has no portal admin yet, it is invited at startup and receives the password setup email. See [The Portal School](#the-portal-school)                                                                                              |
 
-**Emails are stored in lower case.** One mailbox is one account, so every email is normalized (trimmed, lower case) when it is validated and when it is looked up. A database created before this rule can be checked and migrated with `cd src && node scripts/normalize-emails.js` (a dry run; add `--apply` to change the data). It reports accounts that differ only by the case, which must be merged by hand.
+**Emails are stored in lower case.** One mailbox is one account, so every email is normalized (trimmed, lower case) when it is validated and when it is looked up.
 
 ### Run it
 

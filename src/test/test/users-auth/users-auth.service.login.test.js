@@ -261,8 +261,9 @@ describe('Users Auth Service', function () {
 
     // check
     chai.expect(stubBase.callCount).to.equal(0);
+    // the real error (the controller answers 401)
     chai.expect(res).to.deep.equal({
-      status: 401,
+      status: 400,
       error: {
         message: 'Failed to validate schema. Error: "password" is required',
         error: new Error('Failed to validate schema. Error: "password" is required'),
@@ -322,13 +323,9 @@ describe('Users Auth Service', function () {
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(stubEvents.callCount).to.equal(0); // a failed login is only logged, not recorded as an event
 
-    chai.expect(res).to.deep.equal({
-      status: 401,
-      error: {
-        message: 'Invalid username/password',
-        error: new Error('Invalid username/password'),
-      },
-    });
+    // the real error (the controller answers the same 401 for every failed login)
+    chai.expect(res.status).to.equal(404);
+    chai.expect(res.error.message).to.equal('Test error message');
   }).timeout(10000);
 
   /**
@@ -452,13 +449,9 @@ describe('Users Auth Service', function () {
     chai.expect(stubUsers.callCount).to.equal(1);
     chai.expect(stubEvents.callCount).to.equal(0); // a failed login is only logged, not recorded as an event
 
-    chai.expect(res).to.deep.equal({
-      status: 401,
-      error: {
-        message: 'Invalid username/password',
-        error: new Error('Invalid username/password'),
-      },
-    });
+    // the real error (the controller answers the same 401 for every failed login)
+    chai.expect(res.status).to.equal(404);
+    chai.expect(res.error.message).to.equal('Test error message');
   }).timeout(10000);
 
   /**
@@ -521,12 +514,10 @@ describe('Users Auth Service', function () {
     chai.expect(stubUsers.callCount).to.equal(1);
     chai.expect(stubEvents.callCount).to.equal(0); // a failed login is only logged, not recorded as an event
 
+    // the real error (the controller answers the same 401 for every failed login)
     chai.expect(res).to.deep.equal({
-      status: 401,
-      error: {
-        message: 'Invalid username/password',
-        error: new Error('Invalid username/password'),
-      },
+      status: 403,
+      error: { message: 'User is disabled', error: new Error('User is disabled') },
     });
   }).timeout(10000);
 
@@ -636,12 +627,10 @@ describe('Users Auth Service', function () {
     chai.expect(stubUsersGet.callCount).to.equal(1);
     chai.expect(stubUsersActive.callCount).to.equal(1);
     chai.expect(stubEvents.callCount).to.equal(0); // a failed login is only logged, not recorded as an event
+    // the real error (the controller answers the same 401 for every failed login)
     chai.expect(res).to.deep.equal({
-      status: 401,
-      error: {
-        message: 'Invalid username/password',
-        error: new Error('Invalid username/password'),
-      },
+      status: 403,
+      error: { message: 'User is disabled', error: new Error('User is disabled') },
     });
   }).timeout(10000);
 

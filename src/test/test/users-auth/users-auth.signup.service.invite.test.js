@@ -145,12 +145,13 @@ describe('Users Auth Service', function () {
 
     chai.expect(stubEvents.callCount).to.equal(0);
 
-    // the same answer for new users, existing users and members (it does not tell if an account exists)
+    // the real result (the controller answers the same for all of them)
     chai.expect(res).to.deep.equal({
-      status: 200,
+      status: 201,
       value: {
         username: testUser.email,
         type: UsersAuthRest.Constants.Type,
+        userID: testUserID,
       },
     });
   }).timeout(10000);
@@ -241,7 +242,7 @@ describe('Users Auth Service', function () {
       portalCtx
     );
 
-    chai.expect(res.status).to.equal(200);
+    chai.expect(res.status).to.equal(201);
     chai.expect(stubUsersPost.callCount).to.equal(1);
     chai.expect(stubAuthPost.callCount).to.equal(1);
     chai.expect(stubReset.callCount).to.equal(1);
@@ -395,12 +396,14 @@ describe('Users Auth Service', function () {
 
     chai.expect(stubEvents.callCount).to.equal(0);
 
-    // the same answer for new users, existing users and members (it does not tell if an account exists)
+    // the real result (the controller answers the same for all of them)
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
         username: testUser.email,
+        name: testUser.email,
         type: UsersAuthRest.Constants.Type,
+        userID: testUserID,
       },
     });
   }).timeout(10000);
@@ -603,12 +606,14 @@ describe('Users Auth Service', function () {
 
     chai.expect(stubEvents.callCount).to.equal(0);
 
-    // the same answer for new users, existing users and members (it does not tell if an account exists)
+    // the real result (the controller answers the same for all of them)
     chai.expect(res).to.deep.equal({
-      status: 200,
+      status: 204,
       value: {
         username: testUser.email,
+        name: testUser.email,
         type: UsersAuthRest.Constants.Type,
+        userID: testUserID,
       },
     });
   }).timeout(10000);
@@ -633,7 +638,10 @@ describe('Users Auth Service', function () {
 
       const res = await UsersAuthSignupService.invite({ email, school: { id: 'school1', role: 'admin' } }, portalCtx);
 
-      chai.expect(res).to.deep.equal({ status: 200, value: { username: email, type: UsersAuthRest.Constants.Type } });
+      chai.expect(res).to.deep.equal({
+        status: 200,
+        value: { userID: 'user1', username: email, name: 'School Admin', type: UsersAuthRest.Constants.Type },
+      });
       chai.expect(stubSchool.firstCall.args[0]).to.equal('school1');
 
       // the role is added on that school, and the invitation names that school
@@ -655,7 +663,7 @@ describe('Users Auth Service', function () {
 
       const res = await UsersAuthSignupService.invite({ email, school: { id: 'school1', role: 'admin' } }, portalCtx);
 
-      chai.expect(res.status).to.equal(200);
+      chai.expect(res.status).to.equal(201);
       chai.expect(stubUsersPost.firstCall.args[0]).to.deep.equal({
         email,
         schools: [{ id: 'school1', roles: ['admin'] }],
@@ -752,10 +760,7 @@ describe('Users Auth Service', function () {
       _ctx
     );
 
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: { username: 'john.doe@testdomain.test', type: UsersAuthRest.Constants.Type },
-    });
+    chai.expect(res).to.deep.equal({ status: 201, value: { userID: 'user1' } });
     chai.expect(getByEmail.firstCall.args[0]).to.equal('john.doe@testdomain.test');
     chai.expect(post.firstCall.args[0].email).to.equal('john.doe@testdomain.test');
     chai.expect(authPost.firstCall.args[0].username).to.equal('john.doe@testdomain.test');

@@ -8,6 +8,16 @@ const RestMessagesUtils = require('../../core/utils/rest-messages.utils.js');
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthSignupService = require('./users-auth.signup.service.js');
 
+const Private = {
+  /**
+   * the answer for the user of an invite (or a signup): the same for a new user, an existing user and an existing
+   * member, so it does not tell if an account exists, nor its id or name (the service returns the real result)
+   */
+  inviteAnswer: (r) => {
+    return { username: r.value?.username, type: UsersAuthConstants.Type };
+  },
+};
+
 /**
  * controller functions called from router
  */
@@ -30,7 +40,9 @@ const Public = {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
 
-      res.status(r.status).json(r.value);
+      // a school was created; its first admin is invited (the same answer for a new or an existing user)
+      const answer = Private.inviteAnswer(r);
+      res.status(201).json(answer);
     } catch (e) {
       return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
     } finally {
@@ -60,7 +72,9 @@ const Public = {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
 
-      res.status(r.status).json(r.value);
+      // the same answer for a new user, an existing user and an existing member
+      const answer = Private.inviteAnswer(r);
+      res.status(200).json(answer);
     } catch (e) {
       return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
     } finally {

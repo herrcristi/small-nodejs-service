@@ -99,12 +99,13 @@ describe('Users Service access', function () {
 
       const res = await UsersService.getOne('outsider1', null, _ctx);
 
+      // the real result: it exists, but it is not a member (the controller answers 404)
       chai.expect(stubBase.callCount).to.equal(1); // only the membership check
-      chai.expect(res.status).to.equal(404);
-      chai.expect(res.error.message).to.equal('Not found outsider1');
+      chai.expect(res.status).to.equal(403);
+      chai.expect(res.error.message).to.equal('The user outsider1 is not a member of the current school');
     });
 
-    it('should not tell if a user exists outside of the current school', async () => {
+    it('should answer not found for a user that does not exist', async () => {
       sinon.stub(DbOpsUtils, 'getOne').callsFake(() => notFound('nobody'));
 
       const res = await UsersService.getOne('nobody', null, _ctx);
@@ -118,7 +119,7 @@ describe('Users Service access', function () {
       const res = await UsersService.getOne('member1', null, { ..._ctx, tenantID: undefined });
 
       chai.expect(stubBase.callCount).to.equal(0);
-      chai.expect(res.status).to.equal(404);
+      chai.expect(res.status).to.equal(403);
     });
 
     it('should get any user for a portal admin, without the schools and the personal fields', async () => {
@@ -146,7 +147,7 @@ describe('Users Service access', function () {
 
       const res = await UsersService.getOne('outsider1', null, _ctxPortal);
 
-      chai.expect(res.status).to.equal(404);
+      chai.expect(res.status).to.equal(403);
     });
   });
 
@@ -157,9 +158,9 @@ describe('Users Service access', function () {
       const stubPatch = sinon.stub(DbOpsUtils, 'patch');
 
       let res = await UsersService.put('outsider1', { name: 'Changed' }, _ctx);
-      chai.expect(res.status).to.equal(404);
+      chai.expect(res.status).to.equal(403);
       res = await UsersService.patch('outsider1', { set: { name: 'Changed' } }, _ctx);
-      chai.expect(res.status).to.equal(404);
+      chai.expect(res.status).to.equal(403);
 
       chai.expect(stubPut.callCount).to.equal(0);
       chai.expect(stubPatch.callCount).to.equal(0);
@@ -336,12 +337,10 @@ describe('Users Service access', function () {
     it('should delete the last admin of a school too (a portal admin can invite a new one)', async () => {
       sinon.stub(DbOpsUtils, 'getOne').callsFake(() => ({ status: 200, value: _.cloneDeep(admin) }));
       const stubCount = sinon.stub(DbOpsUtils, 'getAllCount');
-      const stubPatch = sinon
-        .stub(DbOpsUtils, 'patch')
-        .callsFake(() => ({
-          status: 200,
-          value: { id: 'admin2', schools: [{ id: 'schoolA', roles: ['professor'] }] },
-        }));
+      const stubPatch = sinon.stub(DbOpsUtils, 'patch').callsFake(() => ({
+        status: 200,
+        value: { id: 'admin2', schools: [{ id: 'schoolA', roles: ['professor'] }] },
+      }));
       stubWrites();
 
       const res = await UsersService.deleteSchoolAdmin('schoolA', 'admin2', _ctxPortal);

@@ -16,10 +16,9 @@ const Private = {
    * derive the sign and the encrypt keys of a password (HKDF, the issuer as salt)
    */
   deriveKeys: (password, issuer) => {
-    return {
-      sign: Buffer.from(crypto.hkdfSync('sha512', password, issuer, 'jwt-sign', 64)),
-      encrypt: Buffer.from(crypto.hkdfSync('sha256', password, issuer, 'jwt-encrypt', 32)),
-    };
+    const signKey = crypto.hkdfSync('sha512', password, issuer, 'jwt-sign', 64);
+    const encryptKey = crypto.hkdfSync('sha256', password, issuer, 'jwt-encrypt', 32);
+    return { sign: Buffer.from(signKey), encrypt: Buffer.from(encryptKey) };
   },
 };
 

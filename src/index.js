@@ -30,7 +30,7 @@ const Private = {
    * problems of the secrets: placeholders, weak values (few different characters), or the service to service
    * password equal to an auth password (the same key would protect sessions and internal calls)
    */
-  getSecretsProblems: () => {
+  evaluateSecrets: () => {
     const problems = [];
     for (const name of ['SMALL_API_SALT', 'SMALL_API_S2SPASS', 'SMALL_API_PREVAUTHPASS', 'SMALL_API_AUTHPASS']) {
       const value = process.env[name];
@@ -93,7 +93,7 @@ const Public = {
     }
 
     // the secrets: refused in production, a warning in debug mode (local development with the example values)
-    const problems = Private.getSecretsProblems();
+    const problems = Private.evaluateSecrets();
     if (problems.length) {
       problems.forEach((problem) => console.log(problem));
       if (!CommonUtils.isDebug()) {

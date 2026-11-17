@@ -57,7 +57,11 @@ const Public = {
     windowMs: Private.Window,
     limit: () => Private.limit('SMALL_API_RATE_LIMIT_LOGIN_MAX', 5),
     skipSuccessfulRequests: true,
-    keyGenerator: (req) => `login|${ipKeyGenerator(req.ip)}|${Private.account(req)}`,
+    keyGenerator: (req) => {
+      const ip = ipKeyGenerator(req.ip);
+      const account = Private.account(req);
+      return `login|${ip}|${account}`;
+    },
   },
 
   /**
@@ -68,7 +72,10 @@ const Public = {
     windowMs: Private.Window,
     limit: () => Private.limit('SMALL_API_RATE_LIMIT_LOGIN_ACCOUNT_MAX', 20),
     skipSuccessfulRequests: true,
-    keyGenerator: (req) => `login-account|${Private.account(req)}`,
+    keyGenerator: (req) => {
+      const account = Private.account(req);
+      return `login-account|${account}`;
+    },
   },
 
   /**
@@ -78,7 +85,10 @@ const Public = {
     ...Private.common,
     windowMs: Private.Window,
     limit: () => Private.limit('SMALL_API_RATE_LIMIT_RESET_MAX', 3),
-    keyGenerator: (req) => `reset-password|${Private.account(req)}`,
+    keyGenerator: (req) => {
+      const account = Private.account(req);
+      return `reset-password|${account}`;
+    },
   },
 };
 

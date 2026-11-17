@@ -352,10 +352,7 @@ const Public = {
     // validate
     const v = Validators.Login.validate(objInfo);
     if (v.error) {
-      return {
-        ...CommonUtils.getSchemaValidationError(v, objInfo, _ctx),
-        status: 401, // return 401 instead of 400
-      };
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx); // 400 (the controller answers 401)
     }
     objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
@@ -368,15 +365,17 @@ const Public = {
     // events
     const eventO = { id: objInfo.username, name: objInfo.username, type: UsersAuthConstants.Type };
 
-    // generic error
-    const errorLogin = 'Invalid username/password';
-    const rError = { status: 401, error: { message: errorLogin, error: new Error(errorLogin) } };
-
     // a failed login is not recorded as an event: there can be many (anybody can try), so it is only logged,
     // and the rate limits count the failures of an account
-    const loginFailed = (reason) => {
+    // the real error is returned (404 unknown account, 401 wrong password, 403 disabled user, 500); the controller
+    // answers the same error for all of them, so the user can not tell if an account exists
+    const loginFailed = (r, reason) => {
       console.log(`\nLogin failed for ${objInfo.username}: ${reason}`);
-      return rError; // return generic error
+      return r;
+    };
+    const disabled = () => {
+      const msg = 'User is disabled';
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
     };
 
     ///
@@ -388,7 +387,7 @@ const Public = {
     };
     let rL = await Providers[Private.UsersAuthProviderType](config, objInfo, _ctx);
     if (rL.error) {
-      return loginFailed('Login failed');
+      return loginFailed(rL, 'Login failed');
     }
 
     ///
@@ -397,7 +396,7 @@ const Public = {
     const userProjection = { id: 1, status: 1, name: 1, email: 1, schools: 1 };
     const rUserDetails = await UsersRest.getOneByEmail(objInfo.username, userProjection, _ctx);
     if (rUserDetails.error) {
-      return loginFailed('No user details');
+      return loginFailed(rUserDetails, 'No user details');
     }
 
     _ctx.userID = rUserDetails.value.id; // set userID in context for events and notifications
@@ -406,7 +405,8 @@ const Public = {
     // fail login if user is disabled
     const user = rUserDetails.value;
     if (user.status === UsersRest.Constants.Status.Disabled) {
-      return loginFailed('User is disabled');
+      const rDisabled = disabled();
+      return loginFailed(rDisabled, 'User is disabled');
     }
 
     // if user pending make active
@@ -420,7 +420,8 @@ const Public = {
 
       // disabled while this login was running: it stays disabled
       if (rP.value?.status === UsersRest.Constants.Status.Disabled) {
-        return loginFailed('User is disabled');
+        const rDisabled = disabled();
+        return loginFailed(rDisabled, 'User is disabled');
       }
       user.status = UsersRest.Constants.Status.Active;
     }

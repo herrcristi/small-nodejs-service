@@ -292,7 +292,8 @@ const Public = {
   activate: async (objID, _ctx) => {
     const config = await Private.getConfig(_ctx);
 
-    const rget = await DbOpsUtils.getOne(config, objID, BaseServiceUtils.getProjection(config, _ctx), _ctx);
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
     if (rget.error) {
       return rget;
     }

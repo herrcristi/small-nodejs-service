@@ -24,10 +24,23 @@ const Private = {
   },
 
   /**
+   * the answer of a failed login: the same for every reason (invalid request, unknown account, wrong password,
+   * disabled user), so it does not tell if an account exists; a server error stays a server error
+   */
+  loginError: (r) => {
+    if (r.status >= 500) {
+      return r;
+    }
+    const msg = 'Invalid username/password';
+    return { status: 401, error: { message: msg, error: new Error(msg) } };
+  },
+
+  /**
    * options to clear the auth cookie (the same attributes, already expired)
    */
   expiredCookieOptions: () => {
-    return Private.cookieOptions(new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/));
+    const expires = new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/);
+    return Private.cookieOptions(expires);
   },
 };
 
@@ -50,12 +63,14 @@ const Public = {
       // post
       const r = await UsersAuthService.login(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const re = Private.loginError(r);
+        return res.status(re.status).json(await RestMessagesUtils.statusError(re.status, re.error, _ctx));
       }
 
       // set token as cookie (it expires with the token: 12h)
       const expires = new Date(Date.now() + 12 * 60 * 60 * 1000 /*12h*/);
-      res.cookie(UsersAuthConstants.AuthToken, r.token, Private.cookieOptions(expires));
+      const options = Private.cookieOptions(expires);
+      res.cookie(UsersAuthConstants.AuthToken, r.token, options);
 
       // browser will auto-send cookie with subsequent requests; token is not returned to client
       res.status(r.status).json({
@@ -87,7 +102,8 @@ const Public = {
       }
 
       // set expired token as cookie (the same attributes as when it was set)
-      res.cookie(UsersAuthConstants.AuthToken, 'token', Private.expiredCookieOptions());
+      const options = Private.expiredCookieOptions();
+      res.cookie(UsersAuthConstants.AuthToken, 'token', options);
 
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({
@@ -375,7 +391,8 @@ const Public = {
       }
 
       // set expired token as cookie (the same attributes as when it was set)
-      res.cookie(UsersAuthConstants.AuthToken, 'token', Private.expiredCookieOptions());
+      const options = Private.expiredCookieOptions();
+      res.cookie(UsersAuthConstants.AuthToken, 'token', options);
 
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({
@@ -441,7 +458,8 @@ const Public = {
       }
 
       // set expired token as cookie (the same attributes as when it was set)
-      res.cookie(UsersAuthConstants.AuthToken, 'token', Private.expiredCookieOptions());
+      const options = Private.expiredCookieOptions();
+      res.cookie(UsersAuthConstants.AuthToken, 'token', options);
 
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({

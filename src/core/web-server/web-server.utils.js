@@ -42,7 +42,8 @@ const Public = {
    */
   getTrustProxy: () => {
     const value = `${process.env.SMALL_API_TRUST_PROXY || ''}`.trim();
-    if (!value || ['false', 'true'].includes(value.toLowerCase())) {
+    const lowerValue = value.toLowerCase();
+    if (!value || ['false', 'true'].includes(lowerValue)) {
       return false;
     }
     if (/^\d+$/.test(value)) {

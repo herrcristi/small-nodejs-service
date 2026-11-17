@@ -288,9 +288,9 @@ const Public = {
       /* const rr = */ await UsersAuth.sendInvite(userInfo, _ctx);
     }
 
-    // the same answer for a new user, an existing user and an existing member: it does not tell if an account
-    // exists, nor its id or name
-    return { status: 200, value: { username: objInfo.email, type: UsersAuthConstants.Type } };
+    // the real result (201 a new user, 200 a role added to an existing user, 204 already a member, with the user):
+    // the callers inside the service need it; the controllers decide what a user sees
+    return rUser;
   },
 };
 
