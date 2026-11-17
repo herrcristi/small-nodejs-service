@@ -12,10 +12,12 @@ const Public = {
 
   Auth: {
     AuthProviderType: 'local', // # for testing default is local (local / firebase)
+    // test values only; the salt is the example one because the password hashes of the test users are made with it
+    // (the example values are refused in production, the tests run in debug mode)
     Salt: 'bcccbcccbcccbcccbcccbcccbcccbcccbcccbcccbcccbcccbcccbcccbcccbccc', // 64 chars
-    S2SPass: '00001111222233334444555566667777', // 32 characters
-    PrevAuthPass: '00001111222233334444555566667777', // 32 characters
-    AuthPass: '00001111222233334444555566667777', // 32 characters
+    S2SPass: '9d4b7e1a3c6f0825b9e2d7a4c1f6083e', // 32 characters
+    PrevAuthPass: '2a7c5e9f1b3d6084c2e8a5f1d7b3096e', // 32 characters
+    AuthPass: '5e8b2d6a0c4f9173e6b1a8d3f5c0927b', // 32 characters
     SmtpConfig: '{ "host": "host", "port": "465", "user": "user", "password": "password", "from": "small@localhost" }', // { host, port, user, pass, from }
   },
 

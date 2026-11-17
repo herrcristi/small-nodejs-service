@@ -3,6 +3,7 @@
  */
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 const RestCommsUtils = require('../../core/utils/rest-communications.utils.js');
+const ValidationUtils = require('../../core/utils/validation.utils.js');
 
 const UsersConstants = require('../users/users.constants.js');
 
@@ -37,6 +38,9 @@ const Public = {
    * get one (internal) called from users-auth
    */
   getOneByEmail: async (email, projection, _ctx) => {
+    // the emails are stored normalized (lower case): look up the normalized value (a token, a setting, an old link)
+    email = ValidationUtils.normalizeEmail(email);
+
     // the email is a VALUE: encode it, so characters like & = % + # can never add or change a filter
     // (the email format is also restricted by the validators, this is the second protection)
     const query = new URLSearchParams({ email: `${email}`, limit: '1' });

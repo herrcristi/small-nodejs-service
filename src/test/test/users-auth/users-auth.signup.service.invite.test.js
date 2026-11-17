@@ -145,6 +145,7 @@ describe('Users Auth Service', function () {
 
     chai.expect(stubEvents.callCount).to.equal(0);
 
+    // the real result (the controller answers the same for all of them)
     chai.expect(res).to.deep.equal({
       status: 201,
       value: {
@@ -395,6 +396,7 @@ describe('Users Auth Service', function () {
 
     chai.expect(stubEvents.callCount).to.equal(0);
 
+    // the real result (the controller answers the same for all of them)
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
@@ -604,6 +606,7 @@ describe('Users Auth Service', function () {
 
     chai.expect(stubEvents.callCount).to.equal(0);
 
+    // the real result (the controller answers the same for all of them)
     chai.expect(res).to.deep.equal({
       status: 204,
       value: {
@@ -635,8 +638,10 @@ describe('Users Auth Service', function () {
 
       const res = await UsersAuthSignupService.invite({ email, school: { id: 'school1', role: 'admin' } }, portalCtx);
 
-      chai.expect(res.status).to.equal(200);
-      chai.expect(res.value.userID).to.equal('user1');
+      chai.expect(res).to.deep.equal({
+        status: 200,
+        value: { userID: 'user1', username: email, name: 'School Admin', type: UsersAuthRest.Constants.Type },
+      });
       chai.expect(stubSchool.firstCall.args[0]).to.equal('school1');
 
       // the role is added on that school, and the invitation names that school
@@ -740,4 +745,25 @@ describe('Users Auth Service', function () {
       chai.expect(stubGetByEmail.callCount).to.equal(0);
     }).timeout(10000);
   });
+
+  /**
+   * one mailbox is one account: an email in another case is the same account
+   */
+  it('should invite with the normalized email', async () => {
+    const getByEmail = sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 404, error: { message: 'Not found' } });
+    const post = sinon.stub(UsersRest, 'post').returns({ status: 201, value: { id: 'user1' } });
+    const authPost = sinon.stub(UsersAuthService, 'post').returns({ status: 201, value: { userID: 'user1' } });
+    const reset = sinon.stub(UsersAuthService, 'resetPassword').returns({ status: 200, value: true });
+
+    const res = await UsersAuthSignupService.invite(
+      { email: ' John.Doe@TestDomain.TEST ', school: { role: 'student' } },
+      _ctx
+    );
+
+    chai.expect(res).to.deep.equal({ status: 201, value: { userID: 'user1' } });
+    chai.expect(getByEmail.firstCall.args[0]).to.equal('john.doe@testdomain.test');
+    chai.expect(post.firstCall.args[0].email).to.equal('john.doe@testdomain.test');
+    chai.expect(authPost.firstCall.args[0].username).to.equal('john.doe@testdomain.test');
+    chai.expect(reset.firstCall.args[0]).to.deep.equal({ username: 'john.doe@testdomain.test' });
+  }).timeout(10000);
 });

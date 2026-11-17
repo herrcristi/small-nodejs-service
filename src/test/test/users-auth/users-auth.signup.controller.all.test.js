@@ -42,9 +42,10 @@ describe('Users Auth Signup Controller', function () {
     // stub
     let stubService = sinon.stub(UsersAuthSignupService, 'signup').callsFake(() => {
       console.log(`\nUsersAuthSignupService.signup called\n`);
+      // the real result of the service (the invite of the first admin)
       return {
-        status: 201,
-        value: { ...testUser },
+        status: 200,
+        value: { userID: 'user1', username: testUser.email, name: 'Big Ben', type: UsersAuthConstants.Type },
       };
     });
 
@@ -58,9 +59,8 @@ describe('Users Auth Signup Controller', function () {
     // check
     chai.expect(res.status).to.equal(201);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body).to.deep.equal({
-      ...testUser,
-    });
+    // a school was created (201); the answer does not tell if the admin had an account, nor its id or name
+    chai.expect(res.body).to.deep.equal({ username: testUser.email, type: UsersAuthConstants.Type });
   }).timeout(10000);
 
   /**
@@ -161,9 +161,10 @@ describe('Users Auth Signup Controller', function () {
     // stub
     let stubService = sinon.stub(UsersAuthSignupService, 'invite').callsFake(() => {
       console.log(`\nUsersAuthSignupService.invite called\n`);
+      // the real result of the service (a new user)
       return {
         status: 201,
-        value: { ...testUser },
+        value: { userID: 'user1', username: testUser.email, type: UsersAuthConstants.Type },
       };
     });
 
@@ -175,11 +176,10 @@ describe('Users Auth Signup Controller', function () {
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
     // check
-    chai.expect(res.status).to.equal(201);
+    chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body).to.deep.equal({
-      ...testUser,
-    });
+    // the same answer for a new user, an existing user and an existing member (no id, no name)
+    chai.expect(res.body).to.deep.equal({ username: testUser.email, type: UsersAuthConstants.Type });
   }).timeout(10000);
 
   /**

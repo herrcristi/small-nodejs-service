@@ -158,6 +158,7 @@ describe('Users Auth Service', function () {
 
     chai.expect(stubEvents.callCount).to.equal(0);
 
+    // the real result (the controller answers the same for all of them)
     chai.expect(res).to.deep.equal({
       status: 201,
       value: {

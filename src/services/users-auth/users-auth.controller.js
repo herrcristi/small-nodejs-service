@@ -8,6 +8,42 @@ const RestMessagesUtils = require('../../core/utils/rest-messages.utils.js');
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthService = require('./users-auth.service.js');
 
+const Private = {
+  /**
+   * options of the auth cookie
+   * HttpOnly: the UI never reads the token; Secure: only over https (not in debug mode, where the API runs on http);
+   * SameSite: lax by default (the UI and the API on the same site), none when they are on different sites
+   * (SMALL_API_COOKIE_SAMESITE=none, which requires Secure)
+   */
+  cookieOptions: (expires) => {
+    const sameSite = ['strict', 'lax', 'none'].includes(process.env.SMALL_API_COOKIE_SAMESITE)
+      ? process.env.SMALL_API_COOKIE_SAMESITE
+      : 'lax';
+    const secure = !CommonUtils.isDebug() || sameSite === 'none';
+    return { expires, httpOnly: true, secure, sameSite, path: '/' };
+  },
+
+  /**
+   * the answer of a failed login: the same for every reason (invalid request, unknown account, wrong password,
+   * disabled user), so it does not tell if an account exists; a server error stays a server error
+   */
+  loginError: (r) => {
+    if (r.status >= 500) {
+      return r;
+    }
+    const msg = 'Invalid username/password';
+    return { status: 401, error: { message: msg, error: new Error(msg) } };
+  },
+
+  /**
+   * options to clear the auth cookie (the same attributes, already expired)
+   */
+  expiredCookieOptions: () => {
+    const expires = new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/);
+    return Private.cookieOptions(expires);
+  },
+};
+
 /**
  * controller functions called from router
  */
@@ -27,15 +63,14 @@ const Public = {
       // post
       const r = await UsersAuthService.login(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const re = Private.loginError(r);
+        return res.status(re.status).json(await RestMessagesUtils.statusError(re.status, re.error, _ctx));
       }
 
-      // set token as cookie
-      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000 /*1d*/);
-      res.cookie(UsersAuthConstants.AuthToken, r.token, {
-        expires,
-        httpOnly: true,
-      });
+      // set token as cookie (it expires with the token: 12h)
+      const expires = new Date(Date.now() + 12 * 60 * 60 * 1000 /*12h*/);
+      const options = Private.cookieOptions(expires);
+      res.cookie(UsersAuthConstants.AuthToken, r.token, options);
 
       // browser will auto-send cookie with subsequent requests; token is not returned to client
       res.status(r.status).json({
@@ -66,12 +101,9 @@ const Public = {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
 
-      // set expired token as cookie
-      const expires = new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/);
-      res.cookie(UsersAuthConstants.AuthToken, 'token', {
-        expires,
-        httpOnly: true,
-      });
+      // set expired token as cookie (the same attributes as when it was set)
+      const options = Private.expiredCookieOptions();
+      res.cookie(UsersAuthConstants.AuthToken, 'token', options);
 
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({
@@ -232,6 +264,12 @@ const Public = {
 
       // reset password
       const r = await UsersAuthService.resetPassword(req.body, _ctx);
+
+      // an unknown address gets the same answer as a known one (nothing is sent): the answer does not tell
+      // if an account exists
+      if (r.status === 404) {
+        return res.status(200).json({ username: req.body.username, type: UsersAuthConstants.Type });
+      }
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
@@ -352,12 +390,9 @@ const Public = {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
 
-      // set expired token as cookie
-      const expires = new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/);
-      res.cookie(UsersAuthConstants.AuthToken, 'token', {
-        expires,
-        httpOnly: true,
-      });
+      // set expired token as cookie (the same attributes as when it was set)
+      const options = Private.expiredCookieOptions();
+      res.cookie(UsersAuthConstants.AuthToken, 'token', options);
 
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({
@@ -422,12 +457,9 @@ const Public = {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
 
-      // set expired token as cookie
-      const expires = new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/);
-      res.cookie(UsersAuthConstants.AuthToken, 'token', {
-        expires,
-        httpOnly: true,
-      });
+      // set expired token as cookie (the same attributes as when it was set)
+      const options = Private.expiredCookieOptions();
+      res.cookie(UsersAuthConstants.AuthToken, 'token', options);
 
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({

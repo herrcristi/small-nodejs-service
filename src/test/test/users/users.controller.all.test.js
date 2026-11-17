@@ -573,6 +573,29 @@ describe('Users Controller', function () {
   }).timeout(10000);
 
   /**
+   * a user that exists but can not be reached (403 from the service) is answered as not found
+   */
+  it('should answer not found for a user of another school', async () => {
+    const notMember = { status: 403, error: { message: 'The user user1 is not a member of the current school' } };
+    sinon.stub(UsersService, 'getOne').returns(notMember);
+    sinon.stub(UsersService, 'put').returns(notMember);
+    sinon.stub(UsersService, 'patch').returns(notMember);
+
+    for (const [method, body] of [
+      ['get', undefined],
+      ['put', { name: 'Name' }],
+      ['patch', { set: { name: 'Name' } }],
+    ]) {
+      const res = await supertest(TestConstants.WebServer)
+        [method](`${UsersConstants.ApiPath}/user1`)
+        .set('Origin', TestConstants.WebServer)
+        .send(body);
+      chai.expect(res.status).to.equal(404);
+      chai.expect(res.body.error).to.include('Not found user1').and.not.include('member');
+    }
+  }).timeout(10000);
+
+  /**
    * put and patch status (portal admins) with success, fail, exception
    */
   for (const [method, fn, body] of [
@@ -618,7 +641,9 @@ describe('Users Controller', function () {
     const call = () => supertest(TestConstants.WebServer).delete(url).set('Origin', TestConstants.WebServer);
 
     // success
-    let stubService = sinon.stub(UsersService, 'deleteSchoolAdmin').callsFake(() => ({ status: 200, value: { id: 'user1' } }));
+    let stubService = sinon
+      .stub(UsersService, 'deleteSchoolAdmin')
+      .callsFake(() => ({ status: 200, value: { id: 'user1' } }));
     let res = await call();
     chai.expect(res.status).to.equal(200);
     chai.expect(res.body).to.deep.equal({ id: 'user1' });

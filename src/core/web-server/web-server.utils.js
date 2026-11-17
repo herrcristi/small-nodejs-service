@@ -36,6 +36,23 @@ const Private = {
 
 const Public = {
   /**
+   * the 'trust proxy' setting of express from SMALL_API_TRUST_PROXY
+   * a number of proxies (1), or their addresses / subnets ('loopback, 10.0.0.0/8'); not set: no proxy is trusted
+   * 'true' (trust every proxy) is not accepted: any client could then choose its address with x-forwarded-for
+   */
+  getTrustProxy: () => {
+    const value = `${process.env.SMALL_API_TRUST_PROXY || ''}`.trim();
+    const lowerValue = value.toLowerCase();
+    if (!value || ['false', 'true'].includes(lowerValue)) {
+      return false;
+    }
+    if (/^\d+$/.test(value)) {
+      return Number.parseInt(value, 10);
+    }
+    return value;
+  },
+
+  /**
    * init a webserver
    */
   init: async (port, routers /*: [] */, middlewares /* :[] */ = null, usersAuthMiddleware /* :[] */ = null) => {
@@ -46,6 +63,10 @@ const Public = {
 
     // setup express app and middlewares
     let app = express();
+
+    // the proxies in front of the service: req.ip is then the client (from x-forwarded-for), used by the rate limits
+    // and the events; without it req.ip is the address of the proxy and a client can not choose its own address
+    app.set('trust proxy', Public.getTrustProxy());
     let bodyParser = require('body-parser');
 
     app.use(cors(CorsMiddleware.cors));

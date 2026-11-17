@@ -59,6 +59,58 @@ describe('Users Auth Controller', function () {
   }).timeout(10000);
 
   /**
+   * the auth cookie: HttpOnly, SameSite, Secure outside of debug mode, and cleared with the same attributes
+   */
+  it('should set the auth cookie with its security attributes', async () => {
+    const testUser = _.cloneDeep(TestConstants.UsersAuth)[0];
+    sinon.stub(UsersAuthService, 'login').returns({ status: 200, value: { ...testUser }, token: 'TOKEN' });
+    sinon.stub(UsersAuthService, 'logout').returns({ status: 200, value: true });
+    const previous = { env: process.env.NODE_ENV, sameSite: process.env.SMALL_API_COOKIE_SAMESITE };
+    const login = () =>
+      supertest(TestConstants.WebServer)
+        .post(`${UsersAuthConstants.ApiPath}/login`)
+        .set('Origin', TestConstants.WebServer)
+        .send({ username: 'user@testdomain.test', password: 'Password1!' });
+
+    try {
+      // debug mode (http): not Secure, SameSite=Lax
+      let res = await login();
+      let cookie = res.headers['set-cookie'][0];
+      chai.expect(cookie).to.match(/^SmallApp-token=TOKEN;/);
+      chai.expect(cookie).to.include('HttpOnly').and.include('SameSite=Lax').and.include('Path=/');
+      chai.expect(cookie).to.not.include('Secure');
+
+      // production: Secure
+      process.env.NODE_ENV = 'production';
+      res = await login();
+      cookie = res.headers['set-cookie'][0];
+      chai.expect(cookie).to.include('Secure').and.include('SameSite=Lax');
+
+      // UI on another site: SameSite=None (always Secure)
+      process.env.NODE_ENV = previous.env;
+      process.env.SMALL_API_COOKIE_SAMESITE = 'none';
+      res = await login();
+      cookie = res.headers['set-cookie'][0];
+      chai.expect(cookie).to.include('SameSite=None').and.include('Secure');
+
+      // logout clears it with the same attributes
+      res = await supertest(TestConstants.WebServer)
+        .post(`${UsersAuthConstants.ApiPath}/logout`)
+        .set('Origin', TestConstants.WebServer);
+      cookie = res.headers['set-cookie'][0];
+      chai.expect(cookie).to.include('SameSite=None').and.include('Secure').and.include('HttpOnly');
+      chai.expect(new Date(cookie.match(/Expires=([^;]+)/)[1]).getTime()).to.be.below(Date.now());
+    } finally {
+      process.env.NODE_ENV = previous.env;
+      if (previous.sameSite === undefined) {
+        delete process.env.SMALL_API_COOKIE_SAMESITE;
+      } else {
+        process.env.SMALL_API_COOKIE_SAMESITE = previous.sameSite;
+      }
+    }
+  }).timeout(10000);
+
+  /**
    * login fail
    */
   it('should login fail', async () => {
@@ -78,10 +130,38 @@ describe('Users Auth Controller', function () {
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
-    // check
-    chai.expect(res.status).to.equal(400);
+    // check: the same answer for every failed login (here an invalid request)
+    chai.expect(res.status).to.equal(401);
     chai.expect(stubService.callCount).to.equal(1);
-    chai.expect(res.body.error).to.include('Test error message');
+    chai.expect(res.body.error).to.include('Invalid username/password');
+    chai.expect(res.body.error).to.not.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * login: the user sees the same answer whatever the real reason; a server error stays a server error
+   */
+  it('should login answer the same for every reason of a failed login', async () => {
+    const stubService = sinon.stub(UsersAuthService, 'login');
+    const login = () =>
+      supertest(TestConstants.WebServer)
+        .post(`${UsersAuthConstants.ApiPath}/login`)
+        .set('Origin', TestConstants.WebServer)
+        .send({ username: 'user@testdomain.test', password: 'Password1!' });
+
+    for (const [status, message] of [
+      [404, 'Not found user@testdomain.test'], // no such account
+      [401, 'Invalid password'], // wrong password
+      [403, 'User is disabled'],
+    ]) {
+      stubService.returns({ status, error: { message, error: new Error(message) } });
+      const res = await login();
+      chai.expect(res.status).to.equal(401);
+      chai.expect(res.body.error).to.include('Invalid username/password').and.not.include(message);
+    }
+
+    stubService.returns({ status: 500, error: { message: 'Database error', error: new Error('Database error') } });
+    const res = await login();
+    chai.expect(res.status).to.equal(500);
   }).timeout(10000);
 
   /**
@@ -969,6 +1049,21 @@ describe('Users Auth Controller', function () {
     chai.expect(res.body).to.deep.equal({
       ...testUser,
     });
+  }).timeout(10000);
+
+  /**
+   * reset password for an unknown address: the same answer as for a known one
+   */
+  it('should reset password answer the same for an unknown address', async () => {
+    sinon.stub(UsersAuthService, 'resetPassword').returns({ status: 404, error: { message: 'Not found x' } });
+
+    const res = await supertest(TestConstants.WebServer)
+      .post(`${UsersAuthConstants.ApiPath}/reset-password`)
+      .set('Origin', TestConstants.WebServer)
+      .send({ username: 'nobody@testdomain.test' });
+
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal({ username: 'nobody@testdomain.test', type: UsersAuthConstants.Type });
   }).timeout(10000);
 
   /**

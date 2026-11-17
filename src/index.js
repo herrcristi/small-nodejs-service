@@ -20,6 +20,33 @@ const Constants = {
   event: new EventEmitter(),
 };
 
+const Private = {
+  /**
+   * the example values of the secrets (src/.env.example): never accepted in production
+   */
+  SecretPlaceholders: ['00001111222233334444555566667777', 'bccc'.repeat(16)],
+
+  /**
+   * problems of the secrets: placeholders, weak values (few different characters), or the service to service
+   * password equal to an auth password (the same key would protect sessions and internal calls)
+   */
+  evaluateSecrets: () => {
+    const problems = [];
+    for (const name of ['SMALL_API_SALT', 'SMALL_API_S2SPASS', 'SMALL_API_PREVAUTHPASS', 'SMALL_API_AUTHPASS']) {
+      const value = process.env[name];
+      if (Private.SecretPlaceholders.includes(value) || new Set(value).size < 10) {
+        problems.push(`Env var ${name} is a placeholder or a weak value (generate it, see .env.example)`);
+      }
+    }
+
+    const s2sPass = process.env.SMALL_API_S2SPASS;
+    if ([process.env.SMALL_API_AUTHPASS, process.env.SMALL_API_PREVAUTHPASS].includes(s2sPass)) {
+      problems.push('Env var SMALL_API_S2SPASS must be different from SMALL_API_AUTHPASS and SMALL_API_PREVAUTHPASS');
+    }
+    return problems;
+  },
+};
+
 const Public = {
   /**
    * init env
@@ -63,6 +90,17 @@ const Public = {
       console.log('Env var SMALL_API_PORTAL_SCHOOL_ID must be a UUID');
       process.exit(1);
       return false;
+    }
+
+    // the secrets: refused in production, a warning in debug mode (local development with the example values)
+    const problems = Private.evaluateSecrets();
+    if (problems.length) {
+      problems.forEach((problem) => console.log(problem));
+      if (!CommonUtils.isDebug()) {
+        process.exit(1);
+        return false;
+      }
+      console.log('Debug mode: the secrets above are accepted only for local development');
     }
 
     return true;

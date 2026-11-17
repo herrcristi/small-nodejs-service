@@ -17,6 +17,46 @@ const Constants = {
 
 const Private = {
   /**
+   * service to service token: how long it is valid, and how far in the future its time can be (clocks differ)
+   */
+  S2STokenTTL: 60 * 1000, // 1m
+  S2STokenClockSkew: 5 * 1000, // 5s
+
+  /**
+   * the ids of the service tokens already used (jti -> time when it expires), so a token is used only once
+   */
+  UsedS2STokens: new Map(),
+
+  /**
+   * remember a token id, and forget the expired ones
+   * returns false when the token id was already used
+   */
+  useS2SToken: (jti, now) => {
+    for (const [id, expires] of Private.UsedS2STokens) {
+      if (expires < now) {
+        Private.UsedS2STokens.delete(id);
+      }
+    }
+
+    if (Private.UsedS2STokens.has(jti)) {
+      return false;
+    }
+    Private.UsedS2STokens.set(jti, now + Private.S2STokenTTL + Private.S2STokenClockSkew);
+    return true;
+  },
+
+  /**
+   * the path of a url, or undefined
+   */
+  getPath: (url) => {
+    try {
+      return new URL(url).pathname;
+    } catch (e) {
+      return undefined;
+    }
+  },
+
+  /**
    * services inside local prop will be called directly
    * {
    *   issuer,
@@ -59,11 +99,13 @@ const Private = {
     let time = new Date();
 
     // service2service auth
+    // the token is for this request only (method and url), for a short time, and only once (jti)
     const s2sData = {
       _ctx, // original ctx
       method: config.method.toUpperCase(),
       url: srvUri,
       timestamp: time.toISOString(),
+      jti: CommonUtils.uuidc(),
     };
     const s2sToken = JwtUtils.encrypt(s2sData, Private.Config.issuer, _ctx, Private.Config.s2sPass);
 
@@ -153,12 +195,25 @@ const Public = {
       return rs;
     }
 
-    // check expiration
     const s2sData = rs.value;
-    const expiredTime = new Date(s2sData.timestamp).getTime() + 60 * 1000; /*1m*/
-    if (expiredTime < new Date().getTime()) {
-      const msg = 'Token is expired';
-      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    const invalid = (msg) => ({ status: 401, error: { message: msg, error: new Error(msg) } });
+
+    // check the time: a valid time, not older than the validity, not in the future (more than the clock skew)
+    const now = Date.now();
+    const time = Date.parse(s2sData.timestamp);
+    if (!Number.isFinite(time) || time + Private.S2STokenTTL < now || time > now + Private.S2STokenClockSkew) {
+      return invalid('Token is expired');
+    }
+
+    // check the token is for this request: the same method and path
+    const path = Private.getPath(s2sData.url);
+    if (s2sData.method !== _ctx.reqMethod || !path || path !== _ctx.reqPath) {
+      return invalid('Token is not for this request');
+    }
+
+    // check the token is used only once
+    if (!s2sData.jti || !Private.useS2SToken(s2sData.jti, now)) {
+      return invalid('Token was already used');
     }
 
     _ctx.initialMethod = s2sData._ctx.initialMethod || s2sData._ctx.reqMethod;

@@ -42,7 +42,7 @@ const Schema = {
   // the profile fields that the user (and the admins of the school) can change
   UserProfile: Joi.object().keys({
     name: Joi.string().min(1).max(128),
-    birthday: Joi.date().iso(),
+    birthday: Joi.string().isoDate(), // kept as an iso string (a date would be converted to a Date object)
     phoneNumber: Joi.string()
       .min(1)
       .max(32)
@@ -229,7 +229,7 @@ const Private = {
    * the access of the caller to the user of a request (/users/:id)
    * the user itself, a portal admin (any user), or an admin of the current school (a member of the school; the route
    * roles allow /users/:id only to admins, and to the user itself)
-   * the others are reported as not found (their existence is not disclosed)
+   * the others: 403 (an existing user that is not a member of the current school) or 404 (no such user)
    * returns { status, value: Access } or { status, error }
    */
   getAccess: async (config, objID, _ctx) => {
@@ -240,12 +240,14 @@ const Private = {
       return { status: 200, value: Private.Access.Portal };
     }
 
-    const notFound = () => {
-      const msg = `Not found ${objID}`;
-      return { status: 404, error: { message: msg, error: new Error(msg) } };
+    // the real result: 404 the user does not exist, 403 it exists but it is not a member of the current school
+    // (the controllers answer 404 to both, so the existence of a user is not disclosed)
+    const notMember = () => {
+      const msg = `The user ${objID} is not a member of the current school`;
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
     };
     if (!_ctx.tenantID) {
-      return notFound();
+      return notMember();
     }
 
     const r = await DbOpsUtils.getOne(config, objID, { id: 1, schools: 1 }, _ctx);
@@ -253,7 +255,7 @@ const Private = {
       return r;
     }
     if (!r.value.schools?.some((school) => school.id === _ctx.tenantID)) {
-      return notFound();
+      return notMember();
     }
 
     return { status: 200, value: Private.Access.Member };
@@ -481,7 +483,8 @@ const Public = {
     }
     const access = rAccess.value;
 
-    const r = await DbOpsUtils.getOne(config, objID, Private.getProjectionForAccess(projection, access), _ctx);
+    const accessProjection = Private.getProjectionForAccess(projection, access);
+    const r = await DbOpsUtils.getOne(config, objID, accessProjection, _ctx);
     return Private.getResponseForAccess(r, access, _ctx);
   },
 
@@ -497,6 +500,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     objInfo.status = UsersConstants.Status.Pending; // add default status pending
 
@@ -564,6 +568,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // if current user is trying to change the status to disabled, skip it for himself
     if (objID === _ctx.userID && objInfo.status === UsersConstants.Status.Disabled) {
@@ -675,6 +680,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
+    patchInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // if current user is trying to change the status to disabled, skip it for himself
     if (objID === _ctx.userID && patchInfo.set?.status === UsersConstants.Status.Disabled) {
@@ -775,6 +781,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, notification, _ctx);
     }
+    notification = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // { serviceName, collection, references, fillReferences }
     const config = await Private.getConfig(_ctx);

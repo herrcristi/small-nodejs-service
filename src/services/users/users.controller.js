@@ -9,6 +9,20 @@ const RestMessagesUtils = require('../../core/utils/rest-messages.utils.js');
 const UsersConstants = require('./users.constants.js');
 const UsersService = require('./users.service.js');
 
+const Private = {
+  /**
+   * the answer for a user of the routes /users/:id: a user that exists but can not be reached (403, not a member of
+   * the current school) is answered as not found, like a user that does not exist (its existence is not disclosed)
+   */
+  notDisclosed: (r, objID) => {
+    if (r.status !== 403) {
+      return r;
+    }
+    const msg = `Not found ${objID}`;
+    return { status: 404, error: { message: msg, error: new Error(msg) } };
+  },
+};
+
 /**
  * controller functions called from router
  */
@@ -175,7 +189,8 @@ const Public = {
       }
 
       // get
-      const r = await UsersService.getOne(objID, rf.value.projection, _ctx);
+      const rService = await UsersService.getOne(objID, rf.value.projection, _ctx);
+      const r = Private.notDisclosed(rService, objID);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
@@ -259,7 +274,8 @@ const Public = {
       const objID = req.params.id;
 
       // put
-      const r = await UsersService.put(objID, req.body, _ctx);
+      const rService = await UsersService.put(objID, req.body, _ctx);
+      const r = Private.notDisclosed(rService, objID);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }
@@ -410,7 +426,8 @@ const Public = {
       const objID = req.params.id;
 
       // patch
-      const r = await UsersService.patch(objID, req.body, _ctx);
+      const rService = await UsersService.patch(objID, req.body, _ctx);
+      const r = Private.notDisclosed(rService, objID);
       if (r.error) {
         return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
       }

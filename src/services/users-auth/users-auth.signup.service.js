@@ -168,6 +168,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // this route is authorized for portal admin only, so the tenantID is the portal school ID
 
@@ -223,6 +224,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // the school is named (school.id)
     if (objInfo.school.id) {
@@ -286,6 +288,8 @@ const Public = {
       /* const rr = */ await UsersAuth.sendInvite(userInfo, _ctx);
     }
 
+    // the real result (201 a new user, 200 a role added to an existing user, 204 already a member, with the user):
+    // the callers inside the service need it; the controllers decide what a user sees
     return rUser;
   },
 };
