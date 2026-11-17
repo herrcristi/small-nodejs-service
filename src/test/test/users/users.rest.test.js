@@ -100,6 +100,21 @@ describe('Users Rest', function () {
   }).timeout(10000);
 
   /**
+   * rest getOneByEmail looks up the normalized email (the emails are stored in lower case)
+   */
+  it('should call getOneByEmail with the normalized email', async () => {
+    let stub = sinon.stub(RestCommsUtils, 'getAll').returns({
+      status: 200,
+      value: [{ id: 'user1', email: 'john.doe@testdomain.test' }],
+    });
+
+    let res = await UsersRest.getOneByEmail(' John.Doe@TestDomain.TEST', null, _ctx);
+
+    chai.expect(stub.firstCall.args[1]).to.equal('email=john.doe%40testdomain.test&limit=1');
+    chai.expect(res.value.id).to.equal('user1');
+  }).timeout(10000);
+
+  /**
    * rest getOneByEmail failed get and no projection
    */
   it('should call getOneByEmail failed get and no projection', async () => {

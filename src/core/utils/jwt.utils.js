@@ -1,13 +1,26 @@
 /**
  * Jwt utils
  */
+const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
 const CommonUtils = require('./common.utils');
 
 const Private = {
   // will be initialized on init for a issuer
-  JwtPasswords: {}, // passwords to sign the jwt
+  // the keys derived from the passwords (oldest first): one key to sign the jwt and another one to encrypt
+  // (a key is never used for two algorithms)
+  JwtKeys: {},
+
+  /**
+   * derive the sign and the encrypt keys of a password (HKDF, the issuer as salt)
+   */
+  deriveKeys: (password, issuer) => {
+    return {
+      sign: Buffer.from(crypto.hkdfSync('sha512', password, issuer, 'jwt-sign', 64)),
+      encrypt: Buffer.from(crypto.hkdfSync('sha256', password, issuer, 'jwt-encrypt', 32)),
+    };
+  },
 };
 
 const Public = {
@@ -23,31 +36,31 @@ const Public = {
       throw new Error(`Password must  have 32 bytes for issuer ${issuer}`);
     }
 
-    Private.JwtPasswords[issuer] = passwords;
+    Private.JwtKeys[issuer] = passwords.map((password) => Private.deriveKeys(password, issuer));
   },
 
   /**
    * encrypt
    */
   encrypt: (data, issuer, _ctx, password = undefined, iv = undefined) => {
-    if (!password) {
-      password = Private.JwtPasswords[issuer].at(-1);
-    }
+    // a provided password is used as it is (the service to service password), otherwise the derived encrypt key
+    const key = password ? Buffer.from(password) : Private.JwtKeys[issuer].at(-1).encrypt;
     const dataText = JSON.stringify({ data, issuer });
-    return CommonUtils.encrypt(dataText, Buffer.from(password), iv);
+    return CommonUtils.encrypt(dataText, key, iv);
   },
 
   /**
    * decrypt
    */
   decrypt: (encrypted, issuer, _ctx, passwords = undefined) => {
-    if (!passwords) {
-      passwords = [...Private.JwtPasswords[issuer]].reverse();
-    }
+    // provided passwords are used as they are, otherwise the derived encrypt keys (newest first)
+    const keys = passwords
+      ? passwords.map((pass) => Buffer.from(pass))
+      : [...Private.JwtKeys[issuer]].reverse().map((item) => item.encrypt);
 
-    for (const pass of passwords) {
+    for (const key of keys) {
       try {
-        let rd = CommonUtils.decrypt(encrypted, Buffer.from(pass));
+        let rd = CommonUtils.decrypt(encrypted, key);
         if (rd.error) {
           continue;
         }
@@ -78,7 +91,7 @@ const Public = {
       {
         data,
       },
-      Private.JwtPasswords[issuer].at(-1),
+      Private.JwtKeys[issuer].at(-1).sign,
       { algorithm: 'HS512', expiresIn: '12h', issuer }
     );
 
@@ -90,11 +103,11 @@ const Public = {
    * jwtToken: { data }
    */
   validateJwt: (jwtToken, issuer, _ctx) => {
-    const passwords = [...Private.JwtPasswords[issuer]].reverse();
+    const keys = [...Private.JwtKeys[issuer]].reverse().map((item) => item.sign);
 
-    for (const pass of passwords) {
+    for (const key of keys) {
       try {
-        const decodedJwtToken = jwt.verify(jwtToken, pass, { algorithms: 'HS512', issuer });
+        const decodedJwtToken = jwt.verify(jwtToken, key, { algorithms: 'HS512', issuer });
 
         // decoded: { data, iat, exp, iss }
 

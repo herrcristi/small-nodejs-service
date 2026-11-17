@@ -36,6 +36,27 @@ describe('Validation Utils', function () {
   });
 
   /**
+   * one mailbox is one account: the validated email is normalized (NFKC, trimmed, lower case)
+   */
+  it('should normalize the emails', async () => {
+    const schema = ValidationUtils.email();
+    for (const [value, expected] of [
+      ['John.Doe@TestDomain.TEST', 'john.doe@testdomain.test'],
+      ['  john.doe@testdomain.test ', 'john.doe@testdomain.test'],
+      ['ｊｏｈｎ@testdomain.test', 'john@testdomain.test'], // full width letters
+      ['john+tag@testdomain.test', 'john+tag@testdomain.test'],
+    ]) {
+      const v = schema.validate(value);
+      chai.expect(v.error).to.equal(undefined);
+      chai.expect(v.value).to.equal(expected);
+    }
+
+    // the same for a value that is not validated by a schema (a lookup, a token)
+    chai.expect(ValidationUtils.normalizeEmail(' John.Doe@TestDomain.TEST')).to.equal('john.doe@testdomain.test');
+    chai.expect(ValidationUtils.normalizeEmail(undefined)).to.equal(undefined);
+  });
+
+  /**
    * ids from a header
    */
   it('should keep only well formed ids from a header', async () => {

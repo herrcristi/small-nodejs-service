@@ -107,7 +107,9 @@ describe('Groups Service', function () {
     let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
       console.log(`\nNotificationsUtils.notification called\n`);
 
-      chai.expect(notification).to.deep.equal(notif);
+      // the service adds the modified items as added to its own copy (the notification of the caller is not changed)
+      chai.expect(notification).to.deep.equal({ ...notif, added: notif.modified });
+      chai.expect(notif.added).to.equal(undefined);
       chai.expect(ctx.tenantID).to.deep.equal(_ctx.tenantID);
 
       return {

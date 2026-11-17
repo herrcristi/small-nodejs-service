@@ -13,17 +13,23 @@ const RateLimiterMiddleware = require('../../core/web-server/rate-limiter.middle
 
 const router = express.Router();
 
-// Apply a stricter limiter for login attempts to mitigate brute-force attacks.
+// stricter limits for the public routes that guess passwords or send emails
+// login: the failed logins of an account from one address, and from all addresses
 const loginLimiter = rateLimit(RateLimiterMiddleware.loginLimiter);
+const loginAccountLimiter = rateLimit(RateLimiterMiddleware.loginAccountLimiter);
+// reset password: the emails sent to an account
+const resetPasswordLimiter = rateLimit(RateLimiterMiddleware.resetPasswordLimiter);
 
 /**
  * Users Auth
  */
-router.route(`${UsersAuthConstants.ApiPath}/login`).post(loginLimiter, UsersAuthController.login); // public dont require authentication
+router.route(`${UsersAuthConstants.ApiPath}/login`).post(loginLimiter, loginAccountLimiter, UsersAuthController.login); // public dont require authentication
 router.route(`${UsersAuthConstants.ApiPath}/logout`).post(UsersAuthController.logout); // logout the current login user
 router.route(`${UsersAuthConstants.ApiPath}/me`).get(UsersAuthController.getCurrentUser); // get current user (from cookie) - used on app bootstrap
 //router.route(`${UsersAuthConstants.ApiPath}/signup`).post(UsersAuthSignupController.signup); // may be done by anonymous user
-router.route(`${UsersAuthConstants.ApiPath}/reset-password`).post(UsersAuthController.resetPassword); // public dont require authentication
+router
+  .route(`${UsersAuthConstants.ApiPath}/reset-password`)
+  .post(resetPasswordLimiter, UsersAuthController.resetPassword); // public dont require authentication
 
 router.route(`${UsersAuthConstants.ApiPath}/reset-token/validate`).get(UsersAuthController.validateResetToken); // public dont require authentication only for local auth
 router.route(`${UsersAuthConstants.ApiPath}/reset-token/password`).put(UsersAuthController.putResetPassword); // public dont require authentication only for local auth

@@ -96,4 +96,46 @@ describe('Service 2 Service Auth Middleware', function () {
     chai.expect(res.status.calledWith(401)).to.equal(true);
     chai.expect(req._ctx.userID).to.equal(undefined);
   });
+
+  /**
+   * the internal routes are served only when the services run in separate processes
+   */
+  it('should answer not found on the internal routes unless they are enabled', async () => {
+    const stubValidation = sinon.stub(RestCommsUtils, 'restValidation').returns({ status: 200, value: {} });
+    const previous = process.env.SMALL_API_INTERNAL_ROUTES;
+    const call = async () => {
+      const req = getReq('/api/internal_v1/users', { 'x-s2s-token': 'token' });
+      const res = { status: sinon.stub().returnsThis(), json: sinon.stub().returnsThis(), end: sinon.stub() };
+      const next = sinon.stub();
+      await Service2ServiceAuthMiddleware.middleware(req, res, next);
+      return { res, next };
+    };
+
+    try {
+      // not enabled (one process): 404, the token is not even checked
+      for (const value of [undefined, 'false', '1']) {
+        if (value === undefined) {
+          delete process.env.SMALL_API_INTERNAL_ROUTES;
+        } else {
+          process.env.SMALL_API_INTERNAL_ROUTES = value;
+        }
+        const { res, next } = await call();
+        chai.expect(res.status.firstCall.args[0]).to.equal(404);
+        chai.expect(next.callCount).to.equal(0);
+      }
+      chai.expect(stubValidation.callCount).to.equal(0);
+
+      // enabled: the service token is checked
+      process.env.SMALL_API_INTERNAL_ROUTES = 'true';
+      const { next } = await call();
+      chai.expect(stubValidation.callCount).to.equal(1);
+      chai.expect(next.callCount).to.equal(1);
+    } finally {
+      if (previous === undefined) {
+        delete process.env.SMALL_API_INTERNAL_ROUTES;
+      } else {
+        process.env.SMALL_API_INTERNAL_ROUTES = previous;
+      }
+    }
+  });
 });

@@ -61,7 +61,9 @@ describe('Rest Communications Utils', function () {
       const s2sToken = config.headers['x-s2s-token'];
       chai.expect(s2sToken).to.exist;
 
-      const rv = RestCommsUtils.restValidation(s2sToken, { ..._ctx });
+      // the receiving request: the same method and path
+      const receiver = { ..._ctx, reqMethod: 'PATCH', reqPath: '/api/v1/service/id1' };
+      const rv = RestCommsUtils.restValidation(s2sToken, receiver);
       console.log(`\ns2s validation returned: ${JSON.stringify(rv, null, 2)}`);
       chai.expect(rv).to.deep.equal({
         status: 200,
@@ -74,6 +76,7 @@ describe('Rest Communications Utils', function () {
           method: 'PATCH',
           url: `${configUrl}/api/v1/service/id1`,
           timestamp: rv.value.timestamp,
+          jti: rv.value.jti,
         },
       });
 

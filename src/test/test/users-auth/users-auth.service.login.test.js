@@ -320,7 +320,7 @@ describe('Users Auth Service', function () {
 
     // check
     chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubEvents.callCount).to.equal(1);
+    chai.expect(stubEvents.callCount).to.equal(0); // a failed login is only logged, not recorded as an event
 
     chai.expect(res).to.deep.equal({
       status: 401,
@@ -381,7 +381,7 @@ describe('Users Auth Service', function () {
 
     // check
     chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubEvents.callCount).to.equal(1);
+    chai.expect(stubEvents.callCount).to.equal(0); // a failed login is only logged, not recorded as an event
 
     chai.expect(res).to.deep.equal({
       status: 401,
@@ -450,7 +450,7 @@ describe('Users Auth Service', function () {
     // check
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(stubUsers.callCount).to.equal(1);
-    chai.expect(stubEvents.callCount).to.equal(1);
+    chai.expect(stubEvents.callCount).to.equal(0); // a failed login is only logged, not recorded as an event
 
     chai.expect(res).to.deep.equal({
       status: 401,
@@ -519,7 +519,7 @@ describe('Users Auth Service', function () {
     // check
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(stubUsers.callCount).to.equal(1);
-    chai.expect(stubEvents.callCount).to.equal(1);
+    chai.expect(stubEvents.callCount).to.equal(0); // a failed login is only logged, not recorded as an event
 
     chai.expect(res).to.deep.equal({
       status: 401,
@@ -635,8 +635,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(stubUsersGet.callCount).to.equal(1);
     chai.expect(stubUsersActive.callCount).to.equal(1);
-    chai.expect(stubEvents.callCount).to.equal(1);
-    chai.expect(stubEvents.firstCall.args[3].reason).to.equal('User is disabled');
+    chai.expect(stubEvents.callCount).to.equal(0); // a failed login is only logged, not recorded as an event
     chai.expect(res).to.deep.equal({
       status: 401,
       error: {

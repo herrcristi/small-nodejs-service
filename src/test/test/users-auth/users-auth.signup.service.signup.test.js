@@ -158,12 +158,12 @@ describe('Users Auth Service', function () {
 
     chai.expect(stubEvents.callCount).to.equal(0);
 
+    // the same answer for new users, existing users and members (it does not tell if an account exists)
     chai.expect(res).to.deep.equal({
-      status: 201,
+      status: 200,
       value: {
         username: testUser.email,
         type: UsersAuthRest.Constants.Type,
-        userID: testUserID,
       },
     });
   }).timeout(10000);

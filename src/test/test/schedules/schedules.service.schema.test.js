@@ -194,7 +194,17 @@ describe('Schedules Service', function () {
     postReq.schedules = [{ ...currentSchedule, timestamp: '' }];
     res = SchedulesService.Validators.Post.validate(postReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error.details[0].message).to.include('"schedules[0].timestamp" must be in ISO 8601 date format');
+    chai.expect(res.error.details[0].message).to.include('"schedules[0].timestamp" is not allowed to be empty');
+
+    // schedules timestamp not a date
+    postReq.schedules = [{ ...currentSchedule, timestamp: 'not a date' }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    chai.expect(res.error.details[0].message).to.include('"schedules[0].timestamp" must be in iso format');
+
+    // schedules timestamp: an iso string, kept as a string
+    postReq.schedules = [{ ...currentSchedule, timestamp: '2026-01-05T08:00:00.000Z' }];
+    res = SchedulesService.Validators.Post.validate(postReq);
+    chai.expect(res.value.schedules[0].timestamp).to.equal('2026-01-05T08:00:00.000Z');
 
     // schedules frequency not valid
     postReq.schedules = [{ ...currentSchedule, frequency: 1 }];

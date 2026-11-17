@@ -206,6 +206,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
@@ -278,6 +279,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
@@ -322,6 +324,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
+    patchInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
@@ -368,6 +371,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, notification, _ctx);
     }
+    notification = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // { serviceName, collection, references, fillReferences }
     const config = await Private.getConfig(_ctx);

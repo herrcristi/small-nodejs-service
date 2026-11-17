@@ -1,30 +1,84 @@
 /**
  * Rate limiter middleware
+ *
+ * the limits are kept in the memory of each process (per pod): with more than one pod use a shared store
+ * the client address is req.ip, which is the real client only when 'trust proxy' is configured
+ * (SMALL_API_TRUST_PROXY, see web-server.utils), otherwise the address of the proxy
  */
-const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 
 const CommonUtils = require('../utils/common.utils.js');
 
-const Public = {
+const Private = {
+  Window: 15 * 60 * 1000, // 15 minutes
+
   /**
-   * Setups for rate limiter
+   * a limit from the environment, or the default
    */
-  authLimiter: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // allow a reasonable number; routers should tighten this for login endpoints
+  limit: (name, defaultValue) => {
+    const value = Number.parseInt(process.env[name], 10);
+    return Number.isInteger(value) && value > 0 ? value : defaultValue;
+  },
+
+  /**
+   * the account of a login or a reset password request (the email, as it is compared)
+   */
+  account: (req) => {
+    return `${req.body?.username || ''}`.trim().toLowerCase();
+  },
+
+  /**
+   * common settings
+   */
+  common: {
     message: 'Too many requests, please try again later',
     standardHeaders: true,
     legacyHeaders: false,
     skip: (req) => CommonUtils.isDebug(), // disable rate limiting in debug mode
   },
+};
 
+const Public = {
+  /**
+   * all the requests of a client address
+   * a UI session makes many requests (lists, details, refreshes), so the limit is high
+   */
+  authLimiter: {
+    ...Private.common,
+    windowMs: Private.Window,
+    limit: () => Private.limit('SMALL_API_RATE_LIMIT_MAX', 1000),
+  },
+
+  /**
+   * failed logins of an account from one client address (a successful login is not counted)
+   */
   loginLimiter: {
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 3, // limit each IP to 3 login requests per windowMs (tighter)
-    message: 'Too many requests, please try again later',
-    standardHeaders: true,
-    legacyHeaders: false,
-    skip: (req) => CommonUtils.isDebug(), // disable rate limiting in debug mode
+    ...Private.common,
+    windowMs: Private.Window,
+    limit: () => Private.limit('SMALL_API_RATE_LIMIT_LOGIN_MAX', 5),
+    skipSuccessfulRequests: true,
+    keyGenerator: (req) => `login|${ipKeyGenerator(req.ip)}|${Private.account(req)}`,
+  },
+
+  /**
+   * failed logins of an account from all the addresses (a guess of one account from many addresses)
+   */
+  loginAccountLimiter: {
+    ...Private.common,
+    windowMs: Private.Window,
+    limit: () => Private.limit('SMALL_API_RATE_LIMIT_LOGIN_ACCOUNT_MAX', 20),
+    skipSuccessfulRequests: true,
+    keyGenerator: (req) => `login-account|${Private.account(req)}`,
+  },
+
+  /**
+   * reset password emails sent to an account (the mailbox of a person is not flooded)
+   */
+  resetPasswordLimiter: {
+    ...Private.common,
+    windowMs: Private.Window,
+    limit: () => Private.limit('SMALL_API_RATE_LIMIT_RESET_MAX', 3),
+    keyGenerator: (req) => `reset-password|${Private.account(req)}`,
   },
 };
 

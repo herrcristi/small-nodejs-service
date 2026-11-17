@@ -42,7 +42,7 @@ const Schema = {
   // the profile fields that the user (and the admins of the school) can change
   UserProfile: Joi.object().keys({
     name: Joi.string().min(1).max(128),
-    birthday: Joi.date().iso(),
+    birthday: Joi.string().isoDate(), // kept as an iso string (a date would be converted to a Date object)
     phoneNumber: Joi.string()
       .min(1)
       .max(32)
@@ -497,6 +497,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     objInfo.status = UsersConstants.Status.Pending; // add default status pending
 
@@ -564,6 +565,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // if current user is trying to change the status to disabled, skip it for himself
     if (objID === _ctx.userID && objInfo.status === UsersConstants.Status.Disabled) {
@@ -675,6 +677,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
+    patchInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // if current user is trying to change the status to disabled, skip it for himself
     if (objID === _ctx.userID && patchInfo.set?.status === UsersConstants.Status.Disabled) {
@@ -775,6 +778,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, notification, _ctx);
     }
+    notification = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // { serviceName, collection, references, fillReferences }
     const config = await Private.getConfig(_ctx);

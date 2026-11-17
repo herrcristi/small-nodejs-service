@@ -357,6 +357,7 @@ const Public = {
         status: 401, // return 401 instead of 400
       };
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     _ctx.userID = null; // userID is not known at this point, it will be set in the validate function after validating the token
     _ctx.username = objInfo.username;
@@ -366,13 +367,17 @@ const Public = {
 
     // events
     const eventO = { id: objInfo.username, name: objInfo.username, type: UsersAuthConstants.Type };
-    const srvName = UsersAuthConstants.ServiceName;
-    const failedAction = `${Private.Action.Login}.failed`;
-    const failedSeverity = EventsRest.Constants.Severity.Warning;
 
     // generic error
     const errorLogin = 'Invalid username/password';
     const rError = { status: 401, error: { message: errorLogin, error: new Error(errorLogin) } };
+
+    // a failed login is not recorded as an event: there can be many (anybody can try), so it is only logged,
+    // and the rate limits count the failures of an account
+    const loginFailed = (reason) => {
+      console.log(`\nLogin failed for ${objInfo.username}: ${reason}`);
+      return rError; // return generic error
+    };
 
     ///
     // login
@@ -383,10 +388,7 @@ const Public = {
     };
     let rL = await Providers[Private.UsersAuthProviderType](config, objInfo, _ctx);
     if (rL.error) {
-      // raise event for invalid login
-      const eventArgs = { ...eventO, reason: 'Login failed' };
-      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventArgs, _ctx, failedSeverity);
-      return rError; // return generic error
+      return loginFailed('Login failed');
     }
 
     ///
@@ -395,10 +397,7 @@ const Public = {
     const userProjection = { id: 1, status: 1, name: 1, email: 1, schools: 1 };
     const rUserDetails = await UsersRest.getOneByEmail(objInfo.username, userProjection, _ctx);
     if (rUserDetails.error) {
-      // raise event
-      const eventArgs = { ...eventO, reason: 'No user details' };
-      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventArgs, _ctx, failedSeverity);
-      return rError; // return generic error
+      return loginFailed('No user details');
     }
 
     _ctx.userID = rUserDetails.value.id; // set userID in context for events and notifications
@@ -407,10 +406,7 @@ const Public = {
     // fail login if user is disabled
     const user = rUserDetails.value;
     if (user.status === UsersRest.Constants.Status.Disabled) {
-      // raise event
-      const eventArgs = { ...eventO, reason: 'User is disabled' };
-      await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventArgs, _ctx, failedSeverity);
-      return rError; // return generic error
+      return loginFailed('User is disabled');
     }
 
     // if user pending make active
@@ -424,9 +420,7 @@ const Public = {
 
       // disabled while this login was running: it stays disabled
       if (rP.value?.status === UsersRest.Constants.Status.Disabled) {
-        const eventArgs = { ...eventO, reason: 'User is disabled' };
-        await EventsRest.raiseEventForObject(srvName, failedAction, eventO, eventArgs, _ctx, failedSeverity);
-        return rError; // return generic error
+        return loginFailed('User is disabled');
       }
       user.status = UsersRest.Constants.Status.Active;
     }
@@ -514,6 +508,7 @@ const Public = {
         status: 401, // return 401 instead of 400
       };
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
@@ -619,6 +614,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
@@ -689,6 +685,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
@@ -725,6 +722,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
@@ -776,6 +774,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
+    patchInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     return await Public.putPassword(patchInfo.set, _ctx, Private.Action.PatchPassword);
   },
@@ -789,6 +788,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
+    patchInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     return await Public.putID(patchInfo.set, _ctx, Private.Action.PatchID);
   },
@@ -826,6 +826,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
+    patchInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // here route is already validated that the current _ctx.username is the admin (or the portal admin for the
     // portal school) of the school (_ctx.tenantID)
@@ -875,6 +876,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
@@ -908,6 +910,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
@@ -952,6 +955,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
@@ -986,6 +990,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
@@ -1028,6 +1033,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, notification, _ctx);
     }
+    notification = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);

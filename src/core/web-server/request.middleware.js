@@ -19,7 +19,7 @@ const Public = {
       tenantName: undefined, // must be filled in middleware: users-auth and service2service
       reqID: ValidationUtils.safeID(req.headers['x-request-id']) || CommonUtils.uuidc(),
       lang: /^[a-z]{2}(-[A-Za-z]{2})?$/.test(req.headers['x-lang']) ? req.headers['x-lang'] : 'en',
-      ipAddress: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+      ipAddress: req.ip, // the client when 'trust proxy' is configured (never x-forwarded-for as it is sent)
       userID: undefined,
       username: undefined,
       reqMethod: req.method?.toUpperCase(),

@@ -25,6 +25,7 @@ const Public = {
     process.env.SMALL_API_DATABASE_URL = TestConstants.Database.Url;
     process.env.SMALL_API_DATABASE_DB = TestConstants.Database.Db;
     process.env.SMALL_API_PORTAL_SCHOOL_ID = TestConstants.PortalSchoolID;
+    process.env.SMALL_API_INTERNAL_ROUTES = 'true'; // the tests call the internal routes
 
     console.log('\nprocess.env.NODE_ENV:', process.env.NODE_ENV);
     console.log('\nprocess.env.SMALL_API_PORT:', process.env.SMALL_API_PORT);

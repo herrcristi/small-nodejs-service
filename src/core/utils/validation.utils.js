@@ -25,13 +25,24 @@ const Public = {
 
   /**
    * the joi rule for an email (chain .required() etc. as needed)
+   * the validated value is normalized (NFKC, trimmed, lower case): one mailbox is one account, whatever the case
    */
   email: () =>
     Joi.string()
+      .normalize('NFKC')
+      .trim()
+      .lowercase()
       .email({ tlds: { allow: false } })
       .pattern(Public.EmailPattern, 'email characters')
       .min(1)
       .max(128),
+
+  /**
+   * normalize an email that is not validated by a schema (a lookup, a token, a setting): the same as the email rule
+   */
+  normalizeEmail: (val) => {
+    return typeof val === 'string' ? val.normalize('NFKC').trim().toLowerCase() : val;
+  },
 
   /**
    * check an id coming from a header

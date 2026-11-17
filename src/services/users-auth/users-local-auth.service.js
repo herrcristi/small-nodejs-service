@@ -3,6 +3,8 @@
  */
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
+const crypto = require('crypto');
+
 const CommonUtils = require('../../core/utils/common.utils.js');
 const JwtUtils = require('../../core/utils/jwt.utils.js');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
@@ -35,6 +37,21 @@ const Private = {
    */
   genSalt: () => {
     return CommonUtils.getRandomBytes(32).toString('hex');
+  },
+
+  /**
+   * a salt for the accounts that do not exist: the login does the same work, so its time does not tell if an account
+   * exists
+   */
+  DummySalt: CommonUtils.getRandomBytes(32).toString('hex'),
+
+  /**
+   * compare two hashes in a constant time
+   */
+  equalHashes: (hash1, hash2) => {
+    const buffer1 = Buffer.from(`${hash1}`);
+    const buffer2 = Buffer.from(`${hash2}`);
+    return buffer1.length === buffer2.length && crypto.timingSafeEqual(buffer1, buffer2);
   },
 
   /**
@@ -78,13 +95,15 @@ const Public = {
     const passProjection = { ...projection, password: 1, salt: 1 };
     const r = await DbOpsUtils.getOne(config, objInfo.username /*id*/, passProjection, _ctx);
     if (r.error) {
+      // the same work as for an existing account (the time of the answer does not tell if the account exists)
+      Private.hashPassword(objInfo.password, Private.DummySalt, _ctx);
       return r;
     }
 
     // check password
     const currHashValue = r.value.password;
     const checkHashValue = Private.hashPassword(objInfo.password, r.value.salt, _ctx);
-    if (checkHashValue !== currHashValue) {
+    if (!Private.equalHashes(checkHashValue, currHashValue)) {
       const errorLogin = 'Invalid username/password';
       return { status: 401, error: { message: errorLogin, error: new Error(errorLogin) } };
     }

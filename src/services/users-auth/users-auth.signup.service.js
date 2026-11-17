@@ -168,6 +168,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // this route is authorized for portal admin only, so the tenantID is the portal school ID
 
@@ -223,6 +224,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // the school is named (school.id)
     if (objInfo.school.id) {
@@ -286,7 +288,9 @@ const Public = {
       /* const rr = */ await UsersAuth.sendInvite(userInfo, _ctx);
     }
 
-    return rUser;
+    // the same answer for a new user, an existing user and an existing member: it does not tell if an account
+    // exists, nor its id or name
+    return { status: 200, value: { username: objInfo.email, type: UsersAuthConstants.Type } };
   },
 };
 

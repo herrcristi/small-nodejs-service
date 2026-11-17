@@ -221,6 +221,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // populate references
     let rf = await ReferencesUtils.populateReferences(config, objInfo, _ctx);
@@ -298,6 +299,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // populate references
     let rf = await ReferencesUtils.populateReferences(config, objInfo, _ctx);
@@ -345,6 +347,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
     }
+    patchInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // populate references
     let rf = await ReferencesUtils.populateReferences(config, [patchInfo.set, patchInfo.add], _ctx);
@@ -391,6 +394,7 @@ const Public = {
     if (v.error) {
       return CommonUtils.getSchemaValidationError(v, notification, _ctx);
     }
+    notification = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
     // notification (process references)
     return await NotificationsUtils.notification(config, notification, _ctx);

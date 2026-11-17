@@ -39,6 +39,7 @@ description: 'Use when creating, reviewing, testing, or documenting backend or U
 ## Service Patterns
 
 - Validate request bodies and query filters with the service's Joi schemas. List routes use `RestApiUtils.buildFilterFromReq` and return `{ data, meta }`.
+- After a schema validation, continue with the validated value (`objInfo = v.value`): it is converted and has no unknown keys. A date field is `Joi.string().isoDate()` (kept as an ISO string; `Joi.date()` would store a `Date`). An email uses `ValidationUtils.email()`, which normalizes it (NFKC, trimmed, lower case); an email that is not validated by a schema (a lookup, a token, a setting) goes through `ValidationUtils.normalizeEmail`. A service never changes an object of its caller (notifications are shared by several subscribers in one process).
 - Service configuration declares references, projections, and notification payloads. Populate/expand references through `ReferencesUtils` and the corresponding `*Rest` service.
 - Mutations generally follow validate, load config, populate references, translate, perform the database operation, raise an event, then raise a notification. Preserve rollback behavior for multi-step signup/invite flows.
 - User invitations go through `UsersAuthSignupService.invite`: new users receive the signup/reset-password message; existing users receive the invite message. Every invitation (school roles and `portal-admin`) uses `UsersAuthRest.invite` / `POST /users-auth/invite` with the school taken from the selected tenant; do not add school-specific invite routes. A school admin invites any role of its own school, admins included (naming the selected school in `school.id` is the same invite). The one exception is a portal admin inviting the admin of another school: it names that school with `school.id` (only from the Portal School, only the `admin` role), and the same invite runs with the context of that school, as signup does for the first admin. The local-call mapping that exposes `signup` and `invite` on the users-auth local service is in `src/services/config.services.js`; the email sender is `UsersAuthService.sendInvite`.
@@ -47,6 +48,16 @@ description: 'Use when creating, reviewing, testing, or documenting backend or U
 - The status of a user is global (all its schools). `pending` is only the initial state: a user becomes `active` at its first login (internal `POST /users/:id/activate`) or is set `active` / `disabled` by a portal admin (`PUT|PATCH /users/:id/status`), and never goes back to `pending`. The profile routes (`PUT|PATCH /users/:id`) refuse `status`. A portal admin cannot disable itself.
 - The activation (`UsersService.activate`, `SchoolsService.activate`) reads the user or the school itself and changes only a `pending` one; an active or disabled one is returned unchanged, and the caller uses the returned status (a disabled user is refused at login, a disabled school stays disabled). Never decide on a membership copy or on a snapshot taken earlier in the flow.
 - Add short section comments in the existing block-comment style when they explain a boundary or non-obvious invariant; add comments for the next statements, with clear explainations; add if it separates flows.
+
+## Security Rules
+
+- Secrets come from the environment. In production the service refuses the example values of `src/.env.example`, weak values, and a `SMALL_API_S2SPASS` equal to an auth password (debug mode only warns). `JwtUtils` derives separate sign and encrypt keys from each password; never use a password directly as a key.
+- The client address is `req.ip`, which follows `SMALL_API_TRUST_PROXY`; never read `x-forwarded-for` (or any identity header) directly.
+- Rate limits (`rate-limiter.middleware.js`) count failed logins per account from one address and per account from all addresses (successful logins are not counted), and reset emails per account. They are per process.
+- The auth cookie is set and cleared with `cookieOptions` (`HttpOnly`, `SameSite` from `SMALL_API_COOKIE_SAMESITE`, `Secure` outside debug mode).
+- Internal routes (`/api/internal_v1`) answer `404` unless `SMALL_API_INTERNAL_ROUTES=true` (services in separate processes). A service token is bound to the method and path, valid for 60 s, and used once (`jti`).
+- Public answers never tell if an account exists: reset password answers `200` for an unknown address, invite answers `200 { username, type }` for new users, existing users and members alike, and the login hashes the password also for a missing account (constant-time comparison).
+- A failed login is only logged (reason, never the password), not recorded as an event: anybody can cause many. Record events for what authenticated users change.
 
 ## UI Patterns
 
@@ -61,6 +72,7 @@ description: 'Use when creating, reviewing, testing, or documenting backend or U
 - Service tests live in `src/test/test/<service>/`, use Sinon stubs, and are registered by the service's `*.all.tests.js` file. Add tests for success, validation, dependency failures, and authorization/invariants appropriate to the change.
 - Auth route behavior belongs in `users-auth.service.validate.test.js`; public controller behavior belongs in the owning controller test suite.
 - Run a focused Mocha file or suite first. The backend's complete unit suite is `cd src && npm test`; database-backed functional tests use `npm run testdb` and require MongoDB. Run both with `env -u SMALL_API_PORTAL_ADMIN_EMAIL` when that variable is exported in the shell (otherwise the startup bootstrap stops the run). When functional tests fail, compare with the same run on the base commit before concluding that a change caused it.
+- `TestUtils.setupEnv` enables the internal routes and uses test-only secrets; the salt stays the example one because the stored password hashes of the test users depend on it. A test that runs `initEnv` as production must give strong secrets, or it exits.
 - Test data uses normal, realistic values (names, emails on `testdomain.test`, ids), not words like `evil` or `attacker`, even in security tests.
 - Format only the files that were changed (`npx prettier --write <files>`), and check the diff: if the formatter changes lines that were not part of the change, restore the file and re-apply only the change.
 - UI scripts are in `ui/package.json`; validate Vue changes with `npm run build` if the lint command is unavailable.
