@@ -111,7 +111,8 @@ async function submit() {
         target = '/';
       }
       // redirect to next
-      router.push(decodeURIComponent(target));
+      const nextPath = decodeURIComponent(target);
+      router.push(nextPath);
     } else {
       // redirect to tenant selection page and pass next
       const tenantIDParam = props.tenantID ? encodeURIComponent(props.tenantID) : '';

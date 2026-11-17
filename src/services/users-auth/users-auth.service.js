@@ -169,7 +169,8 @@ const Private = {
    */
   initRolesAccess: () => {
     const rolesPath = path.join(__dirname, '../config.roles.json');
-    const roles = JSON.parse(fs.readFileSync(rolesPath));
+    const rolesText = fs.readFileSync(rolesPath);
+    const roles = JSON.parse(rolesText);
     for (const role in roles.roles) {
       const roleAccess = roles.roles[role];
       Private.RolesApiAccess[role] = {};

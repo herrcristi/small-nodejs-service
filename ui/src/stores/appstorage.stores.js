@@ -52,7 +52,8 @@ const Store = {
         this.clear(key, storage);
         return null;
       }
-      storage.setItem(key, JSON.stringify(obj));
+      const text = JSON.stringify(obj);
+      storage.setItem(key, text);
       return obj;
     } catch (e) {
       console.error(`Failed to save ${key} in store`, e);

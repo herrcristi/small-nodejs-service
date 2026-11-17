@@ -66,12 +66,15 @@ const Public = {
 
     // the proxies in front of the service: req.ip is then the client (from x-forwarded-for), used by the rate limits
     // and the events; without it req.ip is the address of the proxy and a client can not choose its own address
-    app.set('trust proxy', Public.getTrustProxy());
+    const trustProxy = Public.getTrustProxy();
+    app.set('trust proxy', trustProxy);
     let bodyParser = require('body-parser');
 
-    app.use(cors(CorsMiddleware.cors));
+    const corsMiddleware = cors(CorsMiddleware.cors);
+    app.use(corsMiddleware);
 
-    app.use(cookieParser());
+    const cookieMiddleware = cookieParser();
+    app.use(cookieMiddleware);
 
     // Add a generic auth-rate limiter scaffold accessible via app.locals.authLimiter
     app.locals.authLimiter = rateLimit(RateLimiterMiddleware.authLimiter);
@@ -86,10 +89,14 @@ const Public = {
     app.use(SecurityHeadersMiddleware.middleware);
 
     // parse application/json and look for raw text
-    app.use(bodyParser.json({ limit: '5mb' }));
-    app.use(bodyParser.urlencoded({ limit: '5mb', extended: true }));
-    app.use(bodyParser.text());
-    app.use(bodyParser.json({ limit: '5mb', type: 'application/json' }));
+    const jsonParser = bodyParser.json({ limit: '5mb' });
+    const urlencodedParser = bodyParser.urlencoded({ limit: '5mb', extended: true });
+    const textParser = bodyParser.text();
+    const jsonTypeParser = bodyParser.json({ limit: '5mb', type: 'application/json' });
+    app.use(jsonParser);
+    app.use(urlencodedParser);
+    app.use(textParser);
+    app.use(jsonTypeParser);
 
     // add middlewares
     app.use(RequestMiddleware.middleware); // adds a req._ctx

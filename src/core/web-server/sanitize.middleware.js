@@ -16,9 +16,8 @@ const Public = {
 
     const msg = unsafe.tooDeep ? 'Request body is nested too deep' : `Request body has a forbidden key: ${unsafe.key}`;
     console.log(`\nRequest refused: ${msg}`);
-    return res
-      .status(400)
-      .json(await RestMessagesUtils.statusError(400, { message: msg, error: new Error(msg) }, req._ctx));
+    const message = await RestMessagesUtils.statusError(400, { message: msg, error: new Error(msg) }, req._ctx);
+    return res.status(400).json(message);
   },
 };
 

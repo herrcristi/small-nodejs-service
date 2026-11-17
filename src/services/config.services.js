@@ -167,6 +167,14 @@ const Public = {
       await LocationsRest.subscribe({ callback: rest.notification, projection });
     }
 
+    // signup + invite are implemented in the signup service, so expand the users-auth service with them
+    // (prototype lookup keeps the other functions delegated to UsersAuthService)
+    const usersAuthLocal = Object.create(UsersAuthService);
+    Object.assign(usersAuthLocal, {
+      signup: UsersAuthSignupService.signup,
+      invite: UsersAuthSignupService.invite,
+    });
+
     // init the communication
     const config = {
       issuer: 'SmallApp-Service2Service',
@@ -174,12 +182,7 @@ const Public = {
 
       local: {
         [SchoolsConstants.ServiceName]: SchoolsService,
-        // signup + invite are implemented in the signup service, so expand the users-auth service with them
-        // (prototype lookup keeps the other functions delegated to UsersAuthService)
-        [UsersAuthConstants.ServiceName]: Object.assign(Object.create(UsersAuthService), {
-          signup: UsersAuthSignupService.signup,
-          invite: UsersAuthSignupService.invite,
-        }),
+        [UsersAuthConstants.ServiceName]: usersAuthLocal,
         [UsersConstants.ServiceName]: UsersService,
         [EventsConstants.ServiceName]: EventsService,
         [AdminsConstants.ServiceName]: AdminsService,

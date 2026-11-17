@@ -66,7 +66,8 @@ async function fetchDetails(id) {
     snackbarColor.value = 'error';
     snackbar.value = true;
 
-    emit('nodatatext', e.toString());
+    const text = e.toString();
+    emit('nodatatext', text);
   } finally {
     clearTimeout(timeoutID);
     emit('loading', false);

@@ -45,12 +45,14 @@ const Public = {
    * raise event for action applied to an object
    */
   raiseEventForObject: async (serviceName, action, objTarget, objArg, _ctx, severity = undefined) => {
+    const protectedArg = CommonUtils.protectData(objArg);
+    const argText = JSON.stringify(protectedArg);
     return await Public.post(
       {
         severity: severity || EventsConstants.Severity.Informational,
         messageID: `${serviceName}.${action}`,
         target: { id: objTarget.id, name: objTarget.name, type: objTarget.type },
-        args: [JSON.stringify(CommonUtils.protectData(objArg))],
+        args: [argText],
         user: { id: _ctx.userID, username: _ctx.username },
       },
       _ctx

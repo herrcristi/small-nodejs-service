@@ -60,7 +60,8 @@ const Public = {
    */
   initStrings: async (language, file, _ctx) => {
     try {
-      Private.Strings[language] = JSON.parse(fs.readFileSync(file));
+      const text = fs.readFileSync(file);
+      Private.Strings[language] = JSON.parse(text);
 
       console.log(`\nLanguage strings added ${language} from file ${file}`);
       return Private.Strings;
@@ -77,11 +78,13 @@ const Public = {
    */
   initEmails: async (language, file, _ctx) => {
     try {
-      Private.Emails[language] = JSON.parse(fs.readFileSync(file));
+      const text = fs.readFileSync(file);
+      Private.Emails[language] = JSON.parse(text);
 
       for (const key in Private.Emails[language]) {
         const emailTemplate = Private.Emails[language][key];
-        const emailFile = path.join(path.dirname(file), emailTemplate.email);
+        const folder = path.dirname(file);
+        const emailFile = path.join(folder, emailTemplate.email);
         emailTemplate.email = fs.readFileSync(emailFile).toString();
       }
 

@@ -414,19 +414,26 @@ async function handleSubmit() {
     try {
       const d = new Date(payload.frequencyTimestamp || Date.now());
       let day = d.getUTCDate();
+
+      // the parts of the frequency (hh:mm for the time)
+      const frequencyDate = Number(payload.frequencyDate);
+      const hoursText = payload.frequencyTime?.substring(0, 2);
+      const minutesText = payload.frequencyTime?.substring(3, 5);
+      const frequencyHours = Number(hoursText);
+      const frequencyMinutes = Number(minutesText);
       switch (payload.frequency) {
         case 'monthly':
-          d.setUTCDate(Number(payload.frequencyDate));
-          d.setUTCHours(Number(payload.frequencyTime.substring(0, 2)));
-          d.setUTCMinutes(Number(payload.frequencyTime.substring(3, 5)));
+          d.setUTCDate(frequencyDate);
+          d.setUTCHours(frequencyHours);
+          d.setUTCMinutes(frequencyMinutes);
           break;
 
         case 'weekly':
         case 'biWeekly':
           day = d.getUTCDate() - 7 - d.getUTCDay() + Number(payload.frequencyDay);
           d.setUTCDate(day <= 0 ? day + 14 : day);
-          d.setUTCHours(Number(payload.frequencyTime.substring(0, 2)));
-          d.setUTCMinutes(Number(payload.frequencyTime.substring(3, 5)));
+          d.setUTCHours(frequencyHours);
+          d.setUTCMinutes(frequencyMinutes);
           break;
 
         case 'once':

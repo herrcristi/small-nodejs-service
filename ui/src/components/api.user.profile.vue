@@ -340,7 +340,8 @@ function onDatePicked(value) {
   if (value) {
     try {
       // console.log('On date picked:', value);
-      edit.value.birthday = getDateString(getUTCISOString(value));
+      const isoValue = getUTCISOString(value);
+      edit.value.birthday = getDateString(isoValue);
       // console.log('On date picked set birthday:', edit.value.birthday);
     } catch (e) {
       console.log('Error parsing date:', e);
@@ -380,7 +381,11 @@ function getUTCISOString(date) {
   }
   try {
     const d = new Date(date);
-    return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())).toISOString();
+    const year = d.getFullYear();
+    const month = d.getMonth();
+    const day = d.getDate();
+    const utcTime = Date.UTC(year, month, day);
+    return new Date(utcTime).toISOString();
   } catch (e) {
     console.error('Error formatting date', e);
     return '';

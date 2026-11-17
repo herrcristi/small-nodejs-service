@@ -162,7 +162,9 @@ function goProfile() {
 function goTenants() {
   const current = globalThis.location.pathname + globalThis.location.search;
   const tenantID = appStore?.tenantID;
-  router.push(`/tenants?tenantID=${encodeURIComponent(tenantID || '')}&next=${encodeURIComponent(current)}`);
+  const tenantParam = encodeURIComponent(tenantID || '');
+  const nextParam = encodeURIComponent(current);
+  router.push(`/tenants?tenantID=${tenantParam}&next=${nextParam}`);
 }
 
 /**
@@ -179,7 +181,9 @@ async function doLogout() {
   } finally {
     authStore.clear();
     appStore.clear(); // also clears tenantID from localStorage
-    router.push(`/login?tenantID=${encodeURIComponent(tenantID || '')}&next=${encodeURIComponent(current)}`);
+    const tenantParam = encodeURIComponent(tenantID || '');
+    const nextParam = encodeURIComponent(current);
+    router.push(`/login?tenantID=${tenantParam}&next=${nextParam}`);
   }
 }
 </script>

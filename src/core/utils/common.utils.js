@@ -60,7 +60,8 @@ const Public = {
    * iv For AES, this is always 16
    */
   encrypt: (data, password, iv = crypto.randomBytes(16)) => {
-    let cipher = crypto.createCipheriv('aes-256-gcm', Buffer.from(password), iv, { authTagLength: 16 });
+    const key = Buffer.from(password);
+    let cipher = crypto.createCipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
     let encrypted = cipher.update(data);
     encrypted = Buffer.concat([encrypted, cipher.final()]);
     return { status: 200, value: Buffer.concat([iv, encrypted, cipher.getAuthTag()]).toString('hex') };
@@ -78,7 +79,8 @@ const Public = {
       const encryptedMessage = Uint8Array.prototype.slice.call(encrypted, 16, -16);
       const authTag = Uint8Array.prototype.slice.call(encrypted, -16);
 
-      const decipher = crypto.createDecipheriv('aes-256-gcm', Buffer.from(password), iv, { authTagLength: 16 });
+      const key = Buffer.from(password);
+      const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
       decipher.setAuthTag(authTag);
       let data = decipher.update(encryptedMessage);
       data = Buffer.concat([data, decipher.final()]);

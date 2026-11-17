@@ -93,7 +93,9 @@ function selectTenant(t) {
   selected.value = t.id;
 
   // persist via store helper
-  appStore.saveTenant(t.id, getRolesPermissions(t.id, useAuthStore()?.raw));
+  const authStore = useAuthStore();
+  const permissions = getRolesPermissions(t.id, authStore?.raw);
+  appStore.saveTenant(t.id, permissions);
 
   // reset next if tenantID changed
   if (route.query.tenantID && route.query.tenantID !== t.id) {

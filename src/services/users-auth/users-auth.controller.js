@@ -64,7 +64,8 @@ const Public = {
       const r = await UsersAuthService.login(req.body, _ctx);
       if (r.error) {
         const re = Private.loginError(r);
-        return res.status(re.status).json(await RestMessagesUtils.statusError(re.status, re.error, _ctx));
+        const message = await RestMessagesUtils.statusError(re.status, re.error, _ctx);
+        return res.status(re.status).json(message);
       }
 
       // set token as cookie (it expires with the token: 12h)
@@ -77,7 +78,8 @@ const Public = {
         ...r.value,
       });
     } catch (e) {
-      return res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(401).json(message);
     } finally {
       res.end();
     }
@@ -98,7 +100,8 @@ const Public = {
       // post
       const r = await UsersAuthService.logout(_ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       // set expired token as cookie (the same attributes as when it was set)
@@ -110,7 +113,8 @@ const Public = {
         ...r.value,
       });
     } catch (e) {
-      return res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(401).json(message);
     } finally {
       res.end();
     }
@@ -128,7 +132,8 @@ const Public = {
       // get token from cookie
       const token = req.cookies[UsersAuthConstants.AuthToken];
       if (!token) {
-        return res.status(401).json(await RestMessagesUtils.notAuthorized('No auth token', _ctx));
+        const message = await RestMessagesUtils.notAuthorized('No auth token', _ctx);
+        return res.status(401).json(message);
       }
 
       // validate token and get user details (use a route allowed for all)
@@ -137,7 +142,8 @@ const Public = {
         _ctx
       );
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       // the schools can be added after the login (like a new school or an invitation), make the pending ones active
@@ -157,7 +163,8 @@ const Public = {
         expires,
       });
     } catch (e) {
-      return res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(401).json(message);
     } finally {
       res.end();
     }
@@ -183,12 +190,14 @@ const Public = {
       // validate
       const r = await UsersAuthService.validate({ token, method, route }, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(401).json(message);
     } finally {
       res.end();
     }
@@ -209,12 +218,14 @@ const Public = {
       // post
       const r = await UsersAuthService.post(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -235,12 +246,14 @@ const Public = {
       // delete
       const r = await UsersAuthService.delete(_ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -271,12 +284,14 @@ const Public = {
         return res.status(200).json({ username: req.body.username, type: UsersAuthConstants.Type });
       }
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -301,12 +316,14 @@ const Public = {
       // check if reset token is still valid
       const r = await UsersAuthService.validateResetToken({ token: req.query.token }, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -327,12 +344,14 @@ const Public = {
       // check reset token and reset password
       const r = await UsersAuthService.putResetPassword(resetToken, req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -357,12 +376,14 @@ const Public = {
       // put
       const r = await UsersAuthService.putPassword(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -387,7 +408,8 @@ const Public = {
       // put
       const r = await UsersAuthService.putID(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       // set expired token as cookie (the same attributes as when it was set)
@@ -399,7 +421,8 @@ const Public = {
         ...r.value,
       });
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -424,12 +447,14 @@ const Public = {
       // patch
       const r = await UsersAuthService.patchPassword(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -454,7 +479,8 @@ const Public = {
       // patch
       const r = await UsersAuthService.patchID(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       // set expired token as cookie (the same attributes as when it was set)
@@ -466,7 +492,8 @@ const Public = {
         ...r.value,
       });
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -492,12 +519,14 @@ const Public = {
       // patch
       const r = await UsersAuthService.patchUserSchool(userID, req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -518,12 +547,14 @@ const Public = {
       // post
       const r = await UsersAuthService.notification(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }

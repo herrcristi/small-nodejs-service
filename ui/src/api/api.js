@@ -71,7 +71,8 @@ export async function bootstrapAuthFromCookie() {
         const isValid = response.data.schools.some((s) => s.id === savedTenantID && s.status === 'active');
         if (isValid) {
           // restore tenant from localStorage
-          appStore.saveTenant(savedTenantID, getRolesPermissions(savedTenantID, response.data));
+          const permissions = getRolesPermissions(savedTenantID, response.data);
+          appStore.saveTenant(savedTenantID, permissions);
         } else {
           // invalid tenantID; clear it
           appStore.saveTenant(null, null);
