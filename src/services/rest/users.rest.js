@@ -45,9 +45,11 @@ const Public = {
     // (the email format is also restricted by the validators, this is the second protection)
     const query = new URLSearchParams({ email: `${email}`, limit: '1' });
     if (projection) {
-      query.set('projection', Object.keys(projection).join(','));
+      const projectionFields = Object.keys(projection).join(',');
+      query.set('projection', projectionFields);
     }
-    const r = await Public.getAll(query.toString(), _ctx);
+    const queryParams = query.toString();
+    const r = await Public.getAll(queryParams, _ctx);
     if (r.error) {
       return r;
     }

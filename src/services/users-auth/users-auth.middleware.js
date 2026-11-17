@@ -52,7 +52,8 @@ const Public = {
       // extract userID and username from token
       const r = await UsersAuthRest.validate(objValidation, _ctx);
       if (r.error) {
-        res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error.error, _ctx);
+        res.status(r.status).json(message);
         return res.end();
       }
 
@@ -62,7 +63,8 @@ const Public = {
       _ctx.tenantName = r.value.tenantName;
     } catch (e) {
       console.log(`\nFailed to authenticate request. Error: ${e.stack}`, _ctx);
-      res.status(401).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      res.status(401).json(message);
       return res.end();
     }
 

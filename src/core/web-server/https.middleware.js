@@ -9,7 +9,8 @@ const Public = {
    */
   middleware: (req, res, next) => {
     if (req.header('x-forwarded-proto') && req.header('x-forwarded-proto') !== 'https') {
-      return res.redirect(`https://${req.header('host')}${req.url}`);
+      const host = req.header('host');
+      return res.redirect(`https://${host}${req.url}`);
     }
     next();
   },

@@ -434,7 +434,8 @@ async function fetchAll({ page = 1, itemsPerPage = 50, sortBy = [] } = {}) {
     }
 
     // call
-    const response = await props.apiFn.getAll(new URLSearchParams(params).toString());
+    const query = new URLSearchParams(params).toString();
+    const response = await props.apiFn.getAll(query);
 
     // response
     totalItems.value = response.data?.meta?.count || 0;

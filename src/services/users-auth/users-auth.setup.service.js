@@ -24,10 +24,8 @@ const Public = {
     const _ctx = { reqID: 'UsersAuthSetup', lang: 'en', tenantID: portalSchoolID, tenantName: 'Portal School' };
 
     // only the portal admins are members of the portal school
-    const existing = await UsersRest.getAll(
-      `schools.id=${encodeURIComponent(portalSchoolID)}&limit=1&projection=id`,
-      _ctx
-    );
+    const schoolParam = encodeURIComponent(portalSchoolID);
+    const existing = await UsersRest.getAll(`schools.id=${schoolParam}&limit=1&projection=id`, _ctx);
     if (existing.error) {
       throw new Error(existing.error.message || 'Failed to check the portal admins');
     }

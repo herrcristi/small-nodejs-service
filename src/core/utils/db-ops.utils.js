@@ -326,10 +326,12 @@ const Public = {
       }
 
       // add
-      bulkOperations = bulkOperations.concat(DbOpsArrayUtils.getPushBulkOpsFromArray(filter, patchInfo.add, _ctx));
+      const pushOperations = DbOpsArrayUtils.getPushBulkOpsFromArray(filter, patchInfo.add, _ctx);
+      bulkOperations = bulkOperations.concat(pushOperations);
 
       // remove
-      bulkOperations = bulkOperations.concat(DbOpsArrayUtils.getPullBulkOpsFromArray(filter, patchInfo.remove, _ctx));
+      const pullOperations = DbOpsArrayUtils.getPullBulkOpsFromArray(filter, patchInfo.remove, _ctx);
+      bulkOperations = bulkOperations.concat(pullOperations);
 
       // unset
       if (Array.isArray(patchInfo.unset) && patchInfo.unset.length) {

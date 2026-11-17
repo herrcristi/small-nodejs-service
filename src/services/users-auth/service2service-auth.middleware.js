@@ -24,7 +24,8 @@ const Public = {
     // in one process the services call each other directly, so these routes are not reachable from outside
     // (the check uses the registered route, so it applies to every spelling of the url that reaches the route)
     if (isInternalRoute && process.env.SMALL_API_INTERNAL_ROUTES !== 'true') {
-      res.status(404).json(await RestMessagesUtils.statusError(404, new Error('Not found'), _ctx));
+      const message = await RestMessagesUtils.statusError(404, new Error('Not found'), _ctx);
+      res.status(404).json(message);
       return res.end();
     }
 
@@ -39,12 +40,14 @@ const Public = {
     try {
       const r = RestCommsUtils.restValidation(s2sToken, _ctx);
       if (r.error) {
-        res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error.error, _ctx);
+        res.status(r.status).json(message);
         return res.end();
       }
     } catch (e) {
       console.log(`\nFailed to S2S authenticate request. Error: ${e.stack}`, _ctx);
-      res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      res.status(500).json(message);
       return res.end();
     }
 

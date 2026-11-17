@@ -46,12 +46,14 @@ const Public = {
       // get all
       const r = await UsersService.getAllForReq(req, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -76,12 +78,14 @@ const Public = {
       // get all
       const r = await UsersService.getAllInternalForReq(req, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -105,12 +109,14 @@ const Public = {
 
       const r = await UsersService.getPortalAdminsForReq(req, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -132,12 +138,14 @@ const Public = {
 
       const r = await UsersService.getSchoolAdminsForReq(req.params.schoolId, req, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -159,12 +167,14 @@ const Public = {
 
       const r = await UsersService.deleteSchoolAdmin(req.params.schoolId, req.params.id, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -185,19 +195,22 @@ const Public = {
       // projection
       const rf = await RestApiUtils.buildFilterFromReq(req, null /*no schema*/, _ctx);
       if (rf.error) {
-        return res.status(rf.status).json(await RestMessagesUtils.statusError(rf.status, rf.error, _ctx));
+        const message = await RestMessagesUtils.statusError(rf.status, rf.error, _ctx);
+        return res.status(rf.status).json(message);
       }
 
       // get
       const rService = await UsersService.getOne(objID, rf.value.projection, _ctx);
       const r = Private.notDisclosed(rService, objID);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -218,12 +231,14 @@ const Public = {
       // post
       const r = await UsersService.post(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -245,12 +260,14 @@ const Public = {
       // delete
       const r = await UsersService.delete(objID, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -277,12 +294,14 @@ const Public = {
       const rService = await UsersService.put(objID, req.body, _ctx);
       const r = Private.notDisclosed(rService, objID);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -308,12 +327,14 @@ const Public = {
       // put
       const r = await UsersService.putStatus(objID, req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -339,12 +360,14 @@ const Public = {
       // put
       const r = await UsersService.patchStatus(objID, req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -366,12 +389,14 @@ const Public = {
       // activate
       const r = await UsersService.activate(objID, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -397,12 +422,14 @@ const Public = {
       // put
       const r = await UsersService.putEmail(objID, req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -429,12 +456,14 @@ const Public = {
       const rService = await UsersService.patch(objID, req.body, _ctx);
       const r = Private.notDisclosed(rService, objID);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -460,12 +489,14 @@ const Public = {
       // patch
       const r = await UsersService.patchSchool(objID, req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -486,12 +517,14 @@ const Public = {
       // post
       const r = await UsersService.notification(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }

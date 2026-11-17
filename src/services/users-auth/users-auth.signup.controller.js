@@ -37,14 +37,16 @@ const Public = {
       // signup (is a separate service)
       const r = await UsersAuthSignupService.signup(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       // a school was created; its first admin is invited (the same answer for a new or an existing user)
       const answer = Private.inviteAnswer(r);
       res.status(201).json(answer);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -69,14 +71,16 @@ const Public = {
       // invite (is a separate service)
       const r = await UsersAuthSignupService.invite(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       // the same answer for a new user, an existing user and an existing member
       const answer = Private.inviteAnswer(r);
       res.status(200).json(answer);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }

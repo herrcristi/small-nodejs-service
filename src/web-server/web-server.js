@@ -13,12 +13,10 @@ const Public = {
   init: async (port) => {
     console.log('\nInit webserver');
 
-    return await WebServerUtils.init(
-      port,
-      ConfigServices.getRoutes(),
-      ConfigServices.getMiddlewares(),
-      ConfigServices.getUsersAuthMiddlewares()
-    );
+    const routes = ConfigServices.getRoutes();
+    const middlewares = ConfigServices.getMiddlewares();
+    const usersAuthMiddlewares = ConfigServices.getUsersAuthMiddlewares();
+    return await WebServerUtils.init(port, routes, middlewares, usersAuthMiddlewares);
   },
 };
 

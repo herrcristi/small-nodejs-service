@@ -32,12 +32,14 @@ const Public = {
       // get all
       const r = await SchoolsService.getAllForReq(req, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -58,18 +60,21 @@ const Public = {
       // projection
       const rf = await RestApiUtils.buildFilterFromReq(req, null /*no schema*/, _ctx);
       if (rf.error) {
-        return res.status(rf.status).json(await RestMessagesUtils.statusError(rf.status, rf.error, _ctx));
+        const message = await RestMessagesUtils.statusError(rf.status, rf.error, _ctx);
+        return res.status(rf.status).json(message);
       }
 
       // get
       const r = await SchoolsService.getOne(objID, rf.value.projection, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -91,12 +96,14 @@ const Public = {
       // delete
       const r = await SchoolsService.delete(objID, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -122,12 +129,14 @@ const Public = {
       // put
       const r = await SchoolsService.put(objID, req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -153,12 +162,14 @@ const Public = {
       // patch
       const r = await SchoolsService.patch(objID, req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -181,11 +192,13 @@ const Public = {
       );
       const r = await SchoolsService.post(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -204,11 +217,13 @@ const Public = {
       );
       const r = await SchoolsService.activate(req.params.id, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -229,12 +244,14 @@ const Public = {
       // post
       const r = await SchoolsService.notification(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }

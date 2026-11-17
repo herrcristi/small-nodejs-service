@@ -32,12 +32,14 @@ const Public = {
       // get all
       const r = await EventsService.getAllForReq(req, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -58,18 +60,21 @@ const Public = {
       // projection
       const rf = await RestApiUtils.buildFilterFromReq(req, null /*no schema*/, _ctx);
       if (rf.error) {
-        return res.status(rf.status).json(await RestMessagesUtils.statusError(rf.status, rf.error, _ctx));
+        const message = await RestMessagesUtils.statusError(rf.status, rf.error, _ctx);
+        return res.status(rf.status).json(message);
       }
 
       // get
       const r = await EventsService.getOne(objID, rf.value.projection, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -90,12 +95,14 @@ const Public = {
       // post
       const r = await EventsService.post(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }
@@ -116,12 +123,14 @@ const Public = {
       // post
       const r = await EventsService.notification(req.body, _ctx);
       if (r.error) {
-        return res.status(r.status).json(await RestMessagesUtils.statusError(r.status, r.error, _ctx));
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
       }
 
       res.status(r.status).json(r.value);
     } catch (e) {
-      return res.status(500).json(await RestMessagesUtils.exception(e, _ctx));
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }

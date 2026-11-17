@@ -287,7 +287,11 @@ const Utils = {
       emailReq: (v, t) => (!!v && v.toString().trim().length > 0) || t('email.required'),
       emailValid: (v, t) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        return (!!v && emailRegex.test(v.toString().trim())) || t('email.invalid');
+        if (!v) {
+          return t('email.invalid');
+        }
+        const value = v.toString().trim();
+        return emailRegex.test(value) || t('email.invalid');
       },
       address: (v, t) => (!!v && v.toString().trim().length > 0) || t('required'),
       credits: (v, t) => {

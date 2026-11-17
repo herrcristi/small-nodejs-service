@@ -118,8 +118,10 @@ const Public = {
 
       // init language
       for (const lang of Constants.Languages) {
-        await TranslationsUtils.initStrings(lang, path.resolve(__dirname, `translations/${lang}.json`));
-        await TranslationsUtils.initEmails(lang, path.resolve(__dirname, `translations/${lang}.emails.json`));
+        const stringsFile = path.resolve(__dirname, `translations/${lang}.json`);
+        await TranslationsUtils.initStrings(lang, stringsFile);
+        const emailsFile = path.resolve(__dirname, `translations/${lang}.emails.json`);
+        await TranslationsUtils.initEmails(lang, emailsFile);
       }
 
       const port = process.env.SMALL_API_PORT;

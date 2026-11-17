@@ -275,7 +275,8 @@ const Private = {
     if (!fields.length) {
       return Private.PortalProjection;
     }
-    return { _id: 0, ...Object.fromEntries(fields.map((field) => [field, 1])) };
+    const entries = fields.map((field) => [field, 1]);
+    return { _id: 0, ...Object.fromEntries(entries) };
   },
 
   /**
