@@ -453,4 +453,46 @@ describe('Events Controller', function () {
     chai.expect(res.body.message).to.include('An unknown error has occured');
     chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
+
+  /**
+   * the global events (portal admins) with success, fail, exception
+   */
+  for (const [label, url, fn] of [
+    ['get all global', `${EventsConstants.ApiPath}/global`, 'getAllGlobalForReq'],
+    ['get one global', `${EventsConstants.ApiPath}/global/event1`, 'getOneGlobal'],
+  ]) {
+    it(`should ${label} with success, fail and exception`, async () => {
+      const value = fn === 'getOneGlobal' ? { id: 'event1' } : { data: [{ id: 'event1' }], meta: { count: 1 } };
+      const call = () => supertest(TestConstants.WebServer).get(url).set('Origin', TestConstants.WebServer);
+
+      // success
+      const stubService = sinon.stub(EventsService, fn).returns({ status: 200, value });
+      let res = await call();
+      chai.expect(res.status).to.equal(200);
+      chai.expect(res.body).to.deep.equal(value);
+      if (fn === 'getOneGlobal') {
+        chai.expect(stubService.firstCall.args[0]).to.equal('event1');
+      }
+
+      // fail
+      stubService.returns({ status: 403, error: { message: 'Test error message' } });
+      res = await call();
+      chai.expect(res.status).to.equal(403);
+      chai.expect(res.body.error).to.include('Test error message');
+
+      // exception
+      stubService.throws(new Error('Test error message'));
+      res = await call();
+      chai.expect(res.status).to.equal(500);
+      chai.expect(res.body.error).to.include('Test error message');
+    }).timeout(10000);
+  }
+
+  it('should get one global fail on the projection', async () => {
+    sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({ status: 400, error: { message: 'Test error message' } });
+    const res = await supertest(TestConstants.WebServer)
+      .get(`${EventsConstants.ApiPath}/global/event1`)
+      .set('Origin', TestConstants.WebServer);
+    chai.expect(res.status).to.equal(400);
+  }).timeout(10000);
 });

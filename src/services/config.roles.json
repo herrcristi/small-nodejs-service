@@ -26,6 +26,9 @@
         "PATCH": ["/api/v1/users/:id", "/api/v1/users/:id/status"],
         "DELETE": ["/api/v1/users/school-admins/:schoolId/:id"]
       },
+      "events": {
+        "GET": ["/api/v1/events/global", "/api/v1/events/global/:id"]
+      },
       "schools": {
         "GET": ["/api/v1/schools", "/api/v1/schools/:id"],
         "PUT": ["/api/v1/schools/:id"],

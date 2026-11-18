@@ -13,7 +13,9 @@ const router = express.Router();
  * Events
  */
 router.route(`${EventsConstants.ApiPath}`).get(EventsController.getAll);
+router.route(`${EventsConstants.ApiPath}/global`).get(EventsController.getAllGlobal); // portal admins only
 router.route(`${EventsConstants.ApiPath}/:id`).get(EventsController.getOne);
+router.route(`${EventsConstants.ApiPath}/global/:id`).get(EventsController.getOneGlobal); // portal admins only
 
 /**
  * Internal

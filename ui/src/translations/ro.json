@@ -40,6 +40,7 @@
   "email.new": "Email nou",
   "email.required": "Email-ul este necesar",
   "events": "Evenimente",
+  "events.global": "Evenimente globale",
   "filter": "Filtru",
   "frequency": "Frecvență",
   "frequencyTimestamp": "Timp",

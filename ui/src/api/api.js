@@ -186,6 +186,7 @@ const Api = {
 
   // Events API
   getEvents: (params) => instance.get(`/events?${params}`),
+  getGlobalEvents: (params) => instance.get(`/events/global?${params}`), // portal admin only: the events outside the schools
   getEvent: (id) => instance.get(`/events/${id}`),
 
   // Classes API
