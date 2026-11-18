@@ -572,13 +572,13 @@ How the design behaves under load, and what to do about it. Numbers are of three
 
 ### What a request costs
 
-| Operation                              | Cost                                                                                  |
-| -------------------------------------- | ------------------------------------------------------------------------------------- |
-| Authenticated request, validation only | about 0.2 ms CPU (measured); 2 database reads (the session, the user)                 |
-| List request (`GET /students`)         | about 1.0 to 1.2 ms CPU (measured); 4 database reads (session, user, `find`, `count`) |
-| `GET /users-auth/me`                   | about 0.5 ms CPU (measured); 2 reads                                                  |
-| Write with copies (`PUT /classes/:id`) | about 1.0 to 1.1 ms CPU (measured); 2 reads and 5 writes                              |
-| Login                                  | about 59 ms CPU for the two `scrypt` hashes (measured), 2 reads, 2 writes             |
+| Operation                              | Cost                                                                                                                                    |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Authenticated request, validation only | about 0.2 ms CPU (measured); 2 database reads (the session, the user), and at most one write per session every 5 minutes (its last use) |
+| List request (`GET /students`)         | about 1.0 to 1.2 ms CPU (measured); 4 database reads (session, user, `find`, `count`)                                                   |
+| `GET /users-auth/me`                   | about 0.5 ms CPU (measured); 2 reads                                                                                                    |
+| Write with copies (`PUT /classes/:id`) | about 1.0 to 1.1 ms CPU (measured); 2 reads and 5 writes                                                                                |
+| Login                                  | about 59 ms CPU for the two `scrypt` hashes (measured), 3 reads, 2 writes (and a delete when the user has too many sessions)            |
 
 The API processes hold no session state (the sessions are records in the database), so they scale by adding processes. Requests are cheap; **login is the expensive operation**, because password hashing is deliberately slow.
 
@@ -586,11 +586,11 @@ The API processes hold no session state (the sessions are records in the databas
 
 Assumptions: about 1.5 ms of CPU for a cheap request (the measured cost plus driver work), 2 requests per active user per minute, one single-core process per pod at 70% utilisation, a login of about 59 ms of CPU, and a database node that serves roughly 30,000 to 50,000 simple indexed reads per second. Measure with your own data before relying on any of it.
 
-| Load                                                         | Needs                                                         |
-| ------------------------------------------------------------ | ------------------------------------------------------------- |
-| 1M logins in 1 hour                                          | about 18 cores of hashing, about 26 single-core pods          |
-| 1M logins in 10 minutes                                      | about 107 cores, about 150 pods                               |
-| 1M active users at 2 requests per minute (33,000 requests/s) | about 51 cores, about 75 pods, about 120,000 database reads/s |
+| Load                                                         | Needs                                                                                                           |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| 1M logins in 1 hour                                          | about 18 cores of hashing, about 26 single-core pods                                                            |
+| 1M logins in 10 minutes                                      | about 107 cores, about 150 pods                                                                                 |
+| 1M active users at 2 requests per minute (33,000 requests/s) | about 51 cores, about 75 pods, about 120,000 database reads/s and 3,300 writes/s (the last use of the sessions) |
 
 The session and user lookups on every request are about half of all reads, and list counts touch the whole school's collection.
 
@@ -725,7 +725,11 @@ To restore the session call `GET /users-auth/me` with the cookie. To log out cal
 
 - logout ends that session;
 - a password change, a password reset, an email change or a removed account ends all the sessions of the user (a password change keeps the current session with a new cookie);
-- the cookie and the record expire with the session (12 hours), and the database removes the expired records.
+- a session without requests for 30 minutes ends (a computer left open); its last use is saved at most every 5 minutes, so most requests do not write;
+- a user has at most 10 open sessions: a new login ends the oldest ones;
+- the cookie and the record expire with the session (12 hours at most), and the database removes the expired records.
+
+The limits are `SessionLimits` and `TokenExpiresIn` in `src/services/users-auth/users-auth.constants.js`.
 
 The emailed links (reset password, invitation) have records too: a link is used once, a newer link replaces the older ones, and a password change ends them. A session token is only a session: a link can not be used as a cookie, and a cookie can not set a password.
 

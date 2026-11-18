@@ -6,6 +6,9 @@
  *   collection opens nothing (and a hash of random bytes can not be reverted)
  * - a record has the user, the purpose and the expiry; it is checked at every use, so a token is valid only while its
  *   record exists and is not expired
+ * - a session also ends after a time without requests (SessionLimits.IdleTimeout; its last use is saved at most every
+ *   SessionLimits.TouchInterval), and a user has at most SessionLimits.MaxPerUser open sessions (a new login ends the
+ *   oldest ones)
  * - a record ends when it is not needed anymore: the logout (that session), the use of a link (once), a newer link (the
  *   earlier links), a password change, a password reset, an email change or a removed account (all the records of the
  *   user); the database removes the expired ones (a TTL index)
@@ -48,6 +51,65 @@ const Private = {
   },
 
   /**
+   * keep only the newest open sessions of a user (SessionLimits.MaxPerUser): end the older ones
+   * returns { status, value: ended count } or { status, error }
+   */
+  limitSessions: async (config, userID, _ctx) => {
+    // the sessions after the newest ones
+    const filter = {
+      filter: { userID, purpose: UsersAuthConstants.TokenPurpose.Session },
+      projection: { _id: 0, id: 1 },
+      sort: { createdTimestamp: -1 },
+      skip: UsersAuthConstants.SessionLimits.MaxPerUser,
+    };
+    const rOld = await DbOpsUtils.getAll(config, filter, _ctx);
+    if (rOld.error) {
+      return rOld;
+    }
+    if (rOld.value.length === 0) {
+      return { status: 200, value: 0 };
+    }
+
+    // end them
+    const ids = rOld.value.map((item) => item.id);
+    return await DbOpsUtils.deleteAll(config, { filter: { id: { $in: ids } } }, _ctx);
+  },
+
+  /**
+   * a session that is used: it ends after a time without requests, otherwise its last use is saved (at most every
+   * TouchInterval, so most requests do not write)
+   * returns { status, value: record } or { status, error }
+   */
+  useSession: async (config, record, _ctx) => {
+    const { IdleTimeout, TouchInterval } = UsersAuthConstants.SessionLimits;
+    const now = Date.now();
+    const lastUsed = new Date(record.lastUsedAt).getTime();
+
+    // idle for too long (an invalid date is idle)
+    const isActive = lastUsed + IdleTimeout * 1000 > now;
+    if (!isActive) {
+      return Private.ended(record.purpose);
+    }
+
+    // used recently: nothing to save
+    if (now - lastUsed < TouchInterval * 1000) {
+      return { status: 200, value: record };
+    }
+
+    // save the last use (404: ended in the meantime, for example by a logout)
+    const lastUsedAt = new Date(now);
+    const r = await DbOpsUtils.put(config, record.id, { lastUsedAt }, { _id: 0, id: 1 }, _ctx);
+    if (r.status === 404) {
+      return Private.ended(record.purpose);
+    }
+    if (r.error) {
+      return r;
+    }
+
+    return { status: 200, value: { ...record, lastUsedAt } };
+  },
+
+  /**
    * the error of a request without a user
    */
   noUser: () => {
@@ -59,7 +121,7 @@ const Private = {
 const Public = {
   /**
    * start a session or an emailed link of a user; a new link replaces the earlier links of the user (only the last
-   * email can be used)
+   * email can be used), a new session ends the oldest sessions over the limit (SessionLimits.MaxPerUser)
    * purpose: TokenPurpose.Session or a ResetTokenType
    * user: { userID, username }
    * returns { status, value: { id, secret, expiresAt } } or { status, error }; the secret goes only into the token
@@ -83,13 +145,23 @@ const Public = {
     // the record (only the hash of the secret)
     const secret = CommonUtils.getRandomBytes(32).toString('hex');
     const id = Private.getID(secret);
+    const now = Date.now();
     const expiresIn = UsersAuthConstants.TokenExpiresIn[purpose] * 1000; // ms
-    const expiresAt = new Date(Date.now() + expiresIn); // a date, for the TTL index
-    const record = { id, purpose, userID: user.userID, username: user.username, expiresAt };
+    const expiresAt = new Date(now + expiresIn); // a date, for the TTL index
+    const lastUsedAt = new Date(now); // for the idle time of a session
+    const record = { id, purpose, userID: user.userID, username: user.username, expiresAt, lastUsedAt };
 
     const r = await DbOpsUtils.post(config, record, _ctx);
     if (r.error) {
       return r;
+    }
+
+    // the oldest sessions of the user over the limit
+    if (purpose === UsersAuthConstants.TokenPurpose.Session) {
+      const rLimit = await Private.limitSessions(config, user.userID, _ctx);
+      if (rLimit.error) {
+        return rLimit;
+      }
     }
 
     return { status: 201, value: { id, secret, expiresAt } };
@@ -97,9 +169,10 @@ const Public = {
 
   /**
    * check the data of a token: its record exists (not ended), is for the same purpose and user, and is not expired (the
-   * database removes the expired records only from time to time)
+   * database removes the expired records only from time to time); a session is also not idle for too long, and its
+   * use is saved
    * tokenData: { purpose, username, secret }
-   * returns { status, value: { id, purpose, userID, username, expiresAt } } or { status, error }
+   * returns { status, value: { id, purpose, userID, username, expiresAt, lastUsedAt } } or { status, error }
    */
   check: async (tokenData, _ctx) => {
     const purpose = tokenData?.purpose;
@@ -110,7 +183,7 @@ const Public = {
     const config = await Private.getConfig(_ctx);
 
     const id = Private.getID(tokenData.secret);
-    const projection = { _id: 0, id: 1, purpose: 1, userID: 1, username: 1, expiresAt: 1 };
+    const projection = { _id: 0, id: 1, purpose: 1, userID: 1, username: 1, expiresAt: 1, lastUsedAt: 1 };
     const r = await DbOpsUtils.getOne(config, id, projection, _ctx);
     if (r.status === 404) {
       return Private.ended(purpose);
@@ -124,6 +197,11 @@ const Public = {
     const isOpen = new Date(record.expiresAt).getTime() > Date.now();
     if (record.purpose !== purpose || record.username !== tokenData.username || !isOpen) {
       return Private.ended(purpose);
+    }
+
+    // a session: not idle for too long, and its use is saved
+    if (purpose === UsersAuthConstants.TokenPurpose.Session) {
+      return await Private.useSession(config, record, _ctx);
     }
 
     return { status: 200, value: record };
