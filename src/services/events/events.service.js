@@ -80,6 +80,30 @@ const Private = {
     };
     return config;
   },
+
+  /**
+   * the portal school is the tenant of the request (only portal admins can select it)
+   */
+  isPortalTenant: (_ctx) => {
+    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    return !!portalSchoolID && _ctx.tenantID === portalSchoolID;
+  },
+
+  /**
+   * error for the routes of the portal admins called on another school
+   */
+  portalRequired: () => {
+    const msg = 'Portal school access required';
+    return { status: 403, error: { message: msg, error: new Error(msg) } };
+  },
+
+  /**
+   * the context of the global events: no tenant (the events that do not belong to a school, like the logins and the
+   * password resets, are in the global collection)
+   */
+  getGlobalCtx: (_ctx) => {
+    return { ..._ctx, tenantID: undefined };
+  },
 };
 
 const Public = {
@@ -122,6 +146,33 @@ const Public = {
         meta: metaInfo.meta,
       },
     };
+  },
+
+  /**
+   * get all the global events for a request: only portal admins (on the portal school)
+   * req: { query }
+   * returns: { status, value: {data, meta} } or { status, error }
+   */
+  getAllGlobalForReq: async (req, _ctx) => {
+    if (!Private.isPortalTenant(_ctx)) {
+      return Private.portalRequired();
+    }
+
+    const globalCtx = Private.getGlobalCtx(_ctx);
+    return await Public.getAllForReq(req, globalCtx);
+  },
+
+  /**
+   * get one global event: only portal admins (on the portal school)
+   * returns { status, value } or { status, error }
+   */
+  getOneGlobal: async (objID, projection, _ctx) => {
+    if (!Private.isPortalTenant(_ctx)) {
+      return Private.portalRequired();
+    }
+
+    const globalCtx = Private.getGlobalCtx(_ctx);
+    return await Public.getOne(objID, projection, globalCtx);
   },
 
   /**

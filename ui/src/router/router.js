@@ -113,6 +113,17 @@ const Router = createRouter({
       },
     },
     {
+      path: '/events/global',
+      name: 'GlobalEvents',
+      component: Events,
+      props: { global: true }, // the events outside the schools
+      meta: {
+        requiresAuth: true,
+        requiresPortalAdmin: true,
+        breadcrumbs: [{ text: 'Global Events', to: '/events/global' }],
+      },
+    },
+    {
       path: '/classes',
       name: 'Classes',
       component: Classes,

@@ -81,6 +81,73 @@ const Public = {
   },
 
   /**
+   * get all global events (portal admins)
+   */
+  getAllGlobal: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = EventsConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Get all global called, query ${JSON.stringify(
+          CommonUtils.protectData(req.query),
+          CommonUtils.stringifyFilter,
+          2
+        )}`
+      );
+
+      // get all
+      const r = await EventsService.getAllGlobalForReq(req, _ctx);
+      if (r.error) {
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * get one global event (portal admins)
+   */
+  getOneGlobal: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = EventsConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Get one global called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
+      );
+      const objID = req.params.id;
+      // projection
+      const rf = await RestApiUtils.buildFilterFromReq(req, null /*no schema*/, _ctx);
+      if (rf.error) {
+        const message = await RestMessagesUtils.statusError(rf.status, rf.error, _ctx);
+        return res.status(rf.status).json(message);
+      }
+
+      // get
+      const r = await EventsService.getOneGlobal(objID, rf.value.projection, _ctx);
+      if (r.error) {
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
    * post
    */
   post: async (req, res, next) => {

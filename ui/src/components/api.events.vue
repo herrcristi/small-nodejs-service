@@ -3,9 +3,13 @@
     <!-- 
           table
     -->
+    <!-- 
+          the events of the selected school, or the global events (outside the schools: logins, password resets)
+          for the portal admins
+    -->
     <ApiTableServer
       ref="tableServer"
-      title="events"
+      :title="props.global ? 'events.global' : 'events'"
       :fields="apiFields.fields"
       :projectionFields="apiFields.projectionFields"
       :sortFields="apiFields.sortFields"
@@ -67,12 +71,17 @@ const { t } = useI18n();
 /**
  * props
  */
+const props = defineProps({
+  global: { type: Boolean, default: false }, // the global events (portal admins)
+});
+
 const tableServer = ref();
 const details = null; // true for details column
 const expand = true; // true for expand column
 
 const app = useAppStore();
-const read = app?.rolesPermissions?.locations?.read || 0;
+const permission = props.global ? app?.rolesPermissions?.globalEvents : app?.rolesPermissions?.events;
+const read = permission?.read || 0;
 const write = 0;
 
 /**
@@ -86,7 +95,7 @@ const apiFields = {
 };
 
 const apiFn = {
-  getAll: Api.getEvents,
+  getAll: props.global ? Api.getGlobalEvents : Api.getEvents,
 };
 
 /**

@@ -60,6 +60,9 @@
         <v-list-item link to="/events" v-if="permissions.events?.read">
           <v-list-item-title>{{ t('events') }}</v-list-item-title>
         </v-list-item>
+        <v-list-item link to="/events/global" v-if="permissions.globalEvents?.read">
+          <v-list-item-title>{{ t('events.global') }}</v-list-item-title>
+        </v-list-item>
         <v-list-item link to="/classes" v-if="permissions.classes?.read">
           <v-list-item-title>{{ t('classes') }}</v-list-item-title>
         </v-list-item>
