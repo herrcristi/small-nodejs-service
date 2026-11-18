@@ -117,10 +117,13 @@ describe('Schools Rest', function () {
    * rest activate: an internal call (POST /:id/activate), the local function is activate
    */
   it('should activate call via rest', async () => {
+    // stub
     let stub = sinon.stub(RestCommsUtils, 'call').callsFake(() => ({ status: 200, value: 'dummy' }));
 
+    // call
     let res = await SchoolsRest.activate('id1', _ctx);
 
+    // check
     chai.expect(stub.firstCall.args[0]).to.deep.equal({
       serviceName: 'schools-internal',
       method: 'POST',

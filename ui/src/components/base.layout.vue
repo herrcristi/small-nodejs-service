@@ -178,7 +178,8 @@ async function doLogout() {
   const current = globalThis.location.pathname + globalThis.location.search;
   const tenantID = appStore?.tenantID;
   try {
-    await Api.logout(false);
+    // with the cookie: the server ends this session (a logout without it would end nothing)
+    await Api.logout();
   } catch (e) {
     // ignore logout errors
   } finally {

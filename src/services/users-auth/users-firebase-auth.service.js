@@ -144,7 +144,7 @@ const Public = {
    * reset password
    * config: { serviceName }
    */
-  resetPassword: async (config, username, _ctx) => {
+  resetPassword: async (config, username, resetType, _ctx) => {
     await Private.setupConfig(config, _ctx);
 
     const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };

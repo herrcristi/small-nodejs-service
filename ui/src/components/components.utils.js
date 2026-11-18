@@ -93,14 +93,43 @@ const Utils = {
   },
 
   /**
-   * text for a status in the language of the UI (the same translations as the edit dialogs)
-   * the label translated by the server (_lang_en) is used only for a status the UI does not know
+   * a text translated by the server (the _lang_<language> copies of a record), in the language of the UI,
+   * then in English, then the value itself
+   * path: the field ('message', 'user.status')
    */
-  getStatusText: (status, serverText, t, te) => {
+  getServerText: (item, path, locale) => {
+    const read = (obj) => path.split('.').reduce((value, key) => value?.[key], obj);
+
+    const localText = read(item?.[`_lang_${locale}`]);
+    if (localText !== undefined && localText !== null) {
+      return localText;
+    }
+    const englishText = read(item?._lang_en);
+    if (englishText !== undefined && englishText !== null) {
+      return englishText;
+    }
+    return read(item);
+  },
+
+  /**
+   * the server languages to read with a projection: the language of the UI and English (the fallback)
+   */
+  getServerLanguages: (locale) => {
+    const languages = new Set(['_lang_en', `_lang_${locale}`]);
+    return [...languages].join(',');
+  },
+
+  /**
+   * text for a status in the language of the UI (the same translations as the edit dialogs)
+   * the label translated by the server is used only for a status the UI does not know
+   * path: the field of the status ('status', 'user.status')
+   */
+  getStatusText: (item, path, t, te, locale) => {
+    const status = path.split('.').reduce((value, key) => value?.[key], item);
     if (status && te(status)) {
       return t(status);
     }
-    return serverText || status;
+    return Utils.getServerText(item, path, locale);
   },
 
   /**

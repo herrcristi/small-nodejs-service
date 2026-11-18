@@ -29,11 +29,13 @@ describe('Sanitize Middleware', function () {
    * a clean body passes
    */
   it('should let a clean body pass', async () => {
+    // call with a normal body
     const res = await start()
       .post('/test/body')
       .set('Content-Type', 'application/json')
       .send('{"name":"x","a":{"b":[1,2]}}');
 
+    // check: passed, with its keys
     chai.expect(res.status).to.equal(200);
     chai.expect(res.body.keys).to.deep.equal(['name', 'a']);
   });
@@ -42,6 +44,7 @@ describe('Sanitize Middleware', function () {
    * keys that change the prototype are refused
    */
   it('should refuse a body with keys that change the prototype', async () => {
+    // __proto__, constructor and prototype, also nested in a list
     for (const body of [
       '{"name":"x","__proto__":{"id":"inherited"}}',
       '{"a":[{"b":{"constructor":{"prototype":{}}}}]}',
@@ -49,6 +52,7 @@ describe('Sanitize Middleware', function () {
     ]) {
       const res = await start().post('/test/body').set('Content-Type', 'application/json').send(body);
 
+      // check: refused
       chai.expect(res.status, body).to.equal(400);
       chai.expect(JSON.stringify(res.body)).to.include('forbidden key');
     }

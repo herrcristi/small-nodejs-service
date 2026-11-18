@@ -98,6 +98,41 @@ const Private = {
   },
 
   /**
+   * the details of an event by name, for its message: the event arguments are JSON objects, so
+   * { school, reason, set: { status } } gives {school}, {reason} and {set.status}; only text, numbers and booleans
+   * are kept (not lists)
+   */
+  getNamedArgs: (args) => {
+    const named = {};
+    const add = (value, path, depth) => {
+      if (['string', 'number', 'boolean'].includes(typeof value)) {
+        named[path] = value;
+        return;
+      }
+      if (!value || typeof value !== 'object' || Array.isArray(value) || depth > 3) {
+        return;
+      }
+      for (const key of Object.keys(value)) {
+        const keyPath = path ? `${path}.${key}` : key;
+        add(value[key], keyPath, depth + 1);
+      }
+    };
+
+    for (const arg of args || []) {
+      let value;
+      try {
+        value = JSON.parse(arg);
+      } catch (e) {
+        continue; // not a JSON text: no named arguments
+      }
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        add(value, '', 0);
+      }
+    }
+    return named;
+  },
+
+  /**
    * the context of the global events: no tenant (the events that do not belong to a school, like the logins and the
    * password resets, are in the global collection)
    */
@@ -276,10 +311,10 @@ const Public = {
    * translate
    */
   translate: async (obj, _ctx) => {
-    let args = [obj?.target.name, obj?.user?.username];
-    if (obj?.args) {
-      args = [...args, ...obj.args];
-    }
+    // all by name: the details of the event ({school}, {reason}, ...), {target} the target and {user} the user who did
+    // it (these two win over a detail with the same name)
+    const namedArgs = Private.getNamedArgs(obj?.args);
+    const args = { ...namedArgs, target: obj?.target?.name, user: obj?.user?.username };
     const translations = {
       severity: TranslationsUtils.string(obj?.severity, _ctx),
       message: TranslationsUtils.string(obj?.messageID, _ctx, args), // translate with arguments

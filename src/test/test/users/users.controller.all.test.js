@@ -576,6 +576,7 @@ describe('Users Controller', function () {
    * a user that exists but can not be reached (403 from the service) is answered as not found
    */
   it('should answer not found for a user of another school', async () => {
+    // stub: the service answers "not a member" for get, put and patch
     const notMember = { status: 403, error: { message: 'The user user1 is not a member of the current school' } };
     sinon.stub(UsersService, 'getOne').returns(notMember);
     sinon.stub(UsersService, 'put').returns(notMember);
@@ -586,10 +587,13 @@ describe('Users Controller', function () {
       ['put', { name: 'Name' }],
       ['patch', { set: { name: 'Name' } }],
     ]) {
+      // call
       const res = await supertest(TestConstants.WebServer)
         [method](`${UsersConstants.ApiPath}/user1`)
         .set('Origin', TestConstants.WebServer)
         .send(body);
+
+      // check: not found, the reason is not shown
       chai.expect(res.status).to.equal(404);
       chai.expect(res.body.error).to.include('Not found user1').and.not.include('member');
     }
@@ -602,6 +606,9 @@ describe('Users Controller', function () {
     ['put', 'putStatus', { status: 'disabled' }],
     ['patch', 'patchStatus', { set: { status: 'disabled' } }],
   ]) {
+    /**
+     * the answer of the service is passed on: the value, the error, or 500 for an exception
+     */
     it(`should ${method} status with success, fail and exception`, async () => {
       const testUsers = _.cloneDeep(TestConstants.Users);
       const testUser = testUsers[0];
@@ -1035,15 +1042,18 @@ describe('Users Controller', function () {
    */
   it('should getPortalAdmins with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
+    // stub
     const stubService = sinon.stub(UsersService, 'getPortalAdminsForReq').resolves({
       status: 200,
       value: { data: testUsers, meta: { count: testUsers.length, skip: 0, limit: 0 } },
     });
 
+    // call
     const res = await supertest(TestConstants.WebServer)
       .get(`${UsersConstants.ApiPath}/portal-admins`)
       .set('Origin', TestConstants.WebServer);
 
+    // check
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body).to.deep.equal({
@@ -1056,15 +1066,18 @@ describe('Users Controller', function () {
    * getPortalAdmins fail
    */
   it('should getPortalAdmins fail', async () => {
+    // stub
     const stubService = sinon.stub(UsersService, 'getPortalAdminsForReq').resolves({
       status: 403,
       error: { message: 'Test error message', error: new Error('Test error') },
     });
 
+    // call
     const res = await supertest(TestConstants.WebServer)
       .get(`${UsersConstants.ApiPath}/portal-admins`)
       .set('Origin', TestConstants.WebServer);
 
+    // check
     chai.expect(res.status).to.equal(403);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body.error).to.include('Test error message');
@@ -1074,14 +1087,17 @@ describe('Users Controller', function () {
    * getPortalAdmins fail exception
    */
   it('should getPortalAdmins fail exception', async () => {
+    // stub
     const stubService = sinon.stub(UsersService, 'getPortalAdminsForReq').callsFake(() => {
       throw new Error('Test error message');
     });
 
+    // call
     const res = await supertest(TestConstants.WebServer)
       .get(`${UsersConstants.ApiPath}/portal-admins`)
       .set('Origin', TestConstants.WebServer);
 
+    // check
     chai.expect(res.status).to.equal(500);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body.message).to.include('An unknown error has occured');
@@ -1093,15 +1109,18 @@ describe('Users Controller', function () {
    */
   it('should getSchoolAdmins with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
+    // stub
     const stubService = sinon.stub(UsersService, 'getSchoolAdminsForReq').resolves({
       status: 200,
       value: { data: testUsers, meta: { count: testUsers.length, skip: 0, limit: 0 } },
     });
 
+    // call
     const res = await supertest(TestConstants.WebServer)
       .get(`${UsersConstants.ApiPath}/school-admins/school-1`)
       .set('Origin', TestConstants.WebServer);
 
+    // check
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(stubService.firstCall.args[0]).to.equal('school-1');
@@ -1112,15 +1131,18 @@ describe('Users Controller', function () {
    * getSchoolAdmins fail
    */
   it('should getSchoolAdmins fail', async () => {
+    // stub
     const stubService = sinon.stub(UsersService, 'getSchoolAdminsForReq').resolves({
       status: 403,
       error: { message: 'Test error message', error: new Error('Test error') },
     });
 
+    // call
     const res = await supertest(TestConstants.WebServer)
       .get(`${UsersConstants.ApiPath}/school-admins/school-1`)
       .set('Origin', TestConstants.WebServer);
 
+    // check
     chai.expect(res.status).to.equal(403);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body.error).to.include('Test error message');
@@ -1130,14 +1152,17 @@ describe('Users Controller', function () {
    * getSchoolAdmins fail exception
    */
   it('should getSchoolAdmins fail exception', async () => {
+    // stub
     const stubService = sinon.stub(UsersService, 'getSchoolAdminsForReq').callsFake(() => {
       throw new Error('Test error message');
     });
 
+    // call
     const res = await supertest(TestConstants.WebServer)
       .get(`${UsersConstants.ApiPath}/school-admins/school-1`)
       .set('Origin', TestConstants.WebServer);
 
+    // check
     chai.expect(res.status).to.equal(500);
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body.message).to.include('An unknown error has occured');

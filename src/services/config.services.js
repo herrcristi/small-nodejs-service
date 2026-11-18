@@ -18,6 +18,7 @@ const UsersAuthService = require('./users-auth/users-auth.service.js');
 const UsersAuthSignupService = require('./users-auth/users-auth.signup.service.js');
 const UsersAuthSetupService = require('./users-auth/users-auth.setup.service.js');
 const UsersAuthDatabase = require('./users-auth/users-local-auth.database.js');
+const UsersAuthSessionsDatabase = require('./users-auth/users-auth.sessions.database.js');
 const UsersAuthRouter = require('./users-auth/users-auth.router.js');
 const UsersAuthRest = require('./rest/users-auth.rest.js');
 const UsersAuthMiddleware = require('./users-auth/users-auth.middleware.js');
@@ -86,6 +87,7 @@ const Public = {
     for (const database of [
       SchoolsDatabase,
       UsersAuthDatabase,
+      UsersAuthSessionsDatabase,
       UsersDatabase,
       EventsDatabase,
       AdminsDatabase,

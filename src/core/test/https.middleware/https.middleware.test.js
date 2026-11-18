@@ -17,12 +17,15 @@ describe('Https Middleware', function () {
    * a request that came over http is redirected to https
    */
   it('should redirect http requests to https', () => {
+    // a request that came over http
     const req = getReq({ 'x-forwarded-proto': 'http', host: 'small.example.test' });
     const res = { redirect: sinon.stub().returns('redirected') };
     const next = sinon.stub();
 
+    // call
     const result = HttpsMiddleware.middleware(req, res, next);
 
+    // check: redirected to the same url over https, not continued
     chai
       .expect(res.redirect.calledOnceWithExactly('https://small.example.test/api/v1/schools?limit=20'))
       .to.equal(true);
@@ -37,8 +40,10 @@ describe('Https Middleware', function () {
     const res = { redirect: sinon.stub() };
     const next = sinon.stub();
 
+    // call with a request that came over https
     HttpsMiddleware.middleware(getReq({ 'x-forwarded-proto': 'https', host: 'small.example.test' }), res, next);
 
+    // check: continued, not redirected
     chai.expect(res.redirect.callCount).to.equal(0);
     chai.expect(next.calledOnce).to.equal(true);
   });
@@ -50,8 +55,10 @@ describe('Https Middleware', function () {
     const res = { redirect: sinon.stub() };
     const next = sinon.stub();
 
+    // call without the forwarded protocol
     HttpsMiddleware.middleware(getReq({ host: 'localhost' }), res, next);
 
+    // check: continued, not redirected
     chai.expect(res.redirect.callCount).to.equal(0);
     chai.expect(next.calledOnce).to.equal(true);
   });

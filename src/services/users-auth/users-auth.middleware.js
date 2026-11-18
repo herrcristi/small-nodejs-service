@@ -57,10 +57,11 @@ const Public = {
         return res.end();
       }
 
-      // apply
+      // apply (the session id is the id of its record, for the logout)
       _ctx.userID = r.value.userID;
       _ctx.username = r.value.username;
       _ctx.tenantName = r.value.tenantName;
+      _ctx.sessionID = r.value.sessionID;
     } catch (e) {
       console.log(`\nFailed to authenticate request. Error: ${e.stack}`, _ctx);
       const message = await RestMessagesUtils.exception(e, _ctx);

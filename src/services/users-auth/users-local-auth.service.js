@@ -9,9 +9,9 @@ const CommonUtils = require('../../core/utils/common.utils.js');
 const JwtUtils = require('../../core/utils/jwt.utils.js');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
 
-const WebConstants = require('../../web-server/web-server.constants.js');
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthDatabase = require('./users-local-auth.database.js');
+const UsersAuthSessionsService = require('./users-auth.sessions.service.js');
 const EmailsUtils = require('../../core/utils/emails.utils.js');
 
 const Private = {
@@ -52,6 +52,13 @@ const Private = {
     const buffer1 = Buffer.from(`${hash1}`);
     const buffer2 = Buffer.from(`${hash2}`);
     return buffer1.length === buffer2.length && crypto.timingSafeEqual(buffer1, buffer2);
+  },
+
+  /**
+   * the error of a token that can not be used
+   */
+  invalidToken: (msg) => {
+    return { status: 401, error: { message: msg, error: new Error(msg) } };
   },
 
   /**
@@ -117,29 +124,41 @@ const Public = {
    * config: { serviceName }
    */
   logout: async (config, _ctx) => {
+    // nothing to end here: the session is ended by the sessions service
     return { status: 200, success: true, value: true };
   },
 
   /**
-   * get the jwt token
+   * get the session token (the cookie): it carries the secret of the session (its record is checked at every request)
    * config: { serviceName }
-   * userInfo: { username, userID }
+   * userInfo: { username, userID, secret }
    */
   getToken: async (config, userInfo, _ctx) => {
-    return JwtUtils.getJwt(
-      { username: userInfo.username, userID: userInfo.userID, creatingTimestamp: new Date().toISOString() },
-      Private.Issuer,
-      _ctx
-    );
+    const data = {
+      purpose: UsersAuthConstants.TokenPurpose.Session,
+      username: userInfo.username,
+      userID: userInfo.userID,
+      secret: userInfo.secret,
+      creatingTimestamp: new Date().toISOString(),
+    };
+    const expiresIn = UsersAuthConstants.TokenExpiresIn.session;
+    return JwtUtils.getJwt(data, Private.Issuer, _ctx, expiresIn);
   },
 
   /**
-   * validate the token
+   * validate a session token: a valid jwt made for a session (a reset token is not a session)
    * config: { serviceName }
    * objInfo: { token }
    */
   validateToken: async (config, objInfo, _ctx) => {
-    return JwtUtils.validateJwt(objInfo.token, Private.Issuer, _ctx);
+    const r = JwtUtils.validateJwt(objInfo.token, Private.Issuer, _ctx);
+    if (r.error) {
+      return r;
+    }
+    if (r.value.purpose !== UsersAuthConstants.TokenPurpose.Session) {
+      return Private.invalidToken('Not a session token');
+    }
+    return r;
   },
 
   /**
@@ -214,10 +233,8 @@ const Public = {
 
     // hash password with new salt
     const newSalt = Private.genSalt();
-    const passwordPut = {
-      salt: newSalt,
-      password: Private.hashPassword(objInfo.newPassword, newSalt, _ctx),
-    };
+    const newPassword = Private.hashPassword(objInfo.newPassword, newSalt, _ctx);
+    const passwordPut = { salt: newSalt, password: newPassword };
 
     // put
     const r = await DbOpsUtils.put(config, username /*id*/, passwordPut, projection, _ctx);
@@ -267,7 +284,7 @@ const Public = {
    * reset password
    * config: { serviceName }
    */
-  resetPassword: async (config, username, _ctx) => {
+  resetPassword: async (config, username, resetType, _ctx) => {
     // { serviceName, collection, notifications.projection }
     await Private.setupConfig(config, _ctx);
 
@@ -279,18 +296,53 @@ const Public = {
       return r;
     }
 
-    // create reset token
-    const userInfo = { username: r.value.id, userID: r.value.userID };
-    return Public.getToken(config, userInfo, _ctx);
+    // the record of the link: used once, replaced by a newer link, ended by a password change
+    const user = { userID: r.value.userID, username: r.value.id };
+    const rLink = await UsersAuthSessionsService.create(resetType, user, _ctx);
+    if (rLink.error) {
+      return rLink;
+    }
+
+    // create the reset token: for this purpose only, short lived, with the secret of its record
+    const data = {
+      purpose: resetType,
+      username: r.value.id,
+      userID: r.value.userID,
+      secret: rLink.value.secret,
+    };
+    const expiresIn = UsersAuthConstants.TokenExpiresIn[resetType];
+    return JwtUtils.getJwt(data, Private.Issuer, _ctx, expiresIn);
   },
 
   /**
-   * check reset token is valid
+   * check reset token is valid: a valid jwt made for a reset (not a session), and its link is still valid (not used,
+   * not replaced by a newer link, not ended by a password change)
    * config: { serviceName }
    * objInfo: { token }
+   * returns { status, value: { purpose, username, userID, linkID } } or { status, error }
    */
   validateResetToken: async (config, objInfo, _ctx) => {
-    return Public.validateToken(config, objInfo, _ctx);
+    // validate jwt
+    const r = JwtUtils.validateJwt(objInfo.token, Private.Issuer, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // check purpose is a reset type
+    const resetTypes = Object.values(UsersAuthConstants.ResetTokenType);
+    if (!resetTypes.includes(r.value.purpose)) {
+      return Private.invalidToken('Not a reset token');
+    }
+
+    // check the record of the link
+    const rLink = await UsersAuthSessionsService.check(r.value, _ctx);
+    if (rLink.error) {
+      return rLink;
+    }
+
+    // success (the id of the record, to use the link)
+    const value = { purpose: r.value.purpose, username: r.value.username, userID: r.value.userID };
+    return { status: 200, value: { ...value, linkID: rLink.value.id } };
   },
 
   /**
@@ -306,10 +358,8 @@ const Public = {
 
     // hash password with new salt
     const newSalt = Private.genSalt();
-    const passwordPut = {
-      salt: newSalt,
-      password: Private.hashPassword(objInfo.password, newSalt, _ctx),
-    };
+    const newPassword = Private.hashPassword(objInfo.password, newSalt, _ctx);
+    const passwordPut = { salt: newSalt, password: newPassword };
 
     // put
     const r = await DbOpsUtils.put(config, username /*id*/, passwordPut, projection, _ctx);
@@ -330,14 +380,19 @@ const Public = {
     // { serviceName, collection, notifications.projection }
     await Private.setupConfig(config, _ctx);
 
+    const uiUrl = process.env.SMALL_UI_URL;
     let emailArgs = {
       user: username, // the email of the recipient ("Hi {user}")
       school: _ctx.tenantName || _ctx.tenantID,
-      appUrl: `${process.env.SMALL_API_URL}`, // TODO should be the frontend url or at least router should redirect to frontend url
+      appUrl: uiUrl,
     };
 
+    // the link opens the page of the UI that sets the password; the token is in the fragment (after #), which the
+    // browser never sends to a server, so it is not in the logs or the history of a server
     if (args.resetType != null) {
-      emailArgs.resetUrl = `${process.env.SMALL_API_URL}${WebConstants.BaseApiPath}/users-auth/reset-token/validate?&type=${args.resetType}&token=${args.token}`;
+      const type = encodeURIComponent(args.resetType);
+      const token = encodeURIComponent(args.token);
+      emailArgs.resetUrl = `${uiUrl}/reset-password#type=${type}&token=${token}`;
     }
 
     let emailTemplate = TranslationsUtils.email(args.emailType, _ctx, emailArgs);

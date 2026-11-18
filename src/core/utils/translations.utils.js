@@ -15,22 +15,24 @@ const Private = {
   },
 
   /**
-   * expand args {0}...
+   * expand args {0}, {name}...
+   * in one pass: an inserted value is never expanded again (a name that contains '{user}' stays as it is)
    * transform is applied to every value that is inserted (for example an escape)
    */
   expandArgs: (val, args, _ctx, transform = (v) => v) => {
-    if (!val) {
+    if (!val || !args) {
       return val;
     }
 
     // it works for array and for object with names too
-    // [ 'a', 'b' ] and { a: valA, b: valB }
-    for (let key in args) {
-      // a function replacement: the value is inserted as it is (a '$&' in it has no special meaning)
-      val = val.replaceAll(`{${key}}`, () => transform(`${args[key]}`));
-    }
-
-    return val;
+    // [ 'a', 'b' ] and { a: valA, b: valB }; a placeholder without an argument stays as it is
+    // a function replacement: the value is inserted as it is (a '$&' in it has no special meaning)
+    return val.replaceAll(/\{([^{}]+)\}/g, (placeholder, key) => {
+      if (!Object.hasOwn(args, key)) {
+        return placeholder;
+      }
+      return transform(`${args[key]}`);
+    });
   },
 
   /**

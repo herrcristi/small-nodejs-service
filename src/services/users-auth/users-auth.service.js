@@ -18,6 +18,7 @@ const UsersRest = require('../rest/users.rest.js');
 const EventsRest = require('../rest/events.rest.js');
 const SchoolsRest = require('../rest/schools.rest.js');
 const UsersAuthConstants = require('./users-auth.constants.js');
+const UsersAuthSessionsService = require('./users-auth.sessions.service.js'); // the sessions and the emailed links
 const UsersAuthServiceLocal = require('./users-local-auth.service.js'); // use local auth service
 const UsersAuthServiceFirebase = require('./users-firebase-auth.service.js'); // use firebase auth service
 
@@ -162,6 +163,53 @@ const Private = {
       references: [],
     };
     return config;
+  },
+
+  /**
+   * a new session of the user and its token (the cookie): the record of the session keeps the hash of a secret, the
+   * token carries the secret (encrypted)
+   * tokenInfo: { username, userID, token? (of the provider) }
+   * returns { status, value: token } or { status, error }
+   */
+  newSession: async (config, tokenInfo, _ctx) => {
+    // the record of the session
+    const user = { userID: tokenInfo.userID, username: tokenInfo.username };
+    const rS = await UsersAuthSessionsService.create(UsersAuthConstants.TokenPurpose.Session, user, _ctx);
+    if (rS.error) {
+      return rS;
+    }
+
+    // the token
+    const ProvidersToken = {
+      firebase: UsersAuthServiceFirebase.getToken,
+      local: UsersAuthServiceLocal.getToken,
+    };
+    const sessionTokenInfo = { ...tokenInfo, secret: rS.value.secret };
+    const rT = await ProvidersToken[Private.UsersAuthProviderType](config, sessionTokenInfo, _ctx);
+    if (rT.error) {
+      const msg = 'Failed to get token';
+      return { status: 500, error: { message: msg, error: new Error(msg) } };
+    }
+
+    // encrypt token again
+    const rE = JwtUtils.encrypt(rT.value, Private.Issuer, _ctx);
+    return { status: 200, value: rE.value };
+  },
+
+  /**
+   * check a reset token (only for local auth): decrypt it, then check it and its link
+   * returns { status, value: { purpose, username, userID, linkID } } or { status, error }
+   */
+  checkResetToken: async (config, token, _ctx) => {
+    // decrypt token
+    const decodedToken = JwtUtils.decrypt(token, Private.Issuer, _ctx);
+    if (decodedToken.error) {
+      return decodedToken;
+    }
+
+    // validate reset token
+    const validateInfo = { token: decodedToken.value };
+    return await UsersAuthServiceLocal.validateResetToken(config, validateInfo, _ctx);
   },
 
   /**
@@ -434,24 +482,13 @@ const Public = {
     }
 
     ///
-    // token
+    // a new session (at every login) and its token
     ///
-    const ProvidersToken = {
-      firebase: UsersAuthServiceFirebase.getToken,
-      local: UsersAuthServiceLocal.getToken,
-    };
-    let rT = await ProvidersToken[Private.UsersAuthProviderType](
-      config,
-      { token: rL.value, username: objInfo.username, userID: user.id },
-      _ctx
-    );
+    const tokenInfo = { token: rL.value, username: objInfo.username, userID: user.id };
+    const rT = await Private.newSession(config, tokenInfo, _ctx);
     if (rT.error) {
-      const msg = 'Failed to get token';
-      return { status: 500, error: { message: msg, error: new Error(msg) } };
+      return rT;
     }
-
-    // encrypt token again
-    rT.value = JwtUtils.encrypt(rT.value, Private.Issuer, _ctx).value;
 
     ///
     // raise event for succesful login
@@ -476,7 +513,7 @@ const Public = {
    * logout
    */
   logout: async (_ctx) => {
-    // _ctx: { userID, username }
+    // _ctx: { userID, username, sessionID }
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
@@ -488,13 +525,18 @@ const Public = {
       local: UsersAuthServiceLocal.logout,
     };
     let rL = await Providers[Private.UsersAuthProviderType](config, _ctx);
+    if (rL.error) {
+      return rL;
+    }
 
-    // success empty token
-    return {
-      status: 200,
-      value: {},
-      token: 'token',
-    };
+    // end this session (the other sessions of the user stay open); already ended is not an error
+    const rS = await UsersAuthSessionsService.end(_ctx.sessionID, _ctx);
+    if (rS.error && rS.status !== 404) {
+      return rS;
+    }
+
+    // success (the controller clears the cookie)
+    return { status: 200, value: {} };
   },
 
   /**
@@ -535,6 +577,13 @@ const Public = {
       return { status: 401, error: { message: msg, error: new Error(msg) } };
     }
 
+    // the session is still open: its record exists (not ended by a logout, a password change, a password reset or an
+    // email change) and is not expired
+    const rSession = await UsersAuthSessionsService.check(rT.value, _ctx);
+    if (rSession.error) {
+      return { ...rSession, status: 401 };
+    }
+
     _ctx.username = rT.value.username;
     _ctx.userID = rT.value.userID;
 
@@ -572,6 +621,8 @@ const Public = {
       value: {
         userID: _ctx.userID,
         username: _ctx.username,
+        sessionID: rSession.value.id, // the id of the record of the session (not its secret), for the logout
+        sessionExpiresAt: rSession.value.expiresAt,
         tenantName: rr.tenantName,
         status: user.status,
         name: user.name,
@@ -665,6 +716,12 @@ const Public = {
       return rUserDetails;
     }
 
+    // end all the sessions and the links of the user
+    const rEnd = await UsersAuthSessionsService.endAll(_ctx.userID, _ctx);
+    if (rEnd.error) {
+      return rEnd;
+    }
+
     // raise event
     const newObj = { id: _ctx.userID, name: _ctx.username, type: UsersAuthConstants.Type };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, Private.Action.Delete, newObj, newObj, _ctx);
@@ -702,6 +759,18 @@ const Public = {
       return r;
     }
 
+    // a new password ends all the sessions and the links of the user: this session continues with a new one
+    const rEnd = await UsersAuthSessionsService.endAll(_ctx.userID, _ctx);
+    if (rEnd.error) {
+      return rEnd;
+    }
+    const tokenInfo = { username: _ctx.username, userID: _ctx.userID };
+    const rT = await Private.newSession(config, tokenInfo, _ctx);
+    if (rT.error) {
+      return rT;
+    }
+    const token = rT.value;
+
     // raise event for put (changed password)
     const newObj = { id: _ctx.userID, name: _ctx.username, type: UsersAuthConstants.Type };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, {} /*args*/, _ctx);
@@ -709,8 +778,9 @@ const Public = {
     // raise a notification for modified obj
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
 
-    // success
-    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type } };
+    // success (the controller sets the new token as the cookie)
+    const value = { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type };
+    return { status: 200, value, token };
   },
 
   /**
@@ -751,13 +821,20 @@ const Public = {
       return rUserDetails;
     }
 
+    // the sessions have the old email: end all the sessions and the links of the user (the controller clears the
+    // cookie, the user logs in again with the new email)
+    const rEnd = await UsersAuthSessionsService.endAll(_ctx.userID, _ctx);
+    if (rEnd.error) {
+      return rEnd;
+    }
+
     // update username in context
     const oldUsername = _ctx.username;
     _ctx.username = newUsername;
 
     // raise event for put (changed username)
     const newObj = { id: _ctx.userID, name: newUsername, oldUsername: oldUsername, type: UsersAuthConstants.Type };
-    const args = { id: newUsername };
+    const args = { id: newUsername, oldUsername };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
     // raise a notification for modified obj
@@ -926,7 +1003,7 @@ const Public = {
       firebase: UsersAuthServiceFirebase.resetPassword,
       local: UsersAuthServiceLocal.resetPassword,
     };
-    let r = await Providers[Private.UsersAuthProviderType](config, username, _ctx);
+    let r = await Providers[Private.UsersAuthProviderType](config, username, resetType, _ctx);
     if (r.error) {
       return r;
     }
@@ -962,15 +1039,8 @@ const Public = {
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
-    // decrypt token
-    const decodedToken = JwtUtils.decrypt(objInfo.token, Private.Issuer, _ctx);
-    if (decodedToken.error) {
-      return decodedToken;
-    }
-
-    // validate reset token
-    const validateInfo = { token: decodedToken.value };
-    let r = await UsersAuthServiceLocal.validateResetToken(config, validateInfo, _ctx);
+    // check the token and its link
+    const r = await Private.checkResetToken(config, objInfo.token, _ctx);
     if (r.error) {
       return r;
     }
@@ -978,8 +1048,9 @@ const Public = {
     _ctx.username = r.value.username;
     _ctx.userID = r.value.userID;
 
-    // success
-    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type } };
+    // success (the purpose tells the page if the person sets a first password or resets it)
+    const value = { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type };
+    return { status: 200, value: { ...value, resetType: r.value.purpose } };
   },
 
   /**
@@ -994,23 +1065,48 @@ const Public = {
     }
     objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
+    // validate the token
+    const resetTokenInfo = { token: resetToken };
+    const vT = Validators.ResetToken.validate(resetTokenInfo);
+    if (vT.error) {
+      return CommonUtils.getSchemaValidationError(vT, resetTokenInfo, _ctx);
+    }
+
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
-    // check reset token
-    const resetTokenInfo = { token: resetToken };
-    let rT = await Public.validateResetToken(resetTokenInfo, _ctx);
+    // check the token and its link
+    const rT = await Private.checkResetToken(config, vT.value.token, _ctx);
     if (rT.error) {
       return rT;
     }
 
     const username = rT.value.username;
+    const userID = rT.value.userID;
+    _ctx.username = username;
+    _ctx.userID = userID;
+
+    // use the link: its record is removed once, so a second use (also at the same time) is refused
+    const rUse = await UsersAuthSessionsService.end(rT.value.linkID, _ctx);
+    if (rUse.status === 404) {
+      const msg = 'The link is not valid anymore';
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
+    if (rUse.error) {
+      return rUse;
+    }
 
     // put reset password
     const putResetPasswordInfo = { password: objInfo.password };
     let r = await UsersAuthServiceLocal.putResetPassword(config, username, putResetPasswordInfo, _ctx);
     if (r.error) {
       return r;
+    }
+
+    // the new password ends all the sessions and the other links of the user
+    const rEnd = await UsersAuthSessionsService.endAll(userID, _ctx);
+    if (rEnd.error) {
+      return rEnd;
     }
 
     // raise event for put reset password

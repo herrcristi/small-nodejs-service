@@ -141,6 +141,7 @@ describe('Users Auth Controller', function () {
    * login: the user sees the same answer whatever the real reason; a server error stays a server error
    */
   it('should login answer the same for every reason of a failed login', async () => {
+    // stub: the answer of the service changes in the loop
     const stubService = sinon.stub(UsersAuthService, 'login');
     const login = () =>
       supertest(TestConstants.WebServer)
@@ -148,6 +149,7 @@ describe('Users Auth Controller', function () {
         .set('Origin', TestConstants.WebServer)
         .send({ username: 'user@testdomain.test', password: 'Password1!' });
 
+    // each reason of a failed login: the same 401, the real reason is not shown
     for (const [status, message] of [
       [404, 'Not found user@testdomain.test'], // no such account
       [401, 'Invalid password'], // wrong password
@@ -159,6 +161,7 @@ describe('Users Auth Controller', function () {
       chai.expect(res.body.error).to.include('Invalid username/password').and.not.include(message);
     }
 
+    // a server error stays a server error
     stubService.returns({ status: 500, error: { message: 'Database error', error: new Error('Database error') } });
     const res = await login();
     chai.expect(res.status).to.equal(500);
@@ -286,6 +289,7 @@ describe('Users Auth Controller', function () {
           username: testUser.email,
           name: testUser.name,
           schools: testUser.schools,
+          sessionExpiresAt: new Date(Date.now() + 60 * 1000), // the end of the session
         },
       };
     });
@@ -307,7 +311,7 @@ describe('Users Auth Controller', function () {
       schools: testUser.schools,
       expires: '', // ignore expires for testing
     });
-    // verify expires is a valid date in the future
+    // the expiry is the end of the session
     chai.expect(new Date(res.body.expires).getTime()).to.be.greaterThan(Date.now());
   }).timeout(10000);
 
@@ -319,6 +323,7 @@ describe('Users Auth Controller', function () {
     const testToken = _.cloneDeep(TestConstants.UsersToken)[0];
     const schools = [{ id: 'school1', name: 'School 1', status: 'pending', roles: ['admin'] }];
 
+    // stub: a valid session with a pending school, and the activation of the pending schools
     sinon.stub(UsersAuthService, 'validate').resolves({
       status: 200,
       value: { userID: testUser.id, username: testUser.email, name: testUser.name, schools },
@@ -328,11 +333,13 @@ describe('Users Auth Controller', function () {
       return { status: 200, value: true };
     });
 
+    // call
     const res = await supertest(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPath}/me`)
       .set('cookie', `${UsersAuthConstants.AuthToken}=${testToken.token}`)
       .set('Origin', TestConstants.WebServer);
 
+    // check: the school is active in the answer
     chai.expect(res.status).to.equal(200);
     chai.expect(stubActive.callCount).to.equal(1);
     chai.expect(res.body.schools[0].status).to.equal('active');
@@ -346,6 +353,7 @@ describe('Users Auth Controller', function () {
     const testToken = _.cloneDeep(TestConstants.UsersToken)[0];
     const schools = [{ id: 'school1', name: 'School 1', status: 'pending', roles: ['admin'] }];
 
+    // stub: a valid session with a pending school; the activation fails
     sinon.stub(UsersAuthService, 'validate').resolves({
       status: 200,
       value: { userID: testUser.id, username: testUser.email, name: testUser.name, schools },
@@ -355,11 +363,13 @@ describe('Users Auth Controller', function () {
       error: { message: 'Failed to make school active', error: new Error('Failed to make school active') },
     });
 
+    // call
     const res = await supertest(TestConstants.WebServer)
       .get(`${UsersAuthConstants.ApiPath}/me`)
       .set('cookie', `${UsersAuthConstants.AuthToken}=${testToken.token}`)
       .set('Origin', TestConstants.WebServer);
 
+    // check: answered, the school stays pending
     chai.expect(res.status).to.equal(200);
     chai.expect(stubActive.callCount).to.equal(1);
     chai.expect(res.body.schools[0].status).to.equal('pending');
@@ -467,6 +477,7 @@ describe('Users Auth Controller', function () {
           username: testUser.email,
           name: testUser.name,
           // no schools provided
+          sessionExpiresAt: new Date(Date.now() + 60 * 1000), // the end of the session
         },
       };
     });
@@ -1055,13 +1066,16 @@ describe('Users Auth Controller', function () {
    * reset password for an unknown address: the same answer as for a known one
    */
   it('should reset password answer the same for an unknown address', async () => {
+    // stub: no such account
     sinon.stub(UsersAuthService, 'resetPassword').returns({ status: 404, error: { message: 'Not found x' } });
 
+    // call
     const res = await supertest(TestConstants.WebServer)
       .post(`${UsersAuthConstants.ApiPath}/reset-password`)
       .set('Origin', TestConstants.WebServer)
       .send({ username: 'nobody@testdomain.test' });
 
+    // check: the answer of a known address
     chai.expect(res.status).to.equal(200);
     chai.expect(res.body).to.deep.equal({ username: 'nobody@testdomain.test', type: UsersAuthConstants.Type });
   }).timeout(10000);
@@ -1721,5 +1735,54 @@ describe('Users Auth Controller', function () {
     chai.expect(stubService.callCount).to.equal(1);
     chai.expect(res.body.message).to.include('An unknown error has occured');
     chai.expect(res.body.error).to.include('Test error message');
+  }).timeout(10000);
+
+  /**
+   * a password change ends the other sessions: this session gets the new token as the cookie
+   */
+  for (const [method, fn] of [
+    ['put', 'putPassword'],
+    ['patch', 'patchPassword'],
+  ]) {
+    /**
+     * the new token of the password change is the new session cookie
+     */
+    it(`should ${method} password set the new session cookie`, async () => {
+      // stub: the password is changed, with a new token
+      sinon
+        .stub(UsersAuthService, fn)
+        .returns({ status: 200, value: { username: 'user@testdomain.test' }, token: 'NEW' });
+
+      // call
+      const res = await supertest(TestConstants.WebServer)
+        [method](`${UsersAuthConstants.ApiPath}/password`)
+        .set('Origin', TestConstants.WebServer)
+        .send({});
+
+      // check: the cookie has the new token, http only
+      chai.expect(res.status).to.equal(200);
+      chai
+        .expect(res.headers['set-cookie'][0])
+        .to.match(/^SmallApp-token=NEW;/)
+        .and.include('HttpOnly');
+    }).timeout(10000);
+  }
+
+  /**
+   * the reset token is read from a header, never from the url
+   */
+  it('should validate the reset token from the header', async () => {
+    // stub: a valid token
+    const stub = sinon.stub(UsersAuthService, 'validateResetToken').returns({ status: 200, value: { username: 'u' } });
+
+    // call with a token in the url and another in the header
+    const res = await supertest(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPath}/reset-token/validate?token=FROM_URL`)
+      .set('Origin', TestConstants.WebServer)
+      .set('x-reset-token', 'FROM_HEADER');
+
+    // check: only the header is used
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stub.firstCall.args[0]).to.deep.equal({ token: 'FROM_HEADER' });
   }).timeout(10000);
 });

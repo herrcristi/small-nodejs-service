@@ -15,13 +15,19 @@ const EventsRest = require('../../../services/rest/events.rest.js');
 const UsersRest = require('../../../services/rest/users.rest.js');
 const SchoolsRest = require('../../../services/rest/schools.rest.js');
 const UsersLocalAuthService = require('../../../services/users-auth/users-local-auth.service.js');
+const UsersAuthSessionsService = require('../../../services/users-auth/users-auth.sessions.service.js');
 
 describe('Users Auth Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
 
   before(async function () {});
 
-  beforeEach(async function () {});
+  // the session of the token is open (the sessions service has its own tests)
+  const session = { id: 'session-id1', purpose: 'session', expiresAt: new Date(Date.now() + 60 * 1000) };
+
+  beforeEach(async function () {
+    sinon.stub(UsersAuthSessionsService, 'check').resolves({ status: 200, value: session });
+  });
 
   afterEach(async function () {
     sinon.restore();
@@ -57,7 +63,10 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
+      return {
+        status: 200,
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
+      };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -84,6 +93,8 @@ describe('Users Auth Service', function () {
       value: {
         userID: testInfoUser.id,
         username: testAuthUser.id,
+        sessionID: session.id, // the record of the session (not its secret)
+        sessionExpiresAt: session.expiresAt,
         status: testInfoUser.status,
         tenantName: testInfoUser.schools[0].name,
         name: testInfoUser.name,
@@ -96,6 +107,7 @@ describe('Users Auth Service', function () {
    * validate portal routes by portal-admin membership
    */
   it('should validate portal routes by portal-admin membership', async () => {
+    // a configured portal school, and a user that is a portal admin
     const portalSchoolID = 'portal-school-test';
     const previousPortalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
     process.env.SMALL_API_PORTAL_SCHOOL_ID = portalSchoolID;
@@ -111,6 +123,7 @@ describe('Users Auth Service', function () {
       },
     ];
 
+    // stub: the user and a valid session token
     sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 200, value: testInfoUser });
     sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'decoded' });
     sinon.stub(UsersLocalAuthService, 'validateToken').returns({
@@ -121,6 +134,7 @@ describe('Users Auth Service', function () {
     _ctx.tenantID = portalSchoolID;
     _ctx.userID = testInfoUser.id;
     _ctx.username = testAuthUser.id;
+    // call a portal route on the portal school
     _ctx.reqUrl = '/api/v1/schools';
     const result = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/schools' }, _ctx);
 
@@ -130,10 +144,12 @@ describe('Users Auth Service', function () {
       process.env.SMALL_API_PORTAL_SCHOOL_ID = previousPortalSchoolID;
     }
 
+    // check: accepted, as a portal admin
     chai.expect(result.status).to.equal(200);
     chai.expect(result.value.tenantName).to.equal('Portal School');
     chai.expect(result.value.schools[0].roles).to.deep.equal([UsersRest.Constants.Roles.PortalAdmin]);
 
+    // another school (not a member): refused
     _ctx.tenantID = 'another-school';
     const wrongTenantResult = await UsersAuthService.validate(
       { token: 'token', method: 'get', route: '/api/v1/schools' },
@@ -141,6 +157,8 @@ describe('Users Auth Service', function () {
     );
     chai.expect(wrongTenantResult.status).to.equal(401);
     chai.expect(wrongTenantResult.error.message).to.equal('Failed to validate school');
+
+    // a member of the portal school without the portal-admin role: refused
     _ctx.tenantID = portalSchoolID;
     testInfoUser.schools[0].roles = [];
     const nonAdminResult = await UsersAuthService.validate(
@@ -158,6 +176,7 @@ describe('Users Auth Service', function () {
     const testAuthUser = _.cloneDeep(TestConstants.UsersAuth[0]);
     const testInfoUser = _.cloneDeep(TestConstants.Users[0]);
 
+    // stub: the user and a valid session token
     sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 200, value: testInfoUser });
     sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'decoded' });
     sinon.stub(UsersLocalAuthService, 'validateToken').returns({
@@ -165,6 +184,7 @@ describe('Users Auth Service', function () {
       value: { username: testAuthUser.id, userID: testInfoUser.id },
     });
 
+    // call a global route with a tenant the user is not a member of
     _ctx.tenantID = 'tenant-without-membership';
     _ctx.userID = testInfoUser.id;
     _ctx.username = testAuthUser.id;
@@ -174,6 +194,7 @@ describe('Users Auth Service', function () {
       _ctx
     );
 
+    // check: accepted
     chai.expect(res.status).to.equal(200);
   }).timeout(10000);
 
@@ -243,6 +264,7 @@ describe('Users Auth Service', function () {
       school.status = SchoolsRest.Constants.Status.Active;
     }
 
+    // stub: the user (active schools) and a valid session token
     sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 200, value: testInfoUser });
     sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'decoded' });
     sinon.stub(UsersLocalAuthService, 'validateToken').returns({
@@ -250,6 +272,7 @@ describe('Users Auth Service', function () {
       value: { username: testAuthUser.id, userID: testInfoUser.id },
     });
 
+    // call the invite route on a school where the user is admin
     _ctx.tenantID = testInfoUser.schools[1].id; // where is admin
     _ctx.userID = testInfoUser.id;
     _ctx.username = testAuthUser.id;
@@ -259,6 +282,7 @@ describe('Users Auth Service', function () {
       _ctx
     );
 
+    // check: accepted, with the school name
     chai.expect(res.status).to.equal(200);
     chai.expect(res.value.tenantName).to.equal(_ctx.tenantID);
   }).timeout(10000);
@@ -291,7 +315,10 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
+      return {
+        status: 200,
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
+      };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -318,6 +345,8 @@ describe('Users Auth Service', function () {
       value: {
         userID: testInfoUser.id,
         username: testAuthUser.id,
+        sessionID: session.id, // the record of the session (not its secret)
+        sessionExpiresAt: session.expiresAt,
         status: testInfoUser.status,
         tenantName: 'school-high2',
         name: testInfoUser.name,
@@ -354,7 +383,10 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
+      return {
+        status: 200,
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
+      };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -381,6 +413,8 @@ describe('Users Auth Service', function () {
       value: {
         userID: testInfoUser.id,
         username: testAuthUser.id,
+        sessionID: session.id, // the record of the session (not its secret)
+        sessionExpiresAt: session.expiresAt,
         status: testInfoUser.status,
         tenantName: 'school-high2',
         name: testInfoUser.name,
@@ -543,7 +577,10 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
+      return {
+        status: 200,
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
+      };
     });
 
     // call
@@ -602,7 +639,10 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
+      return {
+        status: 200,
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
+      };
     });
 
     // call
@@ -654,7 +694,10 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
+      return {
+        status: 200,
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
+      };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -712,7 +755,10 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
+      return {
+        status: 200,
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
+      };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -774,7 +820,10 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
+      return {
+        status: 200,
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
+      };
     });
 
     let stubDecrypt = sinon.stub(JwtUtils, 'decrypt').callsFake((data) => {
@@ -842,7 +891,10 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
+      return {
+        status: 200,
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
+      };
     });
 
     // call
@@ -900,7 +952,10 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
+      return {
+        status: 200,
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
+      };
     });
 
     // call
@@ -962,7 +1017,10 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
+      return {
+        status: 200,
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
+      };
     });
 
     // call
@@ -1020,7 +1078,10 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
+      return {
+        status: 200,
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
+      };
     });
 
     // call
@@ -1075,7 +1136,10 @@ describe('Users Auth Service', function () {
     let stubToken = sinon.stub(JwtUtils, 'validateJwt').callsFake((jwtToken) => {
       console.log(`\nJwtUtils.validateJwt called for ${JSON.stringify(jwtToken, null, 2)}\n`);
 
-      return { status: 200, value: { username: testAuthUser.id, userID: testInfoUser.id } };
+      return {
+        status: 200,
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
+      };
     });
 
     // call
@@ -1171,5 +1235,27 @@ describe('Users Auth Service', function () {
       const r = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/schools/:id' }, _ctx);
       chai.expect(r.status, url).to.equal(expected);
     }
+  }).timeout(10000);
+
+  /**
+   * a session ended (logout, password change, password reset, email change) is refused
+   */
+  it('should validate fail for an ended session', async () => {
+    // stub: a valid session token whose key is not the key of the account anymore; the user is not read
+    UsersAuthSessionsService.check.resolves({ status: 401, error: { message: 'The session has ended' } });
+    sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'token' });
+    sinon.stub(JwtUtils, 'validateJwt').returns({
+      status: 200,
+      value: { purpose: 'session', username: 'user@testdomain.test', userID: 'user1', secret: 'old' },
+    });
+    const stubUsersGet = sinon.stub(UsersRest, 'getOneByEmail');
+
+    // call
+    const res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users/:id' }, _ctx);
+
+    // check: refused before reading the user
+    chai.expect(res.status).to.equal(401);
+    chai.expect(res.error.message).to.equal('The session has ended');
+    chai.expect(stubUsersGet.callCount).to.equal(0);
   }).timeout(10000);
 });

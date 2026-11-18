@@ -81,6 +81,7 @@ describe('Schools Service', function () {
     const testSchools = _.cloneDeep(TestConstants.Schools);
     const expectedFilter = { $and: [{}, { id: { $ne: TestConstants.PortalSchoolID } }] };
 
+    // stub
     sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
       status: 200,
       value: { filter: {}, projection: { _id: 0 }, limit: 0, skip: 0 },
@@ -94,8 +95,10 @@ describe('Schools Service', function () {
       return { status: 200, value: testSchools.length };
     });
 
+    // call
     const result = await SchoolsService.getAllForReq({ query: {} }, _ctx);
 
+    // check
     chai.expect(stubGetAll.calledOnce).to.equal(true);
     chai.expect(stubCount.calledOnce).to.equal(true);
     chai.expect(result.value.data).to.deep.equal(testSchools);
@@ -105,6 +108,7 @@ describe('Schools Service', function () {
    * getAllForReq excludes the portal school when the request has no other filter
    */
   it('should exclude the portal school when the request has no other filter', async () => {
+    // stub
     sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
       status: 200,
       value: { projection: { _id: 0 }, limit: 0, skip: 0 },
@@ -116,8 +120,10 @@ describe('Schools Service', function () {
     });
     sinon.stub(DbOpsUtils, 'getAllCount').returns({ status: 200, value: 0 });
 
+    // call
     const result = await SchoolsService.getAllForReq({ query: {} }, _ctx);
 
+    // check
     chai.expect(result.status).to.equal(200);
   }).timeout(10000);
 
@@ -126,6 +132,7 @@ describe('Schools Service', function () {
    */
   it('should not change the filter when the portal school is not configured', async () => {
     const testSchools = _.cloneDeep(TestConstants.Schools);
+    // stub
     sinon.stub(process, 'env').value({ ...process.env, SMALL_API_PORTAL_SCHOOL_ID: '' });
 
     sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
@@ -138,8 +145,10 @@ describe('Schools Service', function () {
     });
     sinon.stub(DbOpsUtils, 'getAllCount').returns({ status: 200, value: testSchools.length });
 
+    // call
     const result = await SchoolsService.getAllForReq({ query: {} }, _ctx);
 
+    // check
     chai.expect(stubGetAll.calledOnce).to.equal(true);
     chai.expect(result.value.data).to.deep.equal(testSchools);
   }).timeout(10000);

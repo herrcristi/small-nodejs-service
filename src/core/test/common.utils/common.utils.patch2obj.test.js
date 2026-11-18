@@ -78,11 +78,15 @@ describe('Common Utils', function () {
    * patch2obj does not build objects with keys that change the prototype
    */
   it('should patch2obj skip the keys that change the prototype', async () => {
+    // a body with __proto__, constructor and prototype keys (JSON.parse keeps them as own keys)
     const body = JSON.parse(
       '{"name":"x","__proto__":{"id":"inherited"},"a.__proto__.b":1,"c.constructor":2,"d":{"prototype":3}}'
     );
+
+    // call
     const res = CommonUtils.patch2obj(body);
 
+    // check: only the normal keys, the prototype is not changed
     chai.expect(Object.keys(res).sort()).to.deep.equal(['d', 'name']);
     chai.expect(res.id).to.equal(undefined);
     chai.expect(Object.getPrototypeOf(res)).to.equal(Object.prototype);

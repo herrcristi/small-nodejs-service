@@ -10,6 +10,7 @@ const NotificationsUtils = require('../../../core/utils/base-service.notificatio
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
+const UsersLocalAuthService = require('../../../services/users-auth/users-local-auth.service.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
@@ -85,14 +86,17 @@ describe('Users Auth Service', function () {
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(stubEvent.callCount).to.equal(1);
     chai.expect(stubUsersAuthRest.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
+    chai.expect({ ...res, token: undefined }).to.deep.equal({
       status: 200,
       value: {
         userID: testUser.userID,
         username: testUser.id,
         type: testUser.type,
       },
+      token: undefined,
     });
+    // the other sessions are ended: this session continues with a new token (set as the cookie)
+    chai.expect(res.token).to.be.a('string').and.not.empty;
   }).timeout(10000);
 
   /**
@@ -263,5 +267,29 @@ describe('Users Auth Service', function () {
       status: 500,
       error: { message: 'Test error message', error: new Error('Test error') },
     });
+  }).timeout(10000);
+
+  /**
+   * putPassword fails when the new session token can not be made
+   */
+  it('should putPassword fail to make the new session token', async () => {
+    const testUser = _.cloneDeep(TestConstants.UsersAuth)[0];
+    const putReq = {
+      oldPassword: testUser._test_data.origPassword,
+      newPassword: testUser._test_data.origPassword + 'aA1!',
+    };
+
+    // stub: the account and the write; the new token fails
+    sinon.stub(DbOpsUtils, 'getOne').returns({ status: 200, value: { ...testUser } });
+    sinon.stub(DbOpsUtils, 'put').returns({ status: 200, value: { ...testUser } });
+    sinon.stub(UsersLocalAuthService, 'getToken').returns({ status: 500, error: { message: 'Test error message' } });
+
+    // call as the user
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+    const res = await UsersAuthService.putPassword(putReq, _ctx);
+
+    // check: the error is returned
+    chai.expect(res.status).to.equal(500);
   }).timeout(10000);
 });

@@ -30,6 +30,7 @@ describe('Service 2 Service Auth Middleware', function () {
    * a call without a service token on a public route is not a service call: nothing is validated or taken from headers
    */
   it('should not take the identity or the tenant name from the headers of a normal request', async () => {
+    // stub: no validation is expected; a public route with identity headers
     const stubValidation = sinon.stub(RestCommsUtils, 'restValidation');
     const req = getReq('/api/v1/students', {
       'x-user-id': 'ID-OF-OTHER-USER',
@@ -38,8 +39,10 @@ describe('Service 2 Service Auth Middleware', function () {
     });
     const next = sinon.stub();
 
+    // call
     await Service2ServiceAuthMiddleware.middleware(req, {}, next);
 
+    // check: continued, nothing taken from the headers
     chai.expect(stubValidation.callCount).to.equal(0);
     chai.expect(next.calledOnce).to.equal(true);
     chai.expect(req._ctx.userID).to.equal(undefined);
@@ -51,6 +54,7 @@ describe('Service 2 Service Auth Middleware', function () {
    * a service call: the identity comes from the signed service token, not from the headers next to it
    */
   it('should take the identity and the tenant from the service token and not from the headers', async () => {
+    // stub: the validation fills the context from the token; the headers name other values
     const stubValidation = sinon.stub(RestCommsUtils, 'restValidation').callsFake((token, ctx) => {
       // what the validation of the signed token does (see restValidation)
       ctx.tenantID = 'school-a';
@@ -68,8 +72,10 @@ describe('Service 2 Service Auth Middleware', function () {
     });
     const next = sinon.stub();
 
+    // call
     await Service2ServiceAuthMiddleware.middleware(req, {}, next);
 
+    // check: the values of the token
     chai.expect(stubValidation.calledOnce).to.equal(true);
     chai.expect(next.calledOnce).to.equal(true);
     chai.expect(req._ctx.tenantID).to.equal('school-a');
@@ -82,6 +88,7 @@ describe('Service 2 Service Auth Middleware', function () {
    * an internal route without a valid service token is refused
    */
   it('should refuse an internal route without a valid service token', async () => {
+    // stub: the token is not valid
     sinon.stub(RestCommsUtils, 'restValidation').returns({
       status: 401,
       error: { message: 'Invalid token', error: new Error('Invalid token') },
@@ -90,8 +97,10 @@ describe('Service 2 Service Auth Middleware', function () {
     const res = { status: sinon.stub().returnsThis(), json: sinon.stub(), end: sinon.stub() };
     const next = sinon.stub();
 
+    // call
     await Service2ServiceAuthMiddleware.middleware(req, res, next);
 
+    // check: 401, not continued, no identity
     chai.expect(next.callCount).to.equal(0);
     chai.expect(res.status.calledWith(401)).to.equal(true);
     chai.expect(req._ctx.userID).to.equal(undefined);

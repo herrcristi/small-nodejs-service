@@ -77,14 +77,17 @@ describe('Users Auth Service', function () {
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(stubEvent.callCount).to.equal(1);
     chai.expect(stubUsersAuthRest.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
+    chai.expect({ ...res, token: undefined }).to.deep.equal({
       status: 200,
       value: {
         userID: testUser.userID,
         username: testUser.id,
         type: testUser.type,
       },
+      token: undefined,
     });
+    // the other sessions are ended: this session continues with a new token (set as the cookie)
+    chai.expect(res.token).to.be.a('string').and.not.empty;
   }).timeout(10000);
 
   /**

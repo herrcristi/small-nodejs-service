@@ -94,7 +94,7 @@
         <div class="">
           <v-chip
             :color="ComponentUtils.getStatusColor(item.status)"
-            :text="ComponentUtils.getStatusText(item.status, item._lang_en?.status, t, te)"
+            :text="ComponentUtils.getStatusText(item, 'status', t, te, locale)"
             size="small"
             label
           ></v-chip>
@@ -108,7 +108,7 @@
         <div class="">
           <v-chip
             :color="ComponentUtils.getStatusColor(item.user?.status)"
-            :text="ComponentUtils.getStatusText(item.user?.status, item._lang_en?.user?.status, t, te)"
+            :text="ComponentUtils.getStatusText(item, 'user.status', t, te, locale)"
             size="small"
             label
           ></v-chip>
@@ -136,7 +136,7 @@
         <div class="">
           <v-chip
             :color="ComponentUtils.getSeverityColor(item.severity)"
-            :text="item._lang_en?.severity || item.severity"
+            :text="ComponentUtils.getServerText(item, 'severity', locale)"
             class="text-uppercase"
             size="small"
             label
@@ -158,7 +158,7 @@
         <div class="">
           <v-chip
             :color="ComponentUtils.getRequiredColor(item.required)"
-            :text="item._lang_en?.required || item.required"
+            :text="ComponentUtils.getServerText(item, 'required', locale)"
             size="small"
             label
           ></v-chip>
@@ -170,7 +170,7 @@
     <template v-slot:item.message="{ item }">
       <slot name="item.message" :item="item">
         <div class="">
-          {{ item._lang_en?.message || item.message }}
+          {{ ComponentUtils.getServerText(item, 'message', locale) }}
         </div>
       </slot>
     </template>
@@ -215,7 +215,7 @@
     <!-- frequency -->
     <template v-slot:item.frequency="{ item }">
       <slot name="item.frequency" :item="item">
-        <div class="">{{ item._lang_en?.frequency || item.frequency }}</div>
+        <div class="">{{ ComponentUtils.getServerText(item, 'frequency', locale) }}</div>
       </slot>
     </template>
 
@@ -322,7 +322,7 @@ import { ref, reactive, computed, watch } from 'vue';
 import ConfirmDialog from './base.confirm.dialog.vue';
 import ComponentUtils from './components.utils.js';
 import { useI18n } from 'vue-i18n';
-const { t, te } = useI18n();
+const { t, te, locale } = useI18n();
 
 /**
  * state

@@ -52,6 +52,9 @@ describe('Rate limiter middleware', function () {
   const login = (app, username, password, ip) =>
     supertest(app).post('/login').set('x-forwarded-for', ip).send({ username, password });
 
+  /**
+   * the failed logins of an account from one address are limited
+   */
   it('should limit the failed logins of an account from one address, not the successful ones', async () => {
     const app = getApp();
 
@@ -70,6 +73,9 @@ describe('Rate limiter middleware', function () {
     chai.expect((await login(app, 'user@testdomain.test', 'right', '203.0.113.2')).status).to.equal(200);
   });
 
+  /**
+   * the failed logins of an account are limited also when they come from many addresses
+   */
   it('should limit the failed logins of an account from all the addresses', async () => {
     const app = getApp();
 
@@ -83,10 +89,14 @@ describe('Rate limiter middleware', function () {
     chai.expect((await login(app, 'other@testdomain.test', 'right', '203.0.113.14')).status).to.equal(200);
   });
 
+  /**
+   * the reset password emails of an account are limited (from any address)
+   */
   it('should limit the reset password emails of an account', async () => {
     const app = getApp();
     const reset = (username, ip) => supertest(app).post('/reset').set('x-forwarded-for', ip).send({ username });
 
+    // 2 emails for the account, the third is limited (the username case does not matter); another account is not
     chai.expect((await reset('user@testdomain.test', '203.0.113.21')).status).to.equal(200);
     chai.expect((await reset('user@testdomain.test', '203.0.113.22')).status).to.equal(200);
     chai.expect((await reset('User@testdomain.test', '203.0.113.23')).status).to.equal(429);
@@ -96,16 +106,24 @@ describe('Rate limiter middleware', function () {
     chai.expect((await supertest(app).post('/reset').set('x-forwarded-for', '203.0.113.24')).status).to.equal(200);
   });
 
+  /**
+   * in debug mode nothing is limited
+   */
   it('should not limit in debug mode', async () => {
     process.env.NODE_ENV = 'dev';
     const app = getApp();
 
+    // more failures than the limit: still answered 401, not 429
     for (let i = 0; i < 5; i++) {
       chai.expect((await login(app, 'user@testdomain.test', 'wrong', '203.0.113.31')).status).to.equal(401);
     }
   });
 
+  /**
+   * a missing or a wrong limit falls back to the default
+   */
   it('should use the default limits when they are not configured', async () => {
+    // no login limit, a wrong account limit
     delete process.env.SMALL_API_RATE_LIMIT_LOGIN_MAX;
     process.env.SMALL_API_RATE_LIMIT_LOGIN_ACCOUNT_MAX = 'not a number';
     const app = getApp();
@@ -136,7 +154,11 @@ describe('Trust proxy and client address', function () {
     }
   });
 
+  /**
+   * the trust proxy setting: a number of proxies or a list of addresses, never "trust all"
+   */
   it('should read the trust proxy setting', () => {
+    // each value and its setting
     for (const [value, expected] of [
       [undefined, false],
       ['', false],
@@ -152,11 +174,17 @@ describe('Trust proxy and client address', function () {
       } else {
         process.env.SMALL_API_TRUST_PROXY = value;
       }
+
+      // check
       chai.expect(WebServerUtils.getTrustProxy()).to.deep.equal(expected);
     }
   });
 
+  /**
+   * the client address is read from x-forwarded-for only when a proxy is trusted
+   */
   it('should take the client address from x-forwarded-for only through a trusted proxy', async () => {
+    // a small app that answers the client address
     const getApp = (trustProxy) => {
       const app = express();
       app.set('trust proxy', trustProxy);

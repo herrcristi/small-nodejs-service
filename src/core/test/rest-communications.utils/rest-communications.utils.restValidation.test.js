@@ -274,18 +274,30 @@ describe('Rest Communications Utils', function () {
       await RestCommsUtils.init({ issuer, s2sPass: process.env.SMALL_API_S2SPASS, rest: {} });
     });
 
+    /**
+     * a token is used once: a replay is refused
+     */
     it('should accept a token once', () => {
+      // a token for this request
       const s2sToken = token();
 
+      // the first use is accepted, the second is refused
       chai.expect(validate(s2sToken).status).to.equal(200);
       chai.expect(validate(s2sToken).error.message).to.equal('Token was already used');
     });
 
+    /**
+     * a token without an id can not be checked for a replay, so it is refused
+     */
     it('should refuse a token without an id', () => {
       chai.expect(validate(token({ jti: undefined })).error.message).to.equal('Token was already used');
     });
 
+    /**
+     * a token is bound to the method and the path of the request
+     */
     it('should refuse a token for another method or path', () => {
+      // another method, another path, a wrong url: refused
       chai.expect(validate(token({ method: 'POST' })).error.message).to.equal('Token is not for this request');
       chai.expect(validate(token({ url: `${url}/id1` })).error.message).to.equal('Token is not for this request');
       chai.expect(validate(token({ url: 'not a url' })).error.message).to.equal('Token is not for this request');
@@ -294,7 +306,11 @@ describe('Rest Communications Utils', function () {
       chai.expect(validate(token({ url: `${url}?email=a%40b.test&limit=1` })).status).to.equal(200);
     });
 
+    /**
+     * a token is valid only in a short time window
+     */
     it('should refuse a token without a valid time, too old, or from the future', () => {
+      // no time, a wrong time, older than a minute, more than 5 seconds in the future: refused
       const now = Date.now();
       for (const timestamp of [
         undefined,
@@ -310,7 +326,11 @@ describe('Rest Communications Utils', function () {
       chai.expect(validate(token({ timestamp: new Date(now + 4 * 1000).toISOString() })).status).to.equal(200);
     });
 
+    /**
+     * the used ids are kept only while their tokens are valid
+     */
     it('should forget the ids of the expired tokens', () => {
+      // a first token is used
       const first = token();
       chai.expect(validate(first).status).to.equal(200);
 

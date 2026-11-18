@@ -251,6 +251,41 @@ const Public = {
   },
 
   /**
+   * delete all the objects of a filter (never without a filter: that would empty the collection)
+   * config: { serviceName, collection }
+   * filter: { filter }
+   * return: { status, value: deleted count } or { status, error: { message, error } }
+   */
+  deleteAll: async (config, filter, _ctx) => {
+    const time = new Date();
+    const logFilter = JSON.stringify(filter, CommonUtils.stringifyFilter, 2);
+
+    const findFilter = filter?.filter;
+    if (!findFilter || Object.keys(findFilter).length === 0) {
+      return Utils.error(400, 'Delete all requires a filter', time, _ctx);
+    }
+
+    try {
+      const r = await config.collection.deleteMany(findFilter);
+
+      console.log(
+        `\nDB Calling: ${config.serviceName} deleteAll with filter ${logFilter} deleted ${
+          r.deletedCount
+        } objs. Finished in ${new Date() - time} ms`
+      );
+
+      return { status: 200, value: r.deletedCount, time: new Date() - time };
+    } catch (e) {
+      console.log(
+        `\nDB Calling Failed: ${config.serviceName} deleteAll with filter ${logFilter}. Error ${CommonUtils.getLogError(
+          e
+        )}. Finished in ${new Date() - time} ms`
+      );
+      return Utils.exception(e, time, _ctx);
+    }
+  },
+
+  /**
    * put
    * config: { serviceName, collection, returnDocument? }
    * return: { status, value } or { status, error: { message, error } }

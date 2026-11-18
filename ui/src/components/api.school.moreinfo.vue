@@ -62,7 +62,7 @@ import ApiTableData from './api.base.table.data.vue';
 import ApiUserEditDialog from './api.user.edit.dialog.vue';
 import ComponentsUtils from './components.utils.js';
 import { useI18n } from 'vue-i18n';
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 /**
  * props
@@ -97,8 +97,9 @@ async function load() {
 
   loading.value = true;
   try {
+    const languages = ComponentsUtils.getServerLanguages(locale.value);
     const params = new URLSearchParams({
-      projection: `id,_lang_en,${adminsFields.projectionFields}`,
+      projection: `id,${languages},${adminsFields.projectionFields}`,
       sort: 'name',
       limit: 100, // a school has a few admins
     });

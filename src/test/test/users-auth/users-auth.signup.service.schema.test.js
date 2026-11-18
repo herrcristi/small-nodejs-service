@@ -38,19 +38,30 @@ describe('Users Auth Service', function () {
     chai.expect(result.error).to.not.exist;
   }).timeout(10000);
 
+  /**
+   * signup needs the email of the admin and the name of the school
+   */
   it('should validate required signup fields', async () => {
+    // no email
     const missingEmail = UsersAuthSignupService.Validators.Signup.validate({ school: { name: 'School' } });
     chai.expect(missingEmail.error.details[0].message).to.include('"email" is required');
 
+    // no school name
     const missingName = UsersAuthSignupService.Validators.Signup.validate({ email: 'admin@example.test', school: {} });
     chai.expect(missingName.error.details[0].message).to.include('"school.name" is required');
   }).timeout(10000);
 
+  /**
+   * signup refuses the unknown fields
+   */
   it('should reject extra signup fields', async () => {
+    // a valid signup with an extra field
     const result = UsersAuthSignupService.Validators.Signup.validate({
       ...TestConstants.UsersSignup[0],
       extra: true,
     });
+
+    // check
     chai.expect(result.error.details[0].message).to.include('"extra" is not allowed');
   }).timeout(10000);
 

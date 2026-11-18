@@ -13,13 +13,18 @@ const EventsRest = require('../../../services/rest/events.rest.js');
 const UsersRest = require('../../../services/rest/users.rest.js');
 const SchoolsRest = require('../../../services/rest/schools.rest.js');
 const UsersLocalAuthService = require('../../../services/users-auth/users-local-auth.service.js');
+const UsersAuthSessionsService = require('../../../services/users-auth/users-auth.sessions.service.js');
 
 describe('Users Auth Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
 
   before(async function () {});
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    // a new session record at every login (the sessions service has its own tests)
+    const session = { id: 'session-id1', secret: 'secret1', expiresAt: new Date(Date.now() + 60 * 1000) };
+    sinon.stub(UsersAuthSessionsService, 'create').resolves({ status: 201, value: session });
+  });
 
   afterEach(async function () {
     sinon.restore();
@@ -96,7 +101,7 @@ describe('Users Auth Service', function () {
       chai.expect(data.creatingTimestamp).to.exists;
       chai
         .expect(_.omit(data, 'creatingTimestamp'))
-        .to.deep.equal({ username: testAuthUser.id, userID: testInfoUser.id });
+        .to.deep.equal({ purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' });
       return { status: 200, value: 'token' };
     });
 
@@ -199,9 +204,12 @@ describe('Users Auth Service', function () {
       console.log(`\nJwtUtils.getJwt called for ${JSON.stringify(data, null, 2)}\n`);
 
       chai.expect(data.creatingTimestamp).to.exists;
-      chai
-        .expect(_.omit(data, 'creatingTimestamp'))
-        .to.deep.equal({ userID: testAuthUser.userID, username: testInfoUser.email });
+      chai.expect(_.omit(data, 'creatingTimestamp')).to.deep.equal({
+        purpose: 'session',
+        userID: testAuthUser.userID,
+        username: testInfoUser.email,
+        secret: 'secret1',
+      });
       return { status: 200, value: 'token' };
     });
 
@@ -726,9 +734,12 @@ describe('Users Auth Service', function () {
       console.log(`\nJwtUtils.getJwt called for ${JSON.stringify(data, null, 2)}\n`);
 
       chai.expect(data.creatingTimestamp).to.exists;
-      chai
-        .expect(_.omit(data, 'creatingTimestamp'))
-        .to.deep.equal({ userID: testAuthUser.userID, username: testAuthUser.id });
+      chai.expect(_.omit(data, 'creatingTimestamp')).to.deep.equal({
+        purpose: 'session',
+        userID: testAuthUser.userID,
+        username: testAuthUser.id,
+        secret: 'secret1',
+      });
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 

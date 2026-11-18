@@ -12,6 +12,7 @@ const Public = {
     process.env.NODE_ENV = 'test';
     process.env.SMALL_API_PORT = TestConstants.Port;
     process.env.SMALL_API_URL = TestConstants.WebServer;
+    process.env.SMALL_UI_URL = TestConstants.WebServer1; // the links of the emails
 
     process.env.SMALL_API_AUTH_PROVIDER_TYPE = TestConstants.Auth.AuthProviderType;
     process.env.SMALL_API_SALT = TestConstants.Auth.Salt;

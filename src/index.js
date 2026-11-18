@@ -57,6 +57,7 @@ const Public = {
 
     const expectedValues = [
       'SMALL_API_URL',
+      'SMALL_UI_URL',
       'SMALL_API_PORT',
 
       'SMALL_API_AUTH_PROVIDER_TYPE',

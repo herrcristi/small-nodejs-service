@@ -572,27 +572,27 @@ How the design behaves under load, and what to do about it. Numbers are of three
 
 ### What a request costs
 
-| Operation                              | Cost                                                                         |
-| -------------------------------------- | ---------------------------------------------------------------------------- |
-| Authenticated request, validation only | about 0.2 ms CPU (measured); one database read of the user                   |
-| List request (`GET /students`)         | about 1.0 to 1.2 ms CPU (measured); 3 database reads (user, `find`, `count`) |
-| `GET /users-auth/me`                   | about 0.5 ms CPU (measured); 1 read                                          |
-| Write with copies (`PUT /classes/:id`) | about 1.0 to 1.1 ms CPU (measured); 1 read and 5 writes                      |
-| Login                                  | about 59 ms CPU for the two `scrypt` hashes (measured), 2 reads, 1 write     |
+| Operation                              | Cost                                                                                  |
+| -------------------------------------- | ------------------------------------------------------------------------------------- |
+| Authenticated request, validation only | about 0.2 ms CPU (measured); 2 database reads (the session, the user)                 |
+| List request (`GET /students`)         | about 1.0 to 1.2 ms CPU (measured); 4 database reads (session, user, `find`, `count`) |
+| `GET /users-auth/me`                   | about 0.5 ms CPU (measured); 2 reads                                                  |
+| Write with copies (`PUT /classes/:id`) | about 1.0 to 1.1 ms CPU (measured); 2 reads and 5 writes                              |
+| Login                                  | about 59 ms CPU for the two `scrypt` hashes (measured), 2 reads, 2 writes             |
 
-The API processes hold no session state, so they scale by adding processes. Requests are cheap; **login is the expensive operation**, because password hashing is deliberately slow.
+The API processes hold no session state (the sessions are records in the database), so they scale by adding processes. Requests are cheap; **login is the expensive operation**, because password hashing is deliberately slow.
 
 ### Rough capacity
 
 Assumptions: about 1.5 ms of CPU for a cheap request (the measured cost plus driver work), 2 requests per active user per minute, one single-core process per pod at 70% utilisation, a login of about 59 ms of CPU, and a database node that serves roughly 30,000 to 50,000 simple indexed reads per second. Measure with your own data before relying on any of it.
 
-| Load                                                         | Needs                                                        |
-| ------------------------------------------------------------ | ------------------------------------------------------------ |
-| 1M logins in 1 hour                                          | about 18 cores of hashing, about 26 single-core pods         |
-| 1M logins in 10 minutes                                      | about 107 cores, about 150 pods                              |
-| 1M active users at 2 requests per minute (33,000 requests/s) | about 51 cores, about 75 pods, about 90,000 database reads/s |
+| Load                                                         | Needs                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------- |
+| 1M logins in 1 hour                                          | about 18 cores of hashing, about 26 single-core pods          |
+| 1M logins in 10 minutes                                      | about 107 cores, about 150 pods                               |
+| 1M active users at 2 requests per minute (33,000 requests/s) | about 51 cores, about 75 pods, about 120,000 database reads/s |
 
-The user lookup on every request is about a third of all reads, and list counts touch the whole school's collection.
+The session and user lookups on every request are about half of all reads, and list counts touch the whole school's collection.
 
 ### What to tune first
 
@@ -632,6 +632,7 @@ The backend reads its settings from the **process environment**. [src/.env.examp
 | SMTP                           | the mail server. Invitations and password setup are sent by email, so it is required                                                                                                                                                                                                                  |
 | Server                         | port, public URL, and the CORS origin                                                                                                                                                                                                                                                                 |
 | `SMALL_API_TRUST_PROXY`        | the proxies in front of the API: their number (`1`) or addresses (`loopback, 10.0.0.0/8`). The client address (rate limits, events) is then taken from them. Not set: no proxy is trusted                                                                                                             |
+| `SMALL_UI_URL`                 | the address of the UI. The links of the emails (set a password, open the application) point to it                                                                                                                                                                                                     |
 | `SMALL_API_COOKIE_SAMESITE`    | optional. `lax` (default) when the UI and the API are on the same site, `none` when they are on different sites. Outside debug mode the cookie is always `Secure`                                                                                                                                     |
 | `SMALL_API_RATE_LIMIT_*`       | optional limits per 15 minutes: `MAX` (all requests of an address, 1000), `LOGIN_MAX` (failed logins of an account from an address, 5), `LOGIN_ACCOUNT_MAX` (failed logins of an account, 20), `RESET_MAX` (reset emails of an account, 3). They are kept in each process                             |
 | `SMALL_API_INTERNAL_ROUTES`    | `true` only when the services run in separate processes and call each other over HTTP. Otherwise the internal routes (`/api/internal_v1`) answer `404`; block that prefix at the proxy in any case                                                                                                    |
@@ -718,7 +719,15 @@ curl --cookie cookies.txt \
   "$API/students?limit=20&skip=0"
 ```
 
-To restore the session call `GET /users-auth/me` with the cookie. To log out call `POST /users-auth/logout` (it clears the cookie).
+To restore the session call `GET /users-auth/me` with the cookie. To log out call `POST /users-auth/logout` with the cookie: it clears the cookie and ends this session (the sessions on other devices stay open).
+
+**Sessions.** Each login starts a session: a record in its own collection (`users-auth-sessions`) with the user, the purpose and the expiry. The cookie carries a random secret, and the record keeps only its SHA-256 hash, so a copy of the collection opens nothing. Every request checks the record, so a session ends as soon as its record is removed:
+
+- logout ends that session;
+- a password change, a password reset, an email change or a removed account ends all the sessions of the user (a password change keeps the current session with a new cookie);
+- the cookie and the record expire with the session (12 hours), and the database removes the expired records.
+
+The emailed links (reset password, invitation) have records too: a link is used once, a newer link replaces the older ones, and a password change ends them. A session token is only a session: a link can not be used as a cookie, and a cookie can not set a password.
 
 ## API conventions
 
@@ -978,6 +987,8 @@ curl --cookie cookies.txt -H "x-tenant-id: $TENANT_ID" \
 ```
 
 The local auth provider sends a signup/password setup message to a newly created user and an invitation message to an existing user. SMTP settings and the email templates in `src/translations/` are required for delivery.
+
+The link of a password setup or reset email opens the UI page `/reset-password` (`SMALL_UI_URL`). The token is in the fragment of the link (after `#`), which the browser never sends to a server; the page removes it from the address bar and sends it in the `x-reset-token` header to `GET /users-auth/reset-token/validate` and `PUT /users-auth/reset-token/password`. A link is valid for 1 hour (reset) or 72 hours (invitation), and only once: it is made for the current password, so setting the password ends it. The login page has a "Forgot password?" link that asks for a reset email.
 
 ### Events
 

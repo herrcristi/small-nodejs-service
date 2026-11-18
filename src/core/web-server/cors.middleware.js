@@ -41,10 +41,9 @@ const Public = {
       'Content-Type',
       'Authorization',
       'x-tenant-id',
-      'x-user-id',
-      'x-user-name',
       'x-lang',
       'x-request-id',
+      'x-reset-token', // the reset password page (the identity headers are never read from a request)
     ],
     maxAge: 86400,
   },
