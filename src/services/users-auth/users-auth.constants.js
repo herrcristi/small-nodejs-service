@@ -46,6 +46,13 @@ const Public = {
     'reset-password': 60 * 60, // 1h: the person asked for it and uses it now
     signup: 72 * 60 * 60, // 72h: an invitation can wait some days
   },
+
+  // the limits of the sessions (besides TokenExpiresIn.session, the longest a session lasts)
+  SessionLimits: {
+    IdleTimeout: 30 * 60, // seconds without a request: the session ends (a computer left open)
+    TouchInterval: 5 * 60, // seconds: the last use is saved at most this often (a write), so the idle time is this precise
+    MaxPerUser: 10, // open sessions of a user: a new login ends the oldest ones
+  },
 };
 
 module.exports = { ...Public };

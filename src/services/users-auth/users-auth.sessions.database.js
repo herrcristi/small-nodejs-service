@@ -39,7 +39,7 @@ const Public = {
 
     const coll = Private.DB?.collection(collName);
     await coll?.createIndex({ id: 1 }, { unique: true }); // id is the hash of the secret of the token
-    await coll?.createIndex({ userID: 1 }); // the records of a user are ended together
+    await coll?.createIndex({ userID: 1, createdTimestamp: 1 }); // the records of a user (ended together, the newest)
     await coll?.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // the database removes the expired records
 
     console.log(`\nIndexes added for ${collName}`);
