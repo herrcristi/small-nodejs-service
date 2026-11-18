@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const _ = require('lodash');
 const assert = require('assert');
 const sinon = require('sinon');
@@ -29,16 +30,25 @@ describe('Users Auth Service', function () {
   after(async function () {});
 
   /**
+   * a reset token as resetPassword makes it: the purpose, the user, and the fingerprint of the stored password
+   */
+  const getResetToken = (testUser, purpose = 'reset-password', password = testUser.password) => {
+    const fingerprint = crypto.createHash('sha256').update(password).digest('hex').slice(0, 32);
+    const data = { purpose, username: testUser.id, userID: testUser.userID, password: fingerprint };
+    const rT = JwtUtils.getJwt(data, `${UsersAuthConstants.ServiceName}-local`, _ctx, '1h');
+    return JwtUtils.encrypt(rT.value, UsersAuthConstants.ServiceName, _ctx).value; // double encryption
+  };
+
+  /**
    * putResetPassword with success
    */
   it('should putResetPassword with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
-    // get token from resetPassword
-    let rT = await UsersLocalAuthService.getToken({}, { ...testUser, username: testUser.id }, _ctx);
-    const authIssuer = `${UsersAuthConstants.ServiceName}`;
-    let token = JwtUtils.encrypt(rT.value, authIssuer, _ctx).value; // double encryption
+    // a reset token (as resetPassword makes it), and the stored account it was made for
+    let token = getResetToken(testUser);
+    sinon.stub(DbOpsUtils, 'getOne').returns({ status: 200, value: { ...testUser } });
 
     const putReq = {
       password: testUser._test_data.origPassword + 'aA1!',
@@ -164,10 +174,9 @@ describe('Users Auth Service', function () {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
-    // get token from resetPassword
-    let rT = await UsersLocalAuthService.getToken({}, { ...testUser, username: testUser.id }, _ctx);
-    const authIssuer = `${UsersAuthConstants.ServiceName}`;
-    let token = JwtUtils.encrypt(rT.value, authIssuer, _ctx).value; // double encryption
+    // a reset token (as resetPassword makes it), and the stored account it was made for
+    let token = getResetToken(testUser);
+    sinon.stub(DbOpsUtils, 'getOne').returns({ status: 200, value: { ...testUser } });
 
     const putReq = {
       password: testUser._test_data.origPassword + 'aA1!',

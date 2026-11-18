@@ -181,14 +181,17 @@ describe('Users Auth Service', function () {
    * invite portal-admin role is allowed only on the portal school
    */
   it('should invite fail portal-admin role on a normal school', async () => {
+    // stub: no read and no write are expected
     const stubUsersGetByEmail = sinon.stub(UsersRest, 'getOneByEmail');
     const stubUsersPost = sinon.stub(UsersRest, 'post');
 
+    // call on a normal school
     const res = await UsersAuthSignupService.invite(
       { email: 'big.ben1@testdomain.test', school: { role: UsersRest.Constants.Roles.PortalAdmin } },
       _ctx
     );
 
+    // check: refused before any read
     chai.expect(res.status).to.equal(403);
     chai.expect(res.error.message).to.equal('The portal-admin role can be given only on the portal school');
     chai.expect(stubUsersGetByEmail.callCount).to.equal(0);
@@ -199,14 +202,17 @@ describe('Users Auth Service', function () {
    * invite on the portal school accepts only the portal-admin role
    */
   it('should invite fail school role on the portal school', async () => {
+    // stub: no read and no write are expected
     const stubUsersGetByEmail = sinon.stub(UsersRest, 'getOneByEmail');
     const stubUsersPost = sinon.stub(UsersRest, 'post');
 
+    // call on the portal school with a school role
     const res = await UsersAuthSignupService.invite(
       { email: 'big.ben1@testdomain.test', school: { role: UsersRest.Constants.Roles.Admin } },
       { ..._ctx, tenantID: TestConstants.PortalSchoolID }
     );
 
+    // check: refused before any read
     chai.expect(res.status).to.equal(403);
     chai.expect(res.error.message).to.equal('Only the portal-admin role can be given on the portal school');
     chai.expect(stubUsersGetByEmail.callCount).to.equal(0);
@@ -221,6 +227,7 @@ describe('Users Auth Service', function () {
     const email = 'portal.admin@testdomain.test';
     const portalCtx = { ..._ctx, tenantID: TestConstants.PortalSchoolID };
 
+    // stub: a new user (not found), posted as portal admin of the portal school, its login and the email
     sinon
       .stub(UsersRest, 'getOneByEmail')
       .returns({ status: 404, error: { message: 'Not found', error: 'Not found' } });
@@ -237,11 +244,13 @@ describe('Users Auth Service', function () {
     });
     const stubReset = sinon.stub(UsersAuthService, 'resetPassword').returns({ status: 200, value: true });
 
+    // call on the portal school
     const res = await UsersAuthSignupService.invite(
       { email, school: { role: UsersRest.Constants.Roles.PortalAdmin } },
       portalCtx
     );
 
+    // check: the user, its login and the email
     chai.expect(res.status).to.equal(201);
     chai.expect(stubUsersPost.callCount).to.equal(1);
     chai.expect(stubAuthPost.callCount).to.equal(1);
@@ -625,7 +634,11 @@ describe('Users Auth Service', function () {
     const portalCtx = { ..._ctx, tenantID: TestConstants.PortalSchoolID, userID: 'portalAdmin1' };
     const email = 'school.admin@testdomain.test';
 
+    /**
+     * an existing user gets the admin role on the named school, and an invitation that names it
+     */
     it('should invite an existing user as admin of the school', async () => {
+      // stub: the named school, an existing user of another school, the role change and the email
       const stubSchool = sinon
         .stub(SchoolsRest, 'getOne')
         .returns({ status: 200, value: { id: 'school1', name: 'School One' } });
@@ -636,8 +649,10 @@ describe('Users Auth Service', function () {
       const stubPatchSchool = sinon.stub(UsersRest, 'patchSchool').returns({ status: 200, value: { id: 'user1' } });
       const stubSendInvite = sinon.stub(UsersAuthService, 'sendInvite').returns({ status: 200, value: true });
 
+      // call as a portal admin, for school1
       const res = await UsersAuthSignupService.invite({ email, school: { id: 'school1', role: 'admin' } }, portalCtx);
 
+      // check: the existing user, the school was read
       chai.expect(res).to.deep.equal({
         status: 200,
         value: { userID: 'user1', username: email, name: 'School Admin', type: UsersAuthRest.Constants.Type },
@@ -652,7 +667,11 @@ describe('Users Auth Service', function () {
       chai.expect(stubSendInvite.firstCall.args[1]).to.include({ tenantID: 'school1', tenantName: 'School One' });
     }).timeout(10000);
 
+    /**
+     * a new user is created as admin of the named school, and its email names that school
+     */
     it('should invite a new user as admin of the school', async () => {
+      // stub: the named school, a new user (not found), its post, its login and the email
       sinon.stub(SchoolsRest, 'getOne').returns({ status: 200, value: { id: 'school1', name: 'School One' } });
       sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 404, error: { message: 'Not found' } });
       const stubUsersPost = sinon
@@ -661,8 +680,10 @@ describe('Users Auth Service', function () {
       sinon.stub(UsersAuthService, 'post').returns({ status: 201, value: { username: email, userID: 'user1' } });
       const stubReset = sinon.stub(UsersAuthService, 'resetPassword').returns({ status: 200, value: true });
 
+      // call as a portal admin, for school1
       const res = await UsersAuthSignupService.invite({ email, school: { id: 'school1', role: 'admin' } }, portalCtx);
 
+      // check: the new user is an admin of school1, the email names it
       chai.expect(res.status).to.equal(201);
       chai.expect(stubUsersPost.firstCall.args[0]).to.deep.equal({
         email,
@@ -671,7 +692,11 @@ describe('Users Auth Service', function () {
       chai.expect(stubReset.firstCall.args[1]).to.include({ tenantID: 'school1', tenantName: 'School One' });
     }).timeout(10000);
 
+    /**
+     * a school admin invites an admin into its selected school, with or without naming it
+     */
     it('should let a school admin invite an admin of its own school, also when it names it', async () => {
+      // stub: an existing user, the role change and the email; the school is not read
       const stubSchool = sinon.stub(SchoolsRest, 'getOne');
       sinon.stub(UsersRest, 'getOneByEmail').returns({
         status: 200,
@@ -686,18 +711,25 @@ describe('Users Auth Service', function () {
         chai.expect(res.status).to.equal(200);
       }
 
+      // check: the role is added on the selected school
       chai.expect(stubSchool.callCount).to.equal(0); // the selected school, no lookup
       for (const call of stubPatchSchool.getCalls()) {
         chai.expect(call.args[1]).to.deep.equal({ add: { schools: [{ id: _ctx.tenantID, roles: ['admin'] }] } });
       }
     }).timeout(10000);
 
+    /**
+     * a school admin can not invite into another school
+     */
     it('should not let a school admin name another school', async () => {
+      // stub: no read is expected
       const stubSchool = sinon.stub(SchoolsRest, 'getOne');
       const stubGetByEmail = sinon.stub(UsersRest, 'getOneByEmail');
 
+      // call as a school admin, for another school
       const res = await UsersAuthSignupService.invite({ email, school: { id: 'school1', role: 'admin' } }, _ctx);
 
+      // check: refused before any read
       chai.expect(res.status).to.equal(403);
       chai
         .expect(res.error.message)
@@ -706,7 +738,11 @@ describe('Users Auth Service', function () {
       chai.expect(stubGetByEmail.callCount).to.equal(0);
     }).timeout(10000);
 
+    /**
+     * a portal admin invites only the admins of another school, and only portal admins into the portal school
+     */
     it('should invite only the admin role and not into the portal school', async () => {
+      // stub: no read is expected
       const stubSchool = sinon.stub(SchoolsRest, 'getOne');
       const stubGetByEmail = sinon.stub(UsersRest, 'getOneByEmail');
 
@@ -728,20 +764,28 @@ describe('Users Auth Service', function () {
       chai.expect(res.status).to.equal(403);
       chai.expect(res.error.message).to.equal('Only the portal-admin role can be given on the portal school');
 
+      // check: nothing was read
       chai.expect(stubSchool.callCount).to.equal(0);
       chai.expect(stubGetByEmail.callCount).to.equal(0);
     }).timeout(10000);
 
+    /**
+     * a named school must exist and have a valid id
+     */
     it('should fail for a school that does not exist or an invalid school id', async () => {
+      // stub: the school is not found; the user is not read
       sinon.stub(SchoolsRest, 'getOne').returns({ status: 404, error: { message: 'Not found school9' } });
       const stubGetByEmail = sinon.stub(UsersRest, 'getOneByEmail');
 
+      // a school that does not exist: 404
       let res = await UsersAuthSignupService.invite({ email, school: { id: 'school9', role: 'admin' } }, portalCtx);
       chai.expect(res.status).to.equal(404);
 
+      // an invalid id: 400
       res = await UsersAuthSignupService.invite({ email, school: { id: 'school 1/x', role: 'admin' } }, portalCtx);
       chai.expect(res.status).to.equal(400);
 
+      // check: the user was not read
       chai.expect(stubGetByEmail.callCount).to.equal(0);
     }).timeout(10000);
   });
@@ -750,16 +794,19 @@ describe('Users Auth Service', function () {
    * one mailbox is one account: an email in another case is the same account
    */
   it('should invite with the normalized email', async () => {
+    // stub: a new user, its post, its login and the email
     const getByEmail = sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 404, error: { message: 'Not found' } });
     const post = sinon.stub(UsersRest, 'post').returns({ status: 201, value: { id: 'user1' } });
     const authPost = sinon.stub(UsersAuthService, 'post').returns({ status: 201, value: { userID: 'user1' } });
     const reset = sinon.stub(UsersAuthService, 'resetPassword').returns({ status: 200, value: true });
 
+    // call with an email in mixed case, with spaces
     const res = await UsersAuthSignupService.invite(
       { email: ' John.Doe@TestDomain.TEST ', school: { role: 'student' } },
       _ctx
     );
 
+    // check: the lower-case email is used everywhere
     chai.expect(res).to.deep.equal({ status: 201, value: { userID: 'user1' } });
     chai.expect(getByEmail.firstCall.args[0]).to.equal('john.doe@testdomain.test');
     chai.expect(post.firstCall.args[0].email).to.equal('john.doe@testdomain.test');

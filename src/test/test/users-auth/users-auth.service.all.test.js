@@ -20,6 +20,7 @@ require('./users-auth.service.notification.test.js');
 require('./users-auth.service.activatePendingSchools.test.js');
 require('./users-local-auth.service.sendEmail.test.js');
 require('./users-local-auth.service.login.test.js');
+require('./users-local-auth.service.session.test.js');
 
 require('./users-auth.service.login.test.js');
 require('./users-auth.service.logout.test.js');

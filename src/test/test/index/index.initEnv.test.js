@@ -86,6 +86,7 @@ describe('Index', function () {
    * initEnv portal school id must be a UUID
    */
   it('should initEnv fail for a portal school id that is not a UUID', async () => {
+    // stub: a portal school id that is not a UUID, and the exit
     sinon.stub(process, 'env').value({
       ...process.env,
       SMALL_API_PORTAL_SCHOOL_ID: 'not-a-uuid',
@@ -94,8 +95,10 @@ describe('Index', function () {
       console.log(`\nProcess exit called with code ${code}`);
     });
 
+    // call
     const res = await Index.initEnv();
 
+    // check: refused, the process exits
     chai.expect(res).to.equal(false);
     chai.expect(stubProcessExit.callCount).to.equal(1);
   }).timeout(10000);
@@ -104,9 +107,11 @@ describe('Index', function () {
    * the secrets: placeholders, weak values and a shared service password are refused in production
    */
   it('should initEnv refuse placeholder, weak or shared secrets in production', async () => {
+    // stub: the exit and the environment
     const stubProcessExit = sinon.stub(process, 'exit');
     const env = sinon.stub(process, 'env');
 
+    // each wrong secret, the others strong: refused
     for (const secrets of [
       { SMALL_API_AUTHPASS: '00001111222233334444555566667777' }, // the example value
       { SMALL_API_SALT: 'bccc'.repeat(16) }, // the example salt
@@ -118,10 +123,16 @@ describe('Index', function () {
       const res = await Index.initEnv();
       chai.expect(res).to.equal(false);
     }
+
+    // check: the process exits for each one
     chai.expect(stubProcessExit.callCount).to.equal(5);
   }).timeout(10000);
 
+  /**
+   * in debug mode the example secrets are accepted, with a warning
+   */
   it('should initEnv accept the example secrets in debug mode only (a warning)', async () => {
+    // stub: the exit, and the example secrets in debug mode
     const stubProcessExit = sinon.stub(process, 'exit');
     sinon.stub(process, 'env').value({
       ...process.env,
@@ -131,8 +142,10 @@ describe('Index', function () {
       SMALL_API_AUTHPASS: '00001111222233334444555566667777',
     });
 
+    // call
     const res = await Index.initEnv();
 
+    // check: accepted, no exit
     chai.expect(res).to.equal(true);
     chai.expect(stubProcessExit.callCount).to.equal(0);
   }).timeout(10000);

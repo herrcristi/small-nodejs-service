@@ -36,6 +36,11 @@ describe('Users Local Auth Service', function () {
     chai.expect(sent.map((item) => item.to)).to.deep.equal(['user1@testdomain.test', 'user2@testdomain.test']);
 
     chai.expect(sent[0].body).to.include('TOKEN_OF_USER_1');
+    // the link opens the page of the UI, with the token in the fragment (never sent to a server)
+    chai
+      .expect(sent[0].body)
+      .to.include(`${process.env.SMALL_UI_URL}/reset-password#type=signup&amp;token=TOKEN_OF_USER_1`);
+    chai.expect(sent[0].body).to.not.include('reset-token/validate');
     chai.expect(sent[0].body).to.not.include('TOKEN_OF_USER_2');
     chai.expect(sent[0].body).to.include('School One');
 
@@ -49,6 +54,7 @@ describe('Users Local Auth Service', function () {
    * the email greets the recipient by its email ("Hi {user}"), in every email type
    */
   it('should greet the recipient by its email', async () => {
+    // stub: keep the sent emails
     sinon.stub(UsersAuthDatabase, 'collection').resolves(null);
     const sent = [];
     sinon.stub(EmailsUtils, 'sendEmail').callsFake((to, subject, body) => {
@@ -59,6 +65,7 @@ describe('Users Local Auth Service', function () {
     const ctx = { reqID: 'testReq', lang: 'en', tenantName: 'GitHub University' };
     const email = 'john.doe@testdomain.test';
 
+    // call: an invite, a signup and a reset password email
     await UsersLocalAuthService.sendEmail(config, email, { emailType: 'invite' }, ctx);
     await UsersLocalAuthService.sendEmail(
       config,
@@ -73,6 +80,7 @@ describe('Users Local Auth Service', function () {
       ctx
     );
 
+    // check: each one greets the email, the invite names the school
     for (const item of sent) {
       chai.expect(item.body).to.include(`<p>Hi ${email}</p>`);
     }

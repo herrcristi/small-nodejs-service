@@ -11,3 +11,4 @@ require('./translations.utils.addTranslations.test.js');
 // this tests will override strings and emails
 require('./translations.utils.initStrings.test.js');
 require('./translations.utils.initEmails.test.js');
+require('./translations.utils.files.test.js');

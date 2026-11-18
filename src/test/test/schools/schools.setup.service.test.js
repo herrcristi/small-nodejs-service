@@ -15,13 +15,16 @@ describe('Schools Setup Service', function () {
    * test that the portal school is created if it does not exist
    */
   it('creates the configured portal school when it is missing', async () => {
+    // stub
     sinon.stub(SchoolsRest, 'getOne').resolves({ status: 404, error: { message: 'Not found' } });
     const stubPost = sinon
       .stub(SchoolsRest, 'post')
       .resolves({ status: 201, value: { id: TestConstants.PortalSchoolID } });
 
+    // call
     const result = await SchoolsSetupService.init();
 
+    // check
     chai.expect(result).to.equal(true);
     chai.expect(stubPost.calledOnce).to.equal(true);
     chai.expect(stubPost.firstCall.args[0]).to.deep.equal({
@@ -36,14 +39,17 @@ describe('Schools Setup Service', function () {
    * test that the portal school is not rewritten if it already exists and is active
    */
   it('does not rewrite an existing active portal school', async () => {
+    // stub
     sinon.stub(SchoolsRest, 'getOne').resolves({
       status: 200,
       value: { id: TestConstants.PortalSchoolID, status: SchoolsConstants.Status.Active },
     });
     const stubPost = sinon.stub(SchoolsRest, 'post');
 
+    // call
     const result = await SchoolsSetupService.init();
 
+    // check
     chai.expect(result).to.equal(true);
     chai.expect(stubPost.called).to.equal(false);
   });
@@ -52,11 +58,13 @@ describe('Schools Setup Service', function () {
    * test that it fails if the portal school is not active
    */
   it('fails startup if the portal school is not active', async () => {
+    // stub: a disabled portal school
     sinon.stub(SchoolsRest, 'getOne').resolves({
       status: 200,
       value: { id: TestConstants.PortalSchoolID, status: SchoolsConstants.Status.Disabled },
     });
 
+    // call and check: the startup fails
     try {
       await SchoolsSetupService.init();
       chai.assert.fail('Expected setup to reject');

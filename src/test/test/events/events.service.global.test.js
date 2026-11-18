@@ -28,7 +28,11 @@ describe('Events Service global', function () {
     }
   });
 
+  /**
+   * the global events list: only on the portal school, read from the collection without a tenant
+   */
   it('should get the global events only for a portal admin, from the global collection', async () => {
+    // stub: the collection and the reads
     const stubCollection = sinon.stub(EventsDatabase, 'collection').resolves(null);
     const stubGetAll = sinon.stub(DbOpsUtils, 'getAll').returns({ status: 200, value: [{ id: 'event1' }] });
     sinon.stub(DbOpsUtils, 'getAllCount').returns({ status: 200, value: 1 });
@@ -48,14 +52,20 @@ describe('Events Service global', function () {
     chai.expect(_ctxPortal.tenantID).to.equal(portalSchoolID);
   });
 
+  /**
+   * one global event: only on the portal school
+   */
   it('should get one global event only for a portal admin', async () => {
+    // stub: the collection and the read
     const stubCollection = sinon.stub(EventsDatabase, 'collection').resolves(null);
     const stubGetOne = sinon.stub(DbOpsUtils, 'getOne').returns({ status: 200, value: { id: 'event1' } });
 
+    // not on the portal school
     let res = await EventsService.getOneGlobal('event1', null, _ctx);
     chai.expect(res.status).to.equal(403);
     chai.expect(stubGetOne.callCount).to.equal(0);
 
+    // the portal admin: the collection without a tenant
     res = await EventsService.getOneGlobal('event1', null, _ctxPortal);
     chai.expect(res).to.deep.equal({ status: 200, value: { id: 'event1' } });
     chai.expect(stubCollection.firstCall.args[0].tenantID).to.equal(undefined);

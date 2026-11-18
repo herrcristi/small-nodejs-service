@@ -39,13 +39,16 @@ describe('Request Middleware', function () {
    * values that are not well formed are dropped
    */
   it('should drop a tenant that is not a plain id, and use safe defaults', async () => {
+    // a pattern as tenant, a request id with spaces and a new line, a language with a suffix
     const ctx = run({ 'x-tenant-id': '(a+)+$', 'x-request-id': 'a b\nc', 'x-lang': 'en; drop' });
 
+    // check: no tenant, a new request id, the default language
     chai.expect(ctx.tenantID).to.equal(undefined);
     chai.expect(ctx.reqID).to.match(/^[A-Za-z0-9-]+$/);
     chai.expect(ctx.reqID).to.not.equal('a b\nc');
     chai.expect(ctx.lang).to.equal('en');
 
+    // two tenants, or none: no tenant
     chai.expect(run({ 'x-tenant-id': 'school-a, school-b' }).tenantID).to.equal(undefined);
     chai.expect(run({}).tenantID).to.equal(undefined);
   });

@@ -36,6 +36,15 @@ const Private = {
   },
 
   /**
+   * set the session token as the cookie (it expires with the token: 12h)
+   */
+  setSessionCookie: (res, token) => {
+    const expires = new Date(Date.now() + 12 * 60 * 60 * 1000 /*12h*/);
+    const options = Private.cookieOptions(expires);
+    res.cookie(UsersAuthConstants.AuthToken, token, options);
+  },
+
+  /**
    * options to clear the auth cookie (the same attributes, already expired)
    */
   expiredCookieOptions: () => {
@@ -68,10 +77,8 @@ const Public = {
         return res.status(re.status).json(message);
       }
 
-      // set token as cookie (it expires with the token: 12h)
-      const expires = new Date(Date.now() + 12 * 60 * 60 * 1000 /*12h*/);
-      const options = Private.cookieOptions(expires);
-      res.cookie(UsersAuthConstants.AuthToken, r.token, options);
+      // set token as cookie
+      Private.setSessionCookie(res, r.token);
 
       // browser will auto-send cookie with subsequent requests; token is not returned to client
       res.status(r.status).json({
@@ -313,8 +320,9 @@ const Public = {
         )}`
       );
 
-      // check if reset token is still valid
-      const r = await UsersAuthService.validateResetToken({ token: req.query.token }, _ctx);
+      // check if reset token is still valid (it is sent in a header, never in the url)
+      const resetToken = req.headers['x-reset-token'];
+      const r = await UsersAuthService.validateResetToken({ token: resetToken }, _ctx);
       if (r.error) {
         const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
         return res.status(r.status).json(message);
@@ -379,6 +387,9 @@ const Public = {
         const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
         return res.status(r.status).json(message);
       }
+
+      // the other sessions are ended: this one continues with a new token
+      Private.setSessionCookie(res, r.token);
 
       res.status(r.status).json(r.value);
     } catch (e) {
@@ -450,6 +461,9 @@ const Public = {
         const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
         return res.status(r.status).json(message);
       }
+
+      // the other sessions are ended: this one continues with a new token
+      Private.setSessionCookie(res, r.token);
 
       res.status(r.status).json(r.value);
     } catch (e) {

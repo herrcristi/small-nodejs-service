@@ -103,13 +103,16 @@ describe('Users Rest', function () {
    * rest getOneByEmail looks up the normalized email (the emails are stored in lower case)
    */
   it('should call getOneByEmail with the normalized email', async () => {
+    // stub
     let stub = sinon.stub(RestCommsUtils, 'getAll').returns({
       status: 200,
       value: [{ id: 'user1', email: 'john.doe@testdomain.test' }],
     });
 
+    // call
     let res = await UsersRest.getOneByEmail(' John.Doe@TestDomain.TEST', null, _ctx);
 
+    // check
     chai.expect(stub.firstCall.args[1]).to.equal('email=john.doe%40testdomain.test&limit=1');
     chai.expect(res.value.id).to.equal('user1');
   }).timeout(10000);
@@ -692,12 +695,15 @@ describe('Users Rest', function () {
    * rest getOneByEmail: the user that comes back must have exactly the requested email
    */
   it('should call getOneByEmail and refuse a user with another email', async () => {
+    // stub
     sinon.stub(RestCommsUtils, 'getAll').callsFake(() => {
       return { status: 200, value: [{ id: 'portal-admin-id', email: 'portal.admin@example.test' }], time: 0 };
     });
 
+    // call
     const res = await UsersRest.getOneByEmail('student@example.test', { id: 1, email: 1 }, _ctx);
 
+    // check
     chai.expect(res.status).to.equal(404);
     chai.expect(res.error.message).to.equal('Not found student@example.test');
   }).timeout(10000);

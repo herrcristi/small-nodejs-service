@@ -105,11 +105,13 @@ describe('Jwt Utils', function () {
    * key rotation: a token of the previous password is still accepted
    */
   it('should accept a jwt of the previous password', async () => {
+    // tokens made with the previous password only
     const rotation = 'validateJwt-rotation';
     await JwtUtils.init(rotation, [process.env.SMALL_API_PREVAUTHPASS]);
     const oldToken = JwtUtils.getJwt({ test: 'old' }, rotation, {}).value;
     const oldEncrypted = JwtUtils.encrypt({ test: 'old' }, rotation, {}).value;
 
+    // after the rotation (previous and current passwords): the old tokens are still accepted
     await JwtUtils.init(rotation, [process.env.SMALL_API_PREVAUTHPASS, process.env.SMALL_API_AUTHPASS]);
     chai.expect(JwtUtils.validateJwt(oldToken, rotation, {}).value).to.deep.equal({ test: 'old' });
     chai.expect(JwtUtils.decrypt(oldEncrypted, rotation, {}).value).to.deep.equal({ test: 'old' });

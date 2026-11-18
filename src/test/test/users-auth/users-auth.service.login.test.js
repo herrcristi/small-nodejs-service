@@ -96,7 +96,7 @@ describe('Users Auth Service', function () {
       chai.expect(data.creatingTimestamp).to.exists;
       chai
         .expect(_.omit(data, 'creatingTimestamp'))
-        .to.deep.equal({ username: testAuthUser.id, userID: testInfoUser.id });
+        .to.deep.equal({ purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, session: 'session1' });
       return { status: 200, value: 'token' };
     });
 
@@ -201,7 +201,12 @@ describe('Users Auth Service', function () {
       chai.expect(data.creatingTimestamp).to.exists;
       chai
         .expect(_.omit(data, 'creatingTimestamp'))
-        .to.deep.equal({ userID: testAuthUser.userID, username: testInfoUser.email });
+        .to.deep.equal({
+          purpose: 'session',
+          userID: testAuthUser.userID,
+          username: testInfoUser.email,
+          session: 'session1',
+        });
       return { status: 200, value: 'token' };
     });
 
@@ -728,7 +733,12 @@ describe('Users Auth Service', function () {
       chai.expect(data.creatingTimestamp).to.exists;
       chai
         .expect(_.omit(data, 'creatingTimestamp'))
-        .to.deep.equal({ userID: testAuthUser.userID, username: testAuthUser.id });
+        .to.deep.equal({
+          purpose: 'session',
+          userID: testAuthUser.userID,
+          username: testAuthUser.id,
+          session: 'session1',
+        });
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error') } };
     });
 

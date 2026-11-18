@@ -184,9 +184,10 @@ const Public = {
     // it will be activated when the first admin accepts the invitation
     const rSchool = await SchoolsRest.post(objInfo.school, _ctx);
     if (rSchool.error) {
-      // raise event for invalid signup
+      // raise event for invalid signup (with the reason)
       const failedAction = `${Private.Action.Signup}.failed`;
-      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
+      const failedArgs = { ...errorO, reason: rSchool.error.message };
+      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, failedArgs, _ctx);
       return rSchool;
     }
 
@@ -203,9 +204,10 @@ const Public = {
       // delete school
       await SchoolsRest.delete(schoolID, _ctx);
 
-      // raise event for invalid signup
+      // raise event for invalid signup (with the reason)
       const failedAction = `${Private.Action.Signup}.failed`;
-      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
+      const failedArgs = { ...errorO, reason: rInvite.error.message };
+      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, failedArgs, _ctx);
       return rInvite;
     }
 
@@ -274,9 +276,11 @@ const Public = {
     }
 
     if (rUser.error) {
-      // raise event for invalid invite
+      // raise event for invalid invite (with the school and the reason)
       const failedAction = `${Private.Action.Invite}.failed`;
-      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, errorO, _ctx);
+      const school = _ctx.tenantName || _ctx.tenantID;
+      const failedArgs = { ...errorO, school, reason: rUser.error.message };
+      await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, failedAction, errorO, failedArgs, _ctx);
       return rUser;
     }
 

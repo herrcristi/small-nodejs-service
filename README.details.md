@@ -632,6 +632,7 @@ The backend reads its settings from the **process environment**. [src/.env.examp
 | SMTP                           | the mail server. Invitations and password setup are sent by email, so it is required                                                                                                                                                                                                                  |
 | Server                         | port, public URL, and the CORS origin                                                                                                                                                                                                                                                                 |
 | `SMALL_API_TRUST_PROXY`        | the proxies in front of the API: their number (`1`) or addresses (`loopback, 10.0.0.0/8`). The client address (rate limits, events) is then taken from them. Not set: no proxy is trusted                                                                                                             |
+| `SMALL_UI_URL`                 | the address of the UI. The links of the emails (set a password, open the application) point to it                                                                                                                                                                                                     |
 | `SMALL_API_COOKIE_SAMESITE`    | optional. `lax` (default) when the UI and the API are on the same site, `none` when they are on different sites. Outside debug mode the cookie is always `Secure`                                                                                                                                     |
 | `SMALL_API_RATE_LIMIT_*`       | optional limits per 15 minutes: `MAX` (all requests of an address, 1000), `LOGIN_MAX` (failed logins of an account from an address, 5), `LOGIN_ACCOUNT_MAX` (failed logins of an account, 20), `RESET_MAX` (reset emails of an account, 3). They are kept in each process                             |
 | `SMALL_API_INTERNAL_ROUTES`    | `true` only when the services run in separate processes and call each other over HTTP. Otherwise the internal routes (`/api/internal_v1`) answer `404`; block that prefix at the proxy in any case                                                                                                    |
@@ -718,7 +719,9 @@ curl --cookie cookies.txt \
   "$API/students?limit=20&skip=0"
 ```
 
-To restore the session call `GET /users-auth/me` with the cookie. To log out call `POST /users-auth/logout` (it clears the cookie).
+To restore the session call `GET /users-auth/me` with the cookie. To log out call `POST /users-auth/logout` with the cookie: it clears the cookie and ends the sessions of the account on every device.
+
+**Sessions.** A session token is only a session: a reset or invitation link can not be used as a cookie, and a cookie can not set a password. Each account has a session key, kept in its tokens; a new key ends all the sessions of the account. The key changes at logout, password change, password reset and email change. A password change keeps the current session with a new cookie and ends the others; an email change ends all of them.
 
 ## API conventions
 
@@ -978,6 +981,8 @@ curl --cookie cookies.txt -H "x-tenant-id: $TENANT_ID" \
 ```
 
 The local auth provider sends a signup/password setup message to a newly created user and an invitation message to an existing user. SMTP settings and the email templates in `src/translations/` are required for delivery.
+
+The link of a password setup or reset email opens the UI page `/reset-password` (`SMALL_UI_URL`). The token is in the fragment of the link (after `#`), which the browser never sends to a server; the page removes it from the address bar and sends it in the `x-reset-token` header to `GET /users-auth/reset-token/validate` and `PUT /users-auth/reset-token/password`. A link is valid for 1 hour (reset) or 72 hours (invitation), and only once: it is made for the current password, so setting the password ends it. The login page has a "Forgot password?" link that asks for a reset email.
 
 ### Events
 

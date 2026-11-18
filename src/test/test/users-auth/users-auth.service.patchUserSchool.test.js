@@ -28,12 +28,15 @@ describe('Users Auth Service', function () {
    * patchUserSchool portal-admin role only on the portal school
    */
   it('should patchUserSchool fail portal-admin role on a normal school and other roles on the portal school', async () => {
+    // stub: no write is expected
     const stubPatch = sinon.stub(UsersRest, 'patchSchool');
 
+    // portal-admin on a normal school: refused
     let res = await UsersAuthService.patchUserSchool('user1', { add: { roles: ['portal-admin'] } }, _ctx);
     chai.expect(res.status).to.equal(403);
     chai.expect(res.error.message).to.equal('The portal-admin role can be given only on the portal school');
 
+    // another role on the portal school: refused
     res = await UsersAuthService.patchUserSchool(
       'user1',
       { remove: { roles: ['admin'] } },
@@ -42,6 +45,7 @@ describe('Users Auth Service', function () {
     chai.expect(res.status).to.equal(403);
     chai.expect(res.error.message).to.equal('Only the portal-admin role can be given on the portal school');
 
+    // check: nothing was written
     chai.expect(stubPatch.callCount).to.equal(0);
   }).timeout(10000);
 
@@ -49,9 +53,11 @@ describe('Users Auth Service', function () {
    * patchUserSchool remove another portal admin, but not itself (it is an error)
    */
   it('should patchUserSchool remove another portal admin but fail removing itself', async () => {
+    // stub: the write
     const portalCtx = { ..._ctx, tenantID: TestConstants.PortalSchoolID, userID: 'portal-admin-1' };
     const stubPatch = sinon.stub(UsersRest, 'patchSchool').resolves({ status: 200, value: {} });
 
+    // another portal admin: its role on the portal school is removed
     await UsersAuthService.patchUserSchool('portal-admin-2', { remove: { roles: ['portal-admin'] } }, portalCtx);
     chai.expect(stubPatch.callCount).to.equal(1);
     chai.expect(stubPatch.firstCall.args[0]).to.equal('portal-admin-2');
@@ -109,13 +115,16 @@ describe('Users Auth Service', function () {
    * patchUserSchool fail when an admin removes itself as admin
    */
   it('should patchUserSchool fail when the admin removes itself as admin', async () => {
+    // stub: no write is expected
     const testUser = _.cloneDeep(TestConstants.UsersAuth)[0];
     const stubUserDetails = sinon.stub(UsersRest, 'patchSchool');
 
+    // call as the admin, on itself
     _ctx.userID = testUser.userID;
     _ctx.username = testUser.id;
     const res = await UsersAuthService.patchUserSchool(testUser.userID, { remove: { roles: ['admin'] } }, _ctx);
 
+    // check: refused, nothing written
     chai.expect(stubUserDetails.callCount).to.equal(0);
     chai.expect(res.status).to.equal(400);
     chai.expect(res.error.message).to.equal('You cannot remove yourself as admin');
@@ -125,15 +134,18 @@ describe('Users Auth Service', function () {
    * patchUserSchool the admin can remove its other roles
    */
   it('should patchUserSchool with success when the admin removes another own role', async () => {
+    // stub: the write
     const testUser = _.cloneDeep(TestConstants.UsersAuth)[0];
     const stubUserDetails = sinon
       .stub(UsersRest, 'patchSchool')
       .resolves({ status: 200, value: { id: testUser.userID } });
 
+    // call as the admin, on itself, for another role
     _ctx.userID = testUser.userID;
     _ctx.username = testUser.id;
     const res = await UsersAuthService.patchUserSchool(testUser.userID, { remove: { roles: ['student'] } }, _ctx);
 
+    // check: the role is removed on the current school
     chai.expect(stubUserDetails.callCount).to.equal(1);
     chai.expect(stubUserDetails.firstCall.args[1]).to.deep.equal({
       remove: { schools: [{ id: _ctx.tenantID, roles: ['student'] }] },

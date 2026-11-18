@@ -85,13 +85,13 @@ const Public = {
   /**
    * get the jwt
    */
-  getJwt: (data, issuer, _ctx) => {
+  getJwt: (data, issuer, _ctx, expiresIn = '12h') => {
     const jwtToken = jwt.sign(
       {
         data,
       },
       Private.JwtKeys[issuer].at(-1).sign,
-      { algorithm: 'HS512', expiresIn: '12h', issuer }
+      { algorithm: 'HS512', expiresIn, issuer }
     );
 
     return { status: 200, value: jwtToken };

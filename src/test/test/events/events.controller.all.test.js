@@ -461,6 +461,9 @@ describe('Events Controller', function () {
     ['get all global', `${EventsConstants.ApiPath}/global`, 'getAllGlobalForReq'],
     ['get one global', `${EventsConstants.ApiPath}/global/event1`, 'getOneGlobal'],
   ]) {
+    /**
+     * the answer of the service is passed on: the value, the error, or 500 for an exception
+     */
     it(`should ${label} with success, fail and exception`, async () => {
       const value = fn === 'getOneGlobal' ? { id: 'event1' } : { data: [{ id: 'event1' }], meta: { count: 1 } };
       const call = () => supertest(TestConstants.WebServer).get(url).set('Origin', TestConstants.WebServer);
@@ -488,11 +491,19 @@ describe('Events Controller', function () {
     }).timeout(10000);
   }
 
+  /**
+   * get one global with a wrong projection: 400
+   */
   it('should get one global fail on the projection', async () => {
+    // stub: the projection is not valid
     sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({ status: 400, error: { message: 'Test error message' } });
+
+    // call
     const res = await supertest(TestConstants.WebServer)
       .get(`${EventsConstants.ApiPath}/global/event1`)
       .set('Origin', TestConstants.WebServer);
+
+    // check
     chai.expect(res.status).to.equal(400);
   }).timeout(10000);
 });

@@ -4,6 +4,9 @@ import { processLoginResponse, getRolesPermissions } from '../auth.js';
 
 import { SMALL_API_URL, SMALL_API_CORS_ORIGIN } from './api.url.js';
 
+// the pages that are opened without a session
+const PublicPages = ['/login', '/reset-password'];
+
 // Default to sending credentials (cookies). Server must allow credentials and a specific origin.
 const instance = axios.create({
   baseURL: SMALL_API_URL,
@@ -38,7 +41,9 @@ instance.interceptors.response.use(
         const current = globalThis.location.pathname + globalThis.location.search;
         const tenantID = useAppStore()?.tenantID;
 
-        if (!current.startsWith('/login')) {
+        // the public pages (login, set a password from an emailed link) are not sent to the login
+        const isPublicPage = PublicPages.some((page) => current.startsWith(page));
+        if (!isPublicPage) {
           const loginUrl = `/login?tenantID=${encodeURIComponent(tenantID)}&next=${encodeURIComponent(current)}`;
           globalThis.location.href = loginUrl;
         }
@@ -275,6 +280,11 @@ const Api = {
   logout: (withCreds = true) => instance.post('/users-auth/logout', {}, { withCredentials: withCreds }),
 
   resetUserPassword: (data) => instance.post(`/users-auth/reset-password`, data),
+  // the token of an emailed link is sent in a header, never in a url
+  validateResetToken: (token) =>
+    instance.get(`/users-auth/reset-token/validate`, { headers: { 'x-reset-token': token } }),
+  setPasswordWithResetToken: (token, password) =>
+    instance.put(`/users-auth/reset-token/password`, { password }, { headers: { 'x-reset-token': token } }),
 
   currentUsername: () => useAuthStore()?.raw?.username /*current username*/,
 

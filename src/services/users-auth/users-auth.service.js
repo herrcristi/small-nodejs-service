@@ -440,11 +440,13 @@ const Public = {
       firebase: UsersAuthServiceFirebase.getToken,
       local: UsersAuthServiceLocal.getToken,
     };
-    let rT = await ProvidersToken[Private.UsersAuthProviderType](
-      config,
-      { token: rL.value, username: objInfo.username, userID: user.id },
-      _ctx
-    );
+    const tokenInfo = {
+      token: rL.value,
+      username: objInfo.username,
+      userID: user.id,
+      sessionKey: rL.value.sessionKey,
+    };
+    let rT = await ProvidersToken[Private.UsersAuthProviderType](config, tokenInfo, _ctx);
     if (rT.error) {
       const msg = 'Failed to get token';
       return { status: 500, error: { message: msg, error: new Error(msg) } };
@@ -488,6 +490,10 @@ const Public = {
       local: UsersAuthServiceLocal.logout,
     };
     let rL = await Providers[Private.UsersAuthProviderType](config, _ctx);
+    if (rL.error) {
+      // the sessions are not ended
+      return rL;
+    }
 
     // success empty token
     return {
@@ -533,6 +539,16 @@ const Public = {
     if (rT.error) {
       const msg = 'Failed to validate token';
       return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
+
+    // the session is still open (not ended by a logout, a password change, a password reset or an email change)
+    const ProvidersSession = {
+      firebase: UsersAuthServiceFirebase.checkSession,
+      local: UsersAuthServiceLocal.checkSession,
+    };
+    const rSession = await ProvidersSession[Private.UsersAuthProviderType](config, rT.value, _ctx);
+    if (rSession.error) {
+      return { ...rSession, status: 401 };
     }
 
     _ctx.username = rT.value.username;
@@ -702,6 +718,18 @@ const Public = {
       return r;
     }
 
+    // the other sessions are ended by the new session key: this session continues with a new token
+    const ProvidersToken = {
+      firebase: UsersAuthServiceFirebase.getToken,
+      local: UsersAuthServiceLocal.getToken,
+    };
+    const tokenInfo = { username: _ctx.username, userID: _ctx.userID, sessionKey: r.value.sessionKey };
+    const rT = await ProvidersToken[Private.UsersAuthProviderType](config, tokenInfo, _ctx);
+    if (rT.error) {
+      return rT;
+    }
+    const token = JwtUtils.encrypt(rT.value, Private.Issuer, _ctx).value;
+
     // raise event for put (changed password)
     const newObj = { id: _ctx.userID, name: _ctx.username, type: UsersAuthConstants.Type };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, {} /*args*/, _ctx);
@@ -709,8 +737,9 @@ const Public = {
     // raise a notification for modified obj
     let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
 
-    // success
-    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type } };
+    // success (the controller sets the new token as the cookie)
+    const value = { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type };
+    return { status: 200, value, token };
   },
 
   /**
@@ -757,7 +786,7 @@ const Public = {
 
     // raise event for put (changed username)
     const newObj = { id: _ctx.userID, name: newUsername, oldUsername: oldUsername, type: UsersAuthConstants.Type };
-    const args = { id: newUsername };
+    const args = { id: newUsername, oldUsername };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
     // raise a notification for modified obj
@@ -926,7 +955,7 @@ const Public = {
       firebase: UsersAuthServiceFirebase.resetPassword,
       local: UsersAuthServiceLocal.resetPassword,
     };
-    let r = await Providers[Private.UsersAuthProviderType](config, username, _ctx);
+    let r = await Providers[Private.UsersAuthProviderType](config, username, resetType, _ctx);
     if (r.error) {
       return r;
     }
@@ -978,8 +1007,9 @@ const Public = {
     _ctx.username = r.value.username;
     _ctx.userID = r.value.userID;
 
-    // success
-    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type } };
+    // success (the purpose tells the page if the person sets a first password or resets it)
+    const value = { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type };
+    return { status: 200, value: { ...value, resetType: r.value.purpose } };
   },
 
   /**

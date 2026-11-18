@@ -138,4 +138,16 @@ describe('Translations Utils', function () {
 
     chai.expect(res.en.subject).to.equal("You have been invited to $& $1 $' $`");
   }).timeout(10000);
+
+  /**
+   * a value that contains a placeholder is inserted as it is (not filled by another argument)
+   */
+  it('should not expand the placeholders that are inside an inserted value', async () => {
+    // call: the school name contains the placeholder of the user
+    const res = TranslationsUtils.email('invite', _ctx, { school: '{user}', user: 'john.doe@testdomain.test' });
+
+    // check: the subject keeps the name, the body greets the user
+    chai.expect(res.en.subject).to.equal('You have been invited to {user}');
+    chai.expect(res.en.email).to.include('Hi john.doe@testdomain.test');
+  }).timeout(10000);
 });

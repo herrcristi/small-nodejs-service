@@ -117,6 +117,7 @@ describe('Users Service', function () {
    * getPortalAdminsForReq when the request has no other filter
    */
   it('should getPortalAdminsForReq without other filters', async () => {
+    // stub
     sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
       status: 200,
       value: { projection: { _id: 0 }, limit: 0, skip: 0 },
@@ -135,11 +136,13 @@ describe('Users Service', function () {
       return { status: 200, value: 0 };
     });
 
+    // call
     const res = await UsersService.getPortalAdminsForReq(
       { query: {} },
       { ..._ctx, tenantID: TestConstants.PortalSchoolID }
     );
 
+    // check
     chai.expect(res.status).to.equal(200);
     chai.expect(res.value.data).to.deep.equal([]);
   }).timeout(10000);
