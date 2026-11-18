@@ -1,0 +1,45 @@
+# Dependency audit: the installs come from the committed lockfiles (npm ci) and the production dependencies must have
+# no advisory of high or critical severity. It runs on every change and every week (new advisories appear without
+# a change of the code).
+name: "Dependencies"
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '17 6 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit ${{ matrix.folder }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        folder: [ 'src', 'ui' ]
+    defaults:
+      run:
+        working-directory: ${{ matrix.folder }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+        cache: 'npm'
+        cache-dependency-path: ${{ matrix.folder }}/package-lock.json
+
+    # npm ci fails when package.json and package-lock.json do not match; no install scripts are run
+    - name: Install from the lockfile
+      run: npm ci --ignore-scripts
+
+    - name: Audit the production dependencies
+      run: npm audit --omit=dev --audit-level=high

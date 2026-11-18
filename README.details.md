@@ -611,12 +611,14 @@ Making every API call a job with a job id and polling does not help login or rea
 
 ## Local development
 
-Use Node.js, npm, Docker Compose, and MongoDB. Install the backend and the frontend separately:
+Use Node.js (24), npm, Docker Compose, and MongoDB. Install the backend and the frontend separately, from their committed lockfiles (`npm ci` installs exactly the versions of `package-lock.json`):
 
 ```sh
-cd src && npm install
-cd ../ui && npm install
+cd src && npm ci
+cd ../ui && npm ci
 ```
+
+The dependency versions are pinned. After changing one, commit the updated `package-lock.json`. The CI checks every change and every week that the production dependencies have no advisory of high or critical severity (`.github/workflows/dependencies.yml`, `npm audit --omit=dev --audit-level=high`).
 
 ### Backend configuration
 

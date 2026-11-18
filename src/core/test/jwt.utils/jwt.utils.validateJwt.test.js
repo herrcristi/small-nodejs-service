@@ -86,6 +86,22 @@ describe('Jwt Utils', function () {
   }).timeout(10000);
 
   /**
+   * the accepted algorithms are a list (a string works only by accident of the library)
+   */
+  it('should verify the jwt with the list of the accepted algorithms', async () => {
+    const token = JwtUtils.getJwt({ test: 'test' }, issuer, {}).value;
+    const spyVerify = sinon.spy(jwt, 'verify');
+
+    chai.expect(JwtUtils.validateJwt(token, issuer, {}).status).to.equal(200);
+    chai.expect(spyVerify.firstCall.args[2].algorithms).to.deep.equal(['HS512']);
+
+    // a token signed with another algorithm is refused
+    const keys = await import('crypto');
+    const other = jwt.sign({ data: { test: 'test' } }, keys.randomBytes(32), { algorithm: 'HS256', issuer });
+    chai.expect(JwtUtils.validateJwt(other, issuer, {}).status).to.equal(401);
+  }).timeout(10000);
+
+  /**
    * key rotation: a token of the previous password is still accepted
    */
   it('should accept a jwt of the previous password', async () => {
