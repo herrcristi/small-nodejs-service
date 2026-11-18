@@ -19,23 +19,6 @@
       @editItem="openEdit($event)"
       @detailsItem="openDetails($event)"
     >
-      <!-- 
-        more info
-      -->
-      <template v-slot:item.data-table-expand="{ internalItem, isExpanded, toggleExpand }">
-        <!-- if admin or current user hide this to default to base class implementation -->
-        <div v-if="!(write || currentUserID == internalItem.key) && internalItem.status != 'pending'"></div>
-      </template>
-
-      <template v-slot:expanded-row="{ item, columns }">
-        <!-- <tr v-if="item.user?.status != 'pending'"> -->
-        <td :colspan="columns.length" class="py-2">
-          <v-sheet rounded="lg" border>
-            <ApiAdminMoreInfo :itemID="item.id" type="v-table" />
-          </v-sheet>
-        </td>
-        <!-- </tr> -->
-      </template>
     </ApiTableServer>
 
     <!-- 
@@ -106,7 +89,6 @@ import { ref, reactive, computed } from 'vue';
 import Api from '../api/api.js';
 import { useAppStore, useAuthStore } from '../stores/stores.js';
 import ApiTableServer from './api.base.table.server.vue';
-import ApiAdminMoreInfo from './api.admin.moreinfo.vue';
 import { useI18n } from 'vue-i18n';
 import ComponentsUtils from './components.utils.js';
 const { t } = useI18n();
@@ -116,7 +98,7 @@ const { t } = useI18n();
  */
 const tableServer = ref();
 const details = null; // true for details column
-const expand = true; // true for expand column
+const expand = false; // an admin has no more info to show (no expand column)
 
 const auth = useAuthStore();
 const currentUserID = auth?.raw?.userID;
