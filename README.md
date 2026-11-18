@@ -258,7 +258,7 @@ Each decision, with its trade-off, is in [Design decisions](README.details.md#de
 You need Node.js, npm, Docker Compose, and MongoDB.
 
 ```sh
-cd src && npm install && cd ../ui && npm install    # install both parts
+cd src && npm ci && cd ../ui && npm ci              # install both parts (from the lockfiles)
 cd ../src && npm run up                              # local MongoDB container
 cd ../src && npm start                               # the API, after setting the environment
 cd ../ui && npm run serve                            # the UI development server

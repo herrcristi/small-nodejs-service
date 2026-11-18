@@ -69,6 +69,14 @@ description: 'Use when creating, reviewing, testing, or documenting backend or U
 - Show a status with the UI translations (`ComponentUtils.getStatusText`, the same keys as the edit dialogs), not with the label translated by the server (`_lang_en`), which is always English; the server label is only a fallback for a value the UI does not know.
 - The Admins, Students and Professors pages edit only the name of a person, never its status. Portal admins edit users (name and status) with the shared `ApiUserEditDialog` (`api.user.edit.dialog.vue`), which calls the profile route for the name and the status route for the status, and hides the status for the current user. It is used by the Users page (`/users`, permission `users`), the portal admins list, and the admins of a school on the Schools page.
 
+## Dependencies
+
+- Versions are pinned exactly in `package.json`, and both `src/package-lock.json` and `ui/package-lock.json` are committed; install with `npm ci`. After a change of a dependency, commit the updated lockfile.
+- A dependency is declared only if the code uses it; remove the unused ones.
+- The CI (`.github/workflows/dependencies.yml`) refuses production dependencies with an advisory of high or critical severity (`npm audit --omit=dev --audit-level=high`), on every change and every week. Fix an advisory by upgrading within the major version; a major upgrade is a change of its own, with its tests.
+- The UI loads no code or style from a CDN: everything is bundled from `node_modules` (icons with `@mdi/font`). A third-party resource that can not be bundled needs `integrity` and `crossorigin`.
+- Use libraries as documented, not by accident (for example `jwt.verify(..., { algorithms: ['HS512'] })` takes a list).
+
 ## Tests
 
 - Service tests live in `src/test/test/<service>/`, use Sinon stubs, and are registered by the service's `*.all.tests.js` file. Add tests for success, validation, dependency failures, and authorization/invariants appropriate to the change.

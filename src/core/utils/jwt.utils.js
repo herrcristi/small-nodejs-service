@@ -106,7 +106,7 @@ const Public = {
 
     for (const key of keys) {
       try {
-        const decodedJwtToken = jwt.verify(jwtToken, key, { algorithms: 'HS512', issuer });
+        const decodedJwtToken = jwt.verify(jwtToken, key, { algorithms: ['HS512'], issuer });
 
         // decoded: { data, iat, exp, iss }
 
