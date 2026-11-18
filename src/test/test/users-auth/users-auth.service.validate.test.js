@@ -15,15 +15,18 @@ const EventsRest = require('../../../services/rest/events.rest.js');
 const UsersRest = require('../../../services/rest/users.rest.js');
 const SchoolsRest = require('../../../services/rest/schools.rest.js');
 const UsersLocalAuthService = require('../../../services/users-auth/users-local-auth.service.js');
+const UsersAuthSessionsService = require('../../../services/users-auth/users-auth.sessions.service.js');
 
 describe('Users Auth Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
 
   before(async function () {});
 
+  // the session of the token is open (the sessions service has its own tests)
+  const session = { id: 'session-id1', purpose: 'session', expiresAt: new Date(Date.now() + 60 * 1000) };
+
   beforeEach(async function () {
-    // the session of the token is open (the session check has its own tests)
-    sinon.stub(UsersLocalAuthService, 'checkSession').resolves({ status: 200, value: true });
+    sinon.stub(UsersAuthSessionsService, 'check').resolves({ status: 200, value: session });
   });
 
   afterEach(async function () {
@@ -62,7 +65,7 @@ describe('Users Auth Service', function () {
 
       return {
         status: 200,
-        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, session: 'session1' },
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
       };
     });
 
@@ -90,6 +93,8 @@ describe('Users Auth Service', function () {
       value: {
         userID: testInfoUser.id,
         username: testAuthUser.id,
+        sessionID: session.id, // the record of the session (not its secret)
+        sessionExpiresAt: session.expiresAt,
         status: testInfoUser.status,
         tenantName: testInfoUser.schools[0].name,
         name: testInfoUser.name,
@@ -312,7 +317,7 @@ describe('Users Auth Service', function () {
 
       return {
         status: 200,
-        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, session: 'session1' },
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
       };
     });
 
@@ -340,6 +345,8 @@ describe('Users Auth Service', function () {
       value: {
         userID: testInfoUser.id,
         username: testAuthUser.id,
+        sessionID: session.id, // the record of the session (not its secret)
+        sessionExpiresAt: session.expiresAt,
         status: testInfoUser.status,
         tenantName: 'school-high2',
         name: testInfoUser.name,
@@ -378,7 +385,7 @@ describe('Users Auth Service', function () {
 
       return {
         status: 200,
-        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, session: 'session1' },
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
       };
     });
 
@@ -406,6 +413,8 @@ describe('Users Auth Service', function () {
       value: {
         userID: testInfoUser.id,
         username: testAuthUser.id,
+        sessionID: session.id, // the record of the session (not its secret)
+        sessionExpiresAt: session.expiresAt,
         status: testInfoUser.status,
         tenantName: 'school-high2',
         name: testInfoUser.name,
@@ -570,7 +579,7 @@ describe('Users Auth Service', function () {
 
       return {
         status: 200,
-        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, session: 'session1' },
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
       };
     });
 
@@ -632,7 +641,7 @@ describe('Users Auth Service', function () {
 
       return {
         status: 200,
-        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, session: 'session1' },
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
       };
     });
 
@@ -687,7 +696,7 @@ describe('Users Auth Service', function () {
 
       return {
         status: 200,
-        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, session: 'session1' },
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
       };
     });
 
@@ -748,7 +757,7 @@ describe('Users Auth Service', function () {
 
       return {
         status: 200,
-        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, session: 'session1' },
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
       };
     });
 
@@ -813,7 +822,7 @@ describe('Users Auth Service', function () {
 
       return {
         status: 200,
-        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, session: 'session1' },
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
       };
     });
 
@@ -884,7 +893,7 @@ describe('Users Auth Service', function () {
 
       return {
         status: 200,
-        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, session: 'session1' },
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
       };
     });
 
@@ -945,7 +954,7 @@ describe('Users Auth Service', function () {
 
       return {
         status: 200,
-        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, session: 'session1' },
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
       };
     });
 
@@ -1010,7 +1019,7 @@ describe('Users Auth Service', function () {
 
       return {
         status: 200,
-        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, session: 'session1' },
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
       };
     });
 
@@ -1071,7 +1080,7 @@ describe('Users Auth Service', function () {
 
       return {
         status: 200,
-        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, session: 'session1' },
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
       };
     });
 
@@ -1129,7 +1138,7 @@ describe('Users Auth Service', function () {
 
       return {
         status: 200,
-        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, session: 'session1' },
+        value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
       };
     });
 
@@ -1233,11 +1242,11 @@ describe('Users Auth Service', function () {
    */
   it('should validate fail for an ended session', async () => {
     // stub: a valid session token whose key is not the key of the account anymore; the user is not read
-    UsersLocalAuthService.checkSession.resolves({ status: 401, error: { message: 'The session has ended' } });
+    UsersAuthSessionsService.check.resolves({ status: 401, error: { message: 'The session has ended' } });
     sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'token' });
     sinon.stub(JwtUtils, 'validateJwt').returns({
       status: 200,
-      value: { purpose: 'session', username: 'user@testdomain.test', userID: 'user1', session: 'old' },
+      value: { purpose: 'session', username: 'user@testdomain.test', userID: 'user1', secret: 'old' },
     });
     const stubUsersGet = sinon.stub(UsersRest, 'getOneByEmail');
 

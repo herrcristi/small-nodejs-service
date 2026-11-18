@@ -289,6 +289,7 @@ describe('Users Auth Controller', function () {
           username: testUser.email,
           name: testUser.name,
           schools: testUser.schools,
+          sessionExpiresAt: new Date(Date.now() + 60 * 1000), // the end of the session
         },
       };
     });
@@ -310,7 +311,7 @@ describe('Users Auth Controller', function () {
       schools: testUser.schools,
       expires: '', // ignore expires for testing
     });
-    // verify expires is a valid date in the future
+    // the expiry is the end of the session
     chai.expect(new Date(res.body.expires).getTime()).to.be.greaterThan(Date.now());
   }).timeout(10000);
 
@@ -476,6 +477,7 @@ describe('Users Auth Controller', function () {
           username: testUser.email,
           name: testUser.name,
           // no schools provided
+          sessionExpiresAt: new Date(Date.now() + 60 * 1000), // the end of the session
         },
       };
     });

@@ -141,14 +141,6 @@ const Public = {
   },
 
   /**
-   * check the session of a token
-   * config: { serviceName }
-   */
-  checkSession: async (config, tokenData, _ctx) => {
-    return { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
-  },
-
-  /**
    * reset password
    * config: { serviceName }
    */

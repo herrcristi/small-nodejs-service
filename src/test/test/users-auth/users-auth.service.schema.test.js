@@ -27,7 +27,6 @@ describe('Users Auth Service', function () {
     delete postReq.id;
     delete postReq.type;
     delete postReq.salt;
-    delete postReq.sessionKey;
     delete postReq._test_data;
   });
 

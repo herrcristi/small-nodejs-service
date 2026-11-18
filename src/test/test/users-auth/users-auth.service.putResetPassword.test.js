@@ -15,6 +15,7 @@ const UsersAuthService = require('../../../services/users-auth/users-auth.servic
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 const UsersLocalAuthService = require('../../../services/users-auth/users-local-auth.service.js');
+const UsersAuthSessionsService = require('../../../services/users-auth/users-auth.sessions.service.js');
 
 describe('Users Auth Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
@@ -30,13 +31,24 @@ describe('Users Auth Service', function () {
   after(async function () {});
 
   /**
-   * a reset token as resetPassword makes it: the purpose, the user, and the fingerprint of the stored password
+   * a reset token as resetPassword makes it: the purpose, the user, and the secret of its link
    */
-  const getResetToken = (testUser, purpose = 'reset-password', password = testUser.password) => {
-    const fingerprint = crypto.createHash('sha256').update(password).digest('hex').slice(0, 32);
-    const data = { purpose, username: testUser.id, userID: testUser.userID, password: fingerprint };
-    const rT = JwtUtils.getJwt(data, `${UsersAuthConstants.ServiceName}-local`, _ctx, '1h');
+  const getResetToken = (testUser, purpose = 'reset-password', secret = 'secret1') => {
+    const data = { purpose, username: testUser.id, userID: testUser.userID, secret };
+    const rT = JwtUtils.getJwt(data, `${UsersAuthConstants.ServiceName}-local`, _ctx, 3600);
     return JwtUtils.encrypt(rT.value, UsersAuthConstants.ServiceName, _ctx).value; // double encryption
+  };
+
+  /**
+   * stub the sessions service: the link is valid, it is used, the records of the user are ended
+   */
+  const stubLink = (testUser) => {
+    const link = { id: 'link1', purpose: 'reset-password', userID: testUser.userID, username: testUser.id };
+    return {
+      check: sinon.stub(UsersAuthSessionsService, 'check').resolves({ status: 200, value: link }),
+      end: sinon.stub(UsersAuthSessionsService, 'end').resolves({ status: 200, value: { id: 'link1' } }),
+      endAll: sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 2 }),
+    };
   };
 
   /**
@@ -46,9 +58,9 @@ describe('Users Auth Service', function () {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
-    // a reset token (as resetPassword makes it), and the stored account it was made for
+    // a reset token (as resetPassword makes it), and its valid link
     let token = getResetToken(testUser);
-    sinon.stub(DbOpsUtils, 'getOne').returns({ status: 200, value: { ...testUser } });
+    const stubs = stubLink(testUser);
 
     const putReq = {
       password: testUser._test_data.origPassword + 'aA1!',
@@ -86,8 +98,11 @@ describe('Users Auth Service', function () {
     let res = await UsersAuthService.putResetPassword(token, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // check: the password is set, the link is used, all the sessions and links of the user are ended
     chai.expect(stubBase.callCount).to.equal(1);
+    chai.expect(stubBase.firstCall.args[2]).to.have.keys(['salt', 'password']);
+    chai.expect(stubs.end.firstCall.args[0]).to.equal('link1');
+    chai.expect(stubs.endAll.firstCall.args[0]).to.equal(testUser.userID);
     chai.expect(stubEvent.callCount).to.equal(1);
     chai.expect(stubUsersAuthRest.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
@@ -97,6 +112,69 @@ describe('Users Auth Service', function () {
         type: testUser.type,
       },
     });
+  }).timeout(10000);
+
+  /**
+   * a link is used once: when it was used in the meantime (also by a request at the same time) it is refused
+   */
+  it('should putResetPassword refuse a link that was used in the meantime', async () => {
+    // stub: the link is valid, but its record is already removed when it is used; no write is expected
+    const testUser = _.cloneDeep(TestConstants.UsersAuth)[0];
+    const stubs = stubLink(testUser);
+    stubs.end.resolves({ status: 404, error: { message: 'Not found link1' } });
+    const stubPut = sinon.stub(DbOpsUtils, 'put');
+
+    // call
+    const putReq = { password: testUser._test_data.origPassword + 'aA1!' };
+    let res = await UsersAuthService.putResetPassword(getResetToken(testUser), putReq, _ctx);
+
+    // check: refused, the password is not set
+    chai.expect(res.status).to.equal(401);
+    chai.expect(res.error.message).to.equal('The link is not valid anymore');
+    chai.expect(stubPut.callCount).to.equal(0);
+
+    // the database fails when the link is used: the real error, the password is not set
+    stubs.end.resolves({ status: 500, error: { message: 'Test error message' } });
+    res = await UsersAuthService.putResetPassword(getResetToken(testUser), putReq, _ctx);
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubPut.callCount).to.equal(0);
+  }).timeout(10000);
+
+  /**
+   * the sessions of the user can not be ended after the new password: the error is returned
+   */
+  it('should putResetPassword fail when the sessions can not be ended', async () => {
+    // stub: a valid link, the write; ending the sessions fails
+    const testUser = _.cloneDeep(TestConstants.UsersAuth)[0];
+    const stubs = stubLink(testUser);
+    stubs.endAll.resolves({ status: 500, error: { message: 'Test error message' } });
+    sinon.stub(DbOpsUtils, 'put').returns({ status: 200, value: { ...testUser } });
+    const stubEvent = sinon.stub(EventsRest, 'raiseEventForObject');
+
+    // call
+    const putReq = { password: testUser._test_data.origPassword + 'aA1!' };
+    const res = await UsersAuthService.putResetPassword(getResetToken(testUser), putReq, _ctx);
+
+    // check: the error, no event
+    chai.expect(res.status).to.equal(500);
+    chai.expect(stubEvent.callCount).to.equal(0);
+  }).timeout(10000);
+
+  /**
+   * a missing reset token is refused before anything is read
+   */
+  it('should putResetPassword fail without a token', async () => {
+    // stub: nothing is read
+    const testUser = _.cloneDeep(TestConstants.UsersAuth)[0];
+    const stubs = stubLink(testUser);
+
+    // call without a token
+    const putReq = { password: testUser._test_data.origPassword + 'aA1!' };
+    const res = await UsersAuthService.putResetPassword(undefined, putReq, _ctx);
+
+    // check
+    chai.expect(res.status).to.equal(400);
+    chai.expect(stubs.check.callCount).to.equal(0);
   }).timeout(10000);
 
   /**
@@ -174,9 +252,9 @@ describe('Users Auth Service', function () {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
-    // a reset token (as resetPassword makes it), and the stored account it was made for
+    // a reset token (as resetPassword makes it), and its valid link
     let token = getResetToken(testUser);
-    sinon.stub(DbOpsUtils, 'getOne').returns({ status: 200, value: { ...testUser } });
+    const stubs = stubLink(testUser);
 
     const putReq = {
       password: testUser._test_data.origPassword + 'aA1!',
@@ -200,8 +278,9 @@ describe('Users Auth Service', function () {
     let res = await UsersAuthService.putResetPassword(token, putReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // check: the sessions are not ended (the password did not change)
     chai.expect(stubBase.callCount).to.equal(1);
+    chai.expect(stubs.endAll.callCount).to.equal(0);
     chai.expect(stubEvent.callCount).to.equal(0);
     chai.expect(stubUsersAuthRest.callCount).to.equal(0);
     chai.expect(res).to.deep.equal({

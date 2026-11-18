@@ -11,6 +11,7 @@ const TranslationsUtils = require('../../core/utils/translations.utils.js');
 
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthDatabase = require('./users-local-auth.database.js');
+const UsersAuthSessionsService = require('./users-auth.sessions.service.js');
 const EmailsUtils = require('../../core/utils/emails.utils.js');
 
 const Private = {
@@ -51,23 +52,6 @@ const Private = {
     const buffer1 = Buffer.from(`${hash1}`);
     const buffer2 = Buffer.from(`${hash2}`);
     return buffer1.length === buffer2.length && crypto.timingSafeEqual(buffer1, buffer2);
-  },
-
-  /**
-   * a new session key: it is kept on the account and in every session token; a new one ends all the sessions
-   * (logout, password change, password reset, email change)
-   */
-  newSessionKey: () => {
-    return CommonUtils.getRandomBytes(16).toString('hex');
-  },
-
-  /**
-   * the fingerprint of the stored password hash, kept in a reset token: the token is valid only while the password
-   * is the one it was made for, so it is used once (setting the password changes it) and dies with a password change
-   */
-  passwordFingerprint: (passwordHash) => {
-    const hash = crypto.createHash('sha256').update(`${passwordHash}`).digest('hex');
-    return hash.slice(0, 32);
   },
 
   /**
@@ -115,7 +99,7 @@ const Public = {
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // get one
-    const passProjection = { ...projection, password: 1, salt: 1, sessionKey: 1 };
+    const passProjection = { ...projection, password: 1, salt: 1 };
     const r = await DbOpsUtils.getOne(config, objInfo.username /*id*/, passProjection, _ctx);
     if (r.error) {
       // the same work as for an existing account (the time of the answer does not tell if the account exists)
@@ -131,19 +115,8 @@ const Public = {
       return { status: 401, error: { message: errorLogin, error: new Error(errorLogin) } };
     }
 
-    // the session key of the account (an account made before the session keys gets one now)
-    let sessionKey = r.value.sessionKey;
-    if (!sessionKey) {
-      sessionKey = Private.newSessionKey();
-      const rKey = await DbOpsUtils.put(config, objInfo.username /*id*/, { sessionKey }, projection, _ctx);
-      if (rKey.error) {
-        return rKey;
-      }
-    }
-
-    // success (the session key is used for the session token)
-    const rProjected = BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
-    return { ...rProjected, value: { ...rProjected.value, sessionKey } };
+    // success
+    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
   },
 
   /**
@@ -151,31 +124,21 @@ const Public = {
    * config: { serviceName }
    */
   logout: async (config, _ctx) => {
-    // { serviceName, collection, notifications.projection }
-    await Private.setupConfig(config, _ctx);
-
-    // a new session key ends the sessions of the account (all the devices)
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
-    const sessionKey = Private.newSessionKey();
-    const r = await DbOpsUtils.put(config, _ctx.username /*id*/, { sessionKey }, projection, _ctx);
-    if (r.error) {
-      return r;
-    }
-
+    // nothing to end here: the session is ended by the sessions service
     return { status: 200, success: true, value: true };
   },
 
   /**
-   * get the session token (the cookie)
+   * get the session token (the cookie): it carries the secret of the session (its record is checked at every request)
    * config: { serviceName }
-   * userInfo: { username, userID, sessionKey }
+   * userInfo: { username, userID, secret }
    */
   getToken: async (config, userInfo, _ctx) => {
     const data = {
       purpose: UsersAuthConstants.TokenPurpose.Session,
       username: userInfo.username,
       userID: userInfo.userID,
-      session: userInfo.sessionKey,
+      secret: userInfo.secret,
       creatingTimestamp: new Date().toISOString(),
     };
     const expiresIn = UsersAuthConstants.TokenExpiresIn.session;
@@ -199,26 +162,6 @@ const Public = {
   },
 
   /**
-   * check that the session of a token is still open: its key is the key of the account (a logout, a password change,
-   * a password reset or an email change gives the account a new key)
-   * config: { serviceName }
-   * tokenData: { username, session }
-   */
-  checkSession: async (config, tokenData, _ctx) => {
-    // { serviceName, collection, notifications.projection }
-    await Private.setupConfig(config, _ctx);
-
-    const r = await DbOpsUtils.getOne(config, tokenData.username /*id*/, { id: 1, sessionKey: 1 }, _ctx);
-    if (r.error) {
-      return Private.invalidToken('The session has ended');
-    }
-    if (!r.value.sessionKey || r.value.sessionKey !== tokenData.session) {
-      return Private.invalidToken('The session has ended');
-    }
-    return { status: 200, value: true };
-  },
-
-  /**
    * post
    * config: { serviceName }
    * objInfo: { username, password, userID }
@@ -234,10 +177,9 @@ const Public = {
     objInfo.password = Private.hashPassword(objInfo.password, salt, _ctx);
 
     // post
-    const sessionKey = Private.newSessionKey();
     const r = await DbOpsUtils.post(
       config,
-      { id: objInfo.username, password: objInfo.password, userID: objInfo.userID, salt, sessionKey },
+      { id: objInfo.username, password: objInfo.password, userID: objInfo.userID, salt },
       _ctx
     );
     if (r.error) {
@@ -289,11 +231,10 @@ const Public = {
       return rCheck;
     }
 
-    // hash password with new salt; a new session key ends the other sessions
+    // hash password with new salt
     const newSalt = Private.genSalt();
     const newPassword = Private.hashPassword(objInfo.newPassword, newSalt, _ctx);
-    const sessionKey = Private.newSessionKey();
-    const passwordPut = { salt: newSalt, password: newPassword, sessionKey };
+    const passwordPut = { salt: newSalt, password: newPassword };
 
     // put
     const r = await DbOpsUtils.put(config, username /*id*/, passwordPut, projection, _ctx);
@@ -301,9 +242,8 @@ const Public = {
       return r;
     }
 
-    // success (the new session key is used for a new session token of the current session)
-    const rProjected = BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
-    return { ...rProjected, value: { ...rProjected.value, sessionKey } };
+    // success
+    return BaseServiceUtils.getProjectedResponse(r, projection, _ctx);
   },
 
   /**
@@ -329,9 +269,8 @@ const Public = {
       return rCheck;
     }
 
-    // put new id; a new session key ends the sessions (they have the old email)
-    const sessionKey = Private.newSessionKey();
-    const newIdPutInfo = { id: objInfo.username, sessionKey };
+    // put new id
+    const newIdPutInfo = { id: objInfo.username };
     const r = await DbOpsUtils.put(config, username /*id*/, newIdPutInfo, projection, _ctx);
     if (r.error) {
       return r;
@@ -352,32 +291,37 @@ const Public = {
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
     // check user exists
-    const r = await DbOpsUtils.getOne(config, username /*id*/, { ...projection, userID: 1, password: 1 }, _ctx);
+    const r = await DbOpsUtils.getOne(config, username /*id*/, { ...projection, userID: 1 }, _ctx);
     if (r.error) {
       return r;
     }
 
-    // create the reset token: for this purpose only, short lived, valid while the password is the current one
+    // the record of the link: used once, replaced by a newer link, ended by a password change
+    const user = { userID: r.value.userID, username: r.value.id };
+    const rLink = await UsersAuthSessionsService.create(resetType, user, _ctx);
+    if (rLink.error) {
+      return rLink;
+    }
+
+    // create the reset token: for this purpose only, short lived, with the secret of its record
     const data = {
       purpose: resetType,
       username: r.value.id,
       userID: r.value.userID,
-      password: Private.passwordFingerprint(r.value.password),
+      secret: rLink.value.secret,
     };
     const expiresIn = UsersAuthConstants.TokenExpiresIn[resetType];
     return JwtUtils.getJwt(data, Private.Issuer, _ctx, expiresIn);
   },
 
   /**
-   * check reset token is valid: a valid jwt made for a reset (not a session), and the password is still the one it
-   * was made for (a token is used once, and dies with a password change)
+   * check reset token is valid: a valid jwt made for a reset (not a session), and its link is still valid (not used,
+   * not replaced by a newer link, not ended by a password change)
    * config: { serviceName }
    * objInfo: { token }
+   * returns { status, value: { purpose, username, userID, linkID } } or { status, error }
    */
   validateResetToken: async (config, objInfo, _ctx) => {
-    // { serviceName, collection, notifications.projection }
-    await Private.setupConfig(config, _ctx);
-
     // validate jwt
     const r = JwtUtils.validateJwt(objInfo.token, Private.Issuer, _ctx);
     if (r.error) {
@@ -390,19 +334,15 @@ const Public = {
       return Private.invalidToken('Not a reset token');
     }
 
-    // check password is still the one it was made for
-    const rAuth = await DbOpsUtils.getOne(config, r.value.username /*id*/, { id: 1, password: 1 }, _ctx);
-    if (rAuth.error) {
-      return Private.invalidToken('The link is not valid anymore');
+    // check the record of the link
+    const rLink = await UsersAuthSessionsService.check(r.value, _ctx);
+    if (rLink.error) {
+      return rLink;
     }
 
-    // the fingerprint of the password in the token must be the fingerprint of the current password
-    const fingerprint = Private.passwordFingerprint(rAuth.value.password);
-    if (r.value.password !== fingerprint) {
-      return Private.invalidToken('The link is not valid anymore');
-    }
-
-    return r;
+    // success (the id of the record, to use the link)
+    const value = { purpose: r.value.purpose, username: r.value.username, userID: r.value.userID };
+    return { status: 200, value: { ...value, linkID: rLink.value.id } };
   },
 
   /**
@@ -416,11 +356,10 @@ const Public = {
 
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
-    // hash password with new salt; a new session key ends the sessions (the reset token dies with the new password)
+    // hash password with new salt
     const newSalt = Private.genSalt();
     const newPassword = Private.hashPassword(objInfo.password, newSalt, _ctx);
-    const sessionKey = Private.newSessionKey();
-    const passwordPut = { salt: newSalt, password: newPassword, sessionKey };
+    const passwordPut = { salt: newSalt, password: newPassword };
 
     // put
     const r = await DbOpsUtils.put(config, username /*id*/, passwordPut, projection, _ctx);

@@ -77,7 +77,6 @@ const Public = {
       password:
         '6cfd7a4136677895eebbf06adb3bfe6a6ced1535ef7672132ae2ef3bbdee7659e72594265500ffe03d4ba937599843e4c606c2cbcb06397f20d61b1b9b158c4c',
       salt: 'salt1',
-      sessionKey: 'session1', // the key of the open sessions of the account
       userID: 'user1',
       type: 'user-auth',
       _test_data: {
@@ -89,7 +88,6 @@ const Public = {
       password:
         'c450880e016094695a54ec38fcf79f98bde8a1760bb575c328204e86219eb419cfe72e651037a1f12252230f8f2e8930a75b87ba095c1522d76d29b498f3562e',
       salt: 'salt2',
-      sessionKey: 'session2', // the key of the open sessions of the account
       userID: 'user2',
       type: 'user-auth',
       _test_data: {

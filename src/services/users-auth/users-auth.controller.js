@@ -10,17 +10,17 @@ const UsersAuthService = require('./users-auth.service.js');
 
 const Private = {
   /**
-   * options of the auth cookie
+   * options of the auth cookie (UsersAuthConstants.AuthCookie)
    * HttpOnly: the UI never reads the token; Secure: only over https (not in debug mode, where the API runs on http);
    * SameSite: lax by default (the UI and the API on the same site), none when they are on different sites
    * (SMALL_API_COOKIE_SAMESITE=none, which requires Secure)
    */
-  cookieOptions: (expires) => {
-    const sameSite = ['strict', 'lax', 'none'].includes(process.env.SMALL_API_COOKIE_SAMESITE)
-      ? process.env.SMALL_API_COOKIE_SAMESITE
-      : 'lax';
+  cookieOptions: () => {
+    const { Path, SameSiteValues, SameSiteDefault } = UsersAuthConstants.AuthCookie;
+    const configured = process.env.SMALL_API_COOKIE_SAMESITE;
+    const sameSite = SameSiteValues.includes(configured) ? configured : SameSiteDefault;
     const secure = !CommonUtils.isDebug() || sameSite === 'none';
-    return { expires, httpOnly: true, secure, sameSite, path: '/' };
+    return { httpOnly: true, secure, sameSite, path: Path };
   },
 
   /**
@@ -36,20 +36,20 @@ const Private = {
   },
 
   /**
-   * set the session token as the cookie (it expires with the token: 12h)
+   * set the session token as the cookie: it expires with the session (UsersAuthConstants.TokenExpiresIn)
    */
   setSessionCookie: (res, token) => {
-    const expires = new Date(Date.now() + 12 * 60 * 60 * 1000 /*12h*/);
-    const options = Private.cookieOptions(expires);
-    res.cookie(UsersAuthConstants.AuthToken, token, options);
+    const options = Private.cookieOptions();
+    const maxAge = UsersAuthConstants.TokenExpiresIn.session * 1000; // ms
+    res.cookie(UsersAuthConstants.AuthToken, token, { ...options, maxAge });
   },
 
   /**
-   * options to clear the auth cookie (the same attributes, already expired)
+   * clear the session cookie (the same attributes, so the browser removes it)
    */
-  expiredCookieOptions: () => {
-    const expires = new Date(Date.now() - 60 * 60 * 1000 /*expired by 1hour*/);
-    return Private.cookieOptions(expires);
+  clearSessionCookie: (res) => {
+    const options = Private.cookieOptions();
+    res.clearCookie(UsersAuthConstants.AuthToken, options);
   },
 };
 
@@ -111,9 +111,8 @@ const Public = {
         return res.status(r.status).json(message);
       }
 
-      // set expired token as cookie (the same attributes as when it was set)
-      const options = Private.expiredCookieOptions();
-      res.cookie(UsersAuthConstants.AuthToken, 'token', options);
+      // clear the session cookie
+      Private.clearSessionCookie(res);
 
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({
@@ -161,13 +160,12 @@ const Public = {
       }
 
       // return current user data (will be used to restore auth store on bootstrap and when the schools are listed)
-      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000 /*1d*/);
       res.status(200).json({
         userID: r.value.userID,
         username: r.value.username,
         name: r.value.name,
         schools: r.value.schools || [],
-        expires,
+        expires: r.value.sessionExpiresAt, // when the session ends
       });
     } catch (e) {
       const message = await RestMessagesUtils.exception(e, _ctx);
@@ -256,6 +254,9 @@ const Public = {
         const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
         return res.status(r.status).json(message);
       }
+
+      // the sessions of the account are ended: clear the session cookie
+      Private.clearSessionCookie(res);
 
       res.status(r.status).json(r.value);
     } catch (e) {
@@ -423,9 +424,8 @@ const Public = {
         return res.status(r.status).json(message);
       }
 
-      // set expired token as cookie (the same attributes as when it was set)
-      const options = Private.expiredCookieOptions();
-      res.cookie(UsersAuthConstants.AuthToken, 'token', options);
+      // clear the session cookie
+      Private.clearSessionCookie(res);
 
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({
@@ -497,9 +497,8 @@ const Public = {
         return res.status(r.status).json(message);
       }
 
-      // set expired token as cookie (the same attributes as when it was set)
-      const options = Private.expiredCookieOptions();
-      res.cookie(UsersAuthConstants.AuthToken, 'token', options);
+      // clear the session cookie
+      Private.clearSessionCookie(res);
 
       // add token and expires to response due to CORS limitations
       res.status(r.status).json({

@@ -56,46 +56,22 @@ describe('Users Local Auth Service login', function () {
   });
 
   /**
-   * the right password logs in, with the session key of the account
+   * the right password logs in; the account is not changed (the session has its own record)
    */
   it('should accept the right password', async () => {
-    // the stored hash of the right password, as post computes it
-    const salt = 'salt1';
-    const stored = CommonUtils.getHash(CommonUtils.getHash(objInfo.password, salt), process.env.SMALL_API_SALT);
-    sinon
-      .stub(DbOpsUtils, 'getOne')
-      .returns({ status: 200, value: { id: objInfo.username, salt, password: stored, sessionKey: 'session1' } });
-
-    // call
-    const res = await UsersLocalAuthService.login(config, objInfo, _ctx);
-
-    // check: logged in, with its session key
-    chai.expect(res.status).to.equal(200);
-    chai.expect(res.value.id).to.equal(objInfo.username);
-    chai.expect(res.value.sessionKey).to.equal('session1'); // for the session token
-  });
-
-  /**
-   * an account made before the session keys gets one at its login
-   */
-  it('should give a session key to an account made before the session keys', async () => {
-    // stub: an account with the right password and no session key, and the write
+    // the stored hash of the right password, as post computes it; no write is expected
     const salt = 'salt1';
     const stored = CommonUtils.getHash(CommonUtils.getHash(objInfo.password, salt), process.env.SMALL_API_SALT);
     sinon.stub(DbOpsUtils, 'getOne').returns({ status: 200, value: { id: objInfo.username, salt, password: stored } });
-    const stubPut = sinon.stub(DbOpsUtils, 'put').returns({ status: 200, value: { id: objInfo.username } });
+    const stubPut = sinon.stub(DbOpsUtils, 'put');
 
     // call
     const res = await UsersLocalAuthService.login(config, objInfo, _ctx);
 
-    // check: a new session key, saved
+    // check: logged in, without the password and the salt, nothing written
     chai.expect(res.status).to.equal(200);
-    chai.expect(res.value.sessionKey).to.be.a('string').with.length(32);
-    chai.expect(stubPut.firstCall.args[2]).to.deep.equal({ sessionKey: res.value.sessionKey });
-
-    // a failure to save it fails the login
-    stubPut.returns({ status: 500, error: { message: 'Test error' } });
-    const res2 = await UsersLocalAuthService.login(config, objInfo, _ctx);
-    chai.expect(res2.status).to.equal(500);
+    chai.expect(res.value.id).to.equal(objInfo.username);
+    chai.expect(res.value).to.not.have.any.keys('password', 'salt');
+    chai.expect(stubPut.callCount).to.equal(0);
   });
 });

@@ -12,11 +12,22 @@ const Public = {
   ServiceName: 'users-auth',
   ServiceNameInternal: 'users-auth-internal',
 
+  // the sessions and the emailed links: a record for each one, in their own collection
+  SessionsServiceName: 'users-auth-sessions',
+
   // type
   Type: 'user-auth',
 
-  // token
+  // the session cookie (the token of the session)
   AuthToken: 'SmallApp-token',
+
+  // the attributes of the session cookie: HttpOnly (the UI never reads it), for every path, SameSite from
+  // SMALL_API_COOKIE_SAMESITE (one of the values, or the default); it expires with the session (TokenExpiresIn)
+  AuthCookie: {
+    Path: '/',
+    SameSiteValues: ['strict', 'lax', 'none'],
+    SameSiteDefault: 'lax',
+  },
 
   // reset token reason
   ResetTokenType: {
@@ -29,11 +40,11 @@ const Public = {
     Session: 'session',
   },
 
-  // how long a token is valid
+  // how long a token is valid, in seconds (its record and the session cookie expire with it)
   TokenExpiresIn: {
-    session: '12h',
-    'reset-password': '1h', // the person asked for it and uses it now
-    signup: '72h', // an invitation can wait some days
+    session: 12 * 60 * 60, // 12h
+    'reset-password': 60 * 60, // 1h: the person asked for it and uses it now
+    signup: 72 * 60 * 60, // 72h: an invitation can wait some days
   },
 };
 
