@@ -51,9 +51,9 @@
             <v-btn
               v-if="state === 'valid'"
               color="primary"
-              :disabled="!formValid || saving"
-              :loading="saving"
-              @click="submit"
+              :disabled="!formValid || saveCall.inProgress"
+              :loading="saveCall.loading"
+              @click="handleSubmit"
             >
               {{ t('save') }}
             </v-btn>
@@ -84,7 +84,7 @@ const password = ref('');
 const passwordConfirm = ref('');
 const formValid = ref(false);
 const formRef = ref(null);
-const saving = ref(false);
+const saveCall = ComponentsUtils.useSingleCall(); // one call at a time (handleSubmit)
 const error = ref('');
 
 // the token is kept only in memory
@@ -141,6 +141,15 @@ async function checkToken() {
 }
 
 /**
+ * handle submit: one call at a time (a page: its button is disabled until the answer, with a spinner when it takes
+ * long); the link is used once: a second call would be refused and show the link as not valid, after the password was
+ * set
+ */
+async function handleSubmit() {
+  await saveCall.run(submit);
+}
+
+/**
  * set the password; the link can not be used again
  */
 async function submit() {
@@ -152,7 +161,6 @@ async function submit() {
   }
 
   error.value = '';
-  saving.value = true;
   try {
     await Api.setPasswordWithResetToken(token, password.value);
     token = '';
@@ -165,10 +173,8 @@ async function submit() {
       state.value = 'invalid';
       return;
     }
-    const errText = e.response?.data?.error?.toString() || e.toString();
+    const errText = ComponentsUtils.getErrorText(e, t);
     error.value = `${t('password.reset.error')} - ${errText}`;
-  } finally {
-    saving.value = false;
   }
 }
 

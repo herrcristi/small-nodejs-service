@@ -15,10 +15,17 @@
       :apiFn="apiFn"
       :read="read"
       :write="write"
+      :call="saveCall"
       @editItem="openEdit($event)"
     />
 
-    <ApiUserEditDialog v-if="write" v-model="dialog" :user="editingUser" @saved="tableServer.refresh()" />
+    <ApiUserEditDialog
+      v-if="write"
+      v-model="dialog"
+      :user="editingUser"
+      :call="saveCall"
+      @saved="tableServer.refresh()"
+    />
   </v-card>
 </template>
 
@@ -28,6 +35,7 @@ import Api from '../api/api.js';
 import { useAppStore } from '../stores/stores.js';
 import ApiTableServer from './api.base.table.server.vue';
 import ApiUserEditDialog from './api.user.edit.dialog.vue';
+import ComponentsUtils from './components.utils.js';
 
 const tableServer = ref();
 
@@ -52,13 +60,19 @@ const apiFn = {
 };
 
 /**
+ * the save of the edit dialog: one at a time, shown on the edit of the row (disabled, a spinner when it takes long)
+ */
+const saveCall = ComponentsUtils.useSingleCall();
+
+/**
  * edit
  */
 const dialog = ref(false);
 const editingUser = ref(null);
 
 function openEdit(item) {
-  if (!write) {
+  // not while a save is in progress
+  if (!write || saveCall.inProgress) {
     return;
   }
   editingUser.value = { ...item };

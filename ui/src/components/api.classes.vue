@@ -11,6 +11,7 @@
       :sortFields="apiFields.sortFields"
       :filterFields="apiFields.filterFields"
       :apiFn="apiFn"
+      :call="saveCall"
       :read="read"
       :write="write"
       :details="details"
@@ -95,7 +96,9 @@
           <v-card-actions>
             <v-spacer />
             <v-btn text @click="closeDialog">{{ t('cancel') }}</v-btn>
-            <v-btn color="primary" :disabled="!formValid" @click="handleSubmit">{{ t('save') }}</v-btn>
+            <v-btn color="primary" :disabled="!formValid || saveCall.inProgress" @click="handleSubmit">
+              {{ t('save') }}
+            </v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -158,6 +161,8 @@ const editingItemID = ref(null);
 const dialog = ref(false);
 const editForm = ref(null);
 const formValid = ref(false);
+// one save at a time, shown on the button that opened the dialog (handleSubmit)
+const saveCall = ComponentsUtils.useSingleCall();
 
 const snackbar = ref(false);
 const snackbarText = ref('');
@@ -190,9 +195,18 @@ function openDetails(item) {
 }
 
 /**
- * handle submit
+ * handle submit: one save at a time (a second click or Enter sends nothing); the dialog closes when the call starts,
+ * and the button that opened it (+, or the edit of the row) is disabled until the answer, with a spinner when it takes
+ * long; the snackbar tells the result
  */
 async function handleSubmit() {
+  await saveCall.run(submit, editingItemID.value);
+}
+
+/**
+ * submit: validate, then add or update
+ */
+async function submit() {
   if (editForm.value && typeof editForm.value.validate === 'function') {
     const ok = await editForm.value.validate();
     if (!ok) {
@@ -207,19 +221,22 @@ async function handleSubmit() {
   const payload = { ...itemData };
   const snackbarO = { ref: snackbar, text: snackbarText, color: snackbarColor };
 
+  // the dialog closes (its form is cleared): the button that opened it shows the call until the answer
+  const isEditing = editing.value;
+  const itemID = editingItemID.value;
+  dialog.value = false;
+  resetForm();
+
   // add/update
   let ok = false;
-  if (editing.value) {
-    ok = await ComponentsUtils.Edit.update(apiFn, editingItemID.value, payload, snackbarO, t);
+  if (isEditing) {
+    ok = await ComponentsUtils.Edit.update(apiFn, itemID, payload, snackbarO, t);
   } else {
     ok = await ComponentsUtils.Edit.add(apiFn, payload, snackbarO, t);
   }
 
+  // refresh
   if (ok) {
-    dialog.value = false;
-    resetForm();
-
-    // refresh
     await tableServer.value.refresh();
   }
 }
@@ -228,7 +245,8 @@ async function handleSubmit() {
  * open add dialog
  */
 function openAdd() {
-  if (!write) {
+  // not while a save is in progress (one at a time)
+  if (!write || saveCall.inProgress) {
     return;
   }
 
@@ -254,7 +272,8 @@ function openAdd() {
  * open edit dialog
  */
 function openEdit(item) {
-  if (!write) {
+  // not while a save is in progress (one at a time)
+  if (!write || saveCall.inProgress) {
     return;
   }
 

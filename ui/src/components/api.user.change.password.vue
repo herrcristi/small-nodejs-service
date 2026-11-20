@@ -34,7 +34,9 @@
       <v-card-actions>
         <v-spacer />
         <v-btn text @click="closeDialog">{{ t('cancel') }}</v-btn>
-        <v-btn color="primary" :disabled="!passwordFormValid" @click="submitPassword">{{ t('save') }}</v-btn>
+        <v-btn color="primary" :disabled="!passwordFormValid || saveCall.inProgress" @click="handleSubmit">
+          {{ t('save') }}
+        </v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -53,6 +55,15 @@ import { useI18n } from 'vue-i18n';
 import ComponentsUtils from './components.utils.js';
 const { t } = useI18n();
 
+/**
+ * props
+ */
+const props = defineProps({
+  // the call of the parent (ComponentsUtils.useSingleCall), shown on the button that opened the dialog; without it the
+  // dialog has its own
+  call: { type: Object, default: null },
+});
+
 // client-side password strength rule: min 8, uppercase, lowercase, digit, special char
 const passwordRegex = /(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{8,}/;
 
@@ -70,6 +81,7 @@ const passwordOld = ref('');
 const passwordNew = ref('');
 const passwordConfirm = ref('');
 const passwordFormValid = ref(false);
+const saveCall = props.call || ComponentsUtils.useSingleCall(); // one change at a time (handleSubmit)
 const passwordFormRef = ref(null);
 
 const snackbar = ref(false);
@@ -93,6 +105,10 @@ const emit = defineEmits(['password-changed', 'close']);
  * open password
  */
 function openDialog() {
+  // not while a change is in progress (one at a time)
+  if (saveCall.inProgress) {
+    return;
+  }
   passwordOld.value = '';
   passwordNew.value = '';
   passwordConfirm.value = '';
@@ -109,6 +125,14 @@ function closeDialog() {
 }
 
 /**
+ * handle submit: one call at a time (a second click sends nothing); the dialog closes when the call starts, and the
+ * button that opened it shows the call until the answer; the snackbar tells the result
+ */
+async function handleSubmit() {
+  await saveCall.run(submitPassword);
+}
+
+/**
  * submit password
  */
 async function submitPassword() {
@@ -119,18 +143,17 @@ async function submitPassword() {
     }
   }
 
+  // the dialog closes and is cleared (the passwords are not kept): the button that opened it shows the call
+  const oldPassword = passwordOld.value;
+  const newPassword = passwordNew.value;
+  passwordDialog.value = false;
+  passwordOld.value = '';
+  passwordNew.value = '';
+  passwordConfirm.value = '';
+
   try {
     // current user
-    await Api.updateUserPassword({
-      oldPassword: passwordOld.value,
-      newPassword: passwordNew.value,
-    });
-
-    // close dialog
-    passwordDialog.value = false;
-    passwordOld.value = '';
-    passwordNew.value = '';
-    passwordConfirm.value = '';
+    await Api.updateUserPassword({ oldPassword, newPassword });
 
     snackbarText.value = t('password.change.success');
     snackbarColor.value = 'success';
@@ -139,7 +162,7 @@ async function submitPassword() {
     emit('password-changed', true);
   } catch (e) {
     console.error('Error changing password', e);
-    const errText = e.response?.data?.error?.toString() || e.toString();
+    const errText = ComponentsUtils.getErrorText(e, t);
 
     snackbarText.value = t('password.change.error') + ' - ' + errText;
     snackbarColor.value = 'error';

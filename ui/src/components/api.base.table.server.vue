@@ -41,6 +41,8 @@
               rounded="lg"
               text=""
               border
+              :disabled="isCallInProgress()"
+              :loading="isCallLoading(null)"
               @click="openAdd"
               v-if="props.write && props.apiFn?.create"
             ></v-btn>
@@ -51,7 +53,7 @@
           <slot name="top.filter">
             <v-text-field
               v-if="Array.isArray(props.filterFields)"
-              v-model="filter"
+              v-model="filterInput"
               :label="t('filter')"
               class="me-2"
               rounded="lg"
@@ -275,25 +277,24 @@
 
     <!-- actions -->
     <template #item.actions="{ item }">
-      <slot name="item.actions" :item="item">
-        <v-icon
+      <slot name="item.actions" :item="item" :deleteCalls="deleteCalls">
+        <ActionIcon
           v-if="props.write && props.apiFn?.update"
-          small
           class="mr-2"
-          @click="openEdit(item)"
+          icon="mdi-pencil"
           :title="t('edit')"
-          size="small"
-          >mdi-pencil</v-icon
-        >
-        <v-icon
+          :disabled="isCallInProgress()"
+          :loading="isCallLoading(item.id)"
+          @click="openEdit(item)"
+        />
+        <ActionIcon
           v-if="props.write && props.apiFn?.delete"
-          small
-          color="mr-2"
-          @click="confirmDelete(item.id)"
+          icon="mdi-delete"
           :title="t('delete')"
-          size="small"
-          >mdi-delete</v-icon
-        >
+          :disabled="deleteCalls.isInProgress(item.id)"
+          :loading="deleteCalls.isLoading(item.id)"
+          @click="confirmDelete(item.id)"
+        />
       </slot>
     </template>
   </v-data-table-server>
@@ -318,8 +319,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue';
+import { ref, reactive, computed, watch, onBeforeUnmount } from 'vue';
 import ConfirmDialog from './base.confirm.dialog.vue';
+import ActionIcon from './base.action.icon.vue';
 import ComponentUtils from './components.utils.js';
 import { useI18n } from 'vue-i18n';
 const { t, te, locale } = useI18n();
@@ -344,6 +346,10 @@ const props = defineProps({
   selectReturnObject: { type: [Boolean], default: false }, // default is to return ids since not all objects can be retreived on edit
 
   apiFn: { type: Object, default: {} }, // getAll, getAllParams, delete
+
+  // the call of the parent started from this table (ComponentsUtils.useSingleCall: an add, itemID null, or the edit of
+  // a row): while it is in progress the add and edit buttons are disabled, and the one that started it shows a spinner
+  call: { type: Object, default: null },
 });
 
 /**
@@ -351,9 +357,24 @@ const props = defineProps({
  */
 const items = ref([]);
 const totalItems = ref(0);
-const filter = ref('');
+const filter = ref(''); // the search of the table (a change loads the list)
+const filterInput = ref(''); // the text of the filter field
 const loading = ref(true);
 const nodatatext = ref('');
+
+// the list calls: only the answer of the latest one is shown
+const listCalls = ComponentUtils.useLatestCall();
+
+// the filter is searched after a pause in typing (one request, not one per key)
+const FilterDelay = 300; // ms
+let filterTimeoutID = null;
+watch(filterInput, (value) => {
+  clearTimeout(filterTimeoutID);
+  filterTimeoutID = setTimeout(() => {
+    filter.value = value || '';
+  }, FilterDelay);
+});
+onBeforeUnmount(() => clearTimeout(filterTimeoutID));
 
 /**
  * delete
@@ -361,6 +382,7 @@ const nodatatext = ref('');
 const confirmDeleteDialog = ref(false);
 const toDeleteID = ref(null);
 const lastRequestParams = ref({});
+const deleteCalls = ComponentUtils.useItemCalls(); // one delete at a time per row (doDelete)
 
 /**
  * snackbar
@@ -395,13 +417,16 @@ const headers = computed(() => {
 
 /**
  * get all
+ * only the latest request is shown: the answer of an older one (an older filter, page or sort) is dropped, also
+ * when it arrives last
  */
 async function fetchAll({ page = 1, itemsPerPage = 50, sortBy = [] } = {}) {
   lastRequestParams.value = { page, itemsPerPage, sortBy };
+  const callNumber = listCalls.next();
 
   let timeoutID = setTimeout(() => {
     loading.value = true;
-  }, 300); // Show loader if it takes more than 300ms
+  }, ComponentUtils.LoadingDelay); // the loader only when the list takes long
 
   try {
     const start = (page - 1) * itemsPerPage;
@@ -438,14 +463,24 @@ async function fetchAll({ page = 1, itemsPerPage = 50, sortBy = [] } = {}) {
     const query = new URLSearchParams(params).toString();
     const response = await props.apiFn.getAll(query);
 
+    // a newer request was sent: its answer is the one to show
+    if (!listCalls.isLatest(callNumber)) {
+      return;
+    }
+
     // response
     totalItems.value = response.data?.meta?.count || 0;
     items.value = response.data?.data || [];
     nodatatext.value = '';
   } catch (e) {
     console.error('Error fetching all', e);
-    const errText = e.response?.data?.error?.toString() || e.toString();
 
+    // a newer request was sent: its answer is the one to show
+    if (!listCalls.isLatest(callNumber)) {
+      return;
+    }
+
+    const errText = ComponentUtils.getErrorText(e, t);
     nodatatext.value = errText;
     totalItems.value = 0;
     items.value = [];
@@ -455,14 +490,33 @@ async function fetchAll({ page = 1, itemsPerPage = 50, sortBy = [] } = {}) {
     snackbar.value = true;
   } finally {
     clearTimeout(timeoutID);
-    loading.value = false;
+
+    // the loader stays while the latest request runs
+    if (listCalls.isLatest(callNumber)) {
+      loading.value = false;
+    }
   }
+}
+
+/**
+ * the call of the parent (an add, an edit): in progress, the add and edit buttons are disabled (one call at a time);
+ * loading (it takes long), the button that started it shows a spinner
+ */
+function isCallInProgress() {
+  return !!props.call?.inProgress;
+}
+function isCallLoading(itemID) {
+  return !!props.call?.loading && props.call.itemID === itemID;
 }
 
 /**
  * delete
  */
 function confirmDelete(itemID) {
+  // a delete of this row is in progress
+  if (deleteCalls.isInProgress(itemID)) {
+    return;
+  }
   toDeleteID.value = itemID;
   confirmDeleteDialog.value = true;
 }
@@ -470,16 +524,20 @@ function cancelDelete() {
   toDeleteID.value = null;
   confirmDeleteDialog.value = false;
 }
+/**
+ * confirmed: the confirmation closes at once, and the delete icon of the row shows the call (disabled, a spinner when
+ * it takes long) until the answer; the snackbar tells the result. A row is deleted once: a second confirmation of the
+ * same row while its delete is in progress sends nothing
+ */
 async function doDelete() {
-  if (!toDeleteID.value) {
+  const itemID = toDeleteID.value;
+  toDeleteID.value = null;
+  confirmDeleteDialog.value = false;
+  if (!itemID) {
     return;
   }
-  try {
-    await del(toDeleteID.value);
-  } finally {
-    toDeleteID.value = null;
-    confirmDeleteDialog.value = false;
-  }
+
+  await deleteCalls.run(itemID, () => del(itemID));
 }
 
 async function del(itemID) {
@@ -490,12 +548,12 @@ async function del(itemID) {
     snackbarColor.value = 'success';
     snackbar.value = true;
 
-    emit('deleteItem', toDeleteID.value);
+    emit('deleteItem', itemID);
 
     await fetchAll(lastRequestParams.value);
   } catch (e) {
     console.error('Error deleting:', e);
-    const errText = e.response?.data?.error?.toString() || e.toString();
+    const errText = ComponentUtils.getErrorText(e, t);
 
     snackbarText.value = (t('delete.error') || 'Error deleting') + ' - ' + errText;
     snackbarColor.value = 'error';
@@ -507,7 +565,8 @@ async function del(itemID) {
  * open add dialog
  */
 function openAdd() {
-  if (!props.write) {
+  // not while a call of the parent is in progress
+  if (!props.write || isCallInProgress()) {
     return;
   }
 
@@ -518,7 +577,8 @@ function openAdd() {
  * open edit dialog
  */
 function openEdit(item) {
-  if (!props.write) {
+  // not while a call of the parent is in progress
+  if (!props.write || isCallInProgress()) {
     return;
   }
 

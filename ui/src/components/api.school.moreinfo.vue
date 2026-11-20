@@ -20,6 +20,7 @@
             :write="props.write"
             :loading="loading"
             :nodatatext="nodatatext"
+            :call="saveCall"
             @addItem="openInvite()"
             @editItem="openEdit($event)"
             @deleteItem="load()"
@@ -43,7 +44,7 @@
       <v-card-actions>
         <v-spacer />
         <v-btn text @click="inviteDialog = false">{{ t('cancel') }}</v-btn>
-        <v-btn color="primary" :disabled="!inviteFormValid || inviting" :loading="inviting" @click="invite">
+        <v-btn color="primary" :disabled="!inviteFormValid || saveCall.inProgress" @click="handleInvite">
           {{ t('save') }}
         </v-btn>
       </v-card-actions>
@@ -52,7 +53,7 @@
 
   <v-snackbar v-model="snackbar" :color="snackbarColor" timeout="4000">{{ snackbarText }}</v-snackbar>
 
-  <ApiUserEditDialog v-if="props.write" v-model="dialog" :user="editingUser" @saved="load()" />
+  <ApiUserEditDialog v-if="props.write" v-model="dialog" :user="editingUser" :call="saveCall" @saved="load()" />
 </template>
 
 <script setup>
@@ -89,13 +90,21 @@ const admins = ref([]);
 const loading = ref(false);
 const nodatatext = ref('');
 
+// the calls of the list (a load after an invite, an edit or a delete): only the answer of the latest is shown
+const adminsCalls = ComponentsUtils.useLatestCall();
+
 async function load() {
+  const callNumber = adminsCalls.next();
   if (!props.itemID) {
     admins.value = [];
     return;
   }
 
-  loading.value = true;
+  // the loader only when the list takes long
+  const timeoutID = setTimeout(() => {
+    loading.value = true;
+  }, ComponentsUtils.LoadingDelay);
+
   try {
     const languages = ComponentsUtils.getServerLanguages(locale.value);
     const params = new URLSearchParams({
@@ -105,14 +114,29 @@ async function load() {
     });
     const query = params.toString();
     const response = await Api.getSchoolAdmins(props.itemID, query);
+
+    // a newer request was sent: its answer is the one to show
+    if (!adminsCalls.isLatest(callNumber)) {
+      return;
+    }
     admins.value = response.data?.data || [];
     nodatatext.value = '';
   } catch (e) {
     console.error('Error fetching the admins of the school', e);
+
+    // a newer request was sent: its answer is the one to show
+    if (!adminsCalls.isLatest(callNumber)) {
+      return;
+    }
     admins.value = [];
-    nodatatext.value = e.response?.data?.error?.toString() || e.toString();
+    nodatatext.value = ComponentsUtils.getErrorText(e, t);
   } finally {
-    loading.value = false;
+    clearTimeout(timeoutID);
+
+    // the loader stays while the latest call is in progress
+    if (adminsCalls.isLatest(callNumber)) {
+      loading.value = false;
+    }
   }
 }
 
@@ -128,13 +152,20 @@ const adminsApiFn = computed(() => ({
 }));
 
 /**
- * edit
+ * the call of the panel (an invite from +, the edit of an admin from its row): one at a time; the button that opened
+ * the dialog is disabled, with a spinner when it takes long, and the snackbar tells the result
+ */
+const saveCall = ComponentsUtils.useSingleCall();
+
+/**
+ * edit (the dialog saves with saveCall)
  */
 const dialog = ref(false);
 const editingUser = ref(null);
 
 function openEdit(item) {
-  if (!props.write) {
+  // not while a call is in progress
+  if (!props.write || saveCall.inProgress) {
     return;
   }
   editingUser.value = { ...item };
@@ -148,7 +179,6 @@ const inviteDialog = ref(false);
 const inviteEmail = ref('');
 const inviteForm = ref(null);
 const inviteFormValid = ref(false);
-const inviting = ref(false);
 
 const snackbar = ref(false);
 const snackbarText = ref('');
@@ -158,11 +188,20 @@ const emailReqRule = (v) => ComponentsUtils.Edit.Rules.emailReq(v, t);
 const emailValidRule = (v) => ComponentsUtils.Edit.Rules.emailValid(v, t);
 
 function openInvite() {
-  if (!props.write) {
+  // not while a call is in progress
+  if (!props.write || saveCall.inProgress) {
     return;
   }
   inviteEmail.value = '';
   inviteDialog.value = true;
+}
+
+/**
+ * invite: one call at a time (a second click sends nothing); the dialog closes when the call starts, and the + shows
+ * it until the answer; the snackbar tells the result
+ */
+async function handleInvite() {
+  await saveCall.run(invite);
 }
 
 async function invite() {
@@ -176,16 +215,14 @@ async function invite() {
   const apiFn = { create: (payload) => Api.inviteSchoolAdmin(props.itemID, payload.email) };
   const snackbarO = { ref: snackbar, text: snackbarText, color: snackbarColor };
 
-  inviting.value = true;
-  try {
-    const payload = { email: inviteEmail.value.trim() };
-    const ok = await ComponentsUtils.Edit.add(apiFn, payload, snackbarO, t);
-    if (ok) {
-      inviteDialog.value = false;
-      await load();
-    }
-  } finally {
-    inviting.value = false;
+  // the dialog closes: the + shows the call
+  inviteDialog.value = false;
+
+  // the answer of an invite is the same for every case: the text says only that it was sent
+  const payload = { email: inviteEmail.value.trim() };
+  const ok = await ComponentsUtils.Edit.add(apiFn, payload, snackbarO, t, { successKey: 'invite.success' });
+  if (ok) {
+    await load();
   }
 }
 </script>

@@ -13,6 +13,7 @@ const JwtUtils = require('./jwt.utils.js');
 
 const Constants = {
   Timeout: 30000 /* 30s */,
+  Refused: 'The request was refused', // a refused call (400) without a reason
 };
 
 const Private = {
@@ -137,15 +138,15 @@ const Private = {
         }. Finished in ${new Date() - time} ms`
       );
 
-      // failed
+      // failed: a refused request (400) keeps the reason the service gave (its detail), which the caller sends to the
+      // user; so its message never has the address of the service (that one is only in the error, for the log)
       if (r.status >= 300) {
-        return {
-          status: r.status,
-          error: {
-            message: `Calling ${config.method} ${srvUri} failed with status ${r.status}`,
-            error: new Error(`Calling ${config.method} ${srvUri} failed with status ${r.status}`),
-          },
-        };
+        const failed = `Calling ${config.method} ${srvUri} failed with status ${r.status}`;
+        let message = failed;
+        if (r.status === 400) {
+          message = r.data?.detail || Constants.Refused;
+        }
+        return { status: r.status, error: { message, error: new Error(failed) } };
       }
 
       // success

@@ -57,6 +57,7 @@
         deleteField: apiFn.deleteField,
       }"
       :emitEdit="true"
+      :call="saveCall"
       @editItem="openEdit($event)"
       :read="read && readSchedules"
       :write="write && writeSchedules"
@@ -77,6 +78,8 @@
           rounded="lg"
           text=""
           border
+          :disabled="saveCall.inProgress"
+          :loading="saveCall.loading && saveCall.itemID === null"
           @click="openAdd()"
           v-if="write && app?.rolesPermissions?.locations?.write"
         ></v-btn>
@@ -208,7 +211,9 @@
         <v-card-actions>
           <v-spacer />
           <v-btn text @click="closeDialog">{{ t('cancel') }}</v-btn>
-          <v-btn color="primary" :disabled="!formValid" @click="handleSubmit">{{ t('save') }}</v-btn>
+          <v-btn color="primary" :disabled="!formValid || saveCall.inProgress" @click="handleSubmit">
+            {{ t('save') }}
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -284,6 +289,8 @@ const editingItemID = ref(null);
 const dialog = ref(false);
 const editForm = ref(null);
 const formValid = ref(false);
+// one save at a time, shown on the button that opened the dialog (handleSubmit)
+const saveCall = ComponentsUtils.useSingleCall();
 
 const snackbar = ref(false);
 const snackbarText = ref('');
@@ -390,9 +397,18 @@ function getFreqHoursMins(freqDate) {
 }
 
 /**
- * handle submit
+ * handle submit: one save at a time (a second click or Enter sends nothing); the dialog closes when the call starts,
+ * and the button that opened it (+, or the edit of the row) is disabled until the answer, with a spinner when it takes
+ * long; the snackbar tells the result
  */
 async function handleSubmit() {
+  await saveCall.run(submit, editingItemID.value);
+}
+
+/**
+ * submit: validate, then add or update
+ */
+async function submit() {
   if (editForm.value && typeof editForm.value.validate === 'function') {
     const ok = await editForm.value.validate();
     if (!ok) {
@@ -444,7 +460,7 @@ async function handleSubmit() {
       payload.timestamp = d.toISOString();
     } catch (e) {
       console.log('Error parsing date:', e);
-      const errText = e.response?.data?.error?.toString() || e.toString();
+      const errText = ComponentsUtils.getErrorText(e, t);
 
       snackbarO.text.value = (t('edit.error') || 'Error') + ' - ' + errText;
       snackbarO.color.value = 'error';
@@ -455,17 +471,18 @@ async function handleSubmit() {
     delete payload.frequencyTimestamp;
   }
 
+  // the dialog closes (its form is cleared): the button that opened it shows the call until the answer
+  const isEditing = editing.value;
+  const itemID = editingItemID.value;
+  dialog.value = false;
+  resetForm();
+
   // add/update
   let ok = false;
-  if (editing.value) {
-    ok = await ComponentsUtils.Edit.update(apiFnLocation, editingItemID.value, payload, snackbarO, t);
+  if (isEditing) {
+    ok = await ComponentsUtils.Edit.update(apiFnLocation, itemID, payload, snackbarO, t);
   } else {
     ok = await ComponentsUtils.Edit.add(apiFnLocation, payload, snackbarO, t);
-  }
-
-  if (ok) {
-    dialog.value = false;
-    resetForm();
   }
 }
 
@@ -473,7 +490,8 @@ async function handleSubmit() {
  * open add dialog
  */
 function openAdd() {
-  if (!props.write) {
+  // not while a save is in progress (one at a time)
+  if (!props.write || saveCall.inProgress) {
     return;
   }
 
@@ -516,7 +534,8 @@ function openAdd() {
  * open edit dialog
  */
 function openEdit(item) {
-  if (!props.write) {
+  // not while a save is in progress (one at a time)
+  if (!props.write || saveCall.inProgress) {
     return;
   }
 

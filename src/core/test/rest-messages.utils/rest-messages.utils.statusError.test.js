@@ -28,11 +28,34 @@ describe('Rest Messages Utils', function () {
     let res = await RestMessagesUtils.statusError(400, error, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // check: the reason is sent (detail)
     chai.expect(res).to.deep.equal({
       message: 'Request is not valid',
+      detail: 'Test error',
       error: 'Test error',
     });
+  }).timeout(10000);
+
+  /**
+   * only a 400 gives its reason outside debug mode: 401, 403, 404 and 500 keep their generic text
+   */
+  it('should give the reason only for 400 outside debug mode', async () => {
+    // stub: production (no debug details)
+    sinon.stub(CommonUtils, 'isDebug').returns(false);
+    const error = { message: 'The user is not a member of the current school', error: new Error('not a member') };
+
+    // case 400: the reason the service wrote
+    const res400 = await RestMessagesUtils.statusError(400, error, _ctx);
+    chai.expect(res400).to.deep.equal({
+      message: 'Request is not valid',
+      detail: 'The user is not a member of the current school',
+    });
+
+    // cases 401, 403, 404, 500: only the generic text (no detail, no error)
+    for (const status of [401, 403, 404, 500]) {
+      const res = await RestMessagesUtils.statusError(status, error, _ctx);
+      chai.expect(Object.keys(res), `${status}`).to.deep.equal(['message']);
+    }
   }).timeout(10000);
 
   /**

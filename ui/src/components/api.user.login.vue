@@ -30,7 +30,7 @@
           <v-card-actions>
             <v-btn variant="text" size="small" @click="openForgot">{{ t('password.forgot') }}</v-btn>
             <v-spacer />
-            <v-btn color="primary" :loading="loading" @click="submit">
+            <v-btn color="primary" :disabled="loginCall.inProgress" :loading="loginCall.loading" @click="handleSubmit">
               {{ t('login.submit') || 'Login' }}
             </v-btn>
           </v-card-actions>
@@ -58,9 +58,9 @@
           <v-btn
             v-if="!forgotSent"
             color="primary"
-            :disabled="!forgotFormValid || forgotSending"
-            :loading="forgotSending"
-            @click="sendForgot"
+            :disabled="!forgotFormValid || forgotCall.inProgress"
+            :loading="forgotCall.loading"
+            @click="handleForgot"
           >
             {{ t('password.forgot.send') }}
           </v-btn>
@@ -91,7 +91,7 @@ const username = ref('');
 const password = ref('');
 // Always use cookies for authentication (HttpOnly) by default
 const withCreds = ref(true);
-const loading = ref(false);
+const loginCall = ComponentsUtils.useSingleCall(); // one login at a time (handleSubmit)
 const error = ref(null);
 const valid = ref(true);
 const router = useRouter();
@@ -109,6 +109,14 @@ function isValidRedirectUrl(url) {
 }
 
 /**
+ * handle submit: one login at a time (a page: its button is disabled until the answer, with a spinner when it takes
+ * long), so a second click (or Enter) does not start a second session
+ */
+async function handleSubmit() {
+  await loginCall.run(submit);
+}
+
+/**
  * submit login form
  */
 async function submit() {
@@ -118,7 +126,6 @@ async function submit() {
     return;
   }
 
-  loading.value = true;
   try {
     // call the backend login
     const resp = await Api.login({ username: username.value, password: password.value }, withCreds.value);
@@ -152,9 +159,12 @@ async function submit() {
       router.push(`/tenants?tenantID=${tenantIDParam}&next=${nextParam}`);
     }
   } catch (e) {
-    error.value = e.message || 'Login failed';
-  } finally {
-    loading.value = false;
+    // a refused login (401): the same text for every reason (the server does not tell the reason either)
+    if (e?.response?.status === 401) {
+      error.value = t('login.failed');
+    } else {
+      error.value = ComponentsUtils.getErrorText(e, t);
+    }
   }
 }
 
@@ -165,7 +175,7 @@ const forgotDialog = ref(false);
 const forgotEmail = ref('');
 const forgotFormRef = ref(null);
 const forgotFormValid = ref(false);
-const forgotSending = ref(false);
+const forgotCall = ComponentsUtils.useSingleCall(); // one email at a time (handleForgot)
 const forgotSent = ref(false);
 const forgotError = ref('');
 
@@ -179,6 +189,14 @@ function openForgot() {
   forgotDialog.value = true;
 }
 
+/**
+ * send: one call at a time, so a second click sends no second email; the dialog shows the answer, so it stays open and
+ * its button is disabled until the answer, with a spinner when it takes long
+ */
+async function handleForgot() {
+  await forgotCall.run(sendForgot);
+}
+
 async function sendForgot() {
   if (forgotFormRef.value && typeof forgotFormRef.value.validate === 'function') {
     const ok = await forgotFormRef.value.validate();
@@ -188,17 +206,13 @@ async function sendForgot() {
   }
 
   forgotError.value = '';
-  forgotSending.value = true;
   try {
     const email = forgotEmail.value.trim();
     await Api.resetUserPassword({ username: email });
     forgotSent.value = true;
   } catch (e) {
     console.error('Error asking for a password reset', e);
-    const errText = e.response?.data?.error?.toString() || e.toString();
-    forgotError.value = errText;
-  } finally {
-    forgotSending.value = false;
+    forgotError.value = ComponentsUtils.getErrorText(e, t);
   }
 }
 </script>

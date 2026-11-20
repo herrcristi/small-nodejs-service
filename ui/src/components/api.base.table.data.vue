@@ -44,6 +44,8 @@
               text=""
               border
               small
+              :disabled="isCallInProgress()"
+              :loading="isCallLoading(null)"
               @click="openAdd"
               v-if="props.write && props.apiFn?.add"
             ></v-btn>
@@ -275,25 +277,24 @@
           actions
       -->
     <template #item.actions="{ item }">
-      <slot name="item.actions" :item="item">
-        <v-icon
+      <slot name="item.actions" :item="item" :deleteCalls="deleteCalls">
+        <ActionIcon
           v-if="props.write && props.apiFn?.update"
-          small
           class="mr-2"
-          @click="openEdit(item)"
+          icon="mdi-pencil"
           :title="t('edit')"
-          size="small"
-          >mdi-pencil</v-icon
-        >
-        <v-icon
+          :disabled="isCallInProgress()"
+          :loading="isCallLoading(item.id)"
+          @click="openEdit(item)"
+        />
+        <ActionIcon
           v-if="props.write && props.apiFn?.delete"
-          small
-          color="mr-2"
-          @click="confirmDelete(item.id)"
+          icon="mdi-delete"
           :title="t('delete')"
-          size="small"
-          >mdi-delete</v-icon
-        >
+          :disabled="deleteCalls.isInProgress(item.id)"
+          :loading="deleteCalls.isLoading(item.id)"
+          @click="confirmDelete(item.id)"
+        />
       </slot>
     </template>
   </v-data-table>
@@ -320,6 +321,7 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
 import ConfirmDialog from './base.confirm.dialog.vue';
+import ActionIcon from './base.action.icon.vue';
 import ComponentUtils from './components.utils.js';
 import { useI18n } from 'vue-i18n';
 const { t, te, locale } = useI18n();
@@ -345,6 +347,10 @@ const props = defineProps({
   expand: { type: [Boolean], default: null },
 
   apiFn: { type: Object, default: {} }, // add:0/1, update:0/1, delete: fn
+
+  // the call of the parent started from this table (ComponentsUtils.useSingleCall: an add, itemID null, or the edit of
+  // a row): while it is in progress the add and edit buttons are disabled, and the one that started it shows a spinner
+  call: { type: Object, default: null },
 });
 
 /**
@@ -357,6 +363,7 @@ const filter = ref('');
  */
 const confirmDeleteDialog = ref(false);
 const toDeleteID = ref(null);
+const deleteCalls = ComponentUtils.useItemCalls(); // one delete at a time per row (doDelete)
 
 /**
  * snackbar
@@ -403,9 +410,24 @@ function customFilter(value, query, item) {
 }
 
 /**
+ * the call of the parent (an add, an edit): in progress, the add and edit buttons are disabled (one call at a time);
+ * loading (it takes long), the button that started it shows a spinner
+ */
+function isCallInProgress() {
+  return !!props.call?.inProgress;
+}
+function isCallLoading(itemID) {
+  return !!props.call?.loading && props.call.itemID === itemID;
+}
+
+/**
  * delete
  */
 function confirmDelete(itemID) {
+  // a delete of this row is in progress
+  if (deleteCalls.isInProgress(itemID)) {
+    return;
+  }
   toDeleteID.value = itemID;
   confirmDeleteDialog.value = true;
 }
@@ -413,16 +435,20 @@ function cancelDelete() {
   toDeleteID.value = null;
   confirmDeleteDialog.value = false;
 }
+/**
+ * confirmed: the confirmation closes at once, and the delete icon of the row shows the call (disabled, a spinner when
+ * it takes long) until the answer; the snackbar tells the result. A row is deleted once: a second confirmation of the
+ * same row while its delete is in progress sends nothing
+ */
 async function doDelete() {
-  if (!toDeleteID.value) {
+  const itemID = toDeleteID.value;
+  toDeleteID.value = null;
+  confirmDeleteDialog.value = false;
+  if (!itemID) {
     return;
   }
-  try {
-    await del(toDeleteID.value);
-  } finally {
-    toDeleteID.value = null;
-    confirmDeleteDialog.value = false;
-  }
+
+  await deleteCalls.run(itemID, () => del(itemID));
 }
 
 async function del(itemID) {
@@ -433,10 +459,10 @@ async function del(itemID) {
     snackbarColor.value = 'success';
     snackbar.value = true;
 
-    emit('deleteItem', toDeleteID.value);
+    emit('deleteItem', itemID);
   } catch (e) {
     console.error('Error deleting:', e);
-    const errText = e.response?.data?.error?.toString() || e.toString();
+    const errText = ComponentUtils.getErrorText(e, t);
 
     snackbarText.value = (t('delete.error') || 'Error deleting') + ' - ' + errText;
     snackbarColor.value = 'error';
@@ -448,7 +474,8 @@ async function del(itemID) {
  * open add dialog
  */
 function openAdd() {
-  if (!props.write) {
+  // not while a call of the parent is in progress
+  if (!props.write || isCallInProgress()) {
     return;
   }
 
@@ -459,7 +486,8 @@ function openAdd() {
  * open edit dialog
  */
 function openEdit(item) {
-  if (!props.write) {
+  // not while a call of the parent is in progress
+  if (!props.write || isCallInProgress()) {
     return;
   }
 
