@@ -160,7 +160,8 @@ const Router = createRouter({
       path: '/tenants',
       name: 'Tenants',
       component: TenantSelect,
-      meta: { requiresAuth: true, noLayout: true },
+      // the header of the app with the user menu (profile, logout), without the menu of the pages: no school is chosen
+      meta: { requiresAuth: true, noMenu: true },
       props: (route) => ({ tenantID: route.query.tenantID, next: route.query.next || '/' }),
     },
     {

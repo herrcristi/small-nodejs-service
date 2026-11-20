@@ -17,10 +17,11 @@
           </template>
 
           <v-list>
-            <v-list-item link @click="goProfile">
+            <!-- the profile needs a selected school; the school selection is hidden on its own page -->
+            <v-list-item link @click="goProfile" v-if="hasTenant">
               <v-list-item-title>{{ t('profile') }}</v-list-item-title>
             </v-list-item>
-            <v-list-item link @click="goTenants">
+            <v-list-item link @click="goTenants" v-if="!isTenantsPage">
               <v-list-item-title>{{ t('tenants') }}</v-list-item-title>
             </v-list-item>
             <v-list-item @click="doLogout">
@@ -31,7 +32,8 @@
       </div>
     </v-app-bar>
 
-    <v-navigation-drawer app permanent color="primary" dark>
+    <!-- the menu of the pages (not on a page without it, like the school selection) -->
+    <v-navigation-drawer app permanent color="primary" dark v-if="showMenu">
       <v-list dense>
         <v-list-item link to="/">
           <v-list-item-title>{{ t('home') }} </v-list-item-title>
@@ -74,7 +76,7 @@
 
     <v-main>
       <v-container fluid>
-        <div v-if="breadcrumbs?.length" class="breadcrumbs mb-4">
+        <div v-if="showMenu && breadcrumbs?.length" class="breadcrumbs mb-4">
           <RouterLink v-for="(b, i) in breadcrumbs" :key="i" :to="b.to || b.href" class="breadcrumb-link">
             {{ b.text }}
             <span v-if="i < breadcrumbs.length - 1" class="mx-2">/</span>
@@ -106,6 +108,17 @@ const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const appStore = useAppStore();
+
+/**
+ * the menu of the pages and the breadcrumbs: not on a page with meta noMenu (the school selection: no school is chosen)
+ */
+const showMenu = computed(() => !route.meta?.noMenu);
+
+/**
+ * the user menu: the profile needs a selected school, the school selection is not offered on its own page
+ */
+const hasTenant = computed(() => !!appStore?.tenantID);
+const isTenantsPage = computed(() => route.path === '/tenants');
 
 /**
  * breadcrumbs
