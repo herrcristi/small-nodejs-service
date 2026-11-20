@@ -80,8 +80,8 @@ const fieldStudents = ref([]);
  * ApiDetails events after get details
  */
 async function onItemDetails(data) {
-  Object.keys(itemDetails.value).forEach((k) => delete itemDetails[k]);
-  Object.assign(itemDetails.value, data);
+  // the new details replace the old ones (a field missing in the answer is not kept); null: another item is loading
+  itemDetails.value = { ...data };
 
   fieldStudents.value = itemDetails.value.students || [];
 }

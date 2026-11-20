@@ -173,4 +173,40 @@ describe('Rest Communications Utils', function () {
 
     chai.expect(res.error.message).to.include(`Calling POST ${configUrl}/api/v1/service failed with status 500`);
   }).timeout(10000);
+
+  /**
+   * a refused remote call (400) keeps the reason of the service, never its address
+   */
+  it('should keep the reason of a refused remote call without the address', async () => {
+    // remote config
+    const serviceName = 'Service';
+    const restConfig = {
+      rest: {
+        [serviceName]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: process.env.SMALL_API_PORT, // see test.utils.js
+          path: '/api/v1/service',
+        },
+      },
+    };
+    await RestCommsUtils.init(restConfig);
+
+    // case: the service gives its reason (detail)
+    mockAxios.onPost().replyOnce(400, { message: 'Request is not valid', detail: 'Name is already used' });
+    const resDetail = await RestCommsUtils.post(serviceName, { name: 'Math' }, _ctx);
+
+    // check: the reason is the message; the address is only in the error (for the log)
+    chai.expect(resDetail.status).to.equal(400);
+    chai.expect(resDetail.error.message).to.equal('Name is already used');
+    chai.expect(resDetail.error.error.message).to.include('failed with status 400');
+
+    // case: the service gives no reason
+    mockAxios.onPost().replyOnce(400, { message: 'Request is not valid' });
+    const resNone = await RestCommsUtils.post(serviceName, { name: 'Math' }, _ctx);
+
+    // check: a fixed text, without the address
+    chai.expect(resNone.status).to.equal(400);
+    chai.expect(resNone.error.message).to.equal('The request was refused');
+  }).timeout(10000);
 });

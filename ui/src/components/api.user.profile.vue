@@ -27,16 +27,16 @@
                 {{ t('profile') }}
                 <v-spacer />
                 <v-toolbar-items class="d-flex align-center">
-                  <v-icon
-                    small
+                  <ActionIcon
                     class="mr-2"
                     color="primary"
-                    @click="openEdit"
+                    icon="mdi-pencil"
                     :title="t('edit')"
-                    size="small"
+                    :disabled="saveCall.inProgress"
+                    :loading="saveCall.loading"
+                    @click="openEdit"
                     v-if="!loading"
-                    >mdi-pencil</v-icon
-                  >
+                  />
 
                   <!-- icon-only button for extra-small screens (password) -->
                   <v-btn
@@ -44,6 +44,8 @@
                     icon
                     class="d-flex d-sm-none ml-2"
                     color="primary"
+                    :disabled="passwordCall.inProgress"
+                    :loading="passwordCall.loading"
                     @click="openPasswordDialog"
                     :title="t('password.edit')"
                     v-if="!loading"
@@ -56,6 +58,8 @@
                     small
                     class="ml-2 d-none d-sm-flex"
                     color="primary"
+                    :disabled="passwordCall.inProgress"
+                    :loading="passwordCall.loading"
                     @click="openPasswordDialog"
                     :title="t('password.edit')"
                     v-if="!loading"
@@ -68,6 +72,8 @@
                     icon
                     class="d-flex d-sm-none ml-2"
                     color="primary"
+                    :disabled="emailCall.inProgress"
+                    :loading="emailCall.loading"
                     @click="openEmailDialog"
                     :title="t('email.edit')"
                     v-if="!loading"
@@ -80,6 +86,8 @@
                     small
                     class="ml-2 d-none d-sm-flex"
                     color="primary"
+                    :disabled="emailCall.inProgress"
+                    :loading="emailCall.loading"
                     @click="openEmailDialog"
                     :title="t('email.edit')"
                     v-if="!loading"
@@ -154,7 +162,9 @@
           <v-card-actions>
             <v-spacer />
             <v-btn text @click="editDialog = false">{{ t('cancel') }}</v-btn>
-            <v-btn color="primary" :disabled="!formValid" @click="onSave">{{ t('save') }}</v-btn>
+            <v-btn color="primary" :disabled="!formValid || saveCall.inProgress" @click="handleSave">
+              {{ t('save') }}
+            </v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -162,12 +172,22 @@
       <!-- 
           Change password dialog 
       -->
-      <PasswordChange ref="passwordChangeComponent" @close="" @password-changed=""></PasswordChange>
+      <PasswordChange
+        ref="passwordChangeComponent"
+        :call="passwordCall"
+        @close=""
+        @password-changed=""
+      ></PasswordChange>
 
       <!-- 
           Change email dialog 
       -->
-      <EmailChange ref="emailChangeComponent" @close="" @email-changed="onEmailChanged($event)"></EmailChange>
+      <EmailChange
+        ref="emailChangeComponent"
+        :call="emailCall"
+        @close=""
+        @email-changed="onEmailChanged($event)"
+      ></EmailChange>
 
       <!-- 
           snackbar for notifications
@@ -181,9 +201,11 @@
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import ApiDetails from './api.base.details.vue';
 import KeyValue from './base.keyvalue.vue';
+import ActionIcon from './base.action.icon.vue';
 import PasswordChange from './api.user.change.password.vue';
 import EmailChange from './api.user.change.email.vue';
 import Api from '../api/api.js';
+import ComponentsUtils from './components.utils.js';
 import { useAuthStore } from '../stores/stores.js';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
@@ -204,6 +226,10 @@ const editDialog = ref(false);
 const edit = ref({ ...profile.value });
 const birthdaymenu = ref(false);
 const formValid = ref(false);
+// the calls of the dialogs, each shown on the button that opened its dialog (disabled, a spinner when it takes long)
+const saveCall = ComponentsUtils.useSingleCall(); // the profile (handleSave)
+const passwordCall = ComponentsUtils.useSingleCall(); // the password change (PasswordChange)
+const emailCall = ComponentsUtils.useSingleCall(); // the email change (EmailChange)
 const editForm = ref(null);
 const datePicker = ref(null);
 
@@ -266,7 +292,8 @@ async function onItemDetails(data) {
  * openEdit
  */
 function openEdit() {
-  if (loading.value) {
+  // not while loading, nor while a save is in progress (one at a time)
+  if (loading.value || saveCall.inProgress) {
     return;
   }
   edit.value = { ...profile.value };
@@ -283,6 +310,14 @@ function openEdit() {
     datePicker.value = null;
   }
   editDialog.value = true;
+}
+
+/**
+ * handle save: one save at a time (a second click sends nothing); the dialog closes when the call starts, and the edit
+ * button shows the call until the answer; the snackbar tells the result
+ */
+async function handleSave() {
+  await saveCall.run(onSave);
 }
 
 async function onSave() {
@@ -309,6 +344,9 @@ async function saveEdit() {
         address: edit.value.address,
       };
 
+      // the dialog closes: the edit button shows the call until the answer
+      editDialog.value = false;
+
       await Api.updateUser(profile.value.id, payload);
 
       // update store locally
@@ -316,9 +354,8 @@ async function saveEdit() {
       auth.raw = { ...auth.raw, name: payload.name, email: auth.raw.username };
       useAuthStore()?.save(auth);
 
-      // update local profile and close dialog
+      // update local profile
       profile.value = { ...profile.value, ...payload };
-      editDialog.value = false;
 
       snackbarText.value = t('profile.update.success');
       snackbarColor.value = 'success';
@@ -326,9 +363,8 @@ async function saveEdit() {
     }
   } catch (e) {
     console.error('Error saving profile', e);
-    const errText = e.response?.data?.error?.toString() || e.toString();
+    const errText = ComponentsUtils.getErrorText(e, t);
 
-    // keep dialog open and show error
     snackbarText.value = t('profile.update.error') + ' - ' + errText;
     snackbarColor.value = 'error';
     snackbar.value = true;

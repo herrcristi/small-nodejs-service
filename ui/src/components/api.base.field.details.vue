@@ -18,6 +18,7 @@
     :write="props.write"
     :loading="props.loading"
     :nodatatext="props.nodatatext"
+    :call="tableCall"
     @addItem="openAdd"
     @editItem="emit('editItem', $event)"
     @deleteItem="emit('deleteItem', $event)"
@@ -332,7 +333,7 @@
       <v-card-actions>
         <v-spacer />
         <v-btn text @click="closeAdd">{{ t('cancel') }}</v-btn>
-        <v-btn color="primary" @click="saveAdd">{{ t('save') }}</v-btn>
+        <v-btn color="primary" :disabled="saveCall.inProgress" @click="handleSave">{{ t('save') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -347,6 +348,7 @@
 import { ref, reactive, computed, watch } from 'vue';
 import ApiTableServer from './api.base.table.server.vue';
 import ApiTableData from './api.base.table.data.vue';
+import ComponentsUtils from './components.utils.js';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
@@ -374,6 +376,9 @@ const props = defineProps({
   emitEdit: { type: [Boolean, Number], default: null },
   selectStrategy: { type: [String], default: 'page' }, // single, page, all
   selectReturnObject: { type: [Boolean], default: false }, // default is to return ids since not all objects can be retreived on edit
+
+  // the call of the parent started from the table (an edit of a row, emitEdit; ComponentsUtils.useSingleCall)
+  call: { type: Object, default: null },
 });
 
 /**
@@ -389,6 +394,10 @@ const tableData = ref();
 const addDialog = ref(false);
 
 const selectedItems = ref([]);
+const saveCall = ComponentsUtils.useSingleCall(); // the save of the add dialog, shown on the + (handleSave)
+
+// the call shown on the table: the save of the add dialog, or the call of the parent (an edit it opened)
+const tableCall = computed(() => (saveCall.inProgress ? saveCall : props.call));
 
 /**
  * snackbar
@@ -410,6 +419,11 @@ async function deleteField(itemID) {
  * open dialog for all
  */
 async function openAdd() {
+  // not while a save is in progress (one at a time)
+  if (saveCall.inProgress) {
+    return;
+  }
+
   // existing ids
   selectedItems.value = props.items.map((item) => (props.selectReturnObject ? item : item.id));
 
@@ -419,6 +433,14 @@ async function openAdd() {
 async function closeAdd() {
   addDialog.value = false;
   selectedItems.value = [];
+}
+
+/**
+ * save: one save at a time (a second click sends nothing); the dialog closes when the call starts, and the + is
+ * disabled until the answer, with a spinner when it takes long; the snackbar tells the result
+ */
+async function handleSave() {
+  await saveCall.run(saveAdd);
 }
 
 async function saveAdd() {
@@ -437,6 +459,10 @@ async function saveAdd() {
     return;
   }
 
+  // the dialog closes (its selection is cleared): the + shows the call until the answer
+  addDialog.value = false;
+  selectedItems.value = [];
+
   try {
     // update, props.items should be update in the caller
     await props.apiFn.updateField(newItems, removeIDs);
@@ -445,14 +471,11 @@ async function saveAdd() {
     snackbarColor.value = 'success';
     snackbar.value = true;
 
-    addDialog.value = false;
-    selectedItems.value = [];
-
     emit('addItems', newItems);
     emit('deleteItems', removeIDs);
   } catch (e) {
     console.error('Error updating field:', e);
-    const errText = e.response?.data?.error?.toString() || e.toString();
+    const errText = ComponentsUtils.getErrorText(e, t);
 
     snackbarText.value = (t('update.error') || 'Error updating field') + ' - ' + errText;
     snackbarColor.value = 'error';

@@ -213,10 +213,10 @@ const fieldExtraStudents = ref([]);
  * ApiDetails events after get details
  */
 async function onItemDetails(data) {
-  Object.keys(itemDetails.value).forEach((k) => delete itemDetails[k]);
-  Object.assign(itemDetails.value, data);
+  // the new details replace the old ones (a field missing in the answer is not kept); null: another item is loading
+  itemDetails.value = { ...data };
 
-  fieldClasses.value = [itemDetails.value.class];
+  fieldClasses.value = itemDetails.value.class ? [itemDetails.value.class] : [];
   fieldProfessors.value = itemDetails.value.professors || [];
   fieldInnerSchedules.value = itemDetails.value.schedules || [];
 
@@ -227,7 +227,7 @@ async function onItemDetails(data) {
 
 function getGroupsStudents(groups) {
   let students = [];
-  groups.forEach((group) => students.push(...group.students));
+  groups.forEach((group) => students.push(...(group.students || [])));
 
   // eliminate duplicates
   let studentsIDs = new Set(students.map((item) => item.id));

@@ -83,7 +83,8 @@ describe('Web Server', function () {
     let res = await supertest(`http://localhost:${port}`).get(`${path}`).set('Origin', `blabla`);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
+    // check: refused; in production the cause is only logged
     chai.expect(res.status).to.equal(500);
-    chai.expect(res.body.error.message).to.include('CORS policy violation');
+    chai.expect(res.body).to.deep.equal({ message: 'An unknown error has occured' });
   }).timeout(10000);
 });

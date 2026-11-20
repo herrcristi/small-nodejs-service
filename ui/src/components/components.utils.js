@@ -1,7 +1,136 @@
 /**
  * component utils
  */
+import { reactive } from 'vue';
+
+// the statuses of a failed request that have their own text (error.status.<status>); the others use the text of
+// their class (400 or 500)
+const ErrorStatuses = new Set([400, 401, 403, 404, 429, 500]);
+
 const Utils = {
+  /**
+   * a spinner or a loader is shown only when a call takes longer than this (ms): a fast call shows nothing
+   */
+  LoadingDelay: 300,
+
+  /**
+   * one call at a time (a save, an invite, a login): while it is in progress a second click (or Enter) sends nothing,
+   * and its button is disabled; the spinner (loading) is shown only after LoadingDelay
+   * a dialog closes when its call starts: the call is shown on the button that opened the dialog (the + of a table,
+   * the edit of a row: itemID), and the snackbar tells the result
+   * returns a reactive { inProgress, loading, itemID, run }: run(fn, itemID?) calls fn only when no call is in progress
+   * (it returns the result of fn, or undefined for an ignored click); itemID is the row the call is for (null: an add)
+   */
+  useSingleCall: () => {
+    const call = reactive({ inProgress: false, loading: false, itemID: null });
+
+    call.run = async (fn, itemID = null) => {
+      // a call is in progress: the click is ignored
+      if (call.inProgress) {
+        return undefined;
+      }
+
+      call.inProgress = true;
+      call.itemID = itemID;
+      const timeoutID = setTimeout(() => {
+        call.loading = true;
+      }, Utils.LoadingDelay);
+
+      try {
+        return await fn();
+      } finally {
+        clearTimeout(timeoutID);
+        call.inProgress = false;
+        call.loading = false;
+        call.itemID = null;
+      }
+    };
+
+    return call;
+  },
+
+  /**
+   * one call at a time per row (a delete): a second call for a row whose call is in progress sends nothing, the other
+   * rows are not blocked; the button of the row is disabled, with a spinner after LoadingDelay
+   * returns a reactive { isInProgress(itemID), isLoading(itemID), run(itemID, fn) }
+   */
+  useItemCalls: () => {
+    const calls = reactive({ inProgress: new Set(), loading: new Set() });
+
+    calls.isInProgress = (itemID) => calls.inProgress.has(itemID);
+    calls.isLoading = (itemID) => calls.loading.has(itemID);
+
+    calls.run = async (itemID, fn) => {
+      // a call is in progress for this row: ignored
+      if (calls.inProgress.has(itemID)) {
+        return undefined;
+      }
+
+      calls.inProgress.add(itemID);
+      const timeoutID = setTimeout(() => {
+        calls.loading.add(itemID);
+      }, Utils.LoadingDelay);
+
+      try {
+        return await fn();
+      } finally {
+        clearTimeout(timeoutID);
+        calls.inProgress.delete(itemID);
+        calls.loading.delete(itemID);
+      }
+    };
+
+    return calls;
+  },
+
+  /**
+   * the latest call of a component (a list, the details of an item): an answer that arrives after a newer call was
+   * sent is dropped, so a late answer never replaces a newer one (the rows of an older filter, another item)
+   * returns { next, isLatest }: next() before the call gives its number, isLatest(number) after the answer
+   */
+  useLatestCall: () => {
+    let last = 0;
+
+    const next = () => {
+      last += 1;
+      return last;
+    };
+    const isLatest = (number) => number === last;
+
+    return { next, isLatest };
+  },
+
+  /**
+   * the text of a failed request, for people
+   * - a refused request (400): the reason the server gives (detail), after the text of the status
+   * - other statuses: a text for the status, in the language of the UI (the server sends only a generic message for
+   *   them, so it does not tell if an account exists, and never the cause of a server error)
+   * - no answer: the server can not be reached; an error that is not of a request: its message
+   */
+  getErrorText: (e, t) => {
+    const response = e?.response;
+    if (!response) {
+      if (e?.request) {
+        return t('error.network');
+      }
+      return e?.message || `${e}`;
+    }
+
+    // the text of the status (its own, or the one of its class)
+    let status = response.status >= 500 ? 500 : 400;
+    if (ErrorStatuses.has(response.status)) {
+      status = response.status;
+    }
+    const statusText = t(`error.status.${status}`);
+
+    // the reason of a refused request
+    const detail = response.data?.detail;
+    if (typeof detail === 'string' && detail) {
+      return `${statusText}: ${detail}`;
+    }
+    return statusText;
+  },
+
   /**
    * fields titles
    * map user.name -> name
@@ -343,13 +472,16 @@ const Utils = {
 
     /**
      * add
+     * options: { successKey? } the text of the success ('invite.success' for an invite: its answer is the same for a
+     * new user, an existing user and a member, so the UI can only say that the invitation was sent)
+     * returns true when added (the snackbar tells the result)
      */
-    add: async (apiFn, payload, snackbar, t) => {
+    add: async (apiFn, payload, snackbar, t, options = null) => {
       try {
         await apiFn.create(payload);
 
         if (snackbar) {
-          snackbar.text.value = t('add.success') || 'Added';
+          snackbar.text.value = t(options?.successKey || 'add.success');
           snackbar.color.value = 'success';
           snackbar.ref.value = true;
         }
@@ -357,7 +489,7 @@ const Utils = {
         return true;
       } catch (e) {
         console.error('Error adding:', e);
-        const errText = e.response?.data?.error?.toString() || e.toString();
+        const errText = Utils.getErrorText(e, t);
 
         if (snackbar) {
           snackbar.text.value = (t('add.error') || 'Error adding') + ' - ' + errText;
@@ -371,6 +503,7 @@ const Utils = {
 
     /**
      * update
+     * returns true when updated (the snackbar tells the result)
      */
     update: async (apiFn, itemID, payload, snackbar, t) => {
       try {
@@ -385,7 +518,7 @@ const Utils = {
         return true;
       } catch (e) {
         console.error('Error updating:', e);
-        const errText = e.response?.data?.error?.toString() || e.toString();
+        const errText = Utils.getErrorText(e, t);
 
         if (snackbar) {
           snackbar.text.value = (t('update.error') || 'Error updating') + ' - ' + errText;

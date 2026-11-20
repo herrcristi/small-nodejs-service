@@ -9,6 +9,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue';
+import ComponentsUtils from './components.utils.js';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
@@ -25,6 +26,8 @@ const props = defineProps({
 
 /**
  * emit
+ * item: the details of the item; null when another item is opened (the details of the previous one are cleared at
+ * once, so they are never shown, or edited, under the new one)
  */
 const emit = defineEmits(['item', 'loading', 'nodatatext']);
 
@@ -32,12 +35,19 @@ const snackbar = ref(false);
 const snackbarText = ref('');
 const snackbarColor = ref('');
 
+// the details calls: only the answer of the latest one is shown
+const detailsCalls = ComponentsUtils.useLatestCall();
+
 /**
  * monitor itemID
  */
 watch(
   () => props.itemID,
-  (id) => {
+  (id, previousID) => {
+    // another item: the details of the previous one are cleared
+    if (previousID) {
+      emit('item', null);
+    }
     if (id) {
       /* await */ fetchDetails(id);
     }
@@ -46,31 +56,54 @@ watch(
 );
 
 /**
+ * the answer of a request is shown only when it is the latest request and for the item that is open (another item
+ * may have been opened, or the panel closed, while it ran)
+ */
+function isCurrent(callNumber, id) {
+  return detailsCalls.isLatest(callNumber) && id === props.itemID;
+}
+
+/**
  * get details
  */
 async function fetchDetails(id) {
+  const callNumber = detailsCalls.next();
   let timeoutID = setTimeout(() => {
     emit('loading', true);
-  }, 300); // Show loader if it takes more than 300ms
+  }, ComponentsUtils.LoadingDelay); // the loader only when the details take long
 
   try {
     const resp = await props.apiFn.get(id);
-    const data = resp.data || {};
 
+    // an older request: dropped
+    if (!isCurrent(callNumber, id)) {
+      return;
+    }
+
+    const data = resp.data || {};
     emit('item', data);
     emit('nodatatext', '');
   } catch (e) {
     console.error('Error fetching  details:', e);
 
-    snackbarText.value = t('fetch.details.error') || 'Error fetching details';
+    // an older request: dropped
+    if (!isCurrent(callNumber, id)) {
+      return;
+    }
+
+    const text = ComponentsUtils.getErrorText(e, t);
+    snackbarText.value = `${t('fetch.details.error')} - ${text}`;
     snackbarColor.value = 'error';
     snackbar.value = true;
 
-    const text = e.toString();
     emit('nodatatext', text);
   } finally {
     clearTimeout(timeoutID);
-    emit('loading', false);
+
+    // the loader stays while the latest request runs
+    if (detailsCalls.isLatest(callNumber)) {
+      emit('loading', false);
+    }
   }
 }
 

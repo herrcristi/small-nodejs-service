@@ -31,7 +31,7 @@
       <v-card-actions>
         <v-spacer />
         <v-btn text @click="emit('update:modelValue', false)">{{ t('cancel') }}</v-btn>
-        <v-btn color="primary" :disabled="!formValid || saving" :loading="saving" @click="save">{{ t('save') }}</v-btn>
+        <v-btn color="primary" :disabled="!formValid || saveCall.inProgress" @click="handleSave">{{ t('save') }}</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
@@ -53,6 +53,9 @@ const { t } = useI18n();
 const props = defineProps({
   modelValue: { type: Boolean, default: false }, // the dialog is open
   user: { type: Object, default: null }, // { id, name, email, status }
+  // the call of the parent (ComponentsUtils.useSingleCall), shown on the button that opened the dialog (the edit of the
+  // row: itemID is the user); without it the dialog has its own
+  call: { type: Object, default: null },
 });
 
 const emit = defineEmits(['update:modelValue', 'saved']);
@@ -66,7 +69,7 @@ const isSelf = computed(() => !!props.user?.id && props.user.id === auth?.raw?.u
 const itemData = reactive({ name: '', status: '' });
 const formValid = ref(false);
 const editForm = ref(null);
-const saving = ref(false);
+const saveCall = props.call || ComponentsUtils.useSingleCall(); // one save at a time (handleSave)
 
 const snackbar = ref(false);
 const snackbarText = ref('');
@@ -97,6 +100,14 @@ watch(
 );
 
 /**
+ * handle save: one call at a time (a second click sends nothing); the dialog closes when the call starts, and the
+ * button that opened it shows the call until the answer; the snackbar tells the result
+ */
+async function handleSave() {
+  await saveCall.run(save, props.user?.id);
+}
+
+/**
  * save only what was changed: the name (profile) and the status (its own route)
  */
 async function save() {
@@ -109,7 +120,10 @@ async function save() {
 
   const id = props.user?.id;
   const name = `${itemData.name || ''}`.trim();
-  saving.value = true;
+
+  // the dialog closes: the button that opened it shows the call
+  emit('update:modelValue', false);
+
   try {
     if (name !== props.user?.name) {
       await Api.updateUser(id, { name });
@@ -122,16 +136,13 @@ async function save() {
     snackbarColor.value = 'success';
     snackbar.value = true;
 
-    emit('update:modelValue', false);
     emit('saved');
   } catch (e) {
     console.error('Error updating user', e);
-    const errText = e.response?.data?.error?.toString() || e.toString();
-    snackbarText.value = `${t('update.error')}: ${errText}`;
+    const errText = ComponentsUtils.getErrorText(e, t);
+    snackbarText.value = `${t('update.error')} - ${errText}`;
     snackbarColor.value = 'error';
     snackbar.value = true;
-  } finally {
-    saving.value = false;
   }
 }
 </script>

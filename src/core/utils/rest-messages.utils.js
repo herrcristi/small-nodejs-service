@@ -4,14 +4,38 @@
 
 const CommonUtils = require('./common.utils.js');
 
+const Private = {
+  /**
+   * the reason of a refused request, for the user: the message the service wrote (a broken rule, the schema error)
+   * returns the text, or undefined
+   */
+  getDetail: (error) => {
+    if (typeof error === 'string') {
+      return error;
+    }
+    if (typeof error?.message === 'string') {
+      return error.message;
+    }
+    return undefined;
+  },
+};
+
 const Public = {
   /**
    * request is not valid
+   * the reason is sent in every mode (detail), so the user knows what to change; only for 400: a 401 / 403 / 404 keeps
+   * its generic text (it must not tell if an account exists) and a 500 never shows its cause
    */
   notValid: async (error, _ctx) => {
     let msg = {
       message: 'Request is not valid',
     };
+
+    // the reason, for the user
+    const detail = Private.getDetail(error);
+    if (detail) {
+      msg.detail = detail;
+    }
 
     // detailed error in debug
     if (CommonUtils.isDebug()) {

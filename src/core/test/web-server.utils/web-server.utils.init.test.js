@@ -160,9 +160,11 @@ describe('Web Server Utils', function () {
       `\nTest returned: status=${JSON.stringify(res?.status, null, 2)}, ${JSON.stringify(res?.body, null, 2)}\n`
     );
 
+    // check: the same answer as the controllers, a generic message and, in debug mode, the cause
     chai.expect(authMiddlewares[0].middleware.callCount).to.equal(1);
-    chai.expect(res.body.error.message).to.include('Test error');
-    chai.expect(res.body.error.error).to.exist;
+    chai.expect(res.status).to.equal(500);
+    chai.expect(res.body.message).to.equal('An unknown error has occured');
+    chai.expect(res.body.error).to.include('Test error');
   }).timeout(10000);
 
   /**
@@ -206,8 +208,10 @@ describe('Web Server Utils', function () {
 
     chai.expect(authMiddlewares[0].middleware.callCount).to.equal(1);
     chai.expect(stubDebug.callCount).to.be.greaterThanOrEqual(1);
-    chai.expect(res.body.error.message).to.include('Test error');
-    chai.expect(res.body.error.error).to.not.exist;
+
+    // check: in production only the generic message, never the cause
+    chai.expect(res.status).to.equal(500);
+    chai.expect(res.body).to.deep.equal({ message: 'An unknown error has occured' });
   }).timeout(10000);
 
   /**

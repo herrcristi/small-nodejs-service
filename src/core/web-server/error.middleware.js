@@ -1,28 +1,23 @@
 /**
  * Error middleware
+ *
+ * the errors that are not answered by a controller (a body that is not JSON, a body that is too large, an exception in
+ * a middleware): the same answer as the controllers give, a generic message for the status, the reason of a refused
+ * request (400, detail), and the details only in debug mode (a server error never shows its cause)
  */
 
-const CommonUtils = require('../utils/common.utils');
+const RestMessagesUtils = require('../utils/rest-messages.utils.js');
 
 const Public = {
   /**
    * Error middleware
    */
-  middleware: (err, req, res, next) => {
-    const msg = {
-      error: {
-        message: err.message || err,
-      },
-    };
+  middleware: async (err, req, res, next) => {
+    // the status of the error, otherwise a server error
+    const status = err?.status || err?.statusCode || 500;
 
-    // detailed error in debug
-    if (CommonUtils.isDebug()) {
-      msg.error.error = CommonUtils.getLogError(err);
-    }
-
-    res.status(err.status || 500);
-    res.json(msg);
-    res.end();
+    const message = await RestMessagesUtils.statusError(status, err, req._ctx);
+    return res.status(status).json(message);
   },
 };
 

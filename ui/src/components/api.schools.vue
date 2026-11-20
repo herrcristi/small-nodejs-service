@@ -15,21 +15,28 @@
       :apiFn="portalAdminsApiFn"
       :read="read"
       :write="write"
+      :call="portalAdminsCall"
       @addItem="openInvitePortalAdmin"
     >
-      <template #item.actions="{ item }">
-        <v-icon v-if="write" small class="mr-2" size="small" :title="t('edit')" @click="openEditUser(item)"
-          >mdi-pencil</v-icon
-        >
-        <v-icon
-          v-if="canRemovePortalAdmin(item)"
-          small
+      <template #item.actions="{ item, deleteCalls }">
+        <ActionIcon
+          v-if="write"
           class="mr-2"
-          size="small"
+          icon="mdi-pencil"
+          :title="t('edit')"
+          :disabled="portalAdminsCall.inProgress"
+          :loading="portalAdminsCall.loading && portalAdminsCall.itemID === item.id"
+          @click="openEditUser(item)"
+        />
+        <ActionIcon
+          v-if="canRemovePortalAdmin(item)"
+          class="mr-2"
+          icon="mdi-delete"
           :title="t('delete')"
+          :disabled="deleteCalls.isInProgress(item.id)"
+          :loading="deleteCalls.isLoading(item.id)"
           @click="portalAdminsTable.confirmDelete(item.id)"
-          >mdi-delete</v-icon
-        >
+        />
       </template>
     </ApiTableServer>
 
@@ -46,6 +53,7 @@
       :apiFn="apiFn"
       :read="read"
       :write="write"
+      :call="schoolsCall"
       :details="details"
       :expand="expand"
       @addItem="openAdd($event)"
@@ -125,7 +133,9 @@
           <v-card-actions>
             <v-spacer />
             <v-btn text @click="closeDialog">{{ t('cancel') }}</v-btn>
-            <v-btn color="primary" :disabled="!formValid" @click="handleSubmit">{{ t('save') }}</v-btn>
+            <v-btn color="primary" :disabled="!formValid || dialogCall.inProgress" @click="handleSubmit">
+              {{ t('save') }}
+            </v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -133,7 +143,12 @@
       <!-- 
         edit a portal admin (name, status)
       -->
-      <ApiUserEditDialog v-model="userDialog" :user="editingUser" @saved="portalAdminsTable.refresh()" />
+      <ApiUserEditDialog
+        v-model="userDialog"
+        :user="editingUser"
+        :call="portalAdminsCall"
+        @saved="portalAdminsTable.refresh()"
+      />
 
       <!-- 
         snackbar for notifications
@@ -150,6 +165,7 @@ import { useAppStore, useAuthStore } from '../stores/stores.js';
 import ApiTableServer from './api.base.table.server.vue';
 import ApiSchoolMoreInfo from './api.school.moreinfo.vue';
 import ApiUserEditDialog from './api.user.edit.dialog.vue';
+import ActionIcon from './base.action.icon.vue';
 import { useI18n } from 'vue-i18n';
 import ComponentsUtils from './components.utils.js';
 const { t } = useI18n();
@@ -229,7 +245,8 @@ const userDialog = ref(false);
 const editingUser = ref(null);
 
 function openEditUser(item) {
-  if (!write) {
+  // not while a call of the portal admins is in progress (one at a time)
+  if (!write || portalAdminsCall.inProgress) {
     return;
   }
   editingUser.value = { ...item };
@@ -245,6 +262,10 @@ const editingItemID = ref(null);
 const dialog = ref(false);
 const editForm = ref(null);
 const formValid = ref(false);
+// the calls of the dialog, one per table: shown on the button that opened the dialog (handleSubmit)
+const schoolsCall = ComponentsUtils.useSingleCall(); // add / edit a school
+const portalAdminsCall = ComponentsUtils.useSingleCall(); // invite / edit a portal admin
+const dialogCall = computed(() => (dialogMode.value === 'portal' ? portalAdminsCall : schoolsCall));
 const dialogMode = ref('school'); // 'school' (add/edit managed school) or 'portal' (invite portal admin)
 
 const snackbar = ref(false);
@@ -280,9 +301,18 @@ function openDetails(item) {
 }
 
 /**
- * handle submit
+ * handle submit: one save at a time (a second click or Enter sends nothing); the dialog closes when the call starts,
+ * and the button that opened it (+, or the edit of the row) is disabled until the answer, with a spinner when it takes
+ * long; the snackbar tells the result
  */
 async function handleSubmit() {
+  await dialogCall.value.run(submit, editingItemID.value);
+}
+
+/**
+ * submit: validate, then add or update
+ */
+async function submit() {
   if (editForm.value && typeof editForm.value.validate === 'function') {
     const ok = await editForm.value.validate();
     if (!ok) {
@@ -297,23 +327,27 @@ async function handleSubmit() {
   const payload = { ...itemData };
   const snackbarO = { ref: snackbar, text: snackbarText, color: snackbarColor };
 
+  // the dialog closes (its form is cleared): the button that opened it shows the call until the answer
+  const isPortal = dialogMode.value === 'portal';
+  const isEditing = editing.value;
+  const itemID = editingItemID.value;
+  dialog.value = false;
+  resetForm();
+
   // add/update (or invite portal admin)
   let ok = false;
-  if (dialogMode.value === 'portal') {
-    ok = await ComponentsUtils.Edit.add(portalAdminsApiFn, payload, snackbarO, t);
-  } else if (editing.value) {
-    ok = await ComponentsUtils.Edit.update(apiFn, editingItemID.value, payload, snackbarO, t);
+  if (isPortal) {
+    ok = await ComponentsUtils.Edit.add(portalAdminsApiFn, payload, snackbarO, t, { successKey: 'invite.success' });
+  } else if (isEditing) {
+    ok = await ComponentsUtils.Edit.update(apiFn, itemID, payload, snackbarO, t);
   } else {
     ok = await ComponentsUtils.Edit.add(apiFn, payload, snackbarO, t);
   }
 
+  // refresh
   if (ok) {
-    const wasPortal = dialogMode.value === 'portal';
-    dialog.value = false;
-    resetForm();
-
-    // refresh
-    await (wasPortal ? portalAdminsTable : tableServer).value.refresh();
+    const table = isPortal ? portalAdminsTable : tableServer;
+    await table.value.refresh();
   }
 }
 
@@ -321,7 +355,8 @@ async function handleSubmit() {
  * open add dialog
  */
 function openAdd() {
-  if (!write) {
+  // not while a call of its table is in progress (one at a time)
+  if (!write || schoolsCall.inProgress) {
     return;
   }
 
@@ -337,7 +372,8 @@ function openAdd() {
  * open edit dialog
  */
 function openEdit(item) {
-  if (!write) {
+  // not while a call of its table is in progress (one at a time)
+  if (!write || schoolsCall.inProgress) {
     return;
   }
 
@@ -365,7 +401,8 @@ function openEdit(item) {
  * open invite portal admin dialog (the user is invited to the portal school, which is the selected tenant)
  */
 function openInvitePortalAdmin() {
-  if (!write) {
+  // not while a call of its table is in progress (one at a time)
+  if (!write || portalAdminsCall.inProgress) {
     return;
   }
 
