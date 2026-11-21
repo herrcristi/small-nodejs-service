@@ -2,6 +2,7 @@
  * Users auth setup service
  */
 const UsersRest = require('../rest/users.rest.js');
+const EventsRest = require('../rest/events.rest.js');
 const UsersAuthSignupService = require('./users-auth.signup.service.js');
 
 const Public = {
@@ -20,7 +21,16 @@ const Public = {
    */
   init: async () => {
     const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
-    const _ctx = { reqID: 'UsersAuthSetup', lang: 'en', tenantID: portalSchoolID, tenantName: 'Portal School' };
+    // the events of the start are done by the setup user
+    const setupUser = EventsRest.Constants.NoLoginUsers.Setup;
+    const _ctx = {
+      reqID: 'UsersAuthSetup',
+      lang: 'en',
+      tenantID: portalSchoolID,
+      tenantName: 'Portal School',
+      userID: setupUser,
+      username: setupUser,
+    };
 
     const email = process.env.SMALL_API_PORTAL_ADMIN_EMAIL;
     if (!email) {

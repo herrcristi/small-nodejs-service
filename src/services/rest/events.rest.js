@@ -47,16 +47,18 @@ const Public = {
   raiseEventForObject: async (serviceName, action, objTarget, objArg, _ctx, severity = undefined) => {
     const protectedArg = CommonUtils.protectData(objArg);
     const argText = JSON.stringify(protectedArg);
-    return await Public.post(
-      {
-        severity: severity || EventsConstants.Severity.Informational,
-        messageID: `${serviceName}.${action}`,
-        target: { id: objTarget.id, name: objTarget.name, type: objTarget.type },
-        args: [argText],
-        user: { id: _ctx.userID, username: _ctx.username },
-      },
-      _ctx
-    );
+    const event = {
+      severity: severity || EventsConstants.Severity.Informational,
+      messageID: `${serviceName}.${action}`,
+      target: { id: objTarget.id, name: objTarget.name, type: objTarget.type },
+      args: [argText],
+    };
+
+    // the user who did it: the logged-in user, or the one of the context (the pending cleanup, the start); a public
+    // form without a login (reset password) is anonymous
+    const anonymous = EventsConstants.NoLoginUsers.Anonymous;
+    event.user = _ctx.userID ? { id: _ctx.userID, username: _ctx.username } : { id: anonymous, username: anonymous };
+    return await Public.post(event, _ctx);
   },
 
   /**

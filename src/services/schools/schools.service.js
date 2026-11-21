@@ -90,7 +90,14 @@ const Private = {
     const interval = SchoolsConstants.PendingCleanupInterval * 1000;
     Private.PendingCleanupTimer = setInterval(async () => {
       // the events of the cleanup are written in the log of the portal school
-      const _ctx = { reqID: 'SchoolsPendingCleanup', lang: 'en', tenantID: process.env.SMALL_API_PORTAL_SCHOOL_ID };
+      const cleanupUser = EventsRest.Constants.NoLoginUsers.PendingCleanup;
+      const _ctx = {
+        reqID: 'SchoolsPendingCleanup',
+        lang: 'en',
+        tenantID: process.env.SMALL_API_PORTAL_SCHOOL_ID,
+        userID: cleanupUser,
+        username: cleanupUser,
+      };
       try {
         const r = await Public.deleteExpiredPending(_ctx);
         if (r.error) {

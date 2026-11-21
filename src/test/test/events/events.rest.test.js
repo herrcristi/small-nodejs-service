@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const RestCommsUtils = require('../../../core/utils/rest-communications.utils.js');
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
 
@@ -135,6 +134,24 @@ describe('Events Rest', function () {
 
     // check
     chai.expect(res?.value).to.equal('dummy');
+  }).timeout(10000);
+
+  /**
+   * rest raiseEventForObject without a logged-in user (a public form): the event is done by the anonymous user
+   */
+  it('should raiseEventForObject without a logged-in user', async () => {
+    const obj = { id: 'id', name: 'name', type: 'type' };
+
+    // stub: the event that is sent
+    const stub = sinon.stub(RestCommsUtils, 'post').resolves({ status: 200, value: 'dummy' });
+
+    // call: a context without a user
+    const res = await EventsRest.raiseEventForObject('service', 'delete', obj, obj, { reqID: 'testReq', lang: 'en' });
+
+    // check: sent, by the anonymous user
+    chai.expect(res?.value).to.equal('dummy');
+    chai.expect(stub.firstCall.args[1].messageID).to.equal('service.delete');
+    chai.expect(stub.firstCall.args[1].user).to.deep.equal({ id: 'anonymous', username: 'anonymous' });
   }).timeout(10000);
 
   /**

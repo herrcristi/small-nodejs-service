@@ -9,6 +9,7 @@ const UsersAuthConstants = require('../../../services/users-auth/users-auth.cons
 const UsersAuthSetupService = require('../../../services/users-auth/users-auth.setup.service.js');
 const SchoolsSetupService = require('../../../services/schools/schools.setup.service.js');
 const UsersService = require('../../../services/users/users.service.js');
+const SchoolsService = require('../../../services/schools/schools.service.js');
 const SchoolsConstants = require('../../../services/schools/schools.constants.js');
 const UsersConstants = require('../../../services/users/users.constants.js');
 const StudentsConstants = require('../../../services/students/students.constants.js');
@@ -433,7 +434,13 @@ describe('Users Auth Functional', function () {
     const otherAgain = { email: otherStudentEmail, school: { role: 'student' } };
     await api('post', `${AuthPath}/invite`, { cookie: adminCookie, tenant: schoolID, body: otherAgain });
     await users.updateOne({ email: otherStudentEmail }, { $set: { createdTimestamp: '2026-01-01T10:00:00.000Z' } });
-    const cleanupCtx = { reqID: 'Test-Users-Auth-Cleanup', lang: 'en', tenantID: portalID() };
+    const cleanupCtx = {
+      reqID: 'Test-Users-Auth-Cleanup',
+      lang: 'en',
+      tenantID: portalID(),
+      userID: 'cleanup pending',
+      username: 'cleanup pending',
+    };
     const res = await UsersService.deleteExpiredPending(cleanupCtx);
 
     // check: the user is removed again, its trace stays, deleted
@@ -500,7 +507,13 @@ describe('Users Auth Functional', function () {
     await users.updateOne({ email: otherStudentEmail }, { $set: { createdTimestamp: '2026-01-01T10:00:00.000Z' } });
 
     // call: the cleanup (it runs regularly)
-    const cleanupCtx = { reqID: 'Test-Users-Auth-Cleanup', lang: 'en', tenantID: portalID() };
+    const cleanupCtx = {
+      reqID: 'Test-Users-Auth-Cleanup',
+      lang: 'en',
+      tenantID: portalID(),
+      userID: 'cleanup pending',
+      username: 'cleanup pending',
+    };
     const res = await UsersService.deleteExpiredPending(cleanupCtx);
 
     // check: only the expired one, with its record and its login; the other student is untouched
@@ -512,6 +525,49 @@ describe('Users Auth Functional', function () {
       .to.equal(undefined);
     const student = await recordOf(StudentsConstants.ApiPath, adminCookie, schoolID, studentEmail);
     chai.expect(student.user.status).to.equal('active');
+  }).timeout(30000);
+
+  /**
+   * what no logged-in user did is in the events too, with the user that did it: the start (the setup user: the portal
+   * school, the invitation of the first portal admin) and the removal of a signup and of an invitation that were not
+   * used in time (the pending cleanup user)
+   */
+  it('should keep the events of the start and of the removal of what was not used in time', async () => {
+    // the start: the portal school (the events without a school) and its first portal admin (the portal school)
+    const portalCookie = await startPortal();
+    const globalEvents = await EventsDatabase.collection(_ctx);
+    const portalEvents = await EventsDatabase.collection({ ..._ctx, tenantID: portalID() });
+    const setupUser = { id: 'setup', username: 'setup' };
+    const schoolsStart = await globalEvents.find({ messageID: 'schools.post', user: setupUser }).toArray();
+    chai.expect(schoolsStart.map((event) => event.target.name)).to.deep.equal(['Portal School']);
+    const usersStart = await portalEvents.find({ messageID: 'users.post', user: setupUser }).toArray();
+    chai.expect(usersStart.length).to.equal(1);
+
+    // a signup that nobody logged in to, older than the expiry (the school and its first admin)
+    const body = { email: schoolAdminEmail, school: { name: 'North High School', description: 'North campus' } };
+    const rSignup = await api('post', `${AuthPath}/signup`, { cookie: portalCookie, tenant: portalID(), body });
+    chai.expect(rSignup.status).to.equal(201);
+    const createdLongAgo = { $set: { createdTimestamp: '2026-01-01T10:00:00.000Z' } };
+    await (await SchoolsDatabase.collection(_ctx)).updateOne({ name: 'North High School' }, createdLongAgo);
+    await (await UsersDatabase.collection(_ctx)).updateOne({ email: schoolAdminEmail }, createdLongAgo);
+
+    // call: the cleanups (they run regularly, with the portal school and the pending cleanup user)
+    const cleanupCtx = {
+      reqID: 'Test-Users-Auth-Cleanup',
+      lang: 'en',
+      tenantID: portalID(),
+      userID: 'cleanup pending',
+      username: 'cleanup pending',
+    };
+    chai.expect((await SchoolsService.deleteExpiredPending(cleanupCtx)).value.length).to.equal(1);
+    chai.expect((await UsersService.deleteExpiredPending(cleanupCtx)).value.length).to.equal(1);
+
+    // check: the expired school and the expired user are in the events of the portal school, by the cleanup user
+    const removedFilter = { messageID: { $in: ['schools.expire', 'users.delete'] } };
+    const removedEvents = await portalEvents.find(removedFilter).toArray();
+    chai.expect(removedEvents.map((event) => event.messageID)).to.have.members(['schools.expire', 'users.delete']);
+    const cleanupUser = { id: 'cleanup pending', username: 'cleanup pending' };
+    chai.expect(removedEvents.map((event) => event.user)).to.deep.equal([cleanupUser, cleanupUser]);
   }).timeout(30000);
 
   /**

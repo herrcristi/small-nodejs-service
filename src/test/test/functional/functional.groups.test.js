@@ -9,6 +9,7 @@ const TestConstants = require('../../test-constants.js');
 const GroupsDatabase = require('../../../services/groups/groups.database.js');
 const UsersDatabase = require('../../../services/users/users.database.js');
 const StudentsDatabase = require('../../../services/students/students.database.js');
+const SchedulesDatabase = require('../../../services/schedules/schedules.database.js');
 const EventsDatabase = require('../../../services/events/events.database.js');
 
 const GroupsConstants = require('../../../services/groups/groups.constants.js');
@@ -375,6 +376,37 @@ describe('Groups Functional', function () {
 
     chai.expect(res.body.id).to.equal(testGroupID);
     chai.expect(res.body.name).to.equal(testGroup.name);
+  }).timeout(10000);
+
+  /**
+   * the students removed from a group (as the UI does it): the group stays in its schedules, the schedules keep the
+   * group without them; the students leave the group
+   */
+  it('should keep the group in its schedules when its students are removed', async () => {
+    // stub: group1 has the student user1 and is in schedule1 (the test data)
+    const schedules = await SchedulesDatabase.collection(_ctx);
+    const scheduleBefore = await schedules.findOne({ id: 'schedule1' });
+    chai.expect(scheduleBefore.groups.map((group) => group.id)).to.deep.equal(['group1']);
+
+    // call: remove user1 from group1
+    const res = await supertest(TestConstants.WebServer)
+      .patch(`${GroupsConstants.ApiPath}/group1`)
+      .set('x-tenant-id', _ctx.tenantID)
+      .set('Origin', TestConstants.WebServer)
+      .send({ add: { students: [] }, remove: { students: [{ id: 'user1' }] } });
+    chai.expect(res.status).to.equal(200);
+
+    // check: the group has no student, it is still in schedule1 (its copy without the student) and in its schedules
+    const group = await (await GroupsDatabase.collection(_ctx)).findOne({ id: 'group1' });
+    chai.expect(group.students).to.deep.equal([]);
+    chai.expect(group.schedules.map((schedule) => schedule.id)).to.deep.equal(['schedule1']);
+    const scheduleAfter = await schedules.findOne({ id: 'schedule1' });
+    chai.expect(scheduleAfter.groups.map((item) => item.id)).to.deep.equal(['group1']);
+    chai.expect(scheduleAfter.groups[0].students).to.deep.equal([]);
+
+    // check: the student left the group
+    const student = await (await StudentsDatabase.collection(_ctx)).findOne({ id: 'user1' });
+    chai.expect(student.groups).to.deep.equal([]);
   }).timeout(10000);
 
   /**
