@@ -198,10 +198,9 @@ describe('Events Service', function () {
       }
     }
     ids.push('users.putEmail', 'users.putStatus', 'users.patchStatus', 'users.patchSchool', 'users.activate');
-    ids.push('users.recreateAccount', 'users.deleteAccount');
     ids.push('schools.activate', 'schools.settings', 'schools.expire');
     for (const service of ['admins', 'students', 'professors']) {
-      for (const action of ['restore', 'disable', 'accountDeleted']) {
+      for (const action of ['restore', 'remove', 'relink', 'accountDeleted']) {
         ids.push(`${service}.${action}`);
       }
     }

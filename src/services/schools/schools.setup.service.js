@@ -3,6 +3,7 @@
  */
 const SchoolsConstants = require('./schools.constants.js');
 const SchoolsRest = require('../rest/schools.rest.js');
+const EventsRest = require('../rest/events.rest.js');
 
 const Public = {
   /**
@@ -10,7 +11,9 @@ const Public = {
    */
   init: async () => {
     const id = process.env.SMALL_API_PORTAL_SCHOOL_ID;
-    const _ctx = { reqID: 'SchoolsSetup', lang: 'en' };
+    // the events of the start are done by the setup user
+    const setupUser = EventsRest.Constants.NoLoginUsers.Setup;
+    const _ctx = { reqID: 'SchoolsSetup', lang: 'en', userID: setupUser, username: setupUser };
     const existing = await SchoolsRest.getOne(id, { id: 1, status: 1 }, _ctx);
 
     if (!existing.error) {
