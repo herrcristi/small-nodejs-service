@@ -14,6 +14,7 @@ const NotificationsUtils = require('../../core/utils/base-service.notifications.
 
 const EventsRest = require('../rest/events.rest.js');
 const UsersRest = require('../rest/users.rest.js');
+const SchoolsRest = require('../rest/schools.rest.js');
 const AdminsRest = require('../rest/admins.rest.js');
 const AdminsConstants = require('./admins.constants.js');
 const AdminsDatabase = require('./admins.database.js');
@@ -28,7 +29,7 @@ const Schema = {
 
 const Validators = {
   Get: {
-    filter: ['id', 'user.id', 'user.name', 'user.email', 'user.status'], // some have index
+    filter: ['id', 'user.id', 'user.name', 'user.email', 'user.status', 'status'], // some have index
     sort: { 'user.name': 1 },
   },
 
@@ -48,9 +49,14 @@ const Validators = {
 };
 
 const Private = {
-  Action: BaseServiceUtils.Constants.Action,
+  Action: {
+    ...BaseServiceUtils.Constants.Action,
+    Restore: 'restore', // a trace is an admin again (the role was given again)
+    Disable: 'disable', // the role was removed: the admin is kept as a trace, disabled
+    AccountDeleted: 'accountDeleted', // the account was deleted: the admin is kept as a trace, deleted
+  },
   Notification: NotificationsUtils.Constants.Notification,
-  ResProjection: { ...BaseServiceUtils.Constants.DefaultProjection, user: 1 },
+  ResProjection: { ...BaseServiceUtils.Constants.DefaultProjection, user: 1, removedTimestamp: 1 },
 
   /**
    * config
@@ -64,7 +70,7 @@ const Private = {
         {
           fieldName: 'user',
           service: UsersRest,
-          projection: { id: 1, name: 1, type: 1, status: 1, email: 1 },
+          projection: { id: 1, name: 1, type: 1, status: 1, email: 1, createdTimestamp: 1, modifiedCount: 1 },
         },
       ],
       notifications: { projection: { ...BaseServiceUtils.Constants.DefaultProjection, user: 1 } } /* for sync+async */,
@@ -82,6 +88,235 @@ const Private = {
       status: 400,
       error: { message: msg, error: new Error(msg) },
     };
+  },
+
+  /**
+   * a reference of the config (the copies kept from another service: user, classes[], schedules[], ...)
+   */
+  getReference: (config, fieldName) => {
+    return config.references.find((ref) => ref.fieldName === fieldName);
+  },
+
+  /**
+   * change the status of an admin: the status of its user while it has the role, or a trace (disabled: the role was
+   * removed, deleted: the account was deleted; removedTimestamp: when); the translations of the status follow
+   * statusInfo: { status, removedTimestamp }
+   * event: the action of the event (null: no event, a change of the user has its own event in the users service)
+   * returns { status, value } or { status, error }
+   */
+  putAdminStatus: async (config, adminID, statusInfo, event, _ctx) => {
+    const changes = { ...statusInfo };
+    await Public.translate(changes, _ctx);
+
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+    const r = await DbOpsUtils.put(config, adminID, changes, projection, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // raise event for the status
+    if (event) {
+      const eventObj = { ...r.value, name: r.value.user?.name };
+      await EventsRest.raiseEventForObject(AdminsConstants.ServiceName, event, eventObj, statusInfo, _ctx);
+    }
+
+    return r;
+  },
+
+  /**
+   * delete an admin: its record is deleted, with an event and a removed notification (no other service keeps it)
+   * returns { status, value } or { status, error } (404 when there is no record)
+   */
+  deleteAdmin: async (config, adminID, _ctx) => {
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+    const r = await DbOpsUtils.delete(config, adminID, projection, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // raise event for delete
+    const eventObj = { ...r.value, name: r.value.user?.name };
+    await EventsRest.raiseEventForObject(AdminsConstants.ServiceName, Private.Action.Delete, eventObj, r.value, _ctx);
+
+    // raise a notification for removed obj
+    const rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
+    await AdminsRest.raiseNotification(Private.Notification.Removed, [rnp.value], _ctx);
+
+    return r;
+  },
+
+  /**
+   * save the admins of the users that have the admin role in the school (the users notification: added,
+   * modified)
+   * - a new admin: its record is created, with the status of its user
+   * - an admin (also a trace of an earlier role that is an admin again: an event): its status follows its user,
+   *   and its user copy is updated when it is older than the user (modifiedCount)
+   * nothing is notified (no other service keeps copies of the admins)
+   * users: [ { id, status, ... } ] (as notified by the users service)
+   * returns { status, value } or { status, error }
+   */
+  saveAdminsOfUsers: async (users, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    const userRef = Private.getReference(config, 'user');
+
+    // the admins that exist already
+    const usersIDs = users.map((user) => user.id);
+    const existingProjection = { _id: 0, id: 1, status: 1, removedTimestamp: 1 };
+    const rAdmins = await DbOpsUtils.getAllByIDs(config, usersIDs, existingProjection, _ctx);
+    if (rAdmins.error) {
+      return rAdmins;
+    }
+    const adminsMap = {};
+    for (const admin of rAdmins.value) {
+      adminsMap[admin.id] = admin;
+    }
+
+    const changedAdminsIDs = new Set();
+    for (const user of users) {
+      const admin = adminsMap[user.id];
+
+      // a new admin
+      if (!admin) {
+        console.log(`\n${AdminsConstants.ServiceName}: create the admin of the user ${user.id}`);
+        const rPost = await Public.post({ id: user.id }, _ctx);
+        if (rPost.error) {
+          return rPost;
+        }
+        continue;
+      }
+
+      // its status follows its user (a trace that is an admin again: an event)
+      if (admin.status !== user.status || admin.removedTimestamp) {
+        const event = admin.removedTimestamp ? Private.Action.Restore : null;
+        const statusInfo = { status: user.status, removedTimestamp: null };
+        const rStatus = await Private.putAdminStatus(config, admin.id, statusInfo, event, _ctx);
+        if (rStatus.error) {
+          return rStatus;
+        }
+        changedAdminsIDs.add(admin.id);
+      }
+
+      // its user copy (only an older one)
+      const userCopy = CommonUtils.getProjectedObj(user, userRef.projection);
+      const rCopy = await DbOpsUtils.updateManyReferences(config, userRef, userCopy, _ctx);
+      if (rCopy.error) {
+        return rCopy;
+      }
+      rCopy.ids.forEach((id) => changedAdminsIDs.add(id));
+    }
+
+    return { status: 200, value: [...changedAdminsIDs] };
+  },
+
+  /**
+   * the admins of the users that are not admins of the school anymore (the users notification, removed: the role
+   * was removed, or the account was deleted)
+   * - a user that never logged in (pending): its admin is deleted (an invitation that was not used leaves nothing)
+   * - otherwise by the setting of the school (removedMembers):
+   *   keep: the admin stays as a trace, disabled (the role was removed) or deleted (the account was deleted), with
+   *   an event; it stays in the lists
+   *   delete: the admin is deleted (no other service keeps it)
+   * nothing is notified (no other service keeps copies of the admins)
+   * users: [ { id, status, ... } ] (as notified by the users service)
+   * returns { status, value } or { status, error }
+   */
+  removeAdminsOfUsers: async (users, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    const userRef = Private.getReference(config, 'user');
+
+    // the setting of the school
+    const rSettings = await SchoolsRest.getSettings(_ctx.tenantID, _ctx);
+    if (rSettings.error) {
+      return rSettings;
+    }
+    const keepTraces = rSettings.value.removedMembers === SchoolsRest.Constants.Settings.RemovedMembers.Keep;
+
+    const changedAdminsIDs = new Set();
+    for (const user of users) {
+      // deleted: an invitation that was not used, or by the setting of the school
+      const neverJoined = user.status === UsersRest.Constants.Status.Pending;
+      if (neverJoined || !keepTraces) {
+        console.log(`\n${AdminsConstants.ServiceName}: delete the admin ${user.id} (never joined: ${neverJoined})`);
+        const rDelete = await Private.deleteAdmin(config, user.id, _ctx);
+        if (rDelete.error && rDelete.status !== 404) {
+          return rDelete;
+        }
+        continue;
+      }
+
+      // a trace: disabled (the role was removed) or deleted (the account was deleted)
+      const traceProjection = { _id: 0, id: 1, status: 1, removedTimestamp: 1 };
+      const rAdmin = await DbOpsUtils.getOne(config, user.id, traceProjection, _ctx);
+      if (rAdmin.status === 404) {
+        continue;
+      }
+      if (rAdmin.error) {
+        return rAdmin;
+      }
+
+      const accountDeleted = user.status === UsersRest.Constants.Status.Deleted;
+      const traceStatus = accountDeleted ? UsersRest.Constants.Status.Deleted : UsersRest.Constants.Status.Disabled;
+      if (rAdmin.value.status !== traceStatus || !rAdmin.value.removedTimestamp) {
+        console.log(`\n${AdminsConstants.ServiceName}: keep the admin ${user.id} as a trace, ${traceStatus}`);
+        const removedTimestamp = rAdmin.value.removedTimestamp || new Date().toISOString();
+        const statusInfo = { status: traceStatus, removedTimestamp };
+        const event = accountDeleted ? Private.Action.AccountDeleted : Private.Action.Disable;
+        const rStatus = await Private.putAdminStatus(config, user.id, statusInfo, event, _ctx);
+        if (rStatus.error) {
+          return rStatus;
+        }
+        changedAdminsIDs.add(user.id);
+      }
+
+      // its user copy (only an older one)
+      const userCopy = CommonUtils.getProjectedObj(user, userRef.projection);
+      const rCopy = await DbOpsUtils.updateManyReferences(config, userRef, userCopy, _ctx);
+      if (rCopy.error) {
+        return rCopy;
+      }
+      rCopy.ids.forEach((id) => changedAdminsIDs.add(id));
+    }
+
+    return { status: 200, value: [...changedAdminsIDs] };
+  },
+
+  /**
+   * users notification, split by school (the schools where the user has, or had, the admin role):
+   * - added, modified: the admins are saved (created when missing, otherwise their status and their user copy)
+   * - removed (the admin role was removed, or the account was deleted): the admins are kept as traces or
+   *   deleted, by the setting of the school
+   * returns { status, value } or { status, error }
+   */
+  onUsersNotification: async (notification, _ctx) => {
+    const adminsNotification = UsersRest.filterNotificationByRole(notification, AdminsConstants.Type, _ctx);
+    const schoolsNotifications = UsersRest.convertToTenantNotifications(adminsNotification, _ctx);
+
+    for (const schoolNotification of schoolsNotifications) {
+      const schoolCtx = { ..._ctx, tenantID: schoolNotification.tenantID };
+      const usersNotification = schoolNotification.notification;
+
+      // the users with the admin role
+      const addedUsers = usersNotification[Private.Notification.Added] || [];
+      const modifiedUsers = usersNotification[Private.Notification.Modified] || [];
+      const users = [...addedUsers, ...modifiedUsers];
+      if (users.length) {
+        const rSave = await Private.saveAdminsOfUsers(users, schoolCtx);
+        if (rSave.error) {
+          return rSave;
+        }
+      }
+
+      // the users without the admin role (or without an account)
+      const removedUsers = usersNotification[Private.Notification.Removed] || [];
+      if (removedUsers.length) {
+        const rRemove = await Private.removeAdminsOfUsers(removedUsers, schoolCtx);
+        if (rRemove.error) {
+          return rRemove;
+        }
+      }
+    }
+
+    return { status: 200, value: true };
   },
 };
 
@@ -212,6 +447,9 @@ const Public = {
       return rf;
     }
 
+    // the status of the admin is the status of its user (pending until the first login)
+    objInfo.status = objInfo.user?.status || UsersRest.Constants.Status.Pending;
+
     // translate
     await Public.translate(objInfo, _ctx);
     objInfo = CommonUtils.patch2obj(objInfo);
@@ -234,81 +472,58 @@ const Public = {
     return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
   },
 
-  postForUsers: async (users, _ctx) => {
-    if (!_ctx.tenantID) {
-      return Private.errorNoTenant(_ctx);
-    }
-
-    // check if already exists first
-    const usersIDs = users.map((item) => item.id);
-    let existingAdminsMap = {};
-    if (usersIDs.length) {
-      let r = await Public.getAllByIDs(usersIDs, { _id: 0, id: 1 }, _ctx);
-      if (r.error) {
-        return r;
-      }
-      r.value?.forEach((item) => (existingAdminsMap[item.id] = true));
-    }
-
-    let newUsers = [];
-    for (const user of users) {
-      if (existingAdminsMap[user.id]) {
-        console.log(`\nSkipping create Admin ${user.id}`);
-        continue;
-      }
-
-      // create
-      r = await Public.post(
-        {
-          id: user.id,
-        },
-        _ctx
-      );
-      if (r.error) {
-        return r;
-      }
-      newUsers.push(r.value);
-    }
-
-    return { status: 201, value: newUsers };
-  },
-
   /**
-   * delete
+   * delete: removes the admin role of the user in the current school (the one way to remove a member: the user and
+   * its other roles are kept); the admin follows the removed role (the users notification): it stays as a trace or
+   * it is deleted, by the setting of the school
    */
   delete: async (objID, _ctx) => {
     if (!_ctx.tenantID) {
       return Private.errorNoTenant(_ctx);
     }
 
-    // if the deleted user is the current user, skip delete
+    // the current admin can not remove itself (another admin, or a portal admin, removes it)
     if (objID === _ctx.userID) {
       console.log(`\nSkipping delete of current admin ${objID}`);
-      return {
-        error: { message: 'Skipping delete of current admin', error: new Error('Skipping delete of current admin') },
-        status: 400,
-      };
+      const msg = 'You cannot remove yourself as admin';
+      return { status: 400, error: { message: msg, error: new Error(msg) } };
     }
 
-    // { serviceName, collection, references, notifications.projection }
+    // an admin of the school
     const config = await Private.getConfig(_ctx);
-
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
-    const r = await DbOpsUtils.delete(config, objID, projection, _ctx);
-    if (r.error) {
-      return r;
+    const rget = await DbOpsUtils.getOne(config, objID, Private.ResProjection, _ctx);
+    if (rget.error) {
+      return rget;
     }
 
-    // raise event for delete
-    const eventObj = { ...r.value, name: r.value.user.name };
-    await EventsRest.raiseEventForObject(AdminsConstants.ServiceName, Private.Action.Delete, eventObj, r.value, _ctx);
+    // a trace (its role was already removed, or its account was deleted): it is deleted now, its references follow
+    // (the removed notification)
+    if (rget.value.removedTimestamp) {
+      console.log(`\n${AdminsConstants.ServiceName}: delete the trace of the admin ${objID}`);
+      const rDelete = await Private.deleteAdmin(config, objID, _ctx);
+      if (rDelete.error) {
+        return rDelete;
+      }
+      return BaseServiceUtils.getProjectedResponse(rget, Private.ResProjection, _ctx);
+    }
 
-    // raise a notification for removed obj
-    let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await AdminsRest.raiseNotification(Private.Notification.Removed, [rnp.value], _ctx);
+    // remove the role
+    const patchInfo = { remove: { schools: [{ id: _ctx.tenantID, roles: [AdminsConstants.Type] }] } };
+    const rRole = await UsersRest.patchSchool(objID, patchInfo, _ctx);
+    if (rRole.error) {
+      return rRole;
+    }
+
+    // the admin follows the removed role (done by the users notification; an admin kept without its role by an
+    // earlier version is done now)
+    const user = { ...rget.value.user, id: objID };
+    const rRemove = await Private.removeAdminsOfUsers([user], _ctx);
+    if (rRemove.error) {
+      return rRemove;
+    }
 
     // success
-    return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
+    return BaseServiceUtils.getProjectedResponse(rget, Private.ResProjection, _ctx);
   },
 
   /**
@@ -405,8 +620,10 @@ const Public = {
   },
 
   /**
-   * notification
-   * notification: { serviceName, added: [ { id, ... } ], removed, modified  }
+   * notification: the copies kept by the admins follow the changes of their sources (each source has its own flow)
+   * - users: the admins of the users with the admin role (created, status, user copy), kept as traces or deleted
+   *   when the role is removed
+   * notification: { serviceName, added?, modified?, removed? }
    */
   notification: async (notification, _ctx) => {
     // validate
@@ -416,65 +633,24 @@ const Public = {
     }
     notification = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
-    let tenantNotifications = [];
-    if (notification.serviceName === UsersRest.Constants?.ServiceName) {
-      // users notification must be filtered by role
-      const AdminNotification = UsersRest.filterNotificationByRole(notification, AdminsConstants.Type, _ctx);
-      tenantNotifications = UsersRest.convertToTenantNotifications(AdminNotification, _ctx);
-
-      // create new users
-      for (const tenantNotif of tenantNotifications) {
-        const nCtx = { ..._ctx, tenantID: tenantNotif.tenantID };
-
-        const newUsers = (tenantNotif.notification[Private.Notification.Added] || []).concat(
-          tenantNotif.notification[Private.Notification.Modified] || []
+    switch (notification.serviceName) {
+      case UsersRest.Constants.ServiceName:
+        return await Private.onUsersNotification(notification, _ctx);
+      default:
+        console.log(
+          `\n${AdminsConstants.ServiceName}: notification of ${notification.serviceName} ignored (no copy of it)`
         );
-
-        const rN = await Public.postForUsers(newUsers, nCtx);
-        if (rN.error) {
-          return rN;
-        }
-      }
-
-      // currently if a role is removed from an org the Admins entry will still be kept
-      // convert to modified changes with status disabled
-      for (const tenantNotif of tenantNotifications) {
-        const n = tenantNotif.notification;
-        if (n[Private.Notification.Removed]) {
-          n[Private.Notification.Modified] = n[Private.Notification.Removed];
-          delete n[Private.Notification.Removed];
-          for (const user of n[Private.Notification.Modified]) {
-            user.status = UsersRest.Constants.Status.Disabled;
-          }
-        }
-      }
-    } else {
-      // other notification
-      tenantNotifications = [{ tenantID: _ctx.tenantID, notification }];
+        return { status: 200, value: false };
     }
-
-    // process notifications (references) for each tenant
-    for (const tenantNotif of tenantNotifications) {
-      const nCtx = { ..._ctx, tenantID: tenantNotif.tenantID };
-      let config = await Private.getConfig(nCtx); // { serviceName, collection, references, fillReferences }
-      config = { ...config, fillReferences: true };
-
-      let r = await NotificationsUtils.notification(config, tenantNotif.notification, nCtx);
-      if (r.error) {
-        return r;
-      }
-
-      // TODO user is in notification projection so trigger modified notification
-    }
-
-    return { status: 200, value: true };
   },
 
   /**
    * translate
    */
   translate: async (obj, _ctx) => {
-    const translations = {};
+    const translations = {
+      status: TranslationsUtils.string(obj?.status, _ctx),
+    };
     return await TranslationsUtils.addTranslations(obj, translations, _ctx);
   },
 };

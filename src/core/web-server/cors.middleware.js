@@ -1,51 +1,36 @@
 /**
  * Cors middleware
  */
-const CommonUtils = require('../utils/common.utils.js');
-
-const Private = {
-  corsOriginsSet: null,
-
-  initCorsOriginsSet: function () {
-    if (Private.corsOriginsSet) {
-      return;
-    }
-
-    // parse application/json and look for raw text
-    // Configure CORS with an origin whitelist (set SMALL_API_CORS_ORIGIN env var)
-    const corsOriginsVec = process.env.SMALL_API_CORS_ORIGIN.split(',').map((origin) => origin.trim());
-    Private.corsOriginsSet = new Set(corsOriginsVec);
-  },
-};
 
 const Public = {
   /**
-   * Setup for CORS
+   * the CORS options of a web server: only the origins given by the application can call it (with the cookie)
+   * origins: [ 'https://ui.example.test', ... ]
    */
-  init: async () => {
-    Private.initCorsOriginsSet();
-    return true;
-  },
+  getCors: (origins) => {
+    const trimmedOrigins = (origins || []).map((origin) => `${origin}`.trim());
+    const allowedOrigins = new Set(trimmedOrigins.filter((origin) => origin));
 
-  cors: {
-    origin: function (origin, callback) {
-      if (origin && Private.corsOriginsSet.has(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('CORS policy violation'), false);
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: [
-      'Content-Type',
-      'Authorization',
-      'x-tenant-id',
-      'x-lang',
-      'x-request-id',
-      'x-reset-token', // the reset password page (the identity headers are never read from a request)
-    ],
-    maxAge: 86400,
+    return {
+      origin: function (origin, callback) {
+        if (origin && allowedOrigins.has(origin)) {
+          callback(null, true);
+        } else {
+          callback(new Error('CORS policy violation'), false);
+        }
+      },
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'x-tenant-id',
+        'x-lang',
+        'x-request-id',
+        'x-reset-token', // the reset password page (the identity headers are never read from a request)
+      ],
+      maxAge: 86400,
+    };
   },
 };
 

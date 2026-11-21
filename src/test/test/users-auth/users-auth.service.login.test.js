@@ -527,6 +527,12 @@ describe('Users Auth Service', function () {
       status: 403,
       error: { message: 'User is disabled', error: new Error('User is disabled') },
     });
+
+    // case: a deleted account (a login left by a failure): refused the same way
+    const deletedUser = { ...testInfoUser, status: UsersRest.Constants.Status.Deleted };
+    stubUsers.callsFake(() => ({ status: 200, value: deletedUser }));
+    res = await UsersAuthService.login({ username: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
+    chai.expect(res.status).to.equal(403);
   }).timeout(10000);
 
   /**

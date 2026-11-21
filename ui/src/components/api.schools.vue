@@ -18,7 +18,7 @@
       :call="portalAdminsCall"
       @addItem="openInvitePortalAdmin"
     >
-      <template #item.actions="{ item, deleteCalls }">
+      <template #item.actions="{ item, deleteCalls, showDelete }">
         <ActionIcon
           v-if="write"
           class="mr-2"
@@ -29,7 +29,7 @@
           @click="openEditUser(item)"
         />
         <ActionIcon
-          v-if="canRemovePortalAdmin(item)"
+          v-if="showDelete && canRemovePortalAdmin(item)"
           class="mr-2"
           icon="mdi-delete"
           :title="t('delete')"
@@ -161,7 +161,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue';
 import Api from '../api/api.js';
-import { useAppStore, useAuthStore } from '../stores/stores.js';
+import { useAppStore } from '../stores/stores.js';
 import ApiTableServer from './api.base.table.server.vue';
 import ApiSchoolMoreInfo from './api.school.moreinfo.vue';
 import ApiUserEditDialog from './api.user.edit.dialog.vue';
@@ -177,10 +177,6 @@ const tableServer = ref();
 const portalAdminsTable = ref();
 const details = null; // true for details column
 const expand = true; // true for expand column
-
-const auth = useAuthStore();
-// read from the store when used (computed), not when the component is created
-const currentUserID = computed(() => auth?.raw?.userID);
 
 const app = useAppStore();
 const read = app?.rolesPermissions?.schools?.read;
@@ -220,22 +216,18 @@ const apiFn = {
 
 // the portal admins: create invites the user to the portal school (the user becomes portal admin)
 // and delete removes only the portal-admin role (the user account is kept)
-const portalAdminsCount = ref(0);
 const portalAdminsApiFn = {
-  getAll: async (params) => {
-    const response = await Api.getPortalAdmins(params);
-    portalAdminsCount.value = response.data?.meta?.count ?? response.data?.data?.length ?? 0;
-    return response;
-  },
+  getAll: Api.getPortalAdmins,
   create: (data) => Api.invitePortalAdmin(data.email),
   delete: Api.removePortalAdmin,
 };
 
 /**
- * a portal admin can be removed only by another portal admin, and the last one cannot be removed
+ * any portal admin can be removed, also the current one and the last one (the configured portal admin is invited
+ * again at the next start of the server when no portal admin is active)
  */
 function canRemovePortalAdmin(item) {
-  return !!write && portalAdminsCount.value > 1 && item.id !== currentUserID.value;
+  return !!write;
 }
 
 /**

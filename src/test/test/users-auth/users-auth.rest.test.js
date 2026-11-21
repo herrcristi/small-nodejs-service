@@ -16,6 +16,18 @@ const UsersAuthSetupService = require('../../../services/users-auth/users-auth.s
 const SchoolsSetupService = require('../../../services/schools/schools.setup.service.js');
 const EmailsUtils = require('../../../core/utils/emails.utils.js');
 const ConfigServices = require('../../../services/config.services.js');
+const SchoolsDatabase = require('../../../services/schools/schools.database.js');
+const UsersAuthDatabase = require('../../../services/users-auth/users-local-auth.database.js');
+const UsersAuthSessionsDatabase = require('../../../services/users-auth/users-auth.sessions.database.js');
+const UsersDatabase = require('../../../services/users/users.database.js');
+const EventsDatabase = require('../../../services/events/events.database.js');
+const AdminsDatabase = require('../../../services/admins/admins.database.js');
+const StudentsDatabase = require('../../../services/students/students.database.js');
+const ProfessorsDatabase = require('../../../services/professors/professors.database.js');
+const ClassesDatabase = require('../../../services/classes/classes.database.js');
+const LocationsDatabase = require('../../../services/locations/locations.database.js');
+const GroupsDatabase = require('../../../services/groups/groups.database.js');
+const SchedulesDatabase = require('../../../services/schedules/schedules.database.js');
 
 describe('Users Auth Rest', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
@@ -121,6 +133,23 @@ describe('Users Auth Rest', function () {
     sinon.stub(EmailsUtils, 'init').resolves();
     sinon.stub(SchoolsSetupService, 'init').resolves(true);
     sinon.stub(UsersAuthSetupService, 'init').resolves(false);
+    // the databases keep their connection (a stub in the unit tests, the test database with IS_TEST_DB)
+    for (const database of [
+      SchoolsDatabase,
+      UsersAuthDatabase,
+      UsersAuthSessionsDatabase,
+      UsersDatabase,
+      EventsDatabase,
+      AdminsDatabase,
+      StudentsDatabase,
+      ProfessorsDatabase,
+      ClassesDatabase,
+      LocationsDatabase,
+      GroupsDatabase,
+      SchedulesDatabase,
+    ]) {
+      sinon.stub(database, 'init').resolves();
+    }
     await ConfigServices.init();
 
     // UsersAuthRest.invite / signup use localCall { fn: 'invite' | 'signup' } on the users-auth service

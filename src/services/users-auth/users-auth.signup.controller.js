@@ -11,10 +11,11 @@ const UsersAuthSignupService = require('./users-auth.signup.service.js');
 const Private = {
   /**
    * the answer for the user of an invite (or a signup): the same for a new user, an existing user and an existing
-   * member, so it does not tell if an account exists, nor its id or name (the service returns the real result)
+   * member, so it does not tell if an account exists, nor its id or name (the service returns the real result);
+   * emailSent tells if the email was delivered to the mail server (false: invite again to send it again)
    */
   inviteAnswer: (r) => {
-    return { username: r.value?.username, type: UsersAuthConstants.Type };
+    return { username: r.value?.username, type: UsersAuthConstants.Type, emailSent: r.emailSent };
   },
 };
 

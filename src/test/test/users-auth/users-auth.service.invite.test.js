@@ -51,7 +51,7 @@ describe('Users Auth Service', function () {
     let res = await UsersAuthService.sendInvite(postReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // check: sent, and delivered to the mail server (emailSent)
     chai.expect(stubEmail.callCount).to.equal(1);
     chai.expect(stubEvent.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
@@ -59,8 +59,27 @@ describe('Users Auth Service', function () {
       value: {
         username: testUser.id,
         type: testUser.type,
+        emailSent: true,
       },
     });
+  }).timeout(10000);
+
+  /**
+   * send invite: the mail server refuses the email (emailSent false)
+   */
+  it('should send invite and report a failed delivery', async () => {
+    const testUser = _.cloneDeep(TestConstants.UsersAuth[0]);
+
+    // stub: the mail server refuses the email
+    sinon.stub(EventsRest, 'raiseEventForObject');
+    sinon.stub(EmailsUtils, 'sendEmail').resolves({ status: 500, error: { message: 'Failed to send email' } });
+
+    // call
+    const res = await UsersAuthService.sendInvite({ username: testUser.id }, _ctx);
+
+    // check: the invite is done, the email is not sent
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.value.emailSent).to.equal(false);
   }).timeout(10000);
 
   /**

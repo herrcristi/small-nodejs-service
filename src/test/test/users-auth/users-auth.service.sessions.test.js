@@ -107,9 +107,9 @@ describe('Users Auth Service sessions', function () {
    * a removed account ends all its sessions and links; the failure is returned
    */
   it('should delete end all the sessions of the user', async () => {
-    // stub: the auth and the user details are removed, the sessions are ended
+    // stub: the account is deleted, its login is removed, the sessions are ended
+    sinon.stub(UsersRest, 'deleteAccount').resolves({ status: 200, value: { id: 'user1' } });
     sinon.stub(UsersLocalAuthService, 'delete').resolves({ status: 200, value: { id: _ctx.username } });
-    sinon.stub(UsersRest, 'delete').resolves({ status: 200, value: { id: 'user1' } });
     const stubEndAll = sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 1 });
 
     // call

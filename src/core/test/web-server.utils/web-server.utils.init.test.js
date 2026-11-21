@@ -9,6 +9,11 @@ const WebServer = require('../../web-server/web-server.utils.js');
 const CommonUtils = require('../../utils/common.utils.js');
 const TestConstants = require('../../../test/test-constants.js');
 
+/**
+ * the settings of a web server of the tests: the origins of the requests of the tests
+ */
+const settings = (port) => ({ corsOrigins: [TestConstants.WebServer, `http://localhost:${port}`] });
+
 describe('Web Server Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
 
@@ -76,7 +81,7 @@ describe('Web Server Utils', function () {
     ];
 
     // call
-    let web = await WebServer.init(port, [router], middlewares, authMiddlewares);
+    let web = await WebServer.init(port, [router], middlewares, authMiddlewares, settings(port));
     server = web?.server;
 
     // check
@@ -111,7 +116,7 @@ describe('Web Server Utils', function () {
     let usersAuthMiddleware;
 
     // call
-    let web = await WebServer.init(port, router, middlewares, usersAuthMiddleware);
+    let web = await WebServer.init(port, router, middlewares, usersAuthMiddleware, settings(port));
     server = web?.server;
 
     // check
@@ -149,7 +154,7 @@ describe('Web Server Utils', function () {
     ];
 
     // call
-    let web = await WebServer.init(port, router, middlewares, authMiddlewares);
+    let web = await WebServer.init(port, router, middlewares, authMiddlewares, settings(port));
     server = web?.server;
 
     // check
@@ -195,7 +200,7 @@ describe('Web Server Utils', function () {
     ];
 
     // call
-    let web = await WebServer.init(port, router, middlewares, authMiddlewares);
+    let web = await WebServer.init(port, router, middlewares, authMiddlewares, settings(port));
     server = web?.server;
 
     // check
@@ -233,7 +238,7 @@ describe('Web Server Utils', function () {
       }),
     ];
 
-    let web = await WebServer.init(port, [router], [], authMiddlewares);
+    let web = await WebServer.init(port, [router], [], authMiddlewares, settings(port));
     server = web?.server;
 
     let res = await supertest(`http://localhost:${port}`)
@@ -245,5 +250,25 @@ describe('Web Server Utils', function () {
     res = await supertest(`http://localhost:${port}`).get('/test/items/abc').set('Origin', TestConstants.WebServer);
     chai.expect(res.body).to.deep.equal({ route: 'id' });
     chai.expect(routes).to.deep.equal(['/test/items/special', '/test/items/:id']);
+  }).timeout(10000);
+
+  /**
+   * a web server without settings: no origin is allowed (CORS), the defaults of the limits and no trusted proxy
+   */
+  it('should refuse every origin without settings', async () => {
+    const port = 8091;
+    const router = express.Router();
+    router.get('/test/no-settings', (req, res) => res.status(200).json({ success: true }));
+
+    // call: no settings
+    const web = await WebServer.init(port, [router]);
+    server = web?.server;
+
+    // check: refused for any origin
+    const res = await supertest(`http://localhost:${port}`)
+      .get('/test/no-settings')
+      .set('Origin', TestConstants.WebServer);
+    chai.expect(res.status).to.equal(500);
+    chai.expect(web.app.get('trust proxy')).to.equal(false);
   }).timeout(10000);
 });

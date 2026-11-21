@@ -11,7 +11,6 @@ require('./admins.service.getAllCount.test.js');
 require('./admins.service.getAllByIDs.test.js');
 require('./admins.service.getOne.test.js');
 require('./admins.service.post.test.js');
-require('./admins.service.postForUsers.test.js');
 require('./admins.service.delete.test.js');
 require('./admins.service.put.test.js');
 require('./admins.service.patch.test.js');

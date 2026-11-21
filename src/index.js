@@ -145,11 +145,13 @@ const Public = {
 };
 
 /**
- * auto init
+ * auto init: initialized is its promise (the tests wait for it, the service may have started before they listen to the
+ * inited event)
  */
-Public.init();
+const initialized = Public.init();
 
 module.exports = {
   ...Public,
   ...Constants,
+  initialized,
 };

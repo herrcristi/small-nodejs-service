@@ -77,7 +77,7 @@ describe('Base Service', function () {
     sinon.stub(config.references[0].service, 'getAllByIDs').callsFake((ids, projection) => {
       console.log(`\nrest service called with ids ${JSON.stringify(ids)} and projection ${JSON.stringify(projection)}`);
       chai.expect(ids).to.deep.equal(['targetID1', 'targetID2', 'targetID3', 'targetID4']);
-      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1 });
+      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 });
 
       return {
         status: 200,
@@ -172,7 +172,7 @@ describe('Base Service', function () {
     sinon.stub(config.references[1].service, 'getAllByIDs').callsFake((ids, projection) => {
       console.log(`\nrest service called with ids ${JSON.stringify(ids)} and projection ${JSON.stringify(projection)}`);
       chai.expect(ids).to.deep.equal(['targetID5', 'targetID6']);
-      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1 });
+      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 });
 
       return {
         status: 200,
@@ -344,7 +344,7 @@ describe('Base Service', function () {
     sinon.stub(config.references[0].service, 'getAllByIDs').callsFake((ids, projection) => {
       console.log(`\nrest service called with ids ${JSON.stringify(ids)} and projection ${JSON.stringify(projection)}`);
       chai.expect(ids).to.deep.equal(['targetID3', 'targetID4']);
-      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1 });
+      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 });
 
       return {
         status: 200,

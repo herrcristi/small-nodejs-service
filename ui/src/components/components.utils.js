@@ -194,7 +194,7 @@ const Utils = {
 
     // actions
     if (options?.actions) {
-      h.push({ width: 100, title: t('actions'), value: 'actions', sortable: false });
+      h.push({ width: 100, title: t('actions'), key: 'actions', value: 'actions', sortable: false });
     }
 
     // x-small width
@@ -273,6 +273,9 @@ const Utils = {
         return 'green';
 
       case 'disabled':
+        return 'grey';
+
+      case 'deleted':
         return 'grey';
 
       default:
@@ -478,11 +481,13 @@ const Utils = {
      */
     add: async (apiFn, payload, snackbar, t, options = null) => {
       try {
-        await apiFn.create(payload);
+        const response = await apiFn.create(payload);
 
+        // saved, but its email could not be sent (an invite): inviting again sends it again
+        const emailNotSent = response?.data?.emailSent === false;
         if (snackbar) {
-          snackbar.text.value = t(options?.successKey || 'add.success');
-          snackbar.color.value = 'success';
+          snackbar.text.value = emailNotSent ? t('invite.email.failed') : t(options?.successKey || 'add.success');
+          snackbar.color.value = emailNotSent ? 'warning' : 'success';
           snackbar.ref.value = true;
         }
 

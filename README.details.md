@@ -126,7 +126,9 @@ After login the UI shows the active schools. The school the user picks becomes `
 | `student`      | a school          | The same read-only access as a professor                                                                                                          |
 | `portal-admin` | the Portal School | Runs the portal: creates schools and manages the other portal admins (next section)                                                               |
 
-On top of the role, some routes use the special rule **current user**: any member can work with **their own** user record (and their own student or professor record), because the id in the path must match the logged-in user. This is how a student edits their own profile without being an admin.
+On top of the role, some routes use the special rule **current user**: any member can work with **their own** user record (and their own student or professor record), because the id in the path must match the logged-in user. This is how a student edits their own profile without being an admin. The own user record also works **without a school** (the `self` rule): a user whose roles were all removed logs in to the school selection, which says that it is not a member of any school, and can still change its profile, its email and its password, or delete its account. Such a route uses the selected school only if the user is a member of it; otherwise the school of the request is ignored.
+
+Admins add and remove people **by their roles**: a school admin adds a role with an invitation and removes it with `PATCH /users-auth/school/user/:uid` (or the delete of the person on its page), and a portal admin does the same for the admins of a school and for the portal admins. This changes only the roles of the user in that school; the account and the other schools are not touched. Only the user changes its own email.
 
 The exact routes of each role are in `src/services/config.roles.json`. A route not listed for a role is refused (`403`; `401` when the user is not a member of the tenant).
 
@@ -182,7 +184,7 @@ flowchart TD
 | Invite a portal admin       | `POST /users-auth/invite` with role `portal-admin`             | Portal admin                                                                                          |
 | List portal admins          | `GET /users/portal-admins`                                     | Portal admin                                                                                          |
 | List the admins of a school | `GET /users/school-admins/:schoolId`                           | Portal admin                                                                                          |
-| Remove a portal admin       | `PATCH /users-auth/school/user/:uid` (remove the role)         | Portal admin (not for their own role)                                                                 |
+| Remove a portal admin       | `PATCH /users-auth/school/user/:uid` (remove the role)         | Portal admin, also for their own role                                                                 |
 | Invite an admin of a school | `POST /users-auth/invite` with `school.id` and role `admin`    | Portal admin; a school admin invites into their own school without `school.id`                        |
 | Remove an admin of a school | `DELETE /users/school-admins/:schoolId/:id` (removes the role) | Portal admin. All the admins of a school can be removed; a new one can be invited                     |
 | List all users              | `GET /users`                                                   | Portal admin (name, email, status)                                                                    |
@@ -190,9 +192,9 @@ flowchart TD
 | Change the status of a user | `PUT` or `PATCH /users/:id/status`                             | Portal admin (not for their own account). `pending` -> `active` / `disabled`, never back to `pending` |
 | Read the global events      | `GET /events/global`, `GET /events/global/:id`                 | Portal admin. The events of a school (`GET /events`) are read by its admins                           |
 
-A portal admin cannot remove their own role, which is meant to keep at least one admin in the Portal School. Removing the role keeps the user account.
+A portal admin can remove another portal admin and also their own role, and a school can be left without admins: a portal admin can invite a new one at any time. Removing the role keeps the user account.
 
-**The first portal admin.** Set `SMALL_API_PORTAL_ADMIN_EMAIL` and the first start invites that address through the normal invite flow. The person receives the password setup email, so no password is ever stored in the configuration. It does nothing once a portal admin exists, so it is safe on every restart. There is deliberately no public portal-admin signup.
+**The first portal admin.** Set `SMALL_API_PORTAL_ADMIN_EMAIL` and the start invites that address through the normal invite flow. The person receives the password setup email, so no password is ever stored in the configuration. It does nothing while an active portal admin exists, so it is safe on every restart; when there is none (never used, all removed, or only disabled ones), every start invites the configured address again, with a new setup link. If the email can not be sent, the log says so and names the mail settings. There is deliberately no public portal-admin signup.
 
 In the UI, the Schools page has two lists: the **portal admins** and the **managed schools**. The Portal School itself is not shown, because it is always the same: the portal admins list has a **+** to invite a new portal admin and a delete action to remove one. Each managed school can be expanded to show its admins.
 
@@ -202,12 +204,14 @@ In the UI, the Schools page has two lists: the **portal admins** and the **manag
 
 Records that can be switched on and off carry a `status`: `pending`, `active`, `disabled`. It is used to **control what is current without deleting anything**. A typical use is a school year: every year the school creates new groups and schedules and sets the old ones to `disabled`. The old data stays for history and reports, and the lists, selectors, and schedules of the new year only show what is active.
 
-| Record                           | Statuses                                                                                                               |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| School                           | `pending` until its first admin logs in, then `active`; `disabled` hides it from the tenant selector and blocks access |
-| User                             | `pending` until the first login, then `active`; `disabled` blocks login                                                |
-| Class, location, group, schedule | `pending`, `active`, `disabled` (default `pending` on creation)                                                        |
-| Admin, professor, student record | follows the user; becomes `disabled` when the person leaves the school or the account is deleted                       |
+| Record                           | Statuses                                                                                                                 |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| School                           | `pending` until its first admin logs in, then `active`; `disabled` hides it from the tenant selector and blocks access   |
+| User                             | `pending` until the first login, then `active`; `disabled` blocks login; `deleted` when the user deleted its account     |
+| Class, location, group, schedule | `pending`, `active`, `disabled` (default `pending` on creation)                                                          |
+| Admin, professor, student record | the status of the user while it has the role; `disabled` when the role is removed, `deleted` when the account is deleted |
+
+**Pending records expire.** A pending user (an invitation that was not used) and a pending school (a signup that was not followed by a login) are removed `SMALL_API_PENDING_EXPIRES_IN` seconds after they were created (72 hours by default, as long as the invitation link). The users and schools services check every hour; a MongoDB TTL index is not used, because it would delete without the events and the notifications that clean the other services. A pending portal admin expires too: while no portal admin is active, every start invites the configured one again.
 
 ### Every record tracks its changes
 
@@ -223,7 +227,20 @@ The counter is how a consumer can tell **which version of a record it has seen**
 
 ### Deleting a user keeps the traces
 
-A user can delete their own account. The person's **traces stay in the schools**: the admin, professor, and student records, and the events that name them, remain, and the records are marked `disabled`. History such as who taught a class or attended a schedule is not rewritten. An admin removes a person from their school by removing the role, which does not delete the account.
+A user can delete their own account (the profile page, `DELETE /users-auth`). The account is closed: the user can not log in anymore, its login, sessions and links are removed, and its personal details (birthday, phone number, address) and its memberships are removed. The user record stays with its id, name, email and the status `deleted`, so the schools still know who the person was.
+
+The person's **traces stay in the schools**: the admin, professor, and student records, with their places in groups and schedules, and the events that name them, remain, marked `deleted`. History such as who taught a class or attended a schedule is not rewritten. An admin removes a person from their school by removing the role, which does not delete the account; the record stays marked `disabled`. A person who never logged in (pending) leaves nothing.
+
+Each school chooses on its **Settings** page (`GET|PUT /schools/:id/settings`, its admins: one line with the current choice, changed in a dialog) what happens to a removed person:
+
+| Setting `removedMembers` | What happens to the admin, professor, or student record                                                                                                  |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `keep` (default)         | kept, marked `disabled` (role removed) or `deleted` (account deleted); it stays in the lists, groups and schedules. Deleting it from its list removes it |
+| `delete`                 | deleted, and removed from its groups and schedules (the notifications follow). Nothing is kept; it can not be undone                                     |
+
+**Rejoining.** When a deleted user is invited again, its account is created again (pending, with a new setup link), with the same id. The roles it gets again make their records active again (for example the student record), and the others stay traces (the professor record stays `deleted`).
+
+**No accidental delete.** In the UI the delete buttons of a list are hidden until its "Show delete" icon is chosen (in the header of the actions column, or next to the "+" of an inner list), and the profile shows "Delete my account" only after "Show delete", below the profile; every delete is then confirmed.
 
 ## Security model
 
@@ -299,29 +316,31 @@ Independent security, adversarial, flow, concurrency, and scalability reviews we
 
 ## Design guarantees and caveats
 
+Each guarantee, with the check that proves it, is listed in [README.design-invariants.md](README.design-invariants.md).
+
 ### Guarantees
 
 What the design promises and what has been checked to hold, by attacking it and by tracing the code. These are the promises later changes must keep.
 
-| Area              | Guarantee                                                                                                                                                                                                                                                                                                                                            |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Tenants           | A person reaches a school's data only as a member of that school, with a role the route allows. A request with another school's tenant is refused                                                                                                                                                                                                    |
-| Routes            | Every public route is in the role matrix or in the short public list, and the matrix has no entry without a route. An unknown route and method pair is denied. A specific route is never handled as a parameter route, and the authorization check runs once per request                                                                             |
-| The portal        | A portal admin sees the list of schools, the admins of each school, the portal admins, all the users (without their schools) and the global events, and nothing inside a school                                                                                                                                                                      |
-| Roles             | `portal-admin` can be given only on the Portal School, and nothing else can be given there. A person cannot remove their own admin or portal-admin role                                                                                                                                                                                              |
-| Invitations       | Only admins invite. There is no public signup                                                                                                                                                                                                                                                                                                        |
-| The Portal School | It cannot be disabled, set to pending, or deleted through any route, it is not in the managed schools list, and its id never reaches the UI                                                                                                                                                                                                          |
-| Statuses          | A disabled user is refused at login and on every request. A disabled school is refused as a tenant and is never re-enabled by a login or a refresh                                                                                                                                                                                                   |
-| Session           | The token lives only in an HttpOnly cookie, never in a response body or in UI storage. Cross-site requests are rejected. Production errors carry no stack traces                                                                                                                                                                                     |
-| Internal calls    | Internal routes need a valid service token; a missing, wrong, session, or old token is refused                                                                                                                                                                                                                                                       |
-| Input             | Bodies are validated against a schema, unknown fields are rejected, list filters accept only declared fields, query operators are refused, and the page size is capped                                                                                                                                                                               |
-| Change tracking   | Every record has `createdTimestamp`, `lastModifiedTimestamp`, and a `modifiedCount` incremented on every change                                                                                                                                                                                                                                      |
-| Copies            | When a record changes, the copies of it that other services keep are updated. Delivering the same added or removed notification twice gives the same result                                                                                                                                                                                          |
-| People            | Removing a role touches only that school's record. Deleting a user keeps the school records and events, marked disabled                                                                                                                                                                                                                              |
-| Concurrency       | Two concurrent requests do not create two users, two auth records, or two Portal Schools, and two concurrent role grants do not create two memberships or a duplicate role (the unique indexes must exist)                                                                                                                                           |
-| Startup           | The Portal School is created once; a restart changes nothing. A bad configuration (a Portal School id that is not a UUID, an invalid first-admin email, a Portal School that is not active) stops the start with a clear message                                                                                                                     |
-| Cost              | Nothing in the request path fans out without a bound. Notification delivery is one update per changed record and reference                                                                                                                                                                                                                           |
-| The UI            | An action sends one call, also on a double click. A dialog closes when its call starts; the button that opened it is disabled until the answer, with a spinner when the call takes longer than 300 ms, and the snackbar tells the result. A list or a details panel shows only the answer of its latest call, and a refused request shows its reason |
+| Area              | Guarantee                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Tenants           | A person reaches a school's data only as a member of that school, with a role the route allows. A request with another school's tenant is refused                                                                                                                                                                                                                                                                     |
+| Routes            | Every public route is in the role matrix or in the short public list, and the matrix has no entry without a route. An unknown route and method pair is denied. A specific route is never handled as a parameter route, and the authorization check runs once per request                                                                                                                                              |
+| The portal        | A portal admin sees the list of schools, the admins of each school, the portal admins, all the users (without their schools) and the global events, and nothing inside a school                                                                                                                                                                                                                                       |
+| Roles             | `portal-admin` can be given only on the Portal School, and nothing else can be given there. A school admin cannot remove their own admin role; a portal admin can, and the configured portal admin is invited again at the next start when none is active                                                                                                                                                             |
+| Invitations       | Only admins invite. There is no public signup                                                                                                                                                                                                                                                                                                                                                                         |
+| The Portal School | It cannot be disabled, set to pending, or deleted through any route, it is not in the managed schools list, and its id never reaches the UI                                                                                                                                                                                                                                                                           |
+| Statuses          | A disabled or deleted user is refused at login and on every request. A disabled school is refused as a tenant and is never re-enabled by a login or a refresh. The status of a deleted account is never changed by a portal admin, and no role is added to it without a new invitation                                                                                                                                |
+| Session           | The token lives only in an HttpOnly cookie, never in a response body or in UI storage. Cross-site requests are rejected. Production errors carry no stack traces                                                                                                                                                                                                                                                      |
+| Internal calls    | Internal routes need a valid service token; a missing, wrong, session, or old token is refused                                                                                                                                                                                                                                                                                                                        |
+| Input             | Bodies are validated against a schema, unknown fields are rejected, list filters accept only declared fields, query operators are refused, and the page size is capped                                                                                                                                                                                                                                                |
+| Change tracking   | Every record has `createdTimestamp`, `lastModifiedTimestamp`, and a `modifiedCount` incremented on every change                                                                                                                                                                                                                                                                                                       |
+| Copies            | When a record changes, the copies of it that other services keep are updated, and the copies of those copies follow. A copy is updated only when it is older than the change (`modifiedCount`, and `createdTimestamp` for a record created again with the same id), so a notification that comes back through a cycle, or arrives late, changes nothing. Delivering the same notification twice gives the same result |
+| People            | Removing a role touches only that school's record. Deleting a user keeps the school records and events, marked deleted, unless the school chose to delete them. Only the user changes its email                                                                                                                                                                                                                       |
+| Concurrency       | Two concurrent requests do not create two users, two auth records, or two Portal Schools, and two concurrent role grants do not create two memberships or a duplicate role (the unique indexes must exist)                                                                                                                                                                                                            |
+| Startup           | The Portal School is created once; a restart changes nothing. A bad configuration (a Portal School id that is not a UUID, an invalid first-admin email, a Portal School that is not active) stops the start with a clear message                                                                                                                                                                                      |
+| Cost              | Nothing in the request path fans out without a bound. Notification delivery is one update per changed record and reference                                                                                                                                                                                                                                                                                            |
+| The UI            | An action sends one call, also on a double click. A dialog closes when its call starts; the button that opened it is disabled until the answer, with a spinner when the call takes longer than 300 ms, and the snackbar tells the result. A list or a details panel shows only the answer of its latest call, and a refused request shows its reason                                                                  |
 
 ### Caveats
 
@@ -498,8 +517,8 @@ There are three places, and each answers one question.
 ```js
 // src/services/schedules/schedules.service.js
 references: [
-  { fieldName: 'class', service: ClassesRest, projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 } },
-  { fieldName: 'professors[]', service: ProfessorsRest, projection: { id: 1, name: 1, type: 1, status: 1, user: 1 } },
+  { fieldName: 'class', service: ClassesRest, projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1, modifiedCount: 1 } },
+  { fieldName: 'professors[]', service: ProfessorsRest, projection: { id: 1, name: 1, type: 1, status: 1, user: 1, modifiedCount: 1 } },
 ],
 ```
 
@@ -513,7 +532,7 @@ for (const rest of [StudentsRest, ProfessorsRest, SchedulesRest]) {
 }
 ```
 
-**3. What happens on receipt?** The subscriber's `notification` handler calls `ReferencesUtils.onNotificationReferences`. It applies `added`, `modified`, and `removed` to the stored copies, with one `updateMany` for each changed record and reference (`DbOpsUtils.updateManyReferences`, and the matching add and delete helpers).
+**3. What happens on receipt?** The subscriber's `notification` handler calls the handler of that source (`onClassesNotification`, `onUsersNotification`, ...), which says what it does: for example the schedules update the copy of a modified class and remove a deleted one; the students take a group that lists them and leave a group that does not list them anymore. A copy is updated only when it is older than the change: a copy of the same record (the same `createdTimestamp`) with a smaller or missing `modifiedCount`, or a copy of a record created again with the same id (another `createdTimestamp`, for example an account created again by an invitation); one `updateMany` for each changed record and reference (`DbOpsUtils.updateManyReferences`, and the matching add and delete helpers). The service then notifies the records whose copies changed, so the copies of the copies follow: a user changes its students, a student changes its groups, a group changes its schedules. A change that comes back to a service through a cycle finds its copies up to date, so nothing is updated and the chain stops.
 
 #### Who notifies whom
 
@@ -543,7 +562,8 @@ flowchart LR
 Examples from this project:
 
 - A class rename updates the copies in schedules, students, and professors.
-- A change of a student (for example its classes) updates the copies in groups and schedules.
+- A change of a student (for example its classes, or its status when it leaves the school) updates the copies in groups and schedules.
+- A rename of a user updates its students, professors and admins, then the groups and the schedules that keep those students.
 - A school rename or status change updates the school memberships stored in every user. That is why the login response and the tenant selector need no school lookup.
 
 #### Caveats
@@ -638,7 +658,8 @@ The backend reads its settings from the **process environment**. [src/.env.examp
 | `SMALL_API_RATE_LIMIT_*`       | optional limits per 15 minutes: `MAX` (all requests of an address, 1000), `LOGIN_MAX` (failed logins of an account from an address, 5), `LOGIN_ACCOUNT_MAX` (failed logins of an account, 20), `RESET_MAX` (reset emails of an account, 3). They are kept in each process                             |
 | `SMALL_API_INTERNAL_ROUTES`    | `true` only when the services run in separate processes and call each other over HTTP. Otherwise the internal routes (`/api/internal_v1`) answer `404`; block that prefix at the proxy in any case                                                                                                    |
 | `SMALL_API_PORTAL_SCHOOL_ID`   | a UUID. The Portal School is created with this id at startup if it is missing                                                                                                                                                                                                                         |
-| `SMALL_API_PORTAL_ADMIN_EMAIL` | optional. The email of the first portal admin. If the Portal School has no portal admin yet, it is invited at startup and receives the password setup email. See [The Portal School](#the-portal-school)                                                                                              |
+| `SMALL_API_PORTAL_ADMIN_EMAIL` | optional. The email of the first portal admin. If the Portal School has no active portal admin, it is invited at startup and receives the password setup email. See [The Portal School](#the-portal-school)                                                                                           |
+| `SMALL_API_PENDING_EXPIRES_IN` | optional. The seconds a pending user (an invitation not used) or a pending school (a signup without a login) is kept before it is removed, 259200 (72 hours) by default. See [Statuses](#statuses-change-tracking-and-deletion)                                                                       |
 
 **Emails are stored in lower case.** One mailbox is one account, so every email is normalized (trimmed, lower case) when it is validated and when it is looked up.
 
@@ -654,9 +675,11 @@ cd ui && npm run build   # production build of the frontend
 ### Tests
 
 ```sh
-cd src && npm test       # unit tests (Mocha and Sinon), no database needed (run it without SMALL_API_PORTAL_ADMIN_EMAIL exported)
-cd src && npm run testdb # database-backed tests, needs a running MongoDB test database
+cd src && npm test       # unit tests (Mocha and Sinon), no database needed
+cd src && npm run testdb # also the functional tests, with the MongoDB of SMALL_API_DATABASE_URL
 ```
+
+The tests set their own settings: the `SMALL_API_*` and `SMALL_UI_*` values exported in the shell are not used, and the unit tests never connect to a database or a mail server. `npm run testdb` uses the database `Small-Test` of `SMALL_API_DATABASE_URL` and empties it at the start; its functional tests run the flows of the API on it (login, logout, signup, invite, the remove of a role and the role given again, the delete of an account and its invitation again, the school settings, the expiry of the invitations).
 
 The fixture credentials in `src/test/test-constants.js` are for tests only. They are not accounts of the application.
 
@@ -844,9 +867,24 @@ curl --cookie cookies.txt -H "x-tenant-id: $TENANT_ID" \
 
 School status can be edited so disabled schools are unavailable in tenant selection. The Portal School cannot be deleted or disabled. School deletion is not granted to portal admins.
 
+The admins of a school read and change its settings (the Settings page): `removedMembers` is `keep` (the removed people stay, marked `disabled` or `deleted`) or `delete` (their records are deleted, with their places in groups and schedules).
+
+```js
+await Api.getSchoolSettings('school-id');
+await Api.updateSchoolSettings('school-id', { removedMembers: 'keep' });
+```
+
+```sh
+curl --cookie cookies.txt -H "x-tenant-id: $TENANT_ID" \
+  -H "Origin: $ORIGIN" \
+  -H 'Content-Type: application/json' -X PUT \
+  --data '{"removedMembers":"keep"}' \
+  "$API/schools/$TENANT_ID/settings"
+```
+
 ### Admins, Students, and Professors
 
-These records are linked to users. The UI's add action uses the invite endpoint; it does not create a person record that has no user. Invite bodies require the role and selected school context.
+These records are linked to users. The UI's add action uses the invite endpoint; it does not create a person record that has no user. Invite bodies require the role and selected school context. The delete of a person removes its role in the school; the record follows the school setting (kept as `disabled`, or deleted). The delete of a record that is already kept (`disabled` or `deleted`) removes it for good. The lists show the status of the record, so a removed person is visible as `disabled` or `deleted`.
 
 | Record    | UI call                                                       | Collection curl                         | Invite role |
 | --------- | ------------------------------------------------------------- | --------------------------------------- | ----------- |
@@ -983,7 +1021,7 @@ curl --cookie cookies.txt -H "Origin: $ORIGIN" -H "x-tenant-id: $TENANT_ID" "$AP
 
 ### Users Auth
 
-In addition to login, logout, and `GET /users-auth/me`, the service provides `POST /users-auth/invite`, `POST /users-auth/reset-password`, `PUT /users-auth/password`, `PUT /users-auth/id`, and `PATCH /users-auth/school/user/:uid`. Signup is restricted to portal admins; invite is available to school admins (for their selected school) and to portal admins (for the Portal School). Internal auth routes are not public APIs.
+In addition to login, logout, and `GET /users-auth/me`, the service provides `POST /users-auth/invite`, `POST /users-auth/reset-password`, `PUT /users-auth/password`, `PUT /users-auth/id`, `PATCH /users-auth/school/user/:uid`, and `DELETE /users-auth` (the current user deletes its account; see [Deleting a user keeps the traces](#deleting-a-user-keeps-the-traces)). Signup is restricted to portal admins; invite is available to school admins (for their selected school) and to portal admins (for the Portal School). Internal auth routes are not public APIs.
 
 ```js
 await Api.invite({ email: 'student@example.test', school: { role: 'student' } });
@@ -1016,16 +1054,17 @@ curl --cookie cookies.txt -H "Origin: $ORIGIN" -H "x-tenant-id: $TENANT_ID" "$AP
 
 ## Code map
 
-| Area                                                          | Location                                                     |
-| ------------------------------------------------------------- | ------------------------------------------------------------ |
-| Service startup and configuration                             | `src/index.js`, `src/services/config.services.js`            |
-| Role-to-route policy                                          | `src/services/config.roles.json`                             |
-| Domain service modules                                        | `src/services/<service>/`                                    |
-| Service-to-service REST wrappers                              | `src/services/rest/`                                         |
-| Shared MongoDB, validation, references, events, notifications | `src/core/utils/`                                            |
-| Authentication and invitation flows                           | `src/services/users-auth/`                                   |
-| Web server, middleware, and security headers                  | `src/web-server/`, `src/core/web-server/`                    |
-| Backend tests                                                 | `src/test/test/` and `src/core/test/`                        |
-| Vue API client and role-derived permissions                   | `ui/src/api/`, `ui/src/auth.js`                              |
-| Vue pages and shared tables                                   | `ui/src/components/`                                         |
-| Vue routing and tenant selection                              | `ui/src/router/`, `ui/src/components/base.tenant.select.vue` |
+| Area                                                          | Location                                                                                  |
+| ------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Service startup and configuration                             | `src/index.js`, `src/services/config.services.js`                                         |
+| Settings of the application (from the environment)            | `src/services/config.settings.js`                                                         |
+| Role-to-route policy                                          | `src/services/config.roles.json`                                                          |
+| Domain service modules                                        | `src/services/<service>/`                                                                 |
+| Service-to-service REST wrappers                              | `src/services/rest/`                                                                      |
+| Shared MongoDB, validation, references, events, notifications | `src/core/utils/` (a library: no reference to this application, it receives its settings) |
+| Authentication and invitation flows                           | `src/services/users-auth/`                                                                |
+| Web server, middleware, and security headers                  | `src/web-server/`, `src/core/web-server/`                                                 |
+| Backend tests                                                 | `src/test/test/` and `src/core/test/`                                                     |
+| Vue API client and role-derived permissions                   | `ui/src/api/`, `ui/src/auth.js`                                                           |
+| Vue pages and shared tables                                   | `ui/src/components/`                                                                      |
+| Vue routing and tenant selection                              | `ui/src/router/`, `ui/src/components/base.tenant.select.vue`                              |

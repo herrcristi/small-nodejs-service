@@ -27,7 +27,7 @@ describe('Users Functional', function () {
   beforeEach(async function () {
     sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
-      return { status: 200, value: { userID: 'user.id', username: 'user.email' } };
+      return { status: 200, value: { userID: 'user.id', username: 'user.email', tenantVerified: true } };
     });
     await TestsUtils.initDatabase(_ctx);
   });
@@ -63,13 +63,17 @@ describe('Users Functional', function () {
       console.log(`\nAdmins for school ${school.id} before: ${JSON.stringify(adminsBefore, null, 2)}\n`);
       chai.expect(adminsBefore.length).to.equal(0);
 
-      let studentsBefore = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
+      let studentsBefore = await (
+        await StudentsDatabase.collection({ ..._ctx, tenantID: school.id })
+      )
         .find({})
         .toArray();
       console.log(`\nStudents for school ${school.id} before: ${JSON.stringify(studentsBefore, null, 2)}\n`);
       chai.expect(studentsBefore.length).to.equal(0);
 
-      let professorsBefore = await (await ProfessorsDatabase.collection({ ..._ctx, tenantID: school.id }))
+      let professorsBefore = await (
+        await ProfessorsDatabase.collection({ ..._ctx, tenantID: school.id })
+      )
         .find({})
         .toArray();
       console.log(`\nProfessors for school ${school.id} before: ${JSON.stringify(professorsBefore, null, 2)}\n`);
@@ -79,8 +83,12 @@ describe('Users Functional', function () {
 
   /**
    * check schools after for events/admins/students/professors
+   * options: { recordStatus: the status of the records (the status of the user by default), eventsPerRecord: 1 (its
+   * post) by default }
    */
-  checkSchoolsAfter = async (testUserID, testUser, testUserStatus, _ctx) => {
+  checkSchoolsAfter = async (testUserID, testUser, testUserStatus, _ctx, options = {}) => {
+    const recordStatus = options.recordStatus || testUserStatus;
+    const eventsPerRecord = options.eventsPerRecord || 1;
     const testAdminSchoolsIDs = testUser.schools.filter((item) => item.roles.includes('admin')).map((item) => item.id);
     const testStudentSchoolsIDs = testUser.schools
       .filter((item) => item.roles.includes('student'))
@@ -96,7 +104,7 @@ describe('Users Functional', function () {
       console.log(`\nAdmins for school ${school.id} after: ${JSON.stringify(adminsAfter, null, 2)}\n`);
 
       if (testAdminSchoolsIDs.includes(school.id)) {
-        expectedEvents++;
+        expectedEvents += eventsPerRecord;
         chai.expect(adminsAfter.length).to.equal(1);
 
         chai.expect(adminsAfter.map((item) => item.id).includes(testUserID)).to.equal(true);
@@ -105,19 +113,22 @@ describe('Users Functional', function () {
             chai.expect(admin.user.name).to.equal(testUser.name);
             chai.expect(admin.user.email).to.equal(testUser.email);
             chai.expect(admin.user.status).to.equal(testUserStatus);
+            chai.expect(admin.status).to.equal(recordStatus);
           }
         }
       } else {
         chai.expect(adminsAfter.length).to.equal(0);
       }
 
-      let studentsAfter = await (await StudentsDatabase.collection({ ..._ctx, tenantID: school.id }))
+      let studentsAfter = await (
+        await StudentsDatabase.collection({ ..._ctx, tenantID: school.id })
+      )
         .find({})
         .toArray();
       console.log(`\nStudents for school ${school.id} after: ${JSON.stringify(studentsAfter, null, 2)}\n`);
 
       if (testStudentSchoolsIDs.includes(school.id)) {
-        expectedEvents++;
+        expectedEvents += eventsPerRecord;
         chai.expect(studentsAfter.length).to.equal(1);
 
         chai.expect(studentsAfter.map((item) => item.id).includes(testUserID)).to.equal(true);
@@ -126,19 +137,22 @@ describe('Users Functional', function () {
             chai.expect(student.user.name).to.equal(testUser.name);
             chai.expect(student.user.email).to.equal(testUser.email);
             chai.expect(student.user.status).to.equal(testUserStatus);
+            chai.expect(student.status).to.equal(recordStatus);
           }
         }
       } else {
         chai.expect(studentsAfter.length).to.equal(0);
       }
 
-      let professorsAfter = await (await ProfessorsDatabase.collection({ ..._ctx, tenantID: school.id }))
+      let professorsAfter = await (
+        await ProfessorsDatabase.collection({ ..._ctx, tenantID: school.id })
+      )
         .find({})
         .toArray();
       console.log(`\nProfessors for school ${school.id} after: ${JSON.stringify(professorsAfter, null, 2)}\n`);
 
       if (testProfessorSchoolsIDs.includes(school.id)) {
-        expectedEvents++;
+        expectedEvents += eventsPerRecord;
         chai.expect(professorsAfter.length).to.equal(1);
 
         chai.expect(professorsAfter.map((item) => item.id).includes(testUserID)).to.equal(true);
@@ -147,6 +161,7 @@ describe('Users Functional', function () {
             chai.expect(professor.user.name).to.equal(testUser.name);
             chai.expect(professor.user.email).to.equal(testUser.email);
             chai.expect(professor.user.status).to.equal(testUserStatus);
+            chai.expect(professor.status).to.equal(recordStatus);
           }
         }
       } else {
@@ -167,8 +182,11 @@ describe('Users Functional', function () {
   it('should getAll with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
 
-    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+    // stub: a valid service token; it carries the user of the call (headers never set it)
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake((s2sToken, ctx) => {
       console.log(`\nRestCommunicationsUtils.restValidation called`);
+      ctx.userID = 'user.id';
+      ctx.username = 'user.email';
       return { status: 200, value: {} };
     });
 
@@ -227,16 +245,17 @@ describe('Users Functional', function () {
       schools: testUser.schools,
     };
 
-    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+    // stub: a valid service token; it carries the user of the call (headers never set it)
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake((s2sToken, ctx) => {
       console.log(`\nRestCommunicationsUtils.restValidation called`);
+      ctx.userID = 'user.id';
+      ctx.username = 'user.email';
       return { status: 200, value: {} };
     });
 
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${UsersConstants.ApiPathInternal}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('Origin', TestConstants.WebServer)
       .send({ ...postReq });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -268,16 +287,17 @@ describe('Users Functional', function () {
     // events/admins/students/professors before (in each school)
     await checkSchoolsBefore(testUser, _ctx);
 
-    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+    // stub: a valid service token; it carries the user of the call (headers never set it)
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake((s2sToken, ctx) => {
       console.log(`\nRestCommunicationsUtils.restValidation called`);
+      ctx.userID = 'user.id';
+      ctx.username = 'user.email';
       return { status: 200, value: {} };
     });
 
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${UsersConstants.ApiPathInternal}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('Origin', TestConstants.WebServer)
       .send({ ...postReq });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -355,8 +375,6 @@ describe('Users Functional', function () {
     // call put first to update users and create admins, students, professors, etc ...
     let res = await supertest(TestConstants.WebServer)
       .put(`${UsersConstants.ApiPath}/${testUserID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('Origin', TestConstants.WebServer)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -370,16 +388,17 @@ describe('Users Functional', function () {
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
-    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+    // stub: a valid service token; it carries the user of the call (headers never set it)
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake((s2sToken, ctx) => {
       console.log(`\nRestCommunicationsUtils.restValidation called`);
+      ctx.userID = 'user.id';
+      ctx.username = 'user.email';
       return { status: 200, value: {} };
     });
 
     // call
     res = await supertest(TestConstants.WebServer)
       .delete(`${UsersConstants.ApiPathInternal}/${testUserID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -392,8 +411,10 @@ describe('Users Functional', function () {
     console.log(`\nEvents count after: ${eventsCountAfter}\n`);
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
-    // check events/admins/students/professors after (should remain the same with status disabled even after user is deleted)
-    await checkSchoolsAfter(testUserID, { name, email, schools }, UsersRest.Constants.Status.Disabled, _ctx);
+    // check events/admins/students/professors after: the records stay as traces (the schools keep them by default),
+    // disabled, each with its event; their copy of the user keeps the status of the user
+    const traces = { recordStatus: UsersRest.Constants.Status.Disabled, eventsPerRecord: 2 };
+    await checkSchoolsAfter(testUserID, { name, email, schools }, status, _ctx, traces);
 
     // do a get
     testUser.id = res.body.id;
@@ -437,8 +458,6 @@ describe('Users Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .put(`${UsersConstants.ApiPath}/${testUserID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('Origin', TestConstants.WebServer)
       .send({ ...testUser });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -482,16 +501,17 @@ describe('Users Functional', function () {
     // events/admins/students/professors before (in each school)
     await checkSchoolsBefore({ name, email, schools }, _ctx);
 
-    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+    // stub: a valid service token; it carries the user of the call (headers never set it)
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake((s2sToken, ctx) => {
       console.log(`\nRestCommunicationsUtils.restValidation called`);
+      ctx.userID = 'user.id';
+      ctx.username = 'user.email';
       return { status: 200, value: {} };
     });
 
     // call
     let res = await supertest(TestConstants.WebServer)
       .put(`${UsersConstants.ApiPathInternal}/${testUserID}/email`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('Origin', TestConstants.WebServer)
       .send({ email: newEmail });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -546,8 +566,6 @@ describe('Users Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .patch(`${UsersConstants.ApiPath}/${testUserID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('Origin', TestConstants.WebServer)
       .send({ set: { ...testUser } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -611,16 +629,17 @@ describe('Users Functional', function () {
     // events/admins/students/professors before (in each school)
     await checkSchoolsBefore({ name, email, schools }, _ctx);
 
-    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+    // stub: a valid service token; it carries the user of the call (headers never set it)
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake((s2sToken, ctx) => {
       console.log(`\nRestCommunicationsUtils.restValidation called`);
+      ctx.userID = 'user.id';
+      ctx.username = 'user.email';
       return { status: 200, value: {} };
     });
 
     // call
     let res = await supertest(TestConstants.WebServer)
       .patch(`${UsersConstants.ApiPathInternal}/${testUserID}/school`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('Origin', TestConstants.WebServer)
       .send(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);

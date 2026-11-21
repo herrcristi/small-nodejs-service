@@ -132,10 +132,12 @@ const write = app?.rolesPermissions?.professors?.write;
  * fields
  */
 const apiFields = {
-  fields: ['user.name', 'user.status', 'user.email'],
-  projectionFields: ['user.name', 'user.status', 'user.email'],
-  sortFields: ['user.name', 'user.status', 'user.email'],
-  filterFields: ['user.name', '_lang_en.user.status', 'user.email'],
+  // the status of the record: the user status while it has the role, disabled (the role was removed) or deleted (the
+  // account was deleted): a removed member stays in the list, to know what happened with it
+  fields: ['user.name', 'status', 'user.email'],
+  projectionFields: ['user.name', 'status', 'user.email'],
+  sortFields: ['user.name', 'status', 'user.email'],
+  filterFields: ['user.name', '_lang_en.status', 'user.email'],
   addFields: ['user.email'],
   editFields: ['user.name'], // the status of a person is global: only a portal admin changes it
 };

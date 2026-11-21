@@ -372,11 +372,11 @@ const Public = {
     }
     notification = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
-    // { serviceName, collection, references, fillReferences }
-    const config = await Private.getConfig(_ctx);
-
-    // notification (process references)
-    return await NotificationsUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
+    // the locations keep no copies of other services: nothing to do (no subscription)
+    console.log(
+      `\n${LocationsConstants.ServiceName}: notification of ${notification.serviceName} ignored (no copy of it)`
+    );
+    return { status: 200, value: false };
   },
 
   /**

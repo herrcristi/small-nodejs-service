@@ -733,4 +733,45 @@ describe('Schools Controller', function () {
     chai.expect(res.status).to.equal(500);
     chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
+
+  /**
+   * the settings of a school: get and put with success, fail, exception
+   */
+  it('should get and put the settings with success, fail and exception', async () => {
+    const url = `${SchoolsConstants.ApiPath}/school1/settings`;
+    const get = () => supertest(TestConstants.WebServer).get(url).set('Origin', TestConstants.WebServer);
+    const put = (body) => supertest(TestConstants.WebServer).put(url).set('Origin', TestConstants.WebServer).send(body);
+
+    // stub: the service
+    const settings = { removedMembers: 'keep' };
+    const stubGet = sinon.stub(SchoolsService, 'getSettings').resolves({ status: 200, value: settings });
+    const stubPut = sinon.stub(SchoolsService, 'putSettings').resolves({ status: 200, value: settings });
+
+    // case: success, for the school of the url, with the body
+    let res = await get();
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal(settings);
+    chai.expect(stubGet.firstCall.args[0]).to.equal('school1');
+    res = await put(settings);
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubPut.firstCall.args[0]).to.equal('school1');
+    chai.expect(stubPut.firstCall.args[1]).to.deep.equal(settings);
+
+    // case: fail
+    stubGet.resolves({ status: 404, error: { message: 'Test error message' } });
+    stubPut.resolves({ status: 400, error: { message: 'Test error message' } });
+    res = await get();
+    chai.expect(res.status).to.equal(404);
+    res = await put({ removedMembers: 'other' });
+    chai.expect(res.status).to.equal(400);
+
+    // case: exception
+    stubGet.throws(new Error('Test error message'));
+    stubPut.throws(new Error('Test error message'));
+    res = await get();
+    chai.expect(res.status).to.equal(500);
+    chai.expect(res.body.error).to.include('Test error message');
+    res = await put(settings);
+    chai.expect(res.status).to.equal(500);
+  }).timeout(10000);
 });

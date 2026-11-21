@@ -51,6 +51,9 @@
             ></v-btn>
           </slot>
 
+          <!-- no header: the delete buttons are shown on demand next to the + (no accidental delete) -->
+          <ShowDelete v-if="hasDelete" v-model="showDelete" icon-only class="me-2" />
+
           <v-toolbar-title> </v-toolbar-title>
 
           <slot name="top.filter">
@@ -277,7 +280,7 @@
           actions
       -->
     <template #item.actions="{ item }">
-      <slot name="item.actions" :item="item" :deleteCalls="deleteCalls">
+      <slot name="item.actions" :item="item" :deleteCalls="deleteCalls" :showDelete="showDelete">
         <ActionIcon
           v-if="props.write && props.apiFn?.update"
           class="mr-2"
@@ -288,7 +291,7 @@
           @click="openEdit(item)"
         />
         <ActionIcon
-          v-if="props.write && props.apiFn?.delete"
+          v-if="hasDelete && showDelete"
           icon="mdi-delete"
           :title="t('delete')"
           :disabled="deleteCalls.isInProgress(item.id)"
@@ -322,6 +325,7 @@
 import { ref, reactive, computed, watch } from 'vue';
 import ConfirmDialog from './base.confirm.dialog.vue';
 import ActionIcon from './base.action.icon.vue';
+import ShowDelete from './base.show.delete.vue';
 import ComponentUtils from './components.utils.js';
 import { useI18n } from 'vue-i18n';
 const { t, te, locale } = useI18n();
@@ -364,6 +368,8 @@ const filter = ref('');
 const confirmDeleteDialog = ref(false);
 const toDeleteID = ref(null);
 const deleteCalls = ComponentUtils.useItemCalls(); // one delete at a time per row (doDelete)
+const hasDelete = computed(() => !!(props.write && props.apiFn?.delete)); // the rows can be deleted
+const showDelete = ref(false); // the delete buttons are hidden until the user asks for them (ShowDelete)
 
 /**
  * snackbar

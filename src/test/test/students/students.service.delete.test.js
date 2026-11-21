@@ -1,115 +1,113 @@
-const _ = require('lodash');
-const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const supertest = require('supertest');
 
-
-const BaseServiceUtils = require('../../../core/utils/base-service.utils.js');
-const TranslationsUtils = require('../../../core/utils/translations.utils.js');
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
-const RestApiUtils = require('../../../core/utils/rest-api.utils.js');
-const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 
-const TestConstants = require('../../test-constants.js');
-const StudentsConstants = require('../../../services/students/students.constants.js');
 const StudentsService = require('../../../services/students/students.service.js');
 const StudentsRest = require('../../../services/rest/students.rest.js');
+const UsersRest = require('../../../services/rest/users.rest.js');
+const SchoolsRest = require('../../../services/rest/schools.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
 describe('Students Service', function () {
-  const tenantID = _.cloneDeep(TestConstants.Schools[0].id);
-  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Students' };
+  const _ctx = {
+    reqID: 'testReq',
+    lang: 'en',
+    service: 'Students',
+    tenantID: 'school1',
+    userID: 'admin-of-the-school',
+  };
+  const fail = { status: 500, error: { message: 'Database failure' } };
 
-  before(async function () {});
+  // the student of a user, and the same student kept as a trace (its role was removed before)
+  const anaPop = { id: 'user1', name: 'Ana Pop', type: 'user', status: 'active', email: 'ana.pop@testdomain.test' };
+  const studentRecord = { id: 'user1', type: 'student', status: 'active', user: anaPop };
+  const studentTrace = { ...studentRecord, status: 'disabled', removedTimestamp: '2026-11-01T10:00:00.000Z' };
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    // the events and the notifications of the students
+    sinon.stub(EventsRest, 'raiseEventForObject');
+    sinon.stub(StudentsRest, 'raiseNotification');
+  });
 
   afterEach(async function () {
     sinon.restore();
   });
 
-  after(async function () {});
-
   /**
-   * delete with success
+   * delete removes the student role of the user in the school; the student follows by the setting of the school (keep:
+   * a trace, disabled)
    */
-  it('should delete with success', async () => {
-    const testStudents = _.cloneDeep(TestConstants.Students);
-    const testStudent = testStudents[0];
-
-    let stubBase = sinon.stub(DbOpsUtils, 'delete').callsFake((config, objID) => {
-      console.log(`\nDbOpsUtils.delete called`);
-      return {
-        status: 200,
-        value: { ...testStudent },
-      };
-    });
-
-    let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`\nEventsRest.raiseEventForObject called`);
-    });
-
-    let stubStudentsRest = sinon.stub(StudentsRest, 'raiseNotification').callsFake(() => {
-      console.log(`\nStudentsRest raiseNotification called`);
-    });
+  it('should delete by removing the student role in the school', async () => {
+    // stub: the student, the role, the setting (keep), the trace
+    sinon.stub(DbOpsUtils, 'getOne').resolves({ status: 200, value: studentRecord });
+    const stubRole = sinon.stub(UsersRest, 'patchSchool').resolves({ status: 200, value: {} });
+    sinon.stub(SchoolsRest, 'getSettings').resolves({ status: 200, value: { removedMembers: 'keep' } });
+    const stubPut = sinon.stub(DbOpsUtils, 'put').resolves({ status: 200, value: studentTrace });
+    sinon.stub(DbOpsUtils, 'updateManyReferences').resolves({ status: 200, value: 0, ids: [] });
+    sinon.stub(DbOpsUtils, 'getAllByIDs').resolves({ status: 200, value: [studentTrace] });
 
     // call
-    let res = await StudentsService.delete(testStudent.id, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    const res = await StudentsService.delete('user1', _ctx);
 
-    // check
-    chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubEvent.callCount).to.equal(1);
-    chai.expect(stubStudentsRest.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: {
-        id: testStudent.id,
-        user: testStudent.user,
-        type: testStudent.type,
-      },
-    });
+    // check: the role of this school is removed, the student is kept as a trace
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.value.id).to.equal('user1');
+    chai.expect(stubRole.firstCall.args[0]).to.equal('user1');
+    chai
+      .expect(stubRole.firstCall.args[1])
+      .to.deep.equal({ remove: { schools: [{ id: 'school1', roles: ['student'] }] } });
+    chai.expect(stubPut.firstCall.args[2]).to.include({ status: 'disabled' });
+    chai.expect(EventsRest.raiseEventForObject.firstCall.args[1]).to.equal('disable');
   }).timeout(10000);
 
   /**
-   * delete failed no tenant
+   * delete a trace: it is deleted for good (its references follow, the removed notification), the role is not touched
    */
-  it('should delete failed tenant', async () => {
-    // call
-    let res = await StudentsService.delete('id', { ..._ctx, tenantID: undefined });
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+  it('should delete a trace for good', async () => {
+    // stub: a trace, its delete
+    sinon.stub(DbOpsUtils, 'getOne').resolves({ status: 200, value: studentTrace });
+    const stubRole = sinon.stub(UsersRest, 'patchSchool');
+    const stubDelete = sinon.stub(DbOpsUtils, 'delete').resolves({ status: 200, value: studentTrace });
 
-    // check
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.error.message).to.include('Missing tenant');
+    // call
+    const res = await StudentsService.delete('user1', _ctx);
+
+    // check: deleted, with the event and the removed notification
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubDelete.firstCall.args[1]).to.equal('user1');
+    chai.expect(stubRole.callCount).to.equal(0);
+    chai.expect(EventsRest.raiseEventForObject.firstCall.args[1]).to.equal('delete');
+    chai.expect(StudentsRest.raiseNotification.firstCall.args[0]).to.equal('removed');
+
+    // case: it can not be deleted: the error
+    stubDelete.resolves(fail);
+    chai.expect(await StudentsService.delete('user1', _ctx)).to.deep.equal(fail);
   }).timeout(10000);
 
   /**
-   * delete fail
+   * delete fail: no school, the student can not be read, the role can not be removed, the student can not follow
    */
-  it('should delete fail ', async () => {
-    const testStudents = _.cloneDeep(TestConstants.Students);
-    const testStudent = testStudents[0];
+  it('should delete fail', async () => {
+    // stub: each step fails, one after the other
+    const stubGet = sinon.stub(DbOpsUtils, 'getOne').resolves(fail);
+    const stubRole = sinon.stub(UsersRest, 'patchSchool').resolves(fail);
+    sinon.stub(SchoolsRest, 'getSettings').resolves(fail);
 
-    // stub
-    let stubBase = sinon.stub(DbOpsUtils, 'delete').callsFake((config, objID) => {
-      console.log(`\nDbOpsUtils.delete called`);
-      return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
-    });
+    // case: no school
+    const resTenant = await StudentsService.delete('user1', { ..._ctx, tenantID: undefined });
+    chai.expect(resTenant.status).to.equal(400);
+    chai.expect(resTenant.error.message).to.include('Missing tenant');
 
-    // call
-    let res = await StudentsService.delete(testStudent.id, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    // case: the student can not be read
+    chai.expect(await StudentsService.delete('user1', _ctx)).to.deep.equal(fail);
 
-    // check
-    chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 500,
-      error: {
-        message: 'Test error message',
-        error: 'Error: Test error',
-      },
-    });
+    // case: the role can not be removed
+    stubGet.resolves({ status: 200, value: studentRecord });
+    chai.expect(await StudentsService.delete('user1', _ctx)).to.deep.equal(fail);
+
+    // case: the student can not follow (the setting can not be read)
+    stubRole.resolves({ status: 200, value: {} });
+    chai.expect(await StudentsService.delete('user1', _ctx)).to.deep.equal(fail);
   }).timeout(10000);
 });

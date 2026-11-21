@@ -27,3 +27,5 @@ require('./users-auth.service.login.test.js');
 require('./users-auth.service.logout.test.js');
 require('./users-auth.service.sessions.test.js');
 require('./users-auth.service.validate.test.js');
+require('./users-auth.service.ensureAuth.test.js');
+require('./users-firebase-auth.service.test.js');

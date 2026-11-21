@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 
@@ -81,6 +80,7 @@ describe('Professors Service', function () {
         id: testProfessor.id,
         user: testProfessor.user,
         type: testProfessor.type,
+        status: testProfessor.user.status, // the status of its user while it has the role
       },
     });
   }).timeout(10000);

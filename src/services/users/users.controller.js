@@ -403,6 +403,64 @@ const Public = {
   },
 
   /**
+   * recreate account (internal) called from users-auth: a deleted user invited again is created again (pending)
+   */
+  recreateAccount: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Recreate account called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
+      );
+      const objID = req.params.id;
+
+      // recreate the account
+      const r = await UsersService.recreateAccount(objID, _ctx);
+      if (r.error) {
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * delete account (internal) called from users-auth: the user is deleted (its memberships and profile fields are removed)
+   */
+  deleteAccount: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Delete account called, param ${JSON.stringify(CommonUtils.protectData(req.params), null, 2)}`
+      );
+      const objID = req.params.id;
+
+      // delete account
+      const r = await UsersService.deleteAccount(objID, _ctx);
+      if (r.error) {
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
    * putEmail (internal) called from users-auth
    */
   putEmail: async (req, res, next) => {

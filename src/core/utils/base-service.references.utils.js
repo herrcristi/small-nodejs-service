@@ -2,7 +2,6 @@
  * Base service - references
  */
 
-const DbOpsUtils = require('./db-ops.utils.js');
 const CommonUtils = require('./common.utils.js');
 
 const Utils = {
@@ -139,7 +138,7 @@ const Public = {
       console.log(`\nSkipping calling targets to populate info for field '${configRef.fieldName}'`);
     } else {
       // get all targets
-      const projection = configRef.projection || { id: 1, name: 1, type: 1, status: 1 };
+      const projection = configRef.projection || { id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 };
       let rs = await configRef.service.getAllByIDs(targetsIDs, { ...projection, _id: 0 }, _ctx);
       if (rs.error) {
         return rs;
@@ -194,103 +193,6 @@ const Public = {
     }
 
     return { status: 200, value: true }; // success
-  },
-
-  /**
-   * notification when references are changed
-   * config: { serviceName, collection, ..., references, fillReferences }
-   * notification: { serviceName, added: [ { id, ... } ], removed: [], modified: []  }
-   * returns: { status, value } or { status, error }
-   */
-  onNotificationReferences: async (config, notification, _ctx) => {
-    if (!config.fillReferences) {
-      return { status: 200, value: null }; // skipped
-    }
-
-    let processed = null;
-
-    // configRef: { fieldName, service, projection }
-    for (const configRef of config.references) {
-      if (configRef.service?.Constants?.ServiceName !== notification.serviceName) {
-        continue;
-      }
-
-      const projection = configRef.projection || { id: 1, name: 1, type: 1, status: 1 };
-
-      // added
-      if (notification.added) {
-        // apply added changes one by one
-        for (const refObj of notification.added) {
-          // changes are applied only if object has an array (of ids or objects with id field)
-          // with same name where this is applied
-          // example schedules has { groups } and this will auto add to each group that schedule from the notification
-          let targets = refObj[config.serviceName];
-          if (targets == null) {
-            console.log(
-              `\n${config.serviceName}: For '${configRef.fieldName}' skip apply added changes from notification`
-            );
-            continue;
-          }
-
-          processed = true;
-          targets = Array.isArray(targets) ? targets : [targets]; // make array
-          const targetsIDs = targets
-            .map((item) => (typeof item === 'string' ? item : typeof item === 'object' ? item.id : null))
-            .filter((item) => item != null);
-
-          const projectedValue = CommonUtils.getProjectedObj(refObj, projection);
-          const rn = await DbOpsUtils.addManyReferences(config, targetsIDs, configRef, projectedValue, _ctx);
-          if (rn.error) {
-            return rn;
-          }
-        }
-      }
-
-      // modified
-      if (notification.modified) {
-        console.log(
-          `\n${config.serviceName}: For '${
-            configRef.fieldName
-          }' apply modified changes from notification ${JSON.stringify(notification)}`
-        );
-
-        processed = true;
-        // apply modified changes one by one
-        for (const refObj of notification.modified) {
-          const projectedValue = CommonUtils.getProjectedObj(refObj, projection);
-          const rn = await DbOpsUtils.updateManyReferences(config, configRef, projectedValue, _ctx);
-          if (rn.error) {
-            return rn;
-          }
-        }
-      }
-
-      // removed
-      if (notification.removed) {
-        console.log(
-          `\n${config.serviceName}: For '${configRef.fieldName}' apply deletion from notification ${JSON.stringify(
-            notification
-          )}`
-        );
-
-        processed = true;
-        // apply deleted changes one by one
-        for (const refObj of notification.removed) {
-          const projectedValue = CommonUtils.getProjectedObj(refObj, projection);
-          const rn = await DbOpsUtils.deleteManyReferences(config, configRef, projectedValue, _ctx);
-          if (rn.error) {
-            return rn;
-          }
-        }
-      }
-    }
-
-    console.log(
-      `\n${config.serviceName}: Notification for references processed succesfully: ${JSON.stringify(notification)}`
-    );
-
-    // success
-    return { status: 200, value: processed };
   },
 };
 

@@ -142,27 +142,27 @@ const Private = {
         {
           fieldName: 'class',
           service: ClassesRest,
-          projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1 },
+          projection: { id: 1, name: 1, type: 1, status: 1, description: 1, credits: 1, required: 1, createdTimestamp: 1, modifiedCount: 1 },
         },
         {
           fieldName: 'schedules[].location',
           service: LocationsRest,
-          projection: { id: 1, name: 1, type: 1, status: 1, address: 1 },
+          projection: { id: 1, name: 1, type: 1, status: 1, address: 1, createdTimestamp: 1, modifiedCount: 1 },
         },
         {
           fieldName: 'professors[]',
           service: ProfessorsRest,
-          projection: { id: 1, name: 1, type: 1, status: 1, user: 1 },
+          projection: { id: 1, name: 1, type: 1, status: 1, user: 1, createdTimestamp: 1, modifiedCount: 1 },
         },
         {
           fieldName: 'groups[]',
           service: GroupsRest,
-          projection: { id: 1, name: 1, type: 1, status: 1, description: 1, students: 1 },
+          projection: { id: 1, name: 1, type: 1, status: 1, description: 1, students: 1, createdTimestamp: 1, modifiedCount: 1 },
         },
         {
           fieldName: 'students[]',
           service: StudentsRest,
-          projection: { id: 1, name: 1, type: 1, status: 1, user: 1 },
+          projection: { id: 1, name: 1, type: 1, status: 1, user: 1, createdTimestamp: 1, modifiedCount: 1 },
         },
       ],
       notifications: {
@@ -203,71 +203,243 @@ const Private = {
   },
 
   /**
-   * get the difference that was removed
+   * a reference of the config (the copies kept from another service)
    */
-  getDiff: (schedule, newSchedule) => {
-    let scheduleDiff = {
-      ...newSchedule,
-      schedules: [],
-      professors: [],
-      groups: [],
-      students: [],
-    };
+  getReference: (config, fieldName) => {
+    return config.references.find((ref) => ref.fieldName === fieldName);
+  },
 
-    // create maps
-    let schedulesMap = {};
-    let professorsMap = {};
-    let groupsMap = {};
-    let studentsMap = {};
-    for (const s of newSchedule.schedules) {
-      const key = `${s.timestamp}.${s.frequency}.${s.location.id}`;
-      schedulesMap[key] = s;
-    }
-    for (const professor of newSchedule.professors) {
-      professorsMap[professor.id] = professor;
-    }
-    for (const group of newSchedule.groups) {
-      groupsMap[group.id] = group;
-    }
-    for (const student of newSchedule.students) {
-      studentsMap[student.id] = student;
+  /**
+   * notify the schedules that changed (modified): the students, professors and groups keep the class of their schedules
+   * returns { status, value: [ ids ] } or { status, error }
+   */
+  notifyChangedSchedules: async (config, schedulesIDs, _ctx) => {
+    if (!schedulesIDs.length) {
+      return { status: 200, value: [] };
     }
 
-    for (const s of schedule.schedules) {
-      const key = `${s.timestamp}.${s.frequency}.${s.location.id}`;
-      const newSchedule = schedulesMap[key];
-      if (!newSchedule) {
-        // the schedule was removed
-        scheduleDiff.schedules.push(s);
-        continue;
-      }
+    const projection = { ...config.notifications.projection, _id: 0 };
+    const rSchedules = await DbOpsUtils.getAllByIDs(config, schedulesIDs, projection, _ctx);
+    if (rSchedules.error) {
+      return rSchedules;
     }
-    for (const professor of schedule.professors) {
-      const newProfessor = professorsMap[professor.id];
-      if (!newProfessor) {
-        // the professor was removed
-        scheduleDiff.professors.push(professor);
-        continue;
-      }
+
+    console.log(`\n${SchedulesConstants.ServiceName}: notify the changed schedules ${JSON.stringify(schedulesIDs)}`);
+    await SchedulesRest.raiseNotification(Private.Notification.Modified, rSchedules.value, _ctx);
+    return { status: 200, value: schedulesIDs };
+  },
+
+  /**
+   * classes notification: the copies of the classes in the schedules (class)
+   * - modified: the copies are updated (only the older ones, modifiedCount)
+   * - removed (the class was deleted): its copy keeps only its id (the schedules are notified)
+   * (a class is given to a schedule by the edit of the schedule, not by a notification)
+   * the schedules whose class changed are notified (the students, professors and groups keep the class of their schedules)
+   * returns { status, value } or { status, error }
+   */
+  onClassesNotification: async (notification, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
     }
-    for (const group of schedule.groups) {
-      const newGroup = groupsMap[group.id];
-      if (!newGroup) {
-        // the group was removed
-        scheduleDiff.groups.push(group);
-        continue;
+
+    const config = await Private.getConfig(_ctx);
+    const classRef = Private.getReference(config, 'class');
+    const changedSchedulesIDs = new Set();
+
+    // the copies of the modified classes
+    for (const schoolClass of notification[Private.Notification.Modified] || []) {
+      const classCopy = CommonUtils.getProjectedObj(schoolClass, classRef.projection);
+      const rCopies = await DbOpsUtils.updateManyReferences(config, classRef, classCopy, _ctx);
+      if (rCopies.error) {
+        return rCopies;
       }
+      rCopies.ids.forEach((id) => changedSchedulesIDs.add(id));
     }
-    for (const student of schedule.students) {
-      const newStudent = studentsMap[student.id];
-      if (!newStudent) {
-        // the student was removed
-        scheduleDiff.students.push(student);
-        continue;
+
+    // the deleted classes
+    for (const schoolClass of notification[Private.Notification.Removed] || []) {
+      console.log(`\n${SchedulesConstants.ServiceName}: remove the deleted class ${schoolClass.id} from the schedules`);
+      // the schedules that have it (they are notified)
+      const rSchedules = await DbOpsUtils.getAllByReference(config, classRef, schoolClass.id, { _id: 0, id: 1 }, _ctx);
+      if (rSchedules.error) {
+        return rSchedules;
+      }
+      rSchedules.value.forEach((item) => changedSchedulesIDs.add(item.id));
+
+      const classCopy = CommonUtils.getProjectedObj(schoolClass, classRef.projection);
+      const rRemove = await DbOpsUtils.deleteManyReferences(config, classRef, classCopy, _ctx);
+      if (rRemove.error) {
+        return rRemove;
       }
     }
 
-    return scheduleDiff;
+    return await Private.notifyChangedSchedules(config, [...changedSchedulesIDs], _ctx);
+  },
+
+  /**
+   * locations notification: the copies of the locations in the schedules (schedules[].location)
+   * - modified: the copies are updated (only the older ones, modifiedCount)
+   * - removed (the location was deleted): its copies keep only its id
+   * (a location is given by the edit of the schedule)
+   * nothing is notified (the other services do not keep the locations of the schedules)
+   * returns { status, value } or { status, error }
+   */
+  onLocationsNotification: async (notification, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
+    const config = await Private.getConfig(_ctx);
+    const locationsRef = Private.getReference(config, 'schedules[].location');
+    const changedSchedulesIDs = new Set();
+
+    // the copies of the modified locations
+    for (const location of notification[Private.Notification.Modified] || []) {
+      const locationCopy = CommonUtils.getProjectedObj(location, locationsRef.projection);
+      const rCopies = await DbOpsUtils.updateManyReferences(config, locationsRef, locationCopy, _ctx);
+      if (rCopies.error) {
+        return rCopies;
+      }
+      rCopies.ids.forEach((id) => changedSchedulesIDs.add(id));
+    }
+
+    // the deleted locations
+    for (const location of notification[Private.Notification.Removed] || []) {
+      console.log(`\n${SchedulesConstants.ServiceName}: remove the deleted location ${location.id} from the schedules`);
+
+      const locationCopy = CommonUtils.getProjectedObj(location, locationsRef.projection);
+      const rRemove = await DbOpsUtils.deleteManyReferences(config, locationsRef, locationCopy, _ctx);
+      if (rRemove.error) {
+        return rRemove;
+      }
+    }
+
+    return { status: 200, value: [...changedSchedulesIDs] };
+  },
+
+  /**
+   * professors notification: the copies of the professors in the schedules (professors[])
+   * - modified: the copies are updated (only the older ones, modifiedCount)
+   * - removed (the professor was deleted): it is removed from the schedules
+   * (a professor is put in a schedule by the edit of the schedule, not by a notification)
+   * nothing is notified (the other services do not keep the professors of the schedules)
+   * returns { status, value } or { status, error }
+   */
+  onProfessorsNotification: async (notification, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
+    const config = await Private.getConfig(_ctx);
+    const professorsRef = Private.getReference(config, 'professors[]');
+    const changedSchedulesIDs = new Set();
+
+    // the copies of the modified professors
+    for (const professor of notification[Private.Notification.Modified] || []) {
+      const professorCopy = CommonUtils.getProjectedObj(professor, professorsRef.projection);
+      const rCopies = await DbOpsUtils.updateManyReferences(config, professorsRef, professorCopy, _ctx);
+      if (rCopies.error) {
+        return rCopies;
+      }
+      rCopies.ids.forEach((id) => changedSchedulesIDs.add(id));
+    }
+
+    // the deleted professors
+    for (const professor of notification[Private.Notification.Removed] || []) {
+      console.log(
+        `\n${SchedulesConstants.ServiceName}: remove the deleted professor ${professor.id} from the schedules`
+      );
+
+      const professorCopy = CommonUtils.getProjectedObj(professor, professorsRef.projection);
+      const rRemove = await DbOpsUtils.deleteManyReferences(config, professorsRef, professorCopy, _ctx);
+      if (rRemove.error) {
+        return rRemove;
+      }
+    }
+
+    return { status: 200, value: [...changedSchedulesIDs] };
+  },
+
+  /**
+   * groups notification: the copies of the groups in the schedules (groups[])
+   * - modified: the copies are updated (only the older ones, modifiedCount)
+   * - removed (the group was deleted): it is removed from the schedules
+   * (a group is put in a schedule by the edit of the schedule, not by a notification)
+   * nothing is notified (the other services do not keep the groups of the schedules)
+   * returns { status, value } or { status, error }
+   */
+  onGroupsNotification: async (notification, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
+    const config = await Private.getConfig(_ctx);
+    const groupsRef = Private.getReference(config, 'groups[]');
+    const changedSchedulesIDs = new Set();
+
+    // the copies of the modified groups
+    for (const group of notification[Private.Notification.Modified] || []) {
+      const groupCopy = CommonUtils.getProjectedObj(group, groupsRef.projection);
+      const rCopies = await DbOpsUtils.updateManyReferences(config, groupsRef, groupCopy, _ctx);
+      if (rCopies.error) {
+        return rCopies;
+      }
+      rCopies.ids.forEach((id) => changedSchedulesIDs.add(id));
+    }
+
+    // the deleted groups
+    for (const group of notification[Private.Notification.Removed] || []) {
+      console.log(`\n${SchedulesConstants.ServiceName}: remove the deleted group ${group.id} from the schedules`);
+
+      const groupCopy = CommonUtils.getProjectedObj(group, groupsRef.projection);
+      const rRemove = await DbOpsUtils.deleteManyReferences(config, groupsRef, groupCopy, _ctx);
+      if (rRemove.error) {
+        return rRemove;
+      }
+    }
+
+    return { status: 200, value: [...changedSchedulesIDs] };
+  },
+
+  /**
+   * students notification: the copies of the students in the schedules (students[])
+   * - modified: the copies are updated (only the older ones, modifiedCount)
+   * - removed (the student was deleted): it is removed from the schedules
+   * (a student is put in a schedule by the edit of the schedule, not by a notification)
+   * nothing is notified (the other services do not keep the students of the schedules)
+   * returns { status, value } or { status, error }
+   */
+  onStudentsNotification: async (notification, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
+    const config = await Private.getConfig(_ctx);
+    const studentsRef = Private.getReference(config, 'students[]');
+    const changedSchedulesIDs = new Set();
+
+    // the copies of the modified students
+    for (const student of notification[Private.Notification.Modified] || []) {
+      const studentCopy = CommonUtils.getProjectedObj(student, studentsRef.projection);
+      const rCopies = await DbOpsUtils.updateManyReferences(config, studentsRef, studentCopy, _ctx);
+      if (rCopies.error) {
+        return rCopies;
+      }
+      rCopies.ids.forEach((id) => changedSchedulesIDs.add(id));
+    }
+
+    // the deleted students
+    for (const student of notification[Private.Notification.Removed] || []) {
+      console.log(`\n${SchedulesConstants.ServiceName}: remove the deleted student ${student.id} from the schedules`);
+
+      const studentCopy = CommonUtils.getProjectedObj(student, studentsRef.projection);
+      const rRemove = await DbOpsUtils.deleteManyReferences(config, studentsRef, studentCopy, _ctx);
+      if (rRemove.error) {
+        return rRemove;
+      }
+    }
+
+    return { status: 200, value: [...changedSchedulesIDs] };
   },
 };
 
@@ -469,12 +641,6 @@ const Public = {
     const config = await Private.getConfig(_ctx);
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
-    // need to take diff before and after and trigger notification for deleted changes
-    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
-    if (rget.error) {
-      return rget;
-    }
-
     // populate references
     let rf = await ReferencesUtils.populateReferences({ ...config, fillReferences: true }, objInfo, _ctx);
     if (rf.error) {
@@ -496,16 +662,10 @@ const Public = {
     // raise event for put
     await EventsRest.raiseEventForObject(SchedulesConstants.ServiceName, Private.Action.Put, r.value, objInfo, _ctx);
 
-    // raise a notification for modified obj
+    // raise a notification for modified obj: it has the professors, groups and students of the schedule, so a removed
+    // one loses only this schedule (the professors, groups and students that are not listed lose it)
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await SchedulesRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
-
-    // take the difference and notify removed schedules, professors, groups, students
-    let rdiff = { status: 200, value: Private.getDiff(rget.value, r.value) };
-    if (Object.keys(rdiff.value.students).length) {
-      let rp = BaseServiceUtils.getProjectedResponse(rdiff, config.notifications.projection /* for sync+async */, _ctx);
-      let rndiff = await SchedulesRest.raiseNotification(Private.Notification.Removed, [rp.value], _ctx);
-    }
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
@@ -529,12 +689,6 @@ const Public = {
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
-
-    // need to take diff before and after and trigger notification for deleted changes
-    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
-    if (rget.error) {
-      return rget;
-    }
 
     // populate references
     const configRef = { ...config, fillReferences: true };
@@ -564,30 +718,23 @@ const Public = {
       _ctx
     );
 
-    // raise a notification for modified obj
+    // raise a notification for modified obj: it has the professors, groups and students of the schedule, so a removed
+    // one loses only this schedule (the professors, groups and students that are not listed lose it)
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     let rn = await SchedulesRest.raiseNotification(Private.Notification.Modified, [rnp.value], _ctx);
-
-    // take the difference and notify removed schedules, professors, groups, students
-    let rdiff = { status: 200, value: Private.getDiff(rget.value, r.value) };
-    if (Object.keys(rdiff.value.students).length) {
-      let rp = BaseServiceUtils.getProjectedResponse(rdiff, config.notifications.projection /* for sync+async */, _ctx);
-      let rndiff = await SchedulesRest.raiseNotification(Private.Notification.Removed, [rp.value], _ctx);
-    }
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, Private.ResProjection, _ctx);
   },
 
   /**
-   * notification
-   * notification: { serviceName, added: [ { id, ... } ], removed, modified  }
+   * notification: the copies kept by the schedules follow the changes of their sources (each source has its own flow)
+   * - classes: the class copies (the schedules whose class changed are notified)
+   * - locations: the location copies of the inner schedules
+   * - professors, groups, students: their copies (a deleted one is removed)
+   * notification: { serviceName, added?, modified?, removed? }
    */
   notification: async (notification, _ctx) => {
-    if (!_ctx.tenantID) {
-      return Private.errorNoTenant(_ctx);
-    }
-
     // validate
     const v = NotificationsUtils.getNotificationSchema().validate(notification);
     if (v.error) {
@@ -595,11 +742,23 @@ const Public = {
     }
     notification = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
-    // { serviceName, collection, references, fillReferences }
-    const config = await Private.getConfig(_ctx);
-
-    // notification (process references)
-    return await NotificationsUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
+    switch (notification.serviceName) {
+      case ClassesRest.Constants.ServiceName:
+        return await Private.onClassesNotification(notification, _ctx);
+      case LocationsRest.Constants.ServiceName:
+        return await Private.onLocationsNotification(notification, _ctx);
+      case ProfessorsRest.Constants.ServiceName:
+        return await Private.onProfessorsNotification(notification, _ctx);
+      case GroupsRest.Constants.ServiceName:
+        return await Private.onGroupsNotification(notification, _ctx);
+      case StudentsRest.Constants.ServiceName:
+        return await Private.onStudentsNotification(notification, _ctx);
+      default:
+        console.log(
+          `\n${SchedulesConstants.ServiceName}: notification of ${notification.serviceName} ignored (no copy of it)`
+        );
+        return { status: 200, value: false };
+    }
   },
 
   /**
