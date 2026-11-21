@@ -145,15 +145,15 @@ const Public = {
       await GroupsRest.subscribe({ callback: rest.notification, projection });
     }
 
-    // students
+    // students (previousID: a trace linked to the user invited again, see relinkTraces)
     for (const rest of [GroupsRest, SchedulesRest]) {
-      const projection = { ...notifyProjection, user: 1 };
+      const projection = { ...notifyProjection, user: 1, previousID: 1 };
       await StudentsRest.subscribe({ callback: rest.notification, projection });
     }
 
-    // professors
+    // professors (previousID: a trace linked to the user invited again, see relinkTraces)
     for (const rest of [SchedulesRest]) {
-      const projection = { ...notifyProjection, user: 1 };
+      const projection = { ...notifyProjection, user: 1, previousID: 1 };
       await ProfessorsRest.subscribe({ callback: rest.notification, projection });
     }
 

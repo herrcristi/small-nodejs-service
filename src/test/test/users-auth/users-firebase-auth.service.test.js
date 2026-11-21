@@ -13,15 +13,16 @@ describe('Users Firebase Auth Service', function () {
     // call: each operation
     await UsersAuthServiceFirebase.init();
     const results = [
-      await UsersAuthServiceFirebase.login(config, { username: 'ana.pop@testdomain.test', password: 'x' }, _ctx),
+      await UsersAuthServiceFirebase.login(config, { username: 'jane.smith@testdomain.test', password: 'x' }, _ctx),
       await UsersAuthServiceFirebase.logout(config, _ctx),
       await UsersAuthServiceFirebase.validateToken(config, { token: 'token' }, _ctx),
-      await UsersAuthServiceFirebase.post(config, { username: 'ana.pop@testdomain.test' }, _ctx),
-      await UsersAuthServiceFirebase.delete(config, 'ana.pop@testdomain.test', _ctx),
-      await UsersAuthServiceFirebase.putPassword(config, 'ana.pop@testdomain.test', {}, _ctx),
-      await UsersAuthServiceFirebase.putID(config, 'ana.pop@testdomain.test', {}, _ctx),
-      await UsersAuthServiceFirebase.resetPassword(config, 'ana.pop@testdomain.test', 'signup', _ctx),
-      await UsersAuthServiceFirebase.sendEmail(config, 'ana.pop@testdomain.test', {}, _ctx),
+      await UsersAuthServiceFirebase.post(config, { username: 'jane.smith@testdomain.test' }, _ctx),
+      await UsersAuthServiceFirebase.delete(config, 'jane.smith@testdomain.test', _ctx),
+      await UsersAuthServiceFirebase.putPassword(config, 'jane.smith@testdomain.test', {}, _ctx),
+      await UsersAuthServiceFirebase.putID(config, 'jane.smith@testdomain.test', {}, _ctx),
+      await UsersAuthServiceFirebase.resetPassword(config, 'jane.smith@testdomain.test', 'signup', _ctx),
+      await UsersAuthServiceFirebase.sendEmail(config, 'jane.smith@testdomain.test', {}, _ctx),
+      await UsersAuthServiceFirebase.putEmailTimestamp(config, 'jane.smith@testdomain.test', 'invite', _ctx),
     ];
 
     // check: all 500 Not implemented
@@ -36,7 +37,7 @@ describe('Users Firebase Auth Service', function () {
    */
   it('should get the token of a login', async () => {
     // call
-    const userInfo = { token: 'token1', username: 'ana.pop@testdomain.test' };
+    const userInfo = { token: 'token1', username: 'jane.smith@testdomain.test' };
     const r = await UsersAuthServiceFirebase.getToken(config, userInfo, _ctx);
 
     // check

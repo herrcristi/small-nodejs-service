@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 
@@ -135,7 +134,7 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * post fail validation
+   * post fail validation: the status is not given (a new user is pending)
    */
   it('should post fail validation', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
@@ -151,7 +150,7 @@ describe('Users Service', function () {
 
     // check
     chai.expect(res.status).to.equal(400);
-    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "id" is not allowed');
+    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "status" is not allowed');
   }).timeout(10000);
 
   /**

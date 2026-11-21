@@ -20,7 +20,7 @@ describe('Schools Service', function () {
     const stubPut = sinon.stub(DbOpsUtils, 'updateManyReferences');
 
     // call
-    const notification = { serviceName: 'users', modified: [{ id: 'user1', name: 'Ana Pop' }] };
+    const notification = { serviceName: 'users', modified: [{ id: 'user1', name: 'Jane Smith' }] };
     const res = await SchoolsService.notification(notification, _ctx);
 
     // check: ignored

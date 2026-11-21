@@ -27,16 +27,14 @@ describe('Users Auth Service', function () {
   });
 
   /**
-   * delete the account: the account first (deleted, it can not log in), then its login, its sessions, the event and the
+   * delete the account: the user first (deleted, it can not log in), then its login, its sessions, the event and the
    * notification
    */
   it('should delete with success', async () => {
     const testUser = _.cloneDeep(TestConstants.UsersAuth[0]);
 
-    // stub: the account is deleted, the login is removed, the sessions are ended
-    const stubAccount = sinon
-      .stub(UsersRest, 'deleteAccount')
-      .resolves({ status: 200, value: { id: testUser.userID } });
+    // stub: the user is deleted, the login is removed, the sessions are ended
+    const stubAccount = sinon.stub(UsersRest, 'delete').resolves({ status: 200, value: { id: testUser.userID } });
     const stubLogin = sinon.stub(DbOpsUtils, 'delete').resolves({ status: 200, value: { ...testUser } });
     const stubEndAll = sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 1 });
     const stubEvents = sinon.stub(EventsRest, 'raiseEventForObject');
@@ -59,11 +57,11 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * the account can not be deleted: the error, the login is kept
+   * the user can not be deleted: the error, the login is kept
    */
   it('should delete fail when the account can not be deleted', async () => {
-    // stub: the account can not be deleted
-    sinon.stub(UsersRest, 'deleteAccount').resolves(fail);
+    // stub: the user can not be deleted
+    sinon.stub(UsersRest, 'delete').resolves(fail);
     const stubLogin = sinon.stub(DbOpsUtils, 'delete');
 
     // call
@@ -75,12 +73,12 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * the login can not be removed: the error (the account is deleted: it can not log in anyway); a login that does not
+   * the login can not be removed: the error (the user is deleted: it can not log in anyway); a login that does not
    * exist anymore is not an error
    */
   it('should delete fail when the login can not be removed, and ignore a missing login', async () => {
-    // stub: the account is deleted; the login can not be removed
-    sinon.stub(UsersRest, 'deleteAccount').resolves({ status: 200, value: {} });
+    // stub: the user is deleted; the login can not be removed
+    sinon.stub(UsersRest, 'delete').resolves({ status: 200, value: {} });
     const stubLogin = sinon.stub(DbOpsUtils, 'delete').resolves(fail);
     const stubEndAll = sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 1 });
     sinon.stub(EventsRest, 'raiseEventForObject');

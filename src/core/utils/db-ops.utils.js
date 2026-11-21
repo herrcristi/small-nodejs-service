@@ -84,14 +84,10 @@ const Utils = {
    * same createdTimestamp) with a smaller or missing modifiedCount, or a copy of an object with the same id that was
    * created again (another createdTimestamp, or none); only these copies are updated, so a change that comes back
    * through a cycle of notifications, or a late notification of an older change, changes nothing
-   * null when the object has no modifiedCount (then every copy is updated)
    * prefix: '' (the copy itself, inside $elemMatch) or the path of the copy ('user', 'schools', 'schedules.location')
+   * objInfo: the object, with its modifiedCount
    */
   getOlderCopyFilter: (prefix, objInfo) => {
-    if (typeof objInfo.modifiedCount !== 'number') {
-      return null;
-    }
-
     const field = (name) => (prefix ? `${prefix}.${name}` : name);
     const olderCount = { $not: { $gte: objInfo.modifiedCount } };
     if (typeof objInfo.createdTimestamp !== 'string') {
@@ -138,6 +134,18 @@ const Utils = {
       filter = Utils.prefixFilter(filter, field);
     }
     return filter;
+  },
+
+  /**
+   * the array filters of the copies in arrays (see getReferencesUpdateMany), only for the older copies
+   * [ { 'schedules.location.id': id } ] -> [ { 'schedules.location.id': id, $or: [ ...'schedules.location.' fields ] } ]
+   */
+  getOlderCopiesArrayFilters: (arrayFilters, objInfo) => {
+    return arrayFilters.map((arrayFilter) => {
+      const idKey = Object.keys(arrayFilter)[0]; // schedules.location.id
+      const copyPrefix = idKey.replace(/\.id$/, ''); // schedules.location
+      return { ...arrayFilter, ...Utils.getOlderCopyFilter(copyPrefix, objInfo) };
+    });
   },
 };
 
@@ -643,19 +651,14 @@ const Public = {
         setObj[`${updateField}.${key}`] = objInfo[key]; // schedules.$[schedules].location.id: ...
       }
 
-      // only the older copies (without a modifiedCount in the object: all its copies)
-      const hasOlderCondition = !!Utils.getOlderCopyFilter('', objInfo);
-      let filter = { [filterField]: objInfo.id }; // schedules.location.id: ...
-      let olderArrayFilters = arrayFilters;
-      if (hasOlderCondition) {
-        filter = Utils.getOlderCopiesFilter(ref.fieldName, objInfo);
-        olderArrayFilters = arrayFilters.map((arrayFilter) => {
-          const idKey = Object.keys(arrayFilter)[0]; // schedules.location.id
-          const copyPrefix = idKey.replace(/\.id$/, ''); // schedules.location
-          const olderFilter = Utils.getOlderCopyFilter(copyPrefix, objInfo);
-          return { ...arrayFilter, ...olderFilter };
-        });
-      }
+      // only the older copies: an object with a modifiedCount (without it: all its copies)
+      const hasModifiedCount = typeof objInfo.modifiedCount === 'number';
+      const filter = hasModifiedCount
+        ? Utils.getOlderCopiesFilter(ref.fieldName, objInfo)
+        : { [filterField]: objInfo.id }; // schedules.location.id: ...
+      const updateArrayFilters = hasModifiedCount
+        ? Utils.getOlderCopiesArrayFilters(arrayFilters, objInfo)
+        : arrayFilters;
 
       // the objects to update
       const objects = await config.collection.find(filter).project({ _id: 0, id: 1 }).toArray();
@@ -682,7 +685,7 @@ const Public = {
           },
         },
         {
-          arrayFilters: olderArrayFilters, // [{ schedules.location.id: '...', schedules.location.modifiedCount: ... }]
+          arrayFilters: updateArrayFilters, // [{ schedules.location.id: '...', $or: [ schedules.location.modifiedCount... ] }]
           //explain: 'executionStats'
         }
       );
@@ -701,6 +704,60 @@ const Public = {
         }' with info ${JSON.stringify(objInfo)}. Error ${CommonUtils.getLogError(e)}. Finished in ${
           new Date() - time
         } ms`
+      );
+      return Utils.exception(e, time, _ctx);
+    }
+  },
+
+  /**
+   * references id update many: the copies of an object that got another id take its new id (the other fields of the
+   * copies follow with updateManyReferences)
+   * config: { serviceName, collection }
+   * ref: { fieldName }
+   * previousID: the id of the copies, objID: the new id
+   * return: { status, value: updated count, ids: [ the ids of the updated objects ] } or { status, error }
+   */
+  updateManyReferencesID: async (config, ref, previousID, objID, _ctx) => {
+    const time = new Date();
+
+    try {
+      // the copies with the previous id
+      const { filterField, updateField, arrayFilters } = Utils.getReferencesUpdateMany(
+        ref.fieldName,
+        { id: previousID },
+        _ctx
+      );
+      const objects = await config.collection
+        .find({ [filterField]: previousID })
+        .project({ _id: 0, id: 1 })
+        .toArray();
+      const ids = objects.map((item) => item.id);
+      if (!ids.length) {
+        return { status: 200, value: 0, ids: [], time: new Date() - time };
+      }
+
+      // their new id
+      const r = await config.collection.updateMany(
+        { id: { $in: ids } },
+        {
+          $set: { [`${updateField}.id`]: objID, lastModifiedTimestamp: new Date().toISOString() },
+          $inc: { modifiedCount: 1 },
+        },
+        { arrayFilters } // [{ students.id: previousID }]
+      );
+
+      console.log(
+        `\nDB Calling: ${config.serviceName} updateManyReferencesID for '${ref.fieldName}' from ${previousID} to ${objID} for ids ${JSON.stringify(
+          ids
+        )} returned ${JSON.stringify(r, null, 2)}. Finished in ${new Date() - time} ms`
+      );
+
+      return { status: 200, value: r.modifiedCount, ids, time: new Date() - time };
+    } catch (e) {
+      console.log(
+        `\nDB Calling Failed: ${config.serviceName} updateManyReferencesID for '${
+          ref.fieldName
+        }' from ${previousID} to ${objID}. Error ${CommonUtils.getLogError(e)}. Finished in ${new Date() - time} ms`
       );
       return Utils.exception(e, time, _ctx);
     }

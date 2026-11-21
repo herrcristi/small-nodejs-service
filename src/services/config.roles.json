@@ -36,14 +36,6 @@
       }
     },
 
-    "self": {
-      "users": {
-        "GET": ["/api/v1/users/:id"],
-        "PUT": ["/api/v1/users/:id"],
-        "PATCH": ["/api/v1/users/:id"]
-      }
-    },
-
     "deny-not-current-school": {
       "schools": {
         "GET": ["/api/v1/schools/:id", "/api/v1/schools/:id/settings"],
@@ -166,6 +158,11 @@
     },
 
     "current-user": {
+      "users": {
+        "GET": ["/api/v1/users/:id"],
+        "PUT": ["/api/v1/users/:id"],
+        "PATCH": ["/api/v1/users/:id"]
+      },
       "professors": {
         "GET": ["/api/v1/professors/:id"],
         "PUT": ["/api/v1/professors/:id"],

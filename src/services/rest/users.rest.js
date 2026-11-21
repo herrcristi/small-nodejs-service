@@ -122,36 +122,6 @@ const Public = {
   },
 
   /**
-   * recreate account (internal) called from users-auth at an invite: a deleted user is created again (pending), the
-   * others are not changed; returns the user with its current status
-   */
-  recreateAccount: async (objID, _ctx) => {
-    const config = {
-      serviceName: UsersConstants.ServiceNameInternal,
-      method: 'POST',
-      path: `/${objID}/recreate-account`,
-      body: {},
-      localCall: { fn: 'recreateAccount', params: { objID } },
-    };
-    return await RestCommsUtils.call(config, _ctx);
-  },
-
-  /**
-   * delete account (internal) called from users-auth when the user deletes its account: the user is kept as deleted
-   * (no memberships, no profile fields)
-   */
-  deleteAccount: async (objID, _ctx) => {
-    const config = {
-      serviceName: UsersConstants.ServiceNameInternal,
-      method: 'POST',
-      path: `/${objID}/delete-account`,
-      body: {},
-      localCall: { fn: 'deleteAccount', params: { objID } },
-    };
-    return await RestCommsUtils.call(config, _ctx);
-  },
-
-  /**
    * put email (internal) called from users-auth
    */
   putEmail: async (objID, objInfo, _ctx) => {

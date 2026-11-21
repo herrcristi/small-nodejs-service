@@ -63,7 +63,7 @@ const Public = {
       _ctx.tenantName = r.value.tenantName;
       _ctx.sessionID = r.value.sessionID;
 
-      // a route without a school (all, self) called with a school that is not one of the user: it is not used, so
+      // a route without a school (all, current-user) called with a school that is not one of the user: it is not used, so
       // nothing is written into it (its events)
       if (!r.value.tenantVerified) {
         _ctx.tenantID = undefined;

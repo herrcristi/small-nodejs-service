@@ -12,45 +12,33 @@ describe('Users Auth Service', function () {
   const fail = { status: 500, error: { message: 'Database failure' } };
 
   // the users of the notifications
-  const anaPop = { id: 'user1', name: 'Ana Pop', type: 'user', email: 'ana.pop@testdomain.test' };
-  const danIon = { id: 'user2', name: 'Dan Ion', type: 'user', email: 'dan.ion@testdomain.test' };
+  const janeSmith = { id: 'user1', name: 'Jane Smith', type: 'user', email: 'jane.smith@testdomain.test' };
+  const johnBrown = { id: 'user2', name: 'John Brown', type: 'user', email: 'john.brown@testdomain.test' };
 
   afterEach(async function () {
     sinon.restore();
   });
 
   /**
-   * a deleted account: its login is deleted, its sessions and links are ended
+   * modified users keep their login (a deleted user is removed, see the next tests)
    */
-  it('should remove the login of a deleted account', async () => {
-    // stub: the account is still deleted; the login and the sessions
-    const stubCurrent = sinon
-      .stub(UsersRest, 'getAllByIDs')
-      .resolves({ status: 200, value: [{ id: 'user1', status: 'deleted' }] });
-    const stubLogin = sinon.stub(DbOpsUtils, 'delete').resolves({ status: 200, value: {} });
-    const stubEndAll = sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 1 });
+  it('should keep the login of the modified users', async () => {
+    // stub: the users and the logins are not read
+    const stubCurrent = sinon.stub(UsersRest, 'getAllByIDs');
+    const stubLogin = sinon.stub(DbOpsUtils, 'delete');
 
-    // call: the account was deleted, another user was only modified
-    const notification = {
-      serviceName: 'users',
-      modified: [
-        { ...anaPop, status: 'deleted', schools: [] },
-        { ...danIon, status: 'active' },
-      ],
-    };
+    // call: a modified user
+    const notification = { serviceName: 'users', modified: [{ ...johnBrown, status: 'active' }] };
     const res = await UsersAuthService.notification(notification, _ctx);
 
-    // check: only the deleted one, read again, its login (by email) and its sessions
-    chai.expect(res).to.deep.equal({ status: 200, value: true });
-    chai.expect(stubCurrent.firstCall.args[0]).to.deep.equal(['user1']);
-    chai.expect(stubLogin.callCount).to.equal(1);
-    chai.expect(stubLogin.firstCall.args[1]).to.equal(anaPop.email);
-    chai.expect(stubEndAll.firstCall.args[0]).to.equal('user1');
+    // check: nothing done
+    chai.expect(res).to.deep.equal({ status: 200, value: false });
+    chai.expect(stubCurrent.callCount).to.equal(0);
+    chai.expect(stubLogin.callCount).to.equal(0);
   }).timeout(10000);
 
   /**
-   * removed users: only the ones that do not exist anymore lose their login (a removed role keeps it); a late
-   * notification of an account created again changes nothing
+   * removed users: only the ones that do not exist anymore lose their login (a removed role keeps it)
    */
   it('should remove the login only of the users without an account now', async () => {
     // stub: user1 does not exist anymore, user2 still exists (only a role was removed)
@@ -60,20 +48,13 @@ describe('Users Auth Service', function () {
     const stubEndAll = sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 0 });
 
     // call: both removed (user1 twice: once each)
-    const notification = { serviceName: 'users', removed: [anaPop, danIon, anaPop] };
+    const notification = { serviceName: 'users', removed: [janeSmith, johnBrown, janeSmith] };
     const res = await UsersAuthService.notification(notification, _ctx);
 
     // check: only user1 (its login was already gone: not an error)
     chai.expect(res).to.deep.equal({ status: 200, value: true });
     chai.expect(stubLogin.callCount).to.equal(1);
     chai.expect(stubEndAll.firstCall.args[0]).to.equal('user1');
-
-    // case: the deleted account was created again meanwhile (pending): nothing removed
-    UsersRest.getAllByIDs.resolves({ status: 200, value: [{ id: 'user1', status: 'pending' }] });
-    const deletedLate = { serviceName: 'users', modified: [{ ...anaPop, status: 'deleted' }] };
-    const resLate = await UsersAuthService.notification(deletedLate, _ctx);
-    chai.expect(resLate).to.deep.equal({ status: 200, value: false });
-    chai.expect(stubLogin.callCount).to.equal(1);
   }).timeout(10000);
 
   /**
@@ -86,7 +67,7 @@ describe('Users Auth Service', function () {
     // call: an active user, a user without email
     const notification = {
       serviceName: 'users',
-      modified: [{ ...anaPop, status: 'active' }],
+      modified: [{ ...janeSmith, status: 'active' }],
       removed: [{ id: 'user3', name: 'No Email' }],
     };
     const res = await UsersAuthService.notification(notification, _ctx);
@@ -94,6 +75,11 @@ describe('Users Auth Service', function () {
     // check
     chai.expect(res).to.deep.equal({ status: 200, value: false });
     chai.expect(stubCurrent.callCount).to.equal(0);
+
+    // case: only a role of the user was removed (the user still exists): its login is kept
+    stubCurrent.resolves({ status: 200, value: [{ id: 'user1' }] });
+    const roleRemoved = { serviceName: 'users', removed: [janeSmith] };
+    chai.expect(await UsersAuthService.notification(roleRemoved, _ctx)).to.deep.equal({ status: 200, value: false });
   }).timeout(10000);
 
   /**
@@ -104,7 +90,7 @@ describe('Users Auth Service', function () {
     const stubCurrent = sinon.stub(UsersRest, 'getAllByIDs').resolves(fail);
     const stubLogin = sinon.stub(DbOpsUtils, 'delete').resolves(fail);
     const stubEndAll = sinon.stub(UsersAuthSessionsService, 'endAll').resolves(fail);
-    const notification = { serviceName: 'users', removed: [anaPop] };
+    const notification = { serviceName: 'users', removed: [janeSmith] };
 
     // case: the users can not be read
     let res = await UsersAuthService.notification(notification, _ctx);

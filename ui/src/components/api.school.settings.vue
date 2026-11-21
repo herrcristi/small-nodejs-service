@@ -41,27 +41,19 @@
           <v-card-text>
             <p class="mb-4">{{ t('settings.removedMembers.description') }}</p>
 
-            <v-radio-group v-model="edit.removedMembers" hide-details>
-              <!-- keep: the default -->
-              <v-radio value="keep" color="primary">
-                <template #label>
-                  <div>
-                    <div class="option-title">{{ t('settings.removedMembers.keep') }}</div>
-                    <div class="option-description">{{ t('settings.removedMembers.keep.description') }}</div>
-                  </div>
-                </template>
-              </v-radio>
-
-              <!-- delete: the records and their places in the groups and the schedules, it can not be undone -->
-              <v-radio value="delete" color="error" class="mt-4">
-                <template #label>
-                  <div>
-                    <div class="option-title text-error">{{ t('settings.removedMembers.delete') }}</div>
-                    <div class="option-description">{{ t('settings.removedMembers.delete.description') }}</div>
-                  </div>
-                </template>
-              </v-radio>
-            </v-radio-group>
+            <!-- unchecked: keep (the default, traces); checked: delete (it can not be undone) -->
+            <v-checkbox v-model="deleteRemoved" color="error" hide-details>
+              <template #label>
+                <div class="option-title">{{ t('settings.removedMembers.delete') }}</div>
+              </template>
+            </v-checkbox>
+            <div class="option-description ms-10">
+              {{
+                deleteRemoved
+                  ? t('settings.removedMembers.delete.description')
+                  : t('settings.removedMembers.keep.description')
+              }}
+            </div>
 
             <v-alert v-if="edit.removedMembers === 'delete'" type="warning" variant="tonal" class="mt-4">
               {{ t('settings.removedMembers.delete.warning') }}
@@ -131,6 +123,14 @@ const removedMembersText = computed(() => t(`settings.removedMembers.${saved.val
  * changed: the edited settings are not the saved ones
  */
 const changed = computed(() => edit.value.removedMembers !== saved.value.removedMembers);
+
+// the checkbox of the delete choice (unchecked: keep)
+const deleteRemoved = computed({
+  get: () => edit.value.removedMembers === 'delete',
+  set: (checked) => {
+    edit.value.removedMembers = checked ? 'delete' : 'keep';
+  },
+});
 
 /**
  * show a message

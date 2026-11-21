@@ -15,7 +15,7 @@ const EmailsUtils = require('../../../core/utils/emails.utils.js');
  */
 describe('Users Auth Service ensureAuth', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
-  const user = { username: 'ana.pop@testdomain.test', userID: 'user1' };
+  const user = { username: 'jane.smith@testdomain.test', userID: 'user1' };
 
   afterEach(async function () {
     sinon.restore();

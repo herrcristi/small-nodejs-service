@@ -11,27 +11,20 @@ const UsersRest = require('../../../services/rest/users.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
 /**
- * the account of a user: deleted by the user (kept as deleted, without memberships and personal fields), created again
- * by an invitation, and removed when its invitation is not used in time
+ * the account of a user: deleted (by the user, or when its invitation is not used in time); the schools keep their
+ * records as traces by the removed notification, where the user is deleted
  */
 describe('Users Service account', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users', tenantID: 'school1', userID: 'user1' };
   const fail = { status: 500, error: { message: 'Database failure' } };
 
-  // a user and the same user after its account was deleted
-  const anaPop = {
+  // a user
+  const janeSmith = {
     id: 'user1',
-    name: 'Ana Pop',
-    email: 'ana.pop@testdomain.test',
+    name: 'Jane Smith',
+    email: 'jane.smith@testdomain.test',
     status: 'active',
     schools: [{ id: 'school1', name: 'North High School', roles: ['student', 'professor'] }],
-  };
-  const anaPopDeleted = {
-    id: 'user1',
-    name: 'Ana Pop',
-    email: 'ana.pop@testdomain.test',
-    status: 'deleted',
-    schools: [],
   };
 
   beforeEach(async function () {
@@ -46,89 +39,54 @@ describe('Users Service account', function () {
   });
 
   /**
-   * delete the account: deleted, without memberships and personal fields (the id, the name and the email are kept);
-   * the removed memberships are notified (the schools keep or delete its records)
+   * delete a user: the record is deleted (nothing is kept), the removed notification carries the user as deleted (the
+   * schools keep their records as traces, deleted, or delete them, by their setting)
    */
-  it('should delete the account of a user', async () => {
-    // stub: the user before, and after the patch
-    sinon.stub(DbOpsUtils, 'getOne').resolves({ status: 200, value: anaPop });
-    const stubPatch = sinon.stub(DbOpsUtils, 'patch').resolves({ status: 200, value: anaPopDeleted });
+  it('should delete a user and notify it as deleted', async () => {
+    // stub: the user is deleted
+    const stubDelete = sinon.stub(DbOpsUtils, 'delete').resolves({ status: 200, value: janeSmith });
 
     // call
-    const res = await UsersService.deleteAccount('user1', _ctx);
+    const res = await UsersService.delete('user1', _ctx);
 
-    // check: the patch
+    // check: deleted, notified as deleted with its memberships
     chai.expect(res.status).to.equal(200);
-    const patchInfo = stubPatch.firstCall.args[2];
-    chai.expect(patchInfo.set).to.include({ status: 'deleted' });
-    chai.expect(patchInfo.set.schools).to.deep.equal([]);
-    chai.expect(patchInfo.set.deletedTimestamp).to.be.a('string');
-    chai.expect(patchInfo.unset).to.deep.equal(UsersConstants.ProfileFields);
+    chai.expect(stubDelete.firstCall.args[1]).to.equal('user1');
+    chai.expect(UsersRest.raiseNotification.firstCall.args[0]).to.equal('removed');
+    chai.expect(UsersRest.raiseNotification.firstCall.args[1]).to.deep.equal([{ ...janeSmith, status: 'deleted' }]);
 
-    // check: its event, modified, and the removed memberships (with the deleted status)
-    chai.expect(EventsRest.raiseEventForObject.firstCall.args[1]).to.equal('deleteAccount');
-    const notifications = UsersRest.raiseNotification.args;
-    chai.expect(notifications[0][0]).to.equal('modified');
-    chai.expect(notifications[1][0]).to.equal('removed');
-    chai.expect(notifications[1][1][0]).to.include({ id: 'user1', status: 'deleted' });
-    chai.expect(notifications[1][1][0].schools[0].roles).to.deep.equal(['student', 'professor']);
+    // case: it can not be deleted: nothing notified
+    stubDelete.resolves(fail);
+    UsersRest.raiseNotification.resetHistory();
+    chai.expect(await UsersService.delete('user1', _ctx)).to.deep.equal(fail);
+    chai.expect(UsersRest.raiseNotification.callCount).to.equal(0);
   }).timeout(10000);
 
   /**
-   * recreate the account of a deleted user (an invitation): pending, created now (its invitation expires like a new
-   * one); a user that is not deleted is not changed
-   */
-  it('should recreate the account of a deleted user', async () => {
-    // stub: the write (still deleted when it is written)
-    const stubPut = sinon
-      .stub(DbOpsUtils, 'put')
-      .resolves({ status: 200, value: { ...anaPopDeleted, status: 'pending' } });
-    const stubGet = sinon.stub(DbOpsUtils, 'getOne').resolves({ status: 200, value: { ...anaPop, status: 'pending' } });
-
-    // call
-    const before = Date.now();
-    const res = await UsersService.recreateAccount('user1', _ctx);
-
-    // check: pending, created now, only if it is still deleted, with its event
-    chai.expect(res.status).to.equal(200);
-    chai.expect(res.value.status).to.equal('pending');
-    const changes = stubPut.firstCall.args[2];
-    chai.expect(changes.status).to.equal('pending');
-    chai.expect(new Date(changes.createdTimestamp).getTime()).to.be.at.least(before);
-    chai.expect(stubPut.firstCall.args[5]).to.deep.equal({ filter: { status: 'deleted' } });
-    chai.expect(EventsRest.raiseEventForObject.firstCall.args[1]).to.equal('recreateAccount');
-
-    // case: not deleted (pending, active or disabled): not changed, its current status
-    stubPut.resolves({ status: 409, error: { message: 'Not changed' } });
-    const resNotDeleted = await UsersService.recreateAccount('user1', _ctx);
-    chai.expect(resNotDeleted.status).to.equal(200);
-    chai.expect(resNotDeleted.value.status).to.equal('pending');
-    chai.expect(stubGet.callCount).to.equal(1);
-
-    // case: the user does not exist
-    stubPut.resolves({ status: 404, error: { message: 'Not found' } });
-    const resMissing = await UsersService.recreateAccount('user1', _ctx);
-    chai.expect(resMissing.status).to.equal(404);
-  }).timeout(10000);
-
-  /**
-   * the users whose invitation was not used in time: a new user is deleted, a recreated account is deleted again (its
-   * traces stay); a failure is logged and the next ones are still removed
+   * the users whose invitation was not used in time are deleted (pending, created before the expiry); a failure is
+   * skipped, the next ones are still deleted
    */
   it('should remove the users whose invitation expired', async () => {
-    // stub: the expired pending users
-    const newUser = { id: 'user2', email: 'dan.ion@testdomain.test', schools: [{ id: 'school1', roles: ['student'] }] };
-    const recreated = { ...anaPopDeleted, deletedTimestamp: '2026-11-01T10:00:00.000Z' };
-    const failing = { id: 'user4', email: 'ioana.lup@testdomain.test', schools: [] };
+    // stub: the expired pending users, one of them fails
+    const newUser = {
+      id: 'user2',
+      email: 'john.brown@testdomain.test',
+      schools: [{ id: 'school1', roles: ['student'] }],
+    };
+    const failing = { id: 'user4', email: 'emily.clark@testdomain.test', schools: [] };
+    const invitedAgain = {
+      id: 'user1',
+      email: 'jane.smith@testdomain.test',
+      schools: [{ id: 'school1', roles: ['student'] }],
+    };
     const stubGetAll = sinon.stub(DbOpsUtils, 'getAll').resolves({
       status: 200,
-      value: [newUser, recreated, failing],
+      value: [newUser, failing, invitedAgain],
     });
     const stubDelete = sinon.stub(DbOpsUtils, 'delete');
     stubDelete.onFirstCall().resolves({ status: 200, value: newUser });
     stubDelete.onSecondCall().resolves(fail);
-    sinon.stub(DbOpsUtils, 'getOne').resolves({ status: 200, value: { ...anaPop, status: 'pending' } });
-    const stubPatch = sinon.stub(DbOpsUtils, 'patch').resolves({ status: 200, value: anaPopDeleted });
+    stubDelete.onThirdCall().resolves({ status: 200, value: invitedAgain });
 
     // call
     const before = Date.now();
@@ -140,11 +98,9 @@ describe('Users Service account', function () {
     const expiredBefore = new Date(filter.createdTimestamp.$lt).getTime();
     chai.expect(expiredBefore).to.be.at.most(before - ConfigSettings.getPendingExpiresIn() * 1000 + 1000);
 
-    // check: the new user deleted, the recreated account deleted again, the failure skipped
+    // check: deleted, the failure skipped
     chai.expect(res).to.deep.equal({ status: 200, value: ['user2', 'user1'] });
-    chai.expect(stubDelete.firstCall.args[1]).to.equal('user2');
-    chai.expect(stubPatch.firstCall.args[1]).to.equal('user1');
-    chai.expect(stubDelete.secondCall.args[1]).to.equal('user4');
+    chai.expect(stubDelete.args.map((args) => args[1])).to.deep.equal(['user2', 'user4', 'user1']);
 
     // case: they can not be read
     stubGetAll.resolves(fail);

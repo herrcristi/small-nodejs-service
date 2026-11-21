@@ -1,6 +1,7 @@
 const sinon = require('sinon');
 const chai = require('chai');
 
+const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const EmailsUtils = require('../../../core/utils/emails.utils.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthDatabase = require('../../../services/users-auth/users-local-auth.database.js');
@@ -102,5 +103,30 @@ describe('Users Local Auth Service', function () {
 
     // check: the error of the send
     chai.expect(res.status).to.equal(500);
+  }).timeout(10000);
+
+  /**
+   * put the email timestamp: the time of the last email of this type is written only if there is none, or it is
+   * older than EmailInterval, in one write (409 when it is newer: not sent again)
+   */
+  it('should put the email timestamp at most once each email interval', async () => {
+    // stub: the auth records, the write
+    sinon.stub(UsersAuthDatabase, 'collection').resolves({});
+    const stubPut = sinon.stub(DbOpsUtils, 'put').resolves({ status: 200, value: { id: 'user1@testdomain.test' } });
+    const config = { serviceName: UsersAuthConstants.ServiceName };
+
+    // call
+    const before = Date.now();
+    const res = await UsersLocalAuthService.putEmailTimestamp(config, 'user1@testdomain.test', 'invite', {});
+
+    // check: the auth record of the user, the time of its invite email, only if none or older
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubPut.firstCall.args[1]).to.equal('user1@testdomain.test');
+    const sentAt = stubPut.firstCall.args[2]['emailTimestamps.invite'];
+    chai.expect(new Date(sentAt).getTime()).to.be.at.least(before);
+    const conditions = stubPut.firstCall.args[5].filter.$or;
+    chai.expect(conditions[0]).to.deep.equal({ 'emailTimestamps.invite': { $exists: false } });
+    const sentBefore = new Date(conditions[1]['emailTimestamps.invite'].$lt).getTime();
+    chai.expect(sentBefore).to.equal(new Date(sentAt).getTime() - UsersAuthConstants.EmailInterval * 1000);
   }).timeout(10000);
 });

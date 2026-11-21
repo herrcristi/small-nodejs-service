@@ -748,11 +748,6 @@ describe('Users Auth Service', function () {
         error: new Error('User is disabled'),
       },
     });
-
-    // case: a deleted account: refused the same way
-    testInfoUser.status = UsersRest.Constants.Status.Deleted;
-    res = await UsersAuthService.validate({ token: 'token', method: 'get', route: '/api/v1/users/:id' }, _ctx);
-    chai.expect(res.status).to.equal(401);
   }).timeout(10000);
 
   /**

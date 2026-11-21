@@ -43,9 +43,9 @@ describe('Users Auth Functional', function () {
 
   // the people of the flows
   const portalAdminEmail = 'portal.admin@testdomain.test';
-  const schoolAdminEmail = 'maria.ionescu@testdomain.test';
-  const studentEmail = 'ana.pop@testdomain.test';
-  const otherStudentEmail = 'dan.ion@testdomain.test';
+  const schoolAdminEmail = 'sarah.wilson@testdomain.test';
+  const studentEmail = 'jane.smith@testdomain.test';
+  const otherStudentEmail = 'john.brown@testdomain.test';
 
   // the emails sent: { to, subject, body }
   let mails = [];
@@ -73,7 +73,9 @@ describe('Users Auth Functional', function () {
   /**
    * the token of the last setup / reset link sent to an email
    */
-  const linkToken = (email) => {
+  const linkToken = async (email) => {
+    // the emails are sent without waiting for them
+    await new Promise((resolve) => setTimeout(resolve, 50));
     const mail = mails.filter((item) => item.to === email).pop();
     chai.expect(mail, `an email to ${email}`).to.exist;
     // the link is in the html of the email: its & is written &amp;
@@ -86,7 +88,7 @@ describe('Users Auth Functional', function () {
    * the person sets its password with the link of its email
    */
   const setPassword = async (email) => {
-    const token = linkToken(email);
+    const token = await linkToken(email);
     const r = await api('put', `${AuthPath}/reset-token/password`, {
       headers: { 'x-reset-token': token },
       body: { password: Password },
@@ -143,7 +145,6 @@ describe('Users Auth Functional', function () {
     const body = { email, school: { role } };
     const rInvite = await api('post', `${AuthPath}/invite`, { cookie: adminCookie, tenant: schoolID, body });
     chai.expect(rInvite.status, `invite ${email}`).to.equal(200);
-    chai.expect(rInvite.body.emailSent, `invite email to ${email}`).to.equal(true);
     await setPassword(email);
     const { cookie } = await login(email);
     return cookie;
@@ -245,7 +246,6 @@ describe('Users Auth Functional', function () {
 
     // check: created, the setup email sent, the school pending
     chai.expect(rSignup.status).to.equal(201);
-    chai.expect(rSignup.body.emailSent).to.equal(true);
     const query = `${SchoolsConstants.ApiPath}?name=${encodeURIComponent('North High School')}`;
     let rSchools = await api('get', query, { cookie: portalCookie, tenant: portalID() });
     const school = rSchools.body.data[0];
@@ -261,7 +261,7 @@ describe('Users Auth Functional', function () {
     rSchools = await api('get', query, { cookie: portalCookie, tenant: portalID() });
     chai.expect(rSchools.body.data[0].status).to.equal('active');
     const admin = await recordOf(AdminsConstants.ApiPath, cookie, school.id, schoolAdminEmail);
-    chai.expect(admin.status).to.equal('active');
+    chai.expect(admin.user.status).to.equal('active');
   }).timeout(30000);
 
   /**
@@ -278,9 +278,8 @@ describe('Users Auth Functional', function () {
 
     // check: the setup email, the student pending
     chai.expect(rInvite.status).to.equal(200);
-    chai.expect(rInvite.body.emailSent).to.equal(true);
     let student = await recordOf(StudentsConstants.ApiPath, adminCookie, schoolID, studentEmail);
-    chai.expect(student.status).to.equal('pending');
+    chai.expect(student.user.status).to.equal('pending');
 
     // call: the student sets its password and logs in
     await setPassword(studentEmail);
@@ -289,7 +288,7 @@ describe('Users Auth Functional', function () {
     // check: active, a member of the school that reads its classes
     chai.expect(r.status).to.equal(200);
     student = await recordOf(StudentsConstants.ApiPath, adminCookie, schoolID, studentEmail);
-    chai.expect(student.status).to.equal('active');
+    chai.expect(student.user.status).to.equal('active');
     const rClasses = await api('get', ClassesConstants.ApiPath, { cookie, tenant: schoolID });
     chai.expect(rClasses.status).to.equal(200);
   }).timeout(30000);
@@ -311,9 +310,9 @@ describe('Users Auth Functional', function () {
     });
     chai.expect(rDelete.status).to.equal(200);
 
-    // check: a trace, disabled; the user is not a member anymore
+    // check: a trace, removed; the user is not a member anymore
     let trace = await recordOf(StudentsConstants.ApiPath, adminCookie, schoolID, studentEmail);
-    chai.expect(trace.status).to.equal('disabled');
+    chai.expect(trace.user.status).to.equal('removed');
     const rClasses = await api('get', ClassesConstants.ApiPath, { cookie: studentCookie, tenant: schoolID });
     chai.expect(rClasses.status).to.equal(401);
     const rLogin = await login(studentEmail);
@@ -323,7 +322,7 @@ describe('Users Auth Functional', function () {
     studentCookie = rLogin.cookie;
     const ownPath = `${UsersConstants.ApiPath}/${student.id}`;
     chai.expect((await api('get', ownPath, { cookie: studentCookie })).status).to.equal(200);
-    const rProfile = await api('put', ownPath, { cookie: studentCookie, body: { name: 'Ana Maria Pop' } });
+    const rProfile = await api('put', ownPath, { cookie: studentCookie, body: { name: 'Jane Mary Smith' } });
     chai.expect(rProfile.status).to.equal(200);
 
     // call: the admin invites it again as a student (an active user: the invitation)
@@ -333,8 +332,8 @@ describe('Users Auth Functional', function () {
 
     // check: the trace is a student again, with the new name, and the school is offered again
     trace = await recordOf(StudentsConstants.ApiPath, adminCookie, schoolID, studentEmail);
-    chai.expect(trace.status).to.equal('active');
-    chai.expect(trace.user.name).to.equal('Ana Maria Pop');
+    chai.expect(trace.user.status).to.equal('active');
+    chai.expect(trace.user.name).to.equal('Jane Mary Smith');
     const rAgain = await login(studentEmail);
     chai.expect(rAgain.r.body.schools.map((school) => school.id)).to.deep.equal([schoolID]);
   }).timeout(30000);
@@ -362,18 +361,21 @@ describe('Users Auth Functional', function () {
     chai.expect((await login(studentEmail)).r.status).to.equal(401);
     let student = await recordOf(StudentsConstants.ApiPath, adminCookie, schoolID, studentEmail);
     let professor = await recordOf(ProfessorsConstants.ApiPath, adminCookie, schoolID, studentEmail);
-    chai.expect(student.status).to.equal('deleted');
-    chai.expect(professor.status).to.equal('deleted');
+    chai.expect(student.user.status).to.equal('deleted');
+    chai.expect(professor.user.status).to.equal('deleted');
 
     // call: the admin invites it again, only as a student
     const again = { email: studentEmail, school: { role: 'student' } };
     const rInvite = await api('post', `${AuthPath}/invite`, { cookie: adminCookie, tenant: schoolID, body: again });
 
-    // check: the account is created again (the setup link), the student is pending, the professor stays deleted
+    // check: a new user (a new id): both traces of the school are linked to it, and stay deleted until it logs in
     chai.expect(rInvite.status).to.equal(200);
-    chai.expect(rInvite.body.emailSent).to.equal(true);
-    student = await recordOf(StudentsConstants.ApiPath, adminCookie, schoolID, studentEmail);
-    chai.expect(student.status).to.equal('pending');
+    const newStudent = await recordOf(StudentsConstants.ApiPath, adminCookie, schoolID, studentEmail);
+    professor = await recordOf(ProfessorsConstants.ApiPath, adminCookie, schoolID, studentEmail);
+    chai.expect(newStudent.id).to.not.equal(student.id);
+    chai.expect(newStudent.user.id).to.equal(newStudent.id);
+    chai.expect(professor.id).to.equal(newStudent.id);
+    chai.expect(newStudent.user.status).to.equal('deleted');
 
     // call: it sets its password and logs in
     await setPassword(studentEmail);
@@ -383,8 +385,58 @@ describe('Users Auth Functional', function () {
     chai.expect(r.status).to.equal(200);
     student = await recordOf(StudentsConstants.ApiPath, adminCookie, schoolID, studentEmail);
     professor = await recordOf(ProfessorsConstants.ApiPath, adminCookie, schoolID, studentEmail);
-    chai.expect(student.status).to.equal('active');
-    chai.expect(professor.status).to.equal('deleted');
+    chai.expect(student.user.status).to.equal('active');
+    chai.expect(professor.user.status).to.equal('deleted');
+  }).timeout(30000);
+
+  /**
+   * a deleted account invited again by its school while it is active by another school: its traces are linked to it
+   * and the role given again is active at once; a deleted account invited again that never logs in: its invitation
+   * expires, its traces stay deleted
+   */
+  it('should link the traces of a deleted account to an active user, and keep them when an invitation expires', async () => {
+    // a school with a member who is student and professor, who deletes its account
+    const portalCookie = await startPortal();
+    const { schoolID, adminCookie } = await startSchool(portalCookie);
+    const memberCookie = await joinSchool(adminCookie, schoolID, studentEmail, 'student');
+    const professorBody = { email: studentEmail, school: { role: 'professor' } };
+    await api('post', `${AuthPath}/invite`, { cookie: adminCookie, tenant: schoolID, body: professorBody });
+    chai.expect((await api('delete', AuthPath, { cookie: memberCookie })).status).to.equal(200);
+
+    // call: it signs up another school as its first admin (a new user, active), then its first school invites it again
+    const signup = { email: studentEmail, school: { name: 'South High School', description: 'South campus' } };
+    const rSignup = await api('post', `${AuthPath}/signup`, { cookie: portalCookie, tenant: portalID(), body: signup });
+    chai.expect(rSignup.status).to.equal(201);
+    await setPassword(studentEmail);
+    chai.expect((await login(studentEmail)).r.status).to.equal(200);
+    const again = { email: studentEmail, school: { role: 'student' } };
+    const rInvite = await api('post', `${AuthPath}/invite`, { cookie: adminCookie, tenant: schoolID, body: again });
+    chai.expect(rInvite.status).to.equal(200);
+
+    // check: the traces have the id of the active user; the student is active at once, the professor stays deleted
+    const users = await UsersDatabase.collection(_ctx);
+    const user = await users.findOne({ email: studentEmail });
+    const student = await recordOf(StudentsConstants.ApiPath, adminCookie, schoolID, studentEmail);
+    const professor = await recordOf(ProfessorsConstants.ApiPath, adminCookie, schoolID, studentEmail);
+    chai.expect(student.id).to.equal(user.id);
+    chai.expect(professor.id).to.equal(user.id);
+    chai.expect(student.user.status).to.equal('active');
+    chai.expect(professor.user.status).to.equal('deleted');
+
+    // call: another deleted account (its student trace) invited again, that never logs in: its invitation expires
+    const otherCookie = await joinSchool(adminCookie, schoolID, otherStudentEmail, 'student');
+    chai.expect((await api('delete', AuthPath, { cookie: otherCookie })).status).to.equal(200);
+    const otherAgain = { email: otherStudentEmail, school: { role: 'student' } };
+    await api('post', `${AuthPath}/invite`, { cookie: adminCookie, tenant: schoolID, body: otherAgain });
+    await users.updateOne({ email: otherStudentEmail }, { $set: { createdTimestamp: '2026-01-01T10:00:00.000Z' } });
+    const cleanupCtx = { reqID: 'Test-Users-Auth-Cleanup', lang: 'en', tenantID: portalID() };
+    const res = await UsersService.deleteExpiredPending(cleanupCtx);
+
+    // check: the user is removed again, its trace stays, deleted
+    chai.expect(res.value.length).to.equal(1);
+    chai.expect(await users.findOne({ email: otherStudentEmail })).to.equal(null);
+    const otherTrace = await recordOf(StudentsConstants.ApiPath, adminCookie, schoolID, otherStudentEmail);
+    chai.expect(otherTrace.user.status).to.equal('deleted');
   }).timeout(30000);
 
   /**
@@ -455,7 +507,7 @@ describe('Users Auth Functional', function () {
       .expect(await recordOf(StudentsConstants.ApiPath, adminCookie, schoolID, otherStudentEmail))
       .to.equal(undefined);
     const student = await recordOf(StudentsConstants.ApiPath, adminCookie, schoolID, studentEmail);
-    chai.expect(student.status).to.equal('active');
+    chai.expect(student.user.status).to.equal('active');
   }).timeout(30000);
 
   /**

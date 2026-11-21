@@ -13,6 +13,9 @@ const NotificationsUtils = require('../../core/utils/base-service.notifications.
 const EventsRest = require('../rest/events.rest.js');
 const UsersRest = require('../rest/users.rest.js');
 const SchoolsRest = require('../rest/schools.rest.js');
+const StudentsRest = require('../rest/students.rest.js');
+const ProfessorsRest = require('../rest/professors.rest.js');
+const AdminsRest = require('../rest/admins.rest.js');
 const UsersAuth = require('./users-auth.service.js');
 
 const UsersAuthConstants = require('./users-auth.constants.js');
@@ -81,23 +84,45 @@ const Private = {
   },
 
   /**
+   * link the traces of a deleted account with this email in the school (its students, professors and admins, whatever
+   * the invited role) to the user: done once, at the invite (the only way into a school), before the user gets its role,
+   * so the users notifications find them by the id of the user
+   * returns { status, value } or { status, error }
+   */
+  relinkTraces: async (email, userID, _ctx) => {
+    for (const membersRest of [StudentsRest, ProfessorsRest, AdminsRest]) {
+      const r = await membersRest.relinkTraces({ email, userID }, _ctx);
+      if (r.error) {
+        return r;
+      }
+    }
+    return { status: 200, value: true };
+  },
+
+  /**
    * create new user
    * objInfo: { email, school: { role } }
    */
   postNewUser: async (objInfo, _ctx) => {
-    // create first user details (with default status pending) and get the id
-    const rUser = await UsersRest.post(
-      {
-        email: objInfo.email,
-        schools: [
-          {
-            id: _ctx.tenantID, // schoolID
-            roles: [objInfo.school.role],
-          },
-        ],
-      },
-      _ctx
-    );
+    // a new id, given here: the traces of a deleted account with this email are linked to it before the user exists
+    const newID = CommonUtils.uuidc();
+    const rLink = await Private.relinkTraces(objInfo.email, newID, _ctx);
+    if (rLink.error) {
+      return rLink;
+    }
+
+    // create first user details (with default status pending)
+    const userInfo = {
+      id: newID,
+      email: objInfo.email,
+      schools: [
+        {
+          id: _ctx.tenantID, // schoolID
+          roles: [objInfo.school.role],
+        },
+      ],
+    };
+    const rUser = await UsersRest.post(userInfo, _ctx);
     if (rUser.error) {
       return rUser;
     }
@@ -131,18 +156,12 @@ const Private = {
    * objInfo: { email, school: { role } }
    * returns { status, value, needsSetup } or { status, error }; needsSetup: the user has not set a password yet
    * (pending, or its auth record was just created), so it gets the setup link and not the invitation
-   * a deleted account is created again (pending, it sets its password again like a new user): its records left in the
-   * schools are members again for the roles given again, the others stay traces
    */
   inviteExistingUser: async (userInfo, objInfo, _ctx) => {
-    // a deleted account: created again first, so the role below is added to a pending user (not to a deleted one)
-    if (userInfo.status === UsersRest.Constants.Status.Deleted) {
-      console.log(`\nThe account of ${userInfo.id} was deleted: it is created again by the invite`);
-      const rAccount = await UsersRest.recreateAccount(userInfo.id, _ctx);
-      if (rAccount.error) {
-        return rAccount;
-      }
-      userInfo = { ...userInfo, status: rAccount.value.status };
+    // the traces of a deleted account with this email, before the user gets its role
+    const rLink = await Private.relinkTraces(objInfo.email, userInfo.id, _ctx);
+    if (rLink.error) {
+      return rLink;
     }
 
     // the auth record (created when it is missing)
@@ -325,23 +344,18 @@ const Public = {
     }
 
     // the email: the setup link (a new token) while the user has not set a password (a new user, a pending user invited
-    // again because the first email was lost, a completed invite), otherwise the invitation; emailSent tells if it was
-    // delivered to the mail server (invite again to send it again)
+    // again because the first email was lost, a completed invite), otherwise the invitation (at most one each
+    // EmailInterval: inviting again later sends it again)
     const userInfo = { username: objInfo.email };
-    let rEmail = null;
     if (needsSetup) {
-      rEmail = await UsersAuth.resetPassword(userInfo, _ctx, UsersAuthConstants.ResetTokenType.Signup);
+      await UsersAuth.resetPassword(userInfo, _ctx, UsersAuthConstants.ResetTokenType.Signup);
     } else {
-      rEmail = await UsersAuth.sendInvite(userInfo, _ctx);
-    }
-    const emailSent = !!rEmail.value?.emailSent;
-    if (!emailSent) {
-      console.log(`\nThe invitation email to ${objInfo.email} could not be sent: ${rEmail.error?.message || ''}`);
+      await UsersAuth.sendInvite(userInfo, _ctx);
     }
 
     // the real result (201 a new user, 200 a role added to an existing user, 204 already a member, with the user):
     // the callers inside the service need it; the controllers decide what a user sees
-    return { status: rUser.status, value: rUser.value, emailSent };
+    return { status: rUser.status, value: rUser.value };
   },
 };
 

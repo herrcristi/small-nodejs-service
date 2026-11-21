@@ -326,6 +326,25 @@ const Public = {
   },
 
   /**
+   * put the time of an email of a type sent to a user (emailTimestamps.<type> of its auth record), only when the last
+   * one is older than EmailInterval seconds: at most one each interval, in one database call, so it holds with several
+   * processes
+   * returns { status: 200, value } when it can be sent now, 409 when one was sent less than EmailInterval ago, 404
+   * when the user has no auth record, or { status, error }
+   */
+  putEmailTimestamp: async (config, username, emailType, _ctx) => {
+    // { serviceName, collection, notifications.projection }
+    await Private.setupConfig(config, _ctx);
+
+    const field = `emailTimestamps.${emailType}`;
+    const now = new Date();
+    const sentBefore = new Date(now.getTime() - UsersAuthConstants.EmailInterval * 1000).toISOString();
+    const options = { filter: { $or: [{ [field]: { $exists: false } }, { [field]: { $lt: sentBefore } }] } };
+    const projection = { _id: 0, id: 1 };
+    return await DbOpsUtils.put(config, username, { [field]: now.toISOString() }, projection, _ctx, options);
+  },
+
+  /**
    * check reset token is valid: a valid jwt made for a reset (not a session), and its link is still valid (not used,
    * not replaced by a newer link, not ended by a password change)
    * config: { serviceName }

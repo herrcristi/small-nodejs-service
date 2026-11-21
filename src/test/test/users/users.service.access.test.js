@@ -391,22 +391,6 @@ describe('Users Service access', function () {
         chai.expect(res.error.message).to.equal('Skipping disabling status of current user');
         chai.expect(stubWrite.callCount).to.equal(0);
       });
-
-      /**
-       * the status of a deleted account is not changed (it has no login): only if it is not deleted, in the same write
-       */
-      it(`should not ${method} the status of a deleted account`, async () => {
-        // stub: the write does not match (the account is deleted); the account exists
-        const stubWrite = sinon.stub(DbOpsUtils, 'put').resolves({ status: 409, error: { message: 'Not changed' } });
-
-        // call
-        const res = await UsersService[fn]('member1', body('active'), _ctxPortal);
-
-        // check: written only if not deleted, refused with the reason
-        chai.expect(stubWrite.firstCall.args[5]).to.deep.equal({ filter: { status: { $ne: 'deleted' } } });
-        chai.expect(res.status).to.equal(400);
-        chai.expect(res.error.message).to.equal('The account of this user was deleted: its status can not be changed');
-      });
     }
   });
 

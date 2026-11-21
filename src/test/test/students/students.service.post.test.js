@@ -81,7 +81,6 @@ describe('Students Service', function () {
         id: testStudent.id,
         user: testStudent.user,
         type: testStudent.type,
-        status: testStudent.user.status, // the status of its user while it has the role
       },
     });
   }).timeout(10000);

@@ -201,34 +201,6 @@ describe('Users Service', function () {
   }).timeout(10000);
 
   /**
-   * no role is given to a deleted account (an invitation creates it again); its roles can still be removed
-   */
-  it('should patchSchool not add a role to a deleted account', async () => {
-    const testUser = _.cloneDeep(TestConstants.Users[0]);
-
-    // stub: a deleted account; the write is expected only for the removal
-    sinon.stub(DbOpsUtils, 'getOne').resolves({ status: 200, value: { ...testUser, status: 'deleted', schools: [] } });
-    const stubPatch = sinon.stub(DbOpsUtils, 'patch').resolves({ status: 200, value: { ...testUser, schools: [] } });
-    sinon.stub(ReferencesUtils, 'populateReferences').resolves({ status: 200, value: true });
-    sinon.stub(EventsRest, 'raiseEventForObject');
-    sinon.stub(UsersRest, 'raiseNotification');
-
-    // call: add a role
-    const schools = [{ id: 'school1', roles: ['student'] }];
-    const res = await UsersService.patchSchool(testUser.id, { add: { schools } }, _ctx);
-
-    // check: refused with the reason, nothing written
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.error.message).to.equal('The account of this user was deleted: invite the user again');
-    chai.expect(stubPatch.callCount).to.equal(0);
-
-    // case: remove a role: written
-    const resRemove = await UsersService.patchSchool(testUser.id, { remove: { schools } }, _ctx);
-    chai.expect(resRemove.status).to.equal(200);
-    chai.expect(stubPatch.callCount).to.equal(1);
-  }).timeout(10000);
-
-  /**
    * patchSchool fail validation
    */
   it('should patchSchool fail validation', async () => {

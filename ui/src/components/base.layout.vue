@@ -71,10 +71,16 @@
         <v-list-item link to="/schedules" v-if="permissions.schedules?.read">
           <v-list-item-title>{{ t('schedules') }}</v-list-item-title>
         </v-list-item>
-        <v-list-item link to="/settings" v-if="permissions.settings?.read">
-          <v-list-item-title>{{ t('settings') }}</v-list-item-title>
-        </v-list-item>
       </v-list>
+
+      <!-- the settings of the school: at the bottom of the menu -->
+      <template v-slot:append>
+        <v-list dense>
+          <v-list-item link to="/settings" v-if="permissions.settings?.read">
+            <v-list-item-title>{{ t('settings') }}</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </template>
     </v-navigation-drawer>
 
     <v-main>

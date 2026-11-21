@@ -32,6 +32,7 @@
   "professors.post": "Profesorul '{target}' a fost adăugat",
   "professors.put": "Profesorul '{target}' a fost modificat",
   "professors.restore": "Profesorul '{target}' este din nou membru",
+  "removed": "Eliminat",
   "required": "Necesar",
   "schedules.delete": "Orarul '{target}' a fost eliminat",
   "schedules.patch": "Orarul '{target}' a fost modificat",

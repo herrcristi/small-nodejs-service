@@ -59,7 +59,7 @@ describe('Users Auth Setup Service', function () {
   it('invites the configured email when no portal admin is active', async () => {
     // stub: no active portal admin (none, a former one, or only a disabled one); the invite
     const stubAdmins = sinon.stub(UsersRest, 'getPortalAdmins').resolves({ status: 200, value: { data: [] } });
-    const invited = { status: 201, value: {}, emailSent: true };
+    const invited = { status: 201, value: {} };
     const stubInvite = sinon.stub(UsersAuthSignupService, 'invite').resolves(invited);
 
     // call: invited
@@ -73,26 +73,6 @@ describe('Users Auth Setup Service', function () {
       school: { role: UsersRest.Constants.Roles.PortalAdmin },
     });
     chai.expect(stubInvite.firstCall.args[1].tenantID).to.equal(TestConstants.PortalSchoolID);
-  });
-
-  /**
-   * the invitation email can not be sent: a clear error in the log, the start goes on (it is sent again at the next
-   * start)
-   */
-  it('logs a clear error when the invitation email can not be sent', async () => {
-    // stub: no active portal admin; the invite is done but its email is not sent
-    sinon.stub(UsersRest, 'getPortalAdmins').resolves({ status: 200, value: { data: [] } });
-    sinon.stub(UsersAuthSignupService, 'invite').resolves({ status: 200, value: {}, emailSent: false });
-    const stubError = sinon.stub(console, 'error');
-
-    // call: the invite is done
-    const res = await UsersAuthSetupService.init();
-    stubError.restore();
-
-    // check: the error names the email and the mail settings
-    chai.expect(res).to.equal(true);
-    chai.expect(stubError.firstCall.args[0]).to.include(email);
-    chai.expect(stubError.firstCall.args[0]).to.include('SMALL_API_SMTP_CONFIG');
   });
 
   /**

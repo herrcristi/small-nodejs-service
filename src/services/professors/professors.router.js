@@ -24,5 +24,6 @@ router.route(`${ProfessorsConstants.ApiPath}/:id`).patch(ProfessorsController.pa
  * Internal
  */
 router.route(`${ProfessorsConstants.ApiPathInternal}/notifications`).post(ProfessorsController.notification);
+router.route(`${ProfessorsConstants.ApiPathInternal}/relink-traces`).post(ProfessorsController.relinkTraces); // called from the invite
 
 module.exports = router;

@@ -9,6 +9,7 @@ const NotificationsUtils = require('../../../core/utils/base-service.notificatio
 
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
+const UsersAuthServiceLocal = require('../../../services/users-auth/users-local-auth.service.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
 const UsersAuthSignupService = require('../../../services/users-auth/users-auth.signup.service.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
@@ -20,7 +21,10 @@ describe('Users Auth Service', function () {
 
   before(async function () {});
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    // no email of the same type was sent to the user less than EmailInterval ago: it can be sent now
+    sinon.stub(UsersAuthServiceLocal, 'putEmailTimestamp').resolves({ status: 200, value: {} });
+  });
 
   afterEach(async function () {
     sinon.restore();
@@ -51,7 +55,10 @@ describe('Users Auth Service', function () {
     let res = await UsersAuthService.sendInvite(postReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check: sent, and delivered to the mail server (emailSent)
+    // the email is sent without waiting for it
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    // check: sent
     chai.expect(stubEmail.callCount).to.equal(1);
     chai.expect(stubEvent.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
@@ -59,27 +66,34 @@ describe('Users Auth Service', function () {
       value: {
         username: testUser.id,
         type: testUser.type,
-        emailSent: true,
       },
     });
   }).timeout(10000);
 
   /**
-   * send invite: the mail server refuses the email (emailSent false)
+   * send invite again less than EmailInterval after the last one (a repeated click): it is not sent, the same answer
    */
-  it('should send invite and report a failed delivery', async () => {
+  it('should send invite not again within the email interval', async () => {
     const testUser = _.cloneDeep(TestConstants.UsersAuth[0]);
 
-    // stub: the mail server refuses the email
-    sinon.stub(EventsRest, 'raiseEventForObject');
-    sinon.stub(EmailsUtils, 'sendEmail').resolves({ status: 500, error: { message: 'Failed to send email' } });
+    // stub: an invitation was sent to the user less than EmailInterval ago
+    UsersAuthServiceLocal.putEmailTimestamp.resolves({
+      status: 409,
+      error: { message: 'Not matched', error: new Error('Not matched') },
+    });
+    const stubEvent = sinon.stub(EventsRest, 'raiseEventForObject');
+    const stubEmail = sinon.stub(EmailsUtils, 'sendEmail');
 
     // call
     const res = await UsersAuthService.sendInvite({ username: testUser.id }, _ctx);
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
-    // check: the invite is done, the email is not sent
-    chai.expect(res.status).to.equal(200);
-    chai.expect(res.value.emailSent).to.equal(false);
+    // check: the time of the invite email of this user was checked, nothing sent
+    chai.expect(UsersAuthServiceLocal.putEmailTimestamp.args[0][1]).to.equal(testUser.id);
+    chai.expect(UsersAuthServiceLocal.putEmailTimestamp.args[0][2]).to.equal('invite');
+    chai.expect(stubEmail.callCount).to.equal(0);
+    chai.expect(stubEvent.callCount).to.equal(0);
+    chai.expect(res).to.deep.equal({ status: 200, value: { username: testUser.id, type: testUser.type } });
   }).timeout(10000);
 
   /**

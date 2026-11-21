@@ -119,13 +119,6 @@ const Private = {
   },
 
   /**
-   * a reference of the config (the copies kept from another service)
-   */
-  getReference: (config, fieldName) => {
-    return config.references.find((ref) => ref.fieldName === fieldName);
-  },
-
-  /**
    * notify the groups that changed (modified): the schedules keep the students of their groups
    * returns { status, value: [ ids ] } or { status, error }
    */
@@ -159,11 +152,20 @@ const Private = {
     }
 
     const config = await Private.getConfig(_ctx);
-    const studentsRef = Private.getReference(config, 'students[]');
+    const [studentsRef] = config.references; // students[] (the references: students[], schedules[])
     const changedGroupsIDs = new Set();
 
     // the copies of the modified students
     for (const student of notification[Private.Notification.Modified] || []) {
+      // a trace linked to the user invited again: its copies take its new id first
+      if (student.previousID) {
+        const rID = await DbOpsUtils.updateManyReferencesID(config, studentsRef, student.previousID, student.id, _ctx);
+        if (rID.error) {
+          return rID;
+        }
+        rID.ids.forEach((id) => changedGroupsIDs.add(id));
+      }
+
       const studentCopy = CommonUtils.getProjectedObj(student, studentsRef.projection);
       const rCopies = await DbOpsUtils.updateManyReferences(config, studentsRef, studentCopy, _ctx);
       if (rCopies.error) {
@@ -206,7 +208,7 @@ const Private = {
     }
 
     const config = await Private.getConfig(_ctx);
-    const schedulesRef = Private.getReference(config, 'schedules[]');
+    const [, schedulesRef] = config.references; // schedules[] (the references: students[], schedules[])
 
     const addedSchedules = notification[Private.Notification.Added] || [];
     const modifiedSchedules = notification[Private.Notification.Modified] || [];

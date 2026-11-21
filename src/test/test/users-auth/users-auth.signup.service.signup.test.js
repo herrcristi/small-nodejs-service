@@ -8,6 +8,7 @@ const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
+const UsersAuthServiceLocal = require('../../../services/users-auth/users-local-auth.service.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
 const UsersAuthSignupService = require('../../../services/users-auth/users-auth.signup.service.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
@@ -15,6 +16,9 @@ const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 const SchoolsRest = require('../../../services/rest/schools.rest.js');
 const UsersRest = require('../../../services/rest/users.rest.js');
+const StudentsRest = require('../../../services/rest/students.rest.js');
+const ProfessorsRest = require('../../../services/rest/professors.rest.js');
+const AdminsRest = require('../../../services/rest/admins.rest.js');
 
 describe('Users Auth Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
@@ -24,6 +28,13 @@ describe('Users Auth Service', function () {
   beforeEach(async function () {
     // the auth record of an existing user exists (an interrupted invite is tested on its own)
     sinon.stub(UsersAuthService, 'ensureAuth').resolves({ status: 200, value: {} });
+    // no email of the same type was sent to the user less than EmailInterval ago: it can be sent now
+    sinon.stub(UsersAuthServiceLocal, 'putEmailTimestamp').resolves({ status: 200, value: {} });
+
+    // a new school has no traces of a deleted account
+    sinon.stub(StudentsRest, 'relinkTraces').resolves({ status: 200, value: [] });
+    sinon.stub(ProfessorsRest, 'relinkTraces').resolves({ status: 200, value: [] });
+    sinon.stub(AdminsRest, 'relinkTraces').resolves({ status: 200, value: [] });
   });
 
   afterEach(async function () {
@@ -86,6 +97,7 @@ describe('Users Auth Service', function () {
     let stubUsersPost = sinon.stub(UsersRest, 'post').callsFake((userReq) => {
       console.log(`\nUsersRest.post called with ${JSON.stringify(userReq, null, 2)}`);
       chai.expect(userReq).to.deep.equal({
+        id: userReq.id, // a new id, given by the invite
         email: testUser.email,
         schools: [
           {
@@ -164,7 +176,6 @@ describe('Users Auth Service', function () {
     // the real result (the controller answers the same for all of them)
     chai.expect(res).to.deep.equal({
       status: 201,
-      emailSent: false, // the stub of the email does not report a delivery
       value: {
         username: testUser.email,
         type: UsersAuthRest.Constants.Type,
@@ -308,6 +319,7 @@ describe('Users Auth Service', function () {
     let stubUsersPost = sinon.stub(UsersRest, 'post').callsFake((userReq) => {
       console.log(`\nUsersRest.post called with ${JSON.stringify(userReq, null, 2)}`);
       chai.expect(userReq).to.deep.equal({
+        id: userReq.id, // a new id, given by the invite
         email: testUser.email,
         schools: [
           {
@@ -412,6 +424,7 @@ describe('Users Auth Service', function () {
     let stubUsersPost = sinon.stub(UsersRest, 'post').callsFake((userReq) => {
       console.log(`\nUsersRest.post called with ${JSON.stringify(userReq, null, 2)}`);
       chai.expect(userReq).to.deep.equal({
+        id: userReq.id, // a new id, given by the invite
         email: testUser.email,
         schools: [
           {

@@ -276,6 +276,7 @@ const Utils = {
         return 'grey';
 
       case 'deleted':
+      case 'removed':
         return 'grey';
 
       default:
@@ -481,13 +482,11 @@ const Utils = {
      */
     add: async (apiFn, payload, snackbar, t, options = null) => {
       try {
-        const response = await apiFn.create(payload);
+        await apiFn.create(payload);
 
-        // saved, but its email could not be sent (an invite): inviting again sends it again
-        const emailNotSent = response?.data?.emailSent === false;
         if (snackbar) {
-          snackbar.text.value = emailNotSent ? t('invite.email.failed') : t(options?.successKey || 'add.success');
-          snackbar.color.value = emailNotSent ? 'warning' : 'success';
+          snackbar.text.value = t(options?.successKey || 'add.success');
+          snackbar.color.value = 'success';
           snackbar.ref.value = true;
         }
 

@@ -728,4 +728,39 @@ describe('Admins Controller', function () {
     chai.expect(res.body.message).to.include('An unknown error has occured');
     chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
+
+  /**
+   * relink traces (internal) with success, fail and exception
+   */
+  it('should relink traces with success, fail and exception', async () => {
+    // stub: the service links one trace
+    const stubService = sinon.stub(AdminsService, 'relinkTraces').resolves({ status: 200, value: ['old1'] });
+    const body = { email: 'jane.smith@testdomain.test', userID: 'user1' };
+    const relink = () =>
+      supertest(TestConstants.WebServer)
+        .post(`${AdminsConstants.ApiPathInternal}/relink-traces`)
+        .set('x-tenant-id', _ctx.tenantID)
+        .set('Origin', TestConstants.WebServer)
+        .send(body);
+
+    // call
+    const res = await relink();
+
+    // check: the body is given to the service
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal(['old1']);
+    chai.expect(stubService.firstCall.args[0]).to.deep.equal(body);
+
+    // case: the service fails
+    stubService.resolves({ status: 400, error: { message: 'Test error message', error: new Error('Test error') } });
+    const resFail = await relink();
+    chai.expect(resFail.status).to.equal(400);
+    chai.expect(resFail.body.error).to.include('Test error message');
+
+    // case: the service throws
+    stubService.rejects(new Error('Test error message'));
+    const resException = await relink();
+    chai.expect(resException.status).to.equal(500);
+    chai.expect(resException.body.message).to.include('An unknown error has occured');
+  }).timeout(10000);
 });

@@ -80,7 +80,6 @@ describe('Professors Service', function () {
         id: testProfessor.id,
         user: testProfessor.user,
         type: testProfessor.type,
-        status: testProfessor.user.status, // the status of its user while it has the role
       },
     });
   }).timeout(10000);

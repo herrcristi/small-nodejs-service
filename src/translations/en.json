@@ -32,6 +32,7 @@
   "professors.post": "Professor '{target}' added",
   "professors.put": "Professor '{target}' modified",
   "professors.restore": "Professor '{target}' is a member again",
+  "removed": "Removed",
   "required": "Required",
   "schedules.delete": "Schedule '{target}' removed",
   "schedules.patch": "Schedule '{target}' modified",

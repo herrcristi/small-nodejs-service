@@ -76,7 +76,7 @@ exports.mochaHooks = {
 
       // the service is started (when index.js was loaded first)
       const service = require('../index.js');
-      await service.initialized;
+      await service.init();
     },
 
     async () => {

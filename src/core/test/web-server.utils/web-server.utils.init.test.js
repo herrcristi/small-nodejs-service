@@ -12,7 +12,6 @@ const TestConstants = require('../../../test/test-constants.js');
 /**
  * the settings of a web server of the tests: the origins of the requests of the tests
  */
-const settings = (port) => ({ corsOrigins: [TestConstants.WebServer, `http://localhost:${port}`] });
 
 describe('Web Server Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
@@ -81,7 +80,8 @@ describe('Web Server Utils', function () {
     ];
 
     // call
-    let web = await WebServer.init(port, [router], middlewares, authMiddlewares, settings(port));
+    const settings = { corsOrigins: [TestConstants.WebServer, `http://localhost:${port}`] };
+    let web = await WebServer.init(port, [router], middlewares, authMiddlewares, settings);
     server = web?.server;
 
     // check
@@ -116,7 +116,8 @@ describe('Web Server Utils', function () {
     let usersAuthMiddleware;
 
     // call
-    let web = await WebServer.init(port, router, middlewares, usersAuthMiddleware, settings(port));
+    const settings = { corsOrigins: [TestConstants.WebServer, `http://localhost:${port}`] };
+    let web = await WebServer.init(port, router, middlewares, usersAuthMiddleware, settings);
     server = web?.server;
 
     // check
@@ -154,7 +155,8 @@ describe('Web Server Utils', function () {
     ];
 
     // call
-    let web = await WebServer.init(port, router, middlewares, authMiddlewares, settings(port));
+    const settings = { corsOrigins: [TestConstants.WebServer, `http://localhost:${port}`] };
+    let web = await WebServer.init(port, router, middlewares, authMiddlewares, settings);
     server = web?.server;
 
     // check
@@ -200,7 +202,8 @@ describe('Web Server Utils', function () {
     ];
 
     // call
-    let web = await WebServer.init(port, router, middlewares, authMiddlewares, settings(port));
+    const settings = { corsOrigins: [TestConstants.WebServer, `http://localhost:${port}`] };
+    let web = await WebServer.init(port, router, middlewares, authMiddlewares, settings);
     server = web?.server;
 
     // check
@@ -238,7 +241,8 @@ describe('Web Server Utils', function () {
       }),
     ];
 
-    let web = await WebServer.init(port, [router], [], authMiddlewares, settings(port));
+    const settings = { corsOrigins: [TestConstants.WebServer, `http://localhost:${port}`] };
+    let web = await WebServer.init(port, [router], [], authMiddlewares, settings);
     server = web?.server;
 
     let res = await supertest(`http://localhost:${port}`)

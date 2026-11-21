@@ -79,6 +79,7 @@ const Validators = {
   },
 
   Post: Schema.UserEmail.keys({
+    id: Joi.string().min(1).max(64), // (internal) a new id given by the invite (the traces are linked to it first)
     name: Joi.string().min(1).max(128),
     type: Joi.string().valid(UsersConstants.Type),
     schools: SchemaSchools,
@@ -115,21 +116,6 @@ const Validators = {
   // the internal changes of the status (never from a request)
   Activate: Joi.object().keys({
     status: Joi.string().valid(UsersConstants.Status.Active).required(),
-    deletedTimestamp: Joi.valid(null),
-  }),
-  RecreateAccount: Joi.object().keys({
-    status: Joi.string().valid(UsersConstants.Status.Pending).required(),
-    createdTimestamp: Joi.string().isoDate().required(),
-  }),
-  DeleteAccount: Joi.object().keys({
-    set: Joi.object()
-      .keys({
-        status: Joi.string().valid(UsersConstants.Status.Deleted).required(),
-        deletedTimestamp: Joi.string().isoDate().required(),
-        schools: Joi.array().length(0).required(),
-      })
-      .required(),
-    unset: Joi.array().items(Joi.string().valid(...UsersConstants.ProfileFields)),
   }),
 };
 
@@ -141,8 +127,6 @@ const Private = {
     PatchStatus: 'patchStatus',
     PatchSchool: 'patchSchool',
     Activate: 'activate',
-    RecreateAccount: 'recreateAccount',
-    DeleteAccount: 'deleteAccount',
   },
 
   /**
@@ -188,13 +172,6 @@ const Private = {
     return BaseServiceUtils.getProjectedResponse(rget, null /*default projection */, _ctx);
   },
 
-  /**
-   * the error for the status of a deleted account (it has no login: its status can not be changed)
-   */
-  accountDeleted: () => {
-    const msg = 'The account of this user was deleted: its status can not be changed';
-    return { status: 400, error: { message: msg, error: new Error(msg) } };
-  },
   Notification: NotificationsUtils.Constants.Notification,
 
   /**
@@ -423,13 +400,6 @@ const Private = {
   },
 
   /**
-   * a reference of the config (the copies kept from another service)
-   */
-  getReference: (config, fieldName) => {
-    return config.references.find((ref) => ref.fieldName === fieldName);
-  },
-
-  /**
    * schools notification: the copies of the schools in the users (schools[])
    * - modified: the copies are updated (only the older ones, modifiedCount)
    * - removed (the school was deleted): the memberships of the school are removed from the users
@@ -439,7 +409,7 @@ const Private = {
    */
   onSchoolsNotification: async (notification, _ctx) => {
     const config = await Private.getConfig(_ctx);
-    const schoolsRef = Private.getReference(config, 'schools[]');
+    const [schoolsRef] = config.references; // the copies of the schools (schools[]): the only references of the users
     const changedUsersIDs = new Set();
 
     // the copies of the modified schools
@@ -682,9 +652,11 @@ const Public = {
     // raise event for delete
     await EventsRest.raiseEventForObject(UsersConstants.ServiceName, Private.Action.Delete, r.value, r.value, _ctx);
 
-    // raise a notification for removed obj
+    // raise a notification for removed obj: the user does not exist anymore, its copies kept by the schools as traces
+    // are deleted (see the setting of each school)
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await UsersRest.raiseNotification(Private.Notification.Removed, [rnp.value], _ctx);
+    const removedUser = { ...rnp.value, status: UsersConstants.Status.Deleted };
+    let rn = await UsersRest.raiseNotification(Private.Notification.Removed, [removedUser], _ctx);
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
@@ -773,14 +745,8 @@ const Public = {
       return Private.portalRequired();
     }
 
-    // the response has the default projection (not the schools of the user); a deleted account is not changed (it
-    // has no login), in the same database call
-    const options = { filter: { status: { $ne: UsersConstants.Status.Deleted } } };
-    const r = await Public.putInternal(objID, objInfo, Validators.PutStatus, action, _ctx, options);
-    if (r.status === 409) {
-      return Private.accountDeleted();
-    }
-    return r;
+    // the response has the default projection (not the schools of the user)
+    return await Public.putInternal(objID, objInfo, Validators.PutStatus, action, _ctx);
   },
 
   /**
@@ -791,8 +757,8 @@ const Public = {
    * returns { status, value } with the current status of the user, or { status, error }
    */
   activate: async (objID, _ctx) => {
-    // active: not pending anymore (no expiry), not a deleted account anymore
-    const objInfo = { status: UsersConstants.Status.Active, deletedTimestamp: null };
+    // active: not pending anymore (no expiry)
+    const objInfo = { status: UsersConstants.Status.Active };
     const options = { filter: { status: UsersConstants.Status.Pending } };
     const r = await Public.putInternal(objID, objInfo, Validators.Activate, Private.Action.Activate, _ctx, options);
     if (r.status !== 409) {
@@ -804,47 +770,9 @@ const Public = {
   },
 
   /**
-   * recreate account (internal) called from users-auth when a deleted user is invited again: the account is created
-   * again, pending (createdTimestamp is now, so its invitation expires like a new one, see deleteExpiredPending); the
-   * records it left in the schools (the traces) are members again for the roles given again
-   * a user that is not deleted is not changed (a pending user keeps its first expiry): its current status is returned
-   * returns { status, value } with the current status of the user, or { status, error }
-   */
-  recreateAccount: async (objID, _ctx) => {
-    const objInfo = { status: UsersConstants.Status.Pending, createdTimestamp: new Date().toISOString() };
-    const options = { filter: { status: UsersConstants.Status.Deleted } };
-    const validator = Validators.RecreateAccount;
-    const r = await Public.putInternal(objID, objInfo, validator, Private.Action.RecreateAccount, _ctx, options);
-    if (r.status !== 409) {
-      return r;
-    }
-
-    // not deleted: not changed, its current status is returned
-    return await Private.getCurrentStatus(objID, _ctx);
-  },
-
-  /**
-   * delete the account of a user (internal) called from users-auth when the user deletes its account, and by the
-   * cleanup when a deleted account opened again by an invitation is not used in time: the status is deleted, the
-   * memberships and the personal profile fields are removed; the record keeps its id, name and email, so the records of
-   * the schools keep their person (the removed notification: traces or deleted, by the setting of each school), and
-   * an invitation of the same email opens it again
-   * returns { status, value } or { status, error }
-   */
-  deleteAccount: async (objID, _ctx) => {
-    const patchInfo = {
-      set: { status: UsersConstants.Status.Deleted, deletedTimestamp: new Date().toISOString(), schools: [] },
-      unset: [...UsersConstants.ProfileFields],
-    };
-    return await Public.patchInternal(objID, patchInfo, Validators.DeleteAccount, Private.Action.DeleteAccount, _ctx);
-  },
-
-  /**
    * remove the users whose invitation was not used in time (pending and created longer than
-   * ConfigSettings.getPendingExpiresIn ago; a recreated account is created again when it is invited)
-   * - a user invited for the first time is deleted: its pending records in the schools are deleted and its login too
-   *   (the removed notification)
-   * - a deleted account opened again by the invitation is deleted again (its traces in the schools stay)
+   * ConfigSettings.getPendingExpiresIn ago): the user is deleted, its pending records in the schools are deleted and
+   * its login too (the removed notification; the traces of an earlier account with the same id stay as they are)
    * (a pending portal admin too: while no portal admin is active, the next start invites the configured one again)
    * a failure is logged and the next users are still removed
    * returns { status, value: [ removed ids ] } or { status, error }
@@ -855,7 +783,7 @@ const Public = {
     const expiredBefore = new Date(Date.now() - expiresIn).toISOString();
     const filter = {
       filter: { status: UsersConstants.Status.Pending, createdTimestamp: { $lt: expiredBefore } },
-      projection: { _id: 0, id: 1, email: 1, deletedTimestamp: 1 },
+      projection: { _id: 0, id: 1, email: 1 },
       limit: Private.PendingCleanupBatch,
     };
     const rUsers = await DbOpsUtils.getAll(config, filter, _ctx);
@@ -866,7 +794,7 @@ const Public = {
     const removedIDs = [];
     for (const user of rUsers.value) {
       console.log(`\n${UsersConstants.ServiceName}: the invitation of ${user.id} was not used in time: it is removed`);
-      const r = user.deletedTimestamp ? await Public.deleteAccount(user.id, _ctx) : await Public.delete(user.id, _ctx);
+      const r = await Public.delete(user.id, _ctx);
       if (r.error) {
         console.log(
           `\n${UsersConstants.ServiceName}: failed to remove the pending user ${user.id}: ${r.error.message}`
@@ -905,13 +833,6 @@ const Public = {
     const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
     if (rget.error) {
       return rget;
-    }
-
-    // a role is not given to a deleted account: an invitation creates it again (see recreateAccount)
-    if (patchInfo.add && rget.value.status === UsersConstants.Status.Deleted) {
-      console.log(`\n${UsersConstants.ServiceName}: no role is added to the deleted account ${objID}`);
-      const msg = 'The account of this user was deleted: invite the user again';
-      return { status: 400, error: { message: msg, error: new Error(msg) } };
     }
 
     // populate references

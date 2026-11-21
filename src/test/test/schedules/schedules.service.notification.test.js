@@ -124,6 +124,42 @@ describe('Schedules Service', function () {
   }).timeout(10000);
 
   /**
+   * professors and students notifications of a trace linked to the user invited again (previousID): the copies take its
+   * new id first, then the copy is updated
+   */
+  it('should follow the new id of a linked professor or student in the schedules', async () => {
+    const sources = { professors: 'professors[]', students: 'students[]' };
+
+    for (const serviceName in sources) {
+      // stub: schedule1 has the copy with the previous id
+      const stubID = sinon
+        .stub(DbOpsUtils, 'updateManyReferencesID')
+        .resolves({ status: 200, value: 1, ids: ['schedule1'] });
+      const stubCopies = sinon
+        .stub(DbOpsUtils, 'updateManyReferences')
+        .resolves({ status: 200, value: 1, ids: ['schedule1'] });
+
+      // call
+      const linked = { id: 'user1', name: 'Jane Smith', modifiedCount: 3, previousID: 'old1' };
+      const notification = { serviceName, modified: [linked] };
+      const res = await SchedulesService.notification(notification, _ctx);
+
+      // check: the new id first, then the copy
+      chai.expect(res, serviceName).to.deep.equal({ status: 200, value: ['schedule1'] });
+      chai.expect(stubID.firstCall.args[1].fieldName, serviceName).to.equal(sources[serviceName]);
+      chai.expect(stubID.firstCall.args.slice(2, 4), serviceName).to.deep.equal(['old1', 'user1']);
+      chai.expect(stubID.calledBefore(stubCopies), serviceName).to.equal(true);
+
+      // case: the new id can not be written
+      stubID.resolves(fail);
+      chai.expect(await SchedulesService.notification(notification, _ctx), serviceName).to.deep.equal(fail);
+
+      stubID.restore();
+      stubCopies.restore();
+    }
+  }).timeout(10000);
+
+  /**
    * no school: refused
    */
   it('should notification failed tenant', async () => {

@@ -12,24 +12,44 @@ const EventsRest = require('../../../services/rest/events.rest.js');
 describe('Professors Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Professors', tenantID: 'school1' };
   const fail = { status: 500, error: { message: 'Database failure' } };
-  const removedTimestamp = '2026-11-01T10:00:00.000Z';
 
-  /**
-   * a user with the professor role in the school, as notified by the users service
-   */
-  const getUser = (id, name, email, status) => ({
-    id,
-    name,
+  // the users with the professor role in the school, as notified by the users service
+  const janeSmith = {
+    id: 'user1',
+    name: 'Jane Smith',
     type: 'user',
-    status,
-    email,
+    status: 'active',
+    email: 'jane.smith@testdomain.test',
     modifiedCount: 4,
     schools: [{ id: 'school1', roles: ['professor'] }],
-  });
-  const anaPop = getUser('user1', 'Ana Pop', 'ana.pop@testdomain.test', 'active');
-  const danIon = getUser('user2', 'Dan Ion', 'dan.ion@testdomain.test', 'active');
-  const ioanaLup = getUser('user3', 'Ioana Lup', 'ioana.lup@testdomain.test', 'active');
-  const mihaiPopa = getUser('user4', 'Mihai Popa', 'mihai.popa@testdomain.test', 'pending');
+  };
+  const johnBrown = {
+    id: 'user2',
+    name: 'John Brown',
+    type: 'user',
+    status: 'active',
+    email: 'john.brown@testdomain.test',
+    modifiedCount: 4,
+    schools: [{ id: 'school1', roles: ['professor'] }],
+  };
+  const emilyClark = {
+    id: 'user3',
+    name: 'Emily Clark',
+    type: 'user',
+    status: 'active',
+    email: 'emily.clark@testdomain.test',
+    modifiedCount: 4,
+    schools: [{ id: 'school1', roles: ['professor'] }],
+  };
+  const michaelDavis = {
+    id: 'user4',
+    name: 'Michael Davis',
+    type: 'user',
+    status: 'pending',
+    email: 'michael.davis@testdomain.test',
+    modifiedCount: 1,
+    schools: [{ id: 'school1', roles: ['professor'] }],
+  };
 
   /**
    * the professors records of the school (by id), read by getAllByIDs and getOne
@@ -64,84 +84,75 @@ describe('Professors Service', function () {
   });
 
   /**
-   * the users with the professor role: a new professor is created; the status of an existing one follows its user (a trace
-   * is a professor again, with an event); the user copies are updated (only the older ones)
+   * the users with the professor role: a new professor is created; the user copy of an existing one is updated (only an older
+   * one): a trace is a professor again (with an event); the trace of a user invited again is kept while the user
+   * is pending (nothing is changed or notified until its first login)
    */
   it('should save the professors of the users with the professor role', async () => {
-    // stub: user2 is a professor (pending until it logged in), user3 is a trace (its role was removed); user1 is new
+    // stub: user2 is a professor, user3 a trace of a removed role, user4 a trace of a deleted account; user1 is new
     stubProfessorsRecords({
-      user2: { id: 'user2', status: 'pending' },
-      user3: { id: 'user3', status: 'disabled', removedTimestamp },
+      user2: { id: 'user2', user: { id: 'user2', status: 'pending' } },
+      user3: { id: 'user3', user: { id: 'user3', status: 'removed' } },
+      user4: { id: 'user4', user: { id: 'user4', status: 'deleted' } },
     });
     sinon.stub(ReferencesUtils, 'populateReferences').callsFake((config, objInfo) => {
-      objInfo.user = { id: objInfo.id, name: 'Ana Pop', status: 'active' };
+      objInfo.user = { id: objInfo.id, name: 'Jane Smith', status: 'active' };
       return { status: 200, value: true };
     });
     const stubPost = sinon.stub(DbOpsUtils, 'post').callsFake((config, objInfo) => ({ status: 201, value: objInfo }));
-    const stubPut = sinon.stub(DbOpsUtils, 'put').callsFake((config, id, changes) => ({
-      status: 200,
-      value: { id, ...changes, user: { name: 'Ioana Lup' } },
-    }));
     const stubCopies = sinon.stub(DbOpsUtils, 'updateManyReferences').callsFake((config, ref, userCopy) => {
-      const ids = userCopy.id === 'user2' ? ['user2'] : [];
-      return { status: 200, value: ids.length, ids };
+      return { status: 200, value: 1, ids: [userCopy.id] };
     });
 
-    // call: user1 got the role, user2 logged in, user3 got the role again
-    const notification = { serviceName: 'users', added: [anaPop], modified: [danIon, ioanaLup] };
+    // call: user1 got the role, user2 logged in, user3 got the role again, user4 was invited again (pending)
+    const notification = { serviceName: 'users', added: [janeSmith, michaelDavis], modified: [johnBrown, emilyClark] };
     const res = await ProfessorsService.notification(notification, _ctx);
 
-    // check: the new professor, with the status of its user
+    // check: the new professor, with the copy of its user
     chai.expect(res).to.deep.equal({ status: 200, value: true });
     chai.expect(stubPost.callCount).to.equal(1);
-    chai.expect(stubPost.firstCall.args[1]).to.include({ id: 'user1', status: 'active' });
+    chai.expect(stubPost.firstCall.args[1]).to.include({ id: 'user1' });
 
-    // check: the status follows the user (no event: the users service has it); the trace is a professor again
-    // (active, not removed), with the restore event
-    chai.expect(stubPut.callCount).to.equal(2);
-    chai.expect(stubPut.firstCall.args[1]).to.equal('user2');
-    chai.expect(stubPut.firstCall.args[2]).to.include({ status: 'active', removedTimestamp: null });
-    chai.expect(stubPut.secondCall.args[1]).to.equal('user3');
-    chai.expect(stubPut.secondCall.args[2]).to.include({ status: 'active', removedTimestamp: null });
-    chai.expect(getEventsActions()).to.deep.equal(['post', 'restore']);
-
-    // check: the user copies of the existing ones, only the fields of the copy
-    chai.expect(stubCopies.callCount).to.equal(2);
+    // check: the user copies of user2 and user3 (only the fields of the copy), not of the pending user4
+    chai.expect(stubCopies.args.map((args) => args[2].id)).to.deep.equal(['user2', 'user3']);
     chai.expect(stubCopies.firstCall.args[1].fieldName).to.equal('user');
     chai.expect(stubCopies.firstCall.args[2]).to.not.have.property('schools');
 
-    // check: the changed professors are notified (the copy of user2, the status of user3)
+    // check: the trace of user3 is a professor again (an event)
+    chai.expect(getEventsActions()).to.deep.equal(['post', 'restore']);
+
+    // check: the changed professors are notified (the copies of user2 and user3)
     const modified = ProfessorsRest.raiseNotification.args.filter((args) => args[0] === 'modified');
     const modifiedIDs = modified.map((args) => args[1][0].id);
     chai.expect(modifiedIDs).to.deep.equal(['user2', 'user3']);
   }).timeout(10000);
 
   /**
-   * the users without the professor role (keep setting): a user that never logged in leaves nothing; the others stay as
-   * traces, disabled (the role was removed) or deleted (the account was deleted), with an event
+   * the users without the professor role (keep setting): a professor that never logged in leaves nothing; the others stay as
+   * traces, removed (the role was removed) or deleted (the account was deleted), with an event; a trace is not changed
    */
   it('should keep the professors of the removed users as traces', async () => {
     // stub: the setting keeps them; user3 is already a trace; user4 never logged in; there is no record of user5
     sinon.stub(SchoolsRest, 'getSettings').resolves({ status: 200, value: { removedMembers: 'keep' } });
     stubProfessorsRecords({
-      user1: { id: 'user1', status: 'active' },
-      user2: { id: 'user2', status: 'active' },
-      user3: { id: 'user3', status: 'disabled', removedTimestamp },
+      user1: { id: 'user1', user: { id: 'user1', status: 'active' } },
+      user2: { id: 'user2', user: { id: 'user2', status: 'active' } },
+      user3: { id: 'user3', user: { id: 'user3', status: 'removed' } },
+      user4: { id: 'user4', user: { id: 'user4', status: 'pending' } },
     });
     const stubDelete = sinon.stub(DbOpsUtils, 'delete').resolves({ status: 200, value: { id: 'user4', user: {} } });
     const stubPut = sinon.stub(DbOpsUtils, 'put').callsFake((config, id, changes) => ({
       status: 200,
-      value: { id, ...changes, user: { name: 'Ana Pop' } },
+      value: { id, user: { id, name: 'Jane Smith', status: changes['user.status'] } },
     }));
-    sinon.stub(DbOpsUtils, 'updateManyReferences').callsFake((config, ref, userCopy) => {
-      const ids = userCopy.id === 'user3' ? ['user3'] : [];
-      return { status: 200, value: ids.length, ids };
-    });
 
     // call: user1 lost the role, user2 deleted its account, user3 lost it before
-    const deletedAccount = { ...danIon, status: 'deleted' };
-    const noRecord = getUser('user5', 'Vlad Rus', 'vlad.rus@testdomain.test', 'active');
-    const notification = { serviceName: 'users', removed: [anaPop, deletedAccount, ioanaLup, mihaiPopa, noRecord] };
+    const deletedAccount = { ...johnBrown, status: 'deleted' };
+    const noRecord = { ...janeSmith, id: 'user5' };
+    const notification = {
+      serviceName: 'users',
+      removed: [janeSmith, deletedAccount, emilyClark, michaelDavis, noRecord],
+    };
     const res = await ProfessorsService.notification(notification, _ctx);
 
     // check: the setting of the school
@@ -152,14 +163,15 @@ describe('Professors Service', function () {
     chai.expect(stubDelete.callCount).to.equal(1);
     chai.expect(stubDelete.firstCall.args[1]).to.equal('user4');
 
-    // check: the traces (the one that was already a trace is not changed)
-    chai.expect(stubPut.callCount).to.equal(2);
-    chai.expect(stubPut.firstCall.args[1]).to.equal('user1');
-    chai.expect(stubPut.firstCall.args[2]).to.include({ status: 'disabled' });
-    chai.expect(stubPut.firstCall.args[2].removedTimestamp).to.be.a('string');
-    chai.expect(stubPut.secondCall.args[1]).to.equal('user2');
-    chai.expect(stubPut.secondCall.args[2]).to.include({ status: 'deleted' });
-    chai.expect(getEventsActions()).to.include.members(['disable', 'accountDeleted', 'delete']);
+    // check: the traces, only the status of the user copy (the one that was already a trace is not changed)
+    chai.expect(stubPut.args.map((args) => args[1])).to.deep.equal(['user1', 'user2']);
+    chai.expect(stubPut.firstCall.args[2]).to.deep.equal({ 'user.status': 'removed' });
+    chai.expect(stubPut.secondCall.args[2]).to.deep.equal({ 'user.status': 'deleted' });
+    chai.expect(getEventsActions()).to.have.members(['delete', 'remove', 'accountDeleted']);
+
+    // check: the traces are notified (the groups and the schedules keep their copies)
+    const modified = ProfessorsRest.raiseNotification.args.filter((args) => args[0] === 'modified');
+    chai.expect(modified.map((args) => args[1][0].id)).to.deep.equal(['user1', 'user2']);
   }).timeout(10000);
 
   /**
@@ -168,18 +180,18 @@ describe('Professors Service', function () {
   it('should delete the professors of the removed users by the setting of the school', async () => {
     // stub: the setting deletes them; user2 has no record
     sinon.stub(SchoolsRest, 'getSettings').resolves({ status: 200, value: { removedMembers: 'delete' } });
+    stubProfessorsRecords({ user1: { id: 'user1', user: { id: 'user1', status: 'active' } } });
     const stubDelete = sinon.stub(DbOpsUtils, 'delete');
-    stubDelete.onFirstCall().resolves({ status: 200, value: { id: 'user1', user: { name: 'Ana Pop' } } });
-    stubDelete.onSecondCall().resolves({ status: 404, error: { message: 'Not found' } });
+    stubDelete.resolves({ status: 200, value: { id: 'user1', user: { name: 'Jane Smith' } } });
     const stubPut = sinon.stub(DbOpsUtils, 'put');
 
     // call
-    const notification = { serviceName: 'users', removed: [anaPop, danIon] };
+    const notification = { serviceName: 'users', removed: [janeSmith, johnBrown] };
     const res = await ProfessorsService.notification(notification, _ctx);
 
     // check: deleted, with the removed notification, no trace
     chai.expect(res).to.deep.equal({ status: 200, value: true });
-    chai.expect(stubDelete.callCount).to.equal(2);
+    chai.expect(stubDelete.callCount).to.equal(1);
     chai.expect(stubPut.callCount).to.equal(0);
     chai.expect(ProfessorsRest.raiseNotification.firstCall.args[0]).to.equal('removed');
   }).timeout(10000);
@@ -197,9 +209,8 @@ describe('Professors Service', function () {
     const stubCopies = sinon.stub(DbOpsUtils, 'updateManyReferences').resolves(fail);
     const stubDelete = sinon.stub(DbOpsUtils, 'delete').resolves(fail);
     const stubSettings = sinon.stub(SchoolsRest, 'getSettings').resolves(fail);
-    const modified = { serviceName: 'users', modified: [anaPop] };
-    const removed = { serviceName: 'users', removed: [anaPop] };
-    const removedPending = { serviceName: 'users', removed: [mihaiPopa] };
+    const modified = { serviceName: 'users', modified: [janeSmith] };
+    const removed = { serviceName: 'users', removed: [janeSmith] };
     const notify = (notification) => ProfessorsService.notification(notification, _ctx);
 
     // case: the existing professors can not be read
@@ -210,39 +221,31 @@ describe('Professors Service', function () {
     chai.expect(await notify(modified)).to.deep.equal(fail);
     chai.expect(stubPost.callCount).to.equal(1);
 
-    // case: the status can not be changed
-    stubAll.resolves({ status: 200, value: [{ id: 'user1', status: 'pending' }] });
-    chai.expect(await notify(modified)).to.deep.equal(fail);
-
     // case: the user copy can not be changed
-    stubAll.resolves({ status: 200, value: [{ id: 'user1', status: 'active' }] });
+    stubAll.resolves({ status: 200, value: [{ id: 'user1', user: { id: 'user1', status: 'pending' } }] });
     chai.expect(await notify(modified)).to.deep.equal(fail);
 
     // case: the changed professors can not be read to notify them
     stubCopies.resolves({ status: 200, value: 1, ids: ['user1'] });
     stubAll.onCall(stubAll.callCount + 1).resolves(fail);
     chai.expect(await notify(modified)).to.deep.equal(fail);
-    stubCopies.resolves(fail);
 
     // case: the setting can not be read
     chai.expect(await notify(removed)).to.deep.equal(fail);
 
-    // case: a professor can not be deleted
+    // case: the professor can not be read
     stubSettings.resolves({ status: 200, value: { removedMembers: 'keep' } });
-    chai.expect(await notify(removedPending)).to.deep.equal(fail);
+    chai.expect(await notify(removed)).to.deep.equal(fail);
+
+    // case: a professor that never logged in can not be deleted
+    stubGet.resolves({ status: 200, value: { id: 'user1', user: { id: 'user1', status: 'pending' } } });
+    chai.expect(await notify(removed)).to.deep.equal(fail);
     chai.expect(stubDelete.callCount).to.equal(1);
 
-    // case: the professor can not be read
-    chai.expect(await notify(removed)).to.deep.equal(fail);
-
     // case: the trace can not be written
-    stubGet.resolves({ status: 200, value: { id: 'user1', status: 'active' } });
+    stubGet.resolves({ status: 200, value: { id: 'user1', user: { id: 'user1', status: 'active' } } });
     chai.expect(await notify(removed)).to.deep.equal(fail);
-
-    // case: the user copy of the trace can not be changed
-    stubGet.resolves({ status: 200, value: { id: 'user1', status: 'disabled', removedTimestamp } });
-    chai.expect(await notify(removed)).to.deep.equal(fail);
-    chai.expect(stubPut.callCount).to.equal(2);
+    chai.expect(stubPut.callCount).to.equal(1);
   }).timeout(10000);
 
   /**

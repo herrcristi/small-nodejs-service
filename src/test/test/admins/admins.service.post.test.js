@@ -78,7 +78,6 @@ describe('Admins Service', function () {
         id: testAdmin.id,
         user: testAdmin.user,
         type: testAdmin.type,
-        status: testAdmin.user.status, // the status of its user while it has the role
       },
     });
   }).timeout(10000);

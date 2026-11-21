@@ -107,8 +107,8 @@ describe('Users Auth Service sessions', function () {
    * a removed account ends all its sessions and links; the failure is returned
    */
   it('should delete end all the sessions of the user', async () => {
-    // stub: the account is deleted, its login is removed, the sessions are ended
-    sinon.stub(UsersRest, 'deleteAccount').resolves({ status: 200, value: { id: 'user1' } });
+    // stub: the user is deleted, its login is removed, the sessions are ended
+    sinon.stub(UsersRest, 'delete').resolves({ status: 200, value: { id: 'user1' } });
     sinon.stub(UsersLocalAuthService, 'delete').resolves({ status: 200, value: { id: _ctx.username } });
     const stubEndAll = sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 1 });
 
@@ -162,7 +162,8 @@ describe('Users Auth Service sessions', function () {
    * a reset password email is not sent when its link can not be recorded
    */
   it('should resetPassword fail when the link can not be recorded', async () => {
-    // stub: the account exists; the link can not be recorded
+    // stub: the email can be sent, the account exists; the link can not be recorded
+    sinon.stub(UsersLocalAuthService, 'putEmailTimestamp').resolves({ status: 200, value: {} });
     sinon.stub(DbOpsUtils, 'getOne').resolves({ status: 200, value: { id: _ctx.username, userID: 'user1' } });
     const stubCreate = sinon.stub(UsersAuthSessionsService, 'create').resolves(fail);
     const stubSend = sinon.stub(UsersLocalAuthService, 'sendEmail');

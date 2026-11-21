@@ -45,15 +45,6 @@ const Public = {
       throw new Error(invited.error.message || 'Failed to invite the first portal admin');
     }
 
-    // the email could not be sent: a clear error (it is sent again at the next start)
-    if (!invited.emailSent) {
-      console.error(
-        `\nThe invitation of the portal admin ${email} could not be sent: check the mail settings (SMALL_API_SMTP_CONFIG). ` +
-          'It is sent again at the next start.'
-      );
-      return true;
-    }
-
     console.log(`\nInvited the portal admin ${email}`);
     return true;
   },

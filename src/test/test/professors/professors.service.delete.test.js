@@ -20,9 +20,15 @@ describe('Professors Service', function () {
   const fail = { status: 500, error: { message: 'Database failure' } };
 
   // the professor of a user, and the same professor kept as a trace (its role was removed before)
-  const anaPop = { id: 'user1', name: 'Ana Pop', type: 'user', status: 'active', email: 'ana.pop@testdomain.test' };
-  const professorRecord = { id: 'user1', type: 'professor', status: 'active', user: anaPop };
-  const professorTrace = { ...professorRecord, status: 'disabled', removedTimestamp: '2026-11-01T10:00:00.000Z' };
+  const janeSmith = {
+    id: 'user1',
+    name: 'Jane Smith',
+    type: 'user',
+    status: 'active',
+    email: 'jane.smith@testdomain.test',
+  };
+  const professorRecord = { id: 'user1', type: 'professor', user: janeSmith };
+  const professorTrace = { ...professorRecord, user: { ...janeSmith, status: 'removed' } };
 
   beforeEach(async function () {
     // the events and the notifications of the professors
@@ -36,7 +42,7 @@ describe('Professors Service', function () {
 
   /**
    * delete removes the professor role of the user in the school; the professor follows by the setting of the school (keep:
-   * a trace, disabled)
+   * a trace, removed)
    */
   it('should delete by removing the professor role in the school', async () => {
     // stub: the professor, the role, the setting (keep), the trace
@@ -57,8 +63,8 @@ describe('Professors Service', function () {
     chai
       .expect(stubRole.firstCall.args[1])
       .to.deep.equal({ remove: { schools: [{ id: 'school1', roles: ['professor'] }] } });
-    chai.expect(stubPut.firstCall.args[2]).to.include({ status: 'disabled' });
-    chai.expect(EventsRest.raiseEventForObject.firstCall.args[1]).to.equal('disable');
+    chai.expect(stubPut.firstCall.args[2]).to.deep.equal({ 'user.status': 'removed' });
+    chai.expect(EventsRest.raiseEventForObject.firstCall.args[1]).to.equal('remove');
   }).timeout(10000);
 
   /**

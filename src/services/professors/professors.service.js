@@ -9,6 +9,7 @@ const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
 const CommonUtils = require('../../core/utils/common.utils.js');
+const ValidationUtils = require('../../core/utils/validation.utils.js');
 const ReferencesUtils = require('../../core/utils/base-service.references.utils.js');
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
 
@@ -43,7 +44,6 @@ const Validators = {
       'user.id',
       'user.name',
       'user.status',
-      'status',
       'user.email',
       'classes.id',
       'classes.name',
@@ -56,6 +56,11 @@ const Validators = {
   Post: Schema.Professor.fork(['classes'], (x) => x.required() /*make required */).keys({
     id: Joi.string().min(1).max(64).required(),
     type: Joi.string().valid(ProfessorsConstants.Type),
+  }),
+
+  RelinkTraces: Joi.object().keys({
+    email: ValidationUtils.email().required(),
+    userID: Joi.string().min(1).max(64).required(),
   }),
 
   Put: Schema.Professor,
@@ -75,12 +80,13 @@ const Validators = {
 const Private = {
   Action: {
     ...BaseServiceUtils.Constants.Action,
+    Relink: 'relink', // a trace of a deleted account is linked to the user invited again (its new id)
     Restore: 'restore', // a trace is a professor again (the role was given again)
-    Disable: 'disable', // the role was removed: the professor is kept as a trace, disabled
-    AccountDeleted: 'accountDeleted', // the account was deleted: the professor is kept as a trace, deleted
+    Remove: 'remove', // the role was removed: the professor is kept as a trace (its user is removed)
+    AccountDeleted: 'accountDeleted', // the account was deleted: the professor is kept as a trace (its user is deleted)
   },
   Notification: NotificationsUtils.Constants.Notification,
-  ResProjection: { ...BaseServiceUtils.Constants.DefaultProjection, user: 1, removedTimestamp: 1 },
+  ResProjection: { ...BaseServiceUtils.Constants.DefaultProjection, user: 1 },
 
   /**
    * config
@@ -135,34 +141,29 @@ const Private = {
   },
 
   /**
-   * a reference of the config (the copies kept from another service: user, classes[], schedules[], ...)
+   * a trace: the copy of a user that does not have the role anymore (deleted: the account was deleted, removed: the
+   * role was removed); it stays in the lists, the groups and the schedules
    */
-  getReference: (config, fieldName) => {
-    return config.references.find((ref) => ref.fieldName === fieldName);
+  isTrace: (user) => {
+    return [UsersRest.Constants.Status.Deleted, UsersRest.Constants.Status.Removed].includes(user?.status);
   },
 
   /**
-   * change the status of a professor: the status of its user while it has the role, or a trace (disabled: the role was
-   * removed, deleted: the account was deleted; removedTimestamp: when); the translations of the status follow
-   * statusInfo: { status, removedTimestamp }
-   * event: the action of the event (null: no event, a change of the user has its own event in the users service)
+   * keep a professor as a trace: the status of its user copy is deleted or removed (the other fields of the copy are kept),
+   * with an event
    * returns { status, value } or { status, error }
    */
-  putProfessorStatus: async (config, professorID, statusInfo, event, _ctx) => {
-    const changes = { ...statusInfo };
-    await Public.translate(changes, _ctx);
-
+  putTraceStatus: async (config, professorID, status, _ctx) => {
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
-    const r = await DbOpsUtils.put(config, professorID, changes, projection, _ctx);
+    const r = await DbOpsUtils.put(config, professorID, { 'user.status': status }, projection, _ctx);
     if (r.error) {
       return r;
     }
 
-    // raise event for the status
-    if (event) {
-      const eventObj = { ...r.value, name: r.value.user?.name };
-      await EventsRest.raiseEventForObject(ProfessorsConstants.ServiceName, event, eventObj, statusInfo, _ctx);
-    }
+    // raise event for the trace
+    const event = status === UsersRest.Constants.Status.Deleted ? Private.Action.AccountDeleted : Private.Action.Remove;
+    const eventObj = { ...r.value, name: r.value.user?.name };
+    await EventsRest.raiseEventForObject(ProfessorsConstants.ServiceName, event, eventObj, { status }, _ctx);
 
     return r;
   },
@@ -216,22 +217,23 @@ const Private = {
   },
 
   /**
-   * save the professors of the users that have the professor role in the school (the users notification: added,
-   * modified)
-   * - a new professor: its record is created, with the status of its user
-   * - a professor (also a trace of an earlier role that is a professor again: an event): its status follows its user,
-   *   and its user copy is updated when it is older than the user (modifiedCount)
-   * the professors whose status or user copy changed are notified (the schedules keep their copies of them)
+   * save the professors of the users that have the professor role in the school (the users notification: added, modified)
+   * - a new professor: its record is created, with the copy of its user
+   * - a professor: its user copy is updated when it is older (see DbOpsUtils.updateManyReferences)
+   * - a trace (its role was removed, or its account was deleted): it is a professor again (an event) when its user has the
+   *   role again and is not pending; a user invited again is pending until its first login: its trace is not changed
+   *   until then, and nothing is notified
+   * the professors whose user copy changed are notified (the groups and the schedules keep their copies of them)
    * users: [ { id, status, ... } ] (as notified by the users service)
    * returns { status, value } or { status, error }
    */
   saveProfessorsOfUsers: async (users, _ctx) => {
     const config = await Private.getConfig(_ctx);
-    const userRef = Private.getReference(config, 'user');
+    const [userRef] = config.references; // user (the references: user, classes[], schedules[])
 
     // the professors that exist already
     const usersIDs = users.map((user) => user.id);
-    const existingProjection = { _id: 0, id: 1, status: 1, removedTimestamp: 1 };
+    const existingProjection = { _id: 0, id: 1, user: 1 };
     const rProfessors = await DbOpsUtils.getAllByIDs(config, usersIDs, existingProjection, _ctx);
     if (rProfessors.error) {
       return rProfessors;
@@ -255,15 +257,11 @@ const Private = {
         continue;
       }
 
-      // its status follows its user (a trace that is a professor again: an event)
-      if (professor.status !== user.status || professor.removedTimestamp) {
-        const event = professor.removedTimestamp ? Private.Action.Restore : null;
-        const statusInfo = { status: user.status, removedTimestamp: null };
-        const rStatus = await Private.putProfessorStatus(config, professor.id, statusInfo, event, _ctx);
-        if (rStatus.error) {
-          return rStatus;
-        }
-        changedProfessorsIDs.add(professor.id);
+      // a trace of a user invited again: kept until its first login
+      const isTrace = Private.isTrace(professor.user);
+      if (isTrace && user.status === UsersRest.Constants.Status.Pending) {
+        console.log(`\n${ProfessorsConstants.ServiceName}: the trace ${user.id} is kept until the user logs in`);
+        continue;
       }
 
       // its user copy (only an older one)
@@ -273,26 +271,39 @@ const Private = {
         return rCopy;
       }
       rCopy.ids.forEach((id) => changedProfessorsIDs.add(id));
+
+      // a trace that is a professor again
+      if (isTrace && rCopy.ids.includes(professor.id)) {
+        console.log(`\n${ProfessorsConstants.ServiceName}: the trace ${user.id} is a professor again`);
+        const eventObj = { ...professor, name: user.name };
+        const eventInfo = { status: user.status };
+        await EventsRest.raiseEventForObject(
+          ProfessorsConstants.ServiceName,
+          Private.Action.Restore,
+          eventObj,
+          eventInfo,
+          _ctx
+        );
+      }
     }
 
     return await Private.notifyChangedProfessors(config, [...changedProfessorsIDs], _ctx);
   },
 
   /**
-   * the professors of the users that are not professors of the school anymore (the users notification, removed: the role
-   * was removed, or the account was deleted)
-   * - a user that never logged in (pending): its professor is deleted (an invitation that was not used leaves nothing)
+   * the professors of the users that are not professors of the school anymore (the users notification, removed: the role was
+   * removed, or the account was deleted: the notified user is deleted)
+   * - a professor that never logged in (its user copy is pending): deleted (an invitation that was not used leaves nothing)
+   * - a trace: not changed
    * - otherwise by the setting of the school (removedMembers):
-   *   keep: the professor stays as a trace, disabled (the role was removed) or deleted (the account was deleted), with
-   *   an event; it stays in the lists and schedules
-   *   delete: the professor is deleted (the schedules remove it)
-   * the professors whose status or user copy changed are notified (the schedules keep their copies of them)
+   *   keep: the professor stays as a trace (its user copy is removed or deleted), with an event; it stays in the lists, the groups and the schedules
+   *   delete: the professor is deleted (the groups and the schedules remove it)
+   * the professors whose user copy changed are notified (the groups and the schedules keep their copies of them)
    * users: [ { id, status, ... } ] (as notified by the users service)
    * returns { status, value } or { status, error }
    */
   removeProfessorsOfUsers: async (users, _ctx) => {
     const config = await Private.getConfig(_ctx);
-    const userRef = Private.getReference(config, 'user');
 
     // the setting of the school
     const rSettings = await SchoolsRest.getSettings(_ctx.tenantID, _ctx);
@@ -303,8 +314,22 @@ const Private = {
 
     const changedProfessorsIDs = new Set();
     for (const user of users) {
+      const rProfessor = await DbOpsUtils.getOne(config, user.id, { _id: 0, id: 1, user: 1 }, _ctx);
+      if (rProfessor.status === 404) {
+        continue;
+      }
+      if (rProfessor.error) {
+        return rProfessor;
+      }
+
+      // already a trace
+      const professorUser = rProfessor.value.user;
+      if (Private.isTrace(professorUser)) {
+        continue;
+      }
+
       // deleted: an invitation that was not used, or by the setting of the school
-      const neverJoined = user.status === UsersRest.Constants.Status.Pending;
+      const neverJoined = professorUser?.status === UsersRest.Constants.Status.Pending;
       if (neverJoined || !keepTraces) {
         console.log(
           `\n${ProfessorsConstants.ServiceName}: delete the professor ${user.id} (never joined: ${neverJoined})`
@@ -316,37 +341,15 @@ const Private = {
         continue;
       }
 
-      // a trace: disabled (the role was removed) or deleted (the account was deleted)
-      const traceProjection = { _id: 0, id: 1, status: 1, removedTimestamp: 1 };
-      const rProfessor = await DbOpsUtils.getOne(config, user.id, traceProjection, _ctx);
-      if (rProfessor.status === 404) {
-        continue;
-      }
-      if (rProfessor.error) {
-        return rProfessor;
-      }
-
+      // a trace: deleted (the account was deleted) or removed (the role was removed)
       const accountDeleted = user.status === UsersRest.Constants.Status.Deleted;
-      const traceStatus = accountDeleted ? UsersRest.Constants.Status.Deleted : UsersRest.Constants.Status.Disabled;
-      if (rProfessor.value.status !== traceStatus || !rProfessor.value.removedTimestamp) {
-        console.log(`\n${ProfessorsConstants.ServiceName}: keep the professor ${user.id} as a trace, ${traceStatus}`);
-        const removedTimestamp = rProfessor.value.removedTimestamp || new Date().toISOString();
-        const statusInfo = { status: traceStatus, removedTimestamp };
-        const event = accountDeleted ? Private.Action.AccountDeleted : Private.Action.Disable;
-        const rStatus = await Private.putProfessorStatus(config, user.id, statusInfo, event, _ctx);
-        if (rStatus.error) {
-          return rStatus;
-        }
-        changedProfessorsIDs.add(user.id);
+      const traceStatus = accountDeleted ? UsersRest.Constants.Status.Deleted : UsersRest.Constants.Status.Removed;
+      console.log(`\n${ProfessorsConstants.ServiceName}: keep the professor ${user.id} as a trace, ${traceStatus}`);
+      const rTrace = await Private.putTraceStatus(config, user.id, traceStatus, _ctx);
+      if (rTrace.error) {
+        return rTrace;
       }
-
-      // its user copy (only an older one)
-      const userCopy = CommonUtils.getProjectedObj(user, userRef.projection);
-      const rCopy = await DbOpsUtils.updateManyReferences(config, userRef, userCopy, _ctx);
-      if (rCopy.error) {
-        return rCopy;
-      }
-      rCopy.ids.forEach((id) => changedProfessorsIDs.add(id));
+      changedProfessorsIDs.add(user.id);
     }
 
     return await Private.notifyChangedProfessors(config, [...changedProfessorsIDs], _ctx);
@@ -404,7 +407,7 @@ const Private = {
     }
 
     const config = await Private.getConfig(_ctx);
-    const classesRef = Private.getReference(config, 'classes[]');
+    const [, classesRef] = config.references; // classes[] (the references: user, classes[], schedules[])
 
     // the copies of the modified classes
     for (const schoolClass of notification[Private.Notification.Modified] || []) {
@@ -443,7 +446,7 @@ const Private = {
     }
 
     const config = await Private.getConfig(_ctx);
-    const schedulesRef = Private.getReference(config, 'schedules[]');
+    const [, , schedulesRef] = config.references; // schedules[] (the references: user, classes[], schedules[])
 
     const addedSchedules = notification[Private.Notification.Added] || [];
     const modifiedSchedules = notification[Private.Notification.Modified] || [];
@@ -629,9 +632,6 @@ const Public = {
       return rf;
     }
 
-    // the status of the professor is the status of its user (pending until the first login)
-    objInfo.status = objInfo.user?.status || UsersRest.Constants.Status.Pending;
-
     // translate
     await Public.translate(objInfo, _ctx);
     objInfo = CommonUtils.patch2obj(objInfo);
@@ -673,7 +673,7 @@ const Public = {
 
     // a trace (its role was already removed, or its account was deleted): it is deleted now, its references follow
     // (the removed notification)
-    if (rget.value.removedTimestamp) {
+    if (Private.isTrace(rget.value.user)) {
       console.log(`\n${ProfessorsConstants.ServiceName}: delete the trace of the professor ${objID}`);
       const rDelete = await Private.deleteProfessor(config, objID, _ctx);
       if (rDelete.error) {
@@ -699,6 +699,76 @@ const Public = {
 
     // success
     return BaseServiceUtils.getProjectedResponse(rget, Private.ResProjection, _ctx);
+  },
+
+  /**
+   * link the traces of a deleted account to the user invited again, by its email (called by the invite, before the
+   * user gets its role, whatever the role): the professors of the school with this email and another id take the id of
+   * the user; their user copy stays deleted until the user has the role again and logs in (see saveProfessorsOfUsers); the groups and the schedules follow the new id
+   * (the modified notification has previousID)
+   * objInfo: { email, userID }
+   * returns { status, value: [ the previous ids ] } or { status, error }
+   */
+  relinkTraces: async (objInfo, _ctx) => {
+    if (!_ctx.tenantID) {
+      return Private.errorNoTenant(_ctx);
+    }
+
+    // validate
+    const v = Validators.RelinkTraces.validate(objInfo);
+    if (v.error) {
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
+
+    // the traces of a deleted account with this email
+    const config = await Private.getConfig(_ctx);
+    const filter = {
+      filter: {
+        'user.email': objInfo.email,
+        'user.status': UsersRest.Constants.Status.Deleted,
+        id: { $ne: objInfo.userID },
+      },
+      projection: { _id: 0, id: 1 },
+    };
+    const rTraces = await DbOpsUtils.getAll(config, filter, _ctx);
+    if (rTraces.error) {
+      return rTraces;
+    }
+
+    const previousIDs = [];
+    for (const trace of rTraces.value) {
+      console.log(`\n${ProfessorsConstants.ServiceName}: link the trace ${trace.id} to the user ${objInfo.userID}`);
+      const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+      const linked = { id: objInfo.userID, 'user.id': objInfo.userID };
+      const r = await DbOpsUtils.put(config, trace.id, linked, projection, _ctx);
+      if (r.error) {
+        return r;
+      }
+
+      // raise event for the link
+      const eventObj = { ...r.value, name: r.value.user?.name };
+      const eventInfo = { previousID: trace.id };
+      await EventsRest.raiseEventForObject(
+        ProfessorsConstants.ServiceName,
+        Private.Action.Relink,
+        eventObj,
+        eventInfo,
+        _ctx
+      );
+
+      // the groups and the schedules follow the new id (previousID), then the copy
+      const rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
+      await ProfessorsRest.raiseNotification(
+        Private.Notification.Modified,
+        [{ ...rnp.value, previousID: trace.id }],
+        _ctx
+      );
+
+      previousIDs.push(trace.id);
+    }
+
+    return { status: 200, value: previousIDs };
   },
 
   /**
@@ -835,9 +905,7 @@ const Public = {
    * translate
    */
   translate: async (obj, _ctx) => {
-    const translations = {
-      status: TranslationsUtils.string(obj?.status, _ctx),
-    };
+    const translations = {};
     return await TranslationsUtils.addTranslations(obj, translations, _ctx);
   },
 };

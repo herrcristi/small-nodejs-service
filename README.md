@@ -159,7 +159,10 @@ Every document has `createdTimestamp`, `lastModifiedTimestamp`, and `modifiedCou
 
 ### Users can be deleted, their traces stay
 
-A person can delete their account. The records they leave in schools (admin, professor, student) and the events that name them **stay, marked disabled**, so a school's history is not rewritten. Removing someone from a school is a different action: an admin removes the role, and the account is untouched.
+A person can delete their account: the account is deleted. The records they leave in schools (admin, professor, student) and the events that name them **stay, marked deleted**, so a school's history is not rewritten. Removing someone from a school is a different action: an admin removes the role, the account is untouched, and the record stays marked removed. Each school chooses whether it keeps these traces or deletes them:
+
+- **A university keeps them.** Year after year a student joins new groups and new schedules, with new professors, and is graded in classes that end. When a student leaves (or a professor), the groups, the schedules, and the grades of past years must still show who was there: the traces keep that history true.
+- **A sports gym deletes them.** Someone joins a training group and a schedule; when they leave, nothing about them is needed anymore, so the record is deleted, with its entries in the groups and the schedules.
 
 ## Roles and who sees what
 

@@ -30,8 +30,6 @@ router.route(`${UsersConstants.ApiPathInternal}`).post(UsersController.post); //
 router.route(`${UsersConstants.ApiPathInternal}/portal-admins`).get(UsersController.getPortalAdmins); // called from the bootstrap (portal school tenant)
 router.route(`${UsersConstants.ApiPathInternal}/:id`).delete(UsersController.delete); // called from users-auth
 router.route(`${UsersConstants.ApiPathInternal}/:id/activate`).post(UsersController.activate); // called from users-auth at login
-router.route(`${UsersConstants.ApiPathInternal}/:id/recreate-account`).post(UsersController.recreateAccount); // called from users-auth at an invite
-router.route(`${UsersConstants.ApiPathInternal}/:id/delete-account`).post(UsersController.deleteAccount); // called from users-auth
 router.route(`${UsersConstants.ApiPathInternal}/:id/email`).put(UsersController.putEmail); // called from users-auth to change only email
 router.route(`${UsersConstants.ApiPathInternal}/:id/school`).patch(UsersController.patchSchool); // caled by admin to add/remove user from school
 

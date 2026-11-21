@@ -237,12 +237,10 @@ const Private = {
   },
 
   /**
-   * a user that can not log in: disabled, or its account was deleted (its login is removed with it, see
-   * onUsersNotification; refused here too, so a login left by a failure never works)
+   * a user that can not log in: disabled
    */
   isLoginRefused: (status) => {
-    const refused = [UsersRest.Constants.Status.Disabled, UsersRest.Constants.Status.Deleted];
-    return refused.includes(status);
+    return status === UsersRest.Constants.Status.Disabled;
   },
 
   /**
@@ -265,8 +263,7 @@ const Private = {
   },
 
   /**
-   * the users that have no account anymore (a deleted account, or a user removed because its invitation was not used
-   * in time): their login is deleted and all their sessions and emailed links are ended
+   * the users that do not exist anymore (a user removed because its invitation was not used in time): their login is deleted and all their sessions and emailed links are ended
    * users: [ { id, email } ]
    * returns { status, value } or { status, error }
    */
@@ -274,8 +271,7 @@ const Private = {
     const config = await Private.getConfig(_ctx);
 
     for (const user of users) {
-      console.log(`
-${UsersAuthConstants.ServiceName}: the account of ${user.id} was removed, its login is removed`);
+      console.log(`${UsersAuthConstants.ServiceName}: the account of ${user.id} was removed, its login is removed`);
 
       const rLogin = await Private.deleteLogin(config, user.email, _ctx);
       if (rLogin.error) {
@@ -292,40 +288,30 @@ ${UsersAuthConstants.ServiceName}: the account of ${user.id} was removed, its lo
   },
 
   /**
-   * the users notification: the logins of the users without an account are removed
-   * - modified with the status deleted: the account was deleted
-   * - removed: a removed user (an invitation not used in time), or only some roles removed from a user (the user still
-   *   exists, its login is kept)
-   * the users are read again, so only the ones without an account now lose their login (it does not exist anymore, or
-   * its account is still deleted: a notification that arrives after the account was created again changes nothing)
+   * the users notification: the logins of the removed users are removed (a user removed because its invitation was
+   * not used in time; a deleted account was already removed by delete)
+   * a removed notification is also sent when only some roles of a user are removed (the user still exists, its login
+   * is kept): the users are read again, so only the ones that do not exist anymore lose their login
    * returns { status, value } or { status, error }
    */
   onUsersNotification: async (notification, _ctx) => {
-    const modifiedUsers = notification[Private.Notification.Modified] || [];
-    const deletedAccounts = modifiedUsers.filter((user) => user.status === UsersRest.Constants.Status.Deleted);
-    const removedUsers = notification[Private.Notification.Removed] || [];
-    const notifiedUsers = [...deletedAccounts, ...removedUsers].filter((user) => user.email);
-    if (!notifiedUsers.length) {
+    const removedUsers = (notification[Private.Notification.Removed] || []).filter((user) => user.email);
+    if (!removedUsers.length) {
       return { status: 200, value: false };
     }
 
-    // the current status of the notified users (a missing one: the user does not exist anymore)
-    const notifiedIDs = notifiedUsers.map((user) => user.id);
-    const rCurrent = await UsersRest.getAllByIDs(notifiedIDs, { id: 1, status: 1 }, _ctx);
+    // the users that still exist
+    const removedIDs = removedUsers.map((user) => user.id);
+    const rCurrent = await UsersRest.getAllByIDs(removedIDs, { id: 1 }, _ctx);
     if (rCurrent.error) {
       return rCurrent;
     }
-    const currentStatuses = {};
-    for (const user of rCurrent.value) {
-      currentStatuses[user.id] = user.status;
-    }
+    const existingIDs = new Set(rCurrent.value.map((user) => user.id));
 
-    // the users without an account now (once each)
+    // the users that do not exist anymore (once each)
     const users = [];
-    for (const user of notifiedUsers) {
-      const currentStatus = currentStatuses[user.id];
-      const hasAccount = currentStatus && currentStatus !== UsersRest.Constants.Status.Deleted;
-      if (!hasAccount && !users.some((item) => item.id === user.id)) {
+    for (const user of removedUsers) {
+      if (!existingIDs.has(user.id) && !users.some((item) => item.id === user.id)) {
         users.push(user);
       }
     }
@@ -333,6 +319,24 @@ ${UsersAuthConstants.ServiceName}: the account of ${user.id} was removed, its lo
       return { status: 200, value: false };
     }
     return await Private.removeLoginsOfUsers(users, _ctx);
+  },
+
+  /**
+   * an email of this type was sent to the user less than EmailInterval ago (a repeated click, a flood of the public
+   * forms): it is not sent again; a user without an auth record gets nothing either
+   * returns true when it can be sent now
+   */
+  canSendEmail: async (config, username, emailType, _ctx) => {
+    const Providers = {
+      firebase: UsersAuthServiceFirebase.putEmailTimestamp,
+      local: UsersAuthServiceLocal.putEmailTimestamp,
+    };
+    const r = await Providers[Private.UsersAuthProviderType](config, username, emailType, _ctx);
+    if (r.error) {
+      console.log(`\n${UsersAuthConstants.ServiceName}: no ${emailType} email to ${username} now: ${r.error.message}`);
+      return false;
+    }
+    return true;
   },
 
   /**
@@ -407,7 +411,7 @@ ${UsersAuthConstants.ServiceName}: the account of ${user.id} was removed, its lo
   },
 
   /**
-   * the answer for a route that does not need a school (all, self): the school of the request (x-tenant-id) is used
+   * the answer for a route that does not need a school (all, current-user): the school of the request (x-tenant-id) is used
    * only if the user is a member of it and it is not disabled (tenantVerified), so nobody writes events into a school
    * that is not its own, or that is disabled
    */
@@ -417,6 +421,18 @@ ${UsersAuthConstants.ServiceName}: the account of ${user.id} was removed, its lo
       (school) => school.id === _ctx.tenantID && school.status !== SchoolsRest.Constants.Status.Disabled
     );
     return { status: 200, value: true, tenantName: tenantSchool?.name, tenantVerified: !!tenantSchool };
+  },
+
+  /**
+   * a route of the current user: its :id is the current user (its username for the users-auth routes)
+   */
+  isCurrentUserRoute: (method, route, _ctx) => {
+    if (!Private.isValidRouteForRoles(['current-user'], method, route)) {
+      return false;
+    }
+    const isUsersAuthRoute = new RegExp(`^${UsersAuthRest.Constants.ApiPath}/:id`).test(route);
+    const paramID = isUsersAuthRoute ? _ctx.username : _ctx.userID;
+    return Private.isValidRouteForParam(route, paramID, _ctx);
   },
 
   /**
@@ -431,9 +447,10 @@ ${UsersAuthConstants.ServiceName}: the account of ${user.id} was removed, its lo
       return Private.validNoSchoolRoute(user, _ctx);
     }
 
-    // the own user record (its profile): also without a school, so a user left without schools can still change it
-    const isSelfRoute = Private.isValidRouteForRoles(['self'], method, route);
-    if (isSelfRoute && Private.isValidRouteForParam(route, _ctx.userID /* paramID */, _ctx)) {
+    // the routes of the current user (its own records): also without a school, so a user left without schools can
+    // still change its profile; the school of the request is used only if the user is a member of it (a record of a
+    // school, like its student, is not found without it)
+    if (Private.isCurrentUserRoute(method, route, _ctx)) {
       return Private.validNoSchoolRoute(user, _ctx);
     }
 
@@ -469,17 +486,7 @@ ${UsersAuthConstants.ServiceName}: the account of ${user.id} was removed, its lo
     // validate also route
     const validRole = Private.isValidRouteForRoles(validSchool.roles, method, route);
 
-    // some routes are only for current-user
-    let validCurrentUser = Private.isValidRouteForRoles(['current-user'], method, route);
-    if (validCurrentUser) {
-      let paramID = _ctx.userID;
-      if (new RegExp(`^${UsersAuthRest.Constants.ApiPath}/:id`).test(route)) {
-        paramID = _ctx.username;
-      }
-      validCurrentUser = Private.isValidRouteForParam(route, paramID, _ctx);
-    }
-
-    if (validRole || validCurrentUser) {
+    if (validRole) {
       // valid
       return { status: 200, value: true, tenantName: validSchool.name, tenantVerified: true };
     }
@@ -825,15 +832,16 @@ const Public = {
   /**
    * delete the account of the user, can be done only by login user (_ctx)
    * (admins remove users from their schools using patchUserSchool)
-   * the user is kept as deleted (its id, name and email): its records in the schools stay as traces or are deleted, by
-   * the setting of each school; its login, its sessions and its links are removed
+   * the user is deleted, with its login, its sessions and its links; its records in the schools stay as traces (deleted)
+   * or are deleted, by the setting of each school
    */
   delete: async (_ctx) => {
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
-    // the account first: from now the user can not log in (a deleted account is refused), even if the next steps fail
-    const rUserDetails = await UsersRest.deleteAccount(_ctx.userID, _ctx);
+    // the user first: from now the user can not log in (a user that does not exist is refused), even if the next steps
+    // fail
+    const rUserDetails = await UsersRest.delete(_ctx.userID, _ctx);
     if (rUserDetails.error) {
       return rUserDetails;
     }
@@ -1114,20 +1122,25 @@ const Public = {
     const action = Private.Action.Invite;
     const args = { emailType: 'invite' };
 
-    // send email
+    // at most one each EmailInterval
+    const canSend = await Private.canSendEmail(config, username, args.emailType, _ctx);
+    if (!canSend) {
+      return { status: 200, value: { username, type: UsersAuthConstants.Type } };
+    }
+
+    // send email (not waited for: a failed delivery is only logged)
     const Providers = {
       firebase: UsersAuthServiceFirebase.sendEmail,
       local: UsersAuthServiceLocal.sendEmail,
     };
-    const rEmail = await Providers[Private.UsersAuthProviderType](config, username, args, _ctx);
+    Providers[Private.UsersAuthProviderType](config, username, args, _ctx);
 
     // raise event for reset password
     const newObj = { id: username, name: username, type: UsersAuthConstants.Type };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
-    // success (emailSent: the email was delivered to the mail server)
-    const emailSent = !rEmail?.error;
-    return { status: 200, value: { username, type: UsersAuthConstants.Type, emailSent } };
+    // success
+    return { status: 200, value: { username, type: UsersAuthConstants.Type } };
   },
 
   /**
@@ -1149,6 +1162,12 @@ const Public = {
     const action = resetType;
     const args = { emailType: resetType, resetType };
 
+    // at most one each EmailInterval: the link sent before stays the valid one (a new link would replace it)
+    const canSend = await Private.canSendEmail(config, username, args.emailType, _ctx);
+    if (!canSend) {
+      return { status: 200, value: { username, type: UsersAuthConstants.Type } };
+    }
+
     // reset password
     const Providers = {
       firebase: UsersAuthServiceFirebase.resetPassword,
@@ -1160,27 +1179,21 @@ const Public = {
     }
 
     // only for local auth
-    let emailSent = false;
     if (Private.UsersAuthProviderType === 'local') {
       // encrypt token again
       const token = JwtUtils.encrypt(r.value, Private.Issuer, _ctx).value;
 
-      // send email with token: the signup link is sent by an invite, which waits and reports a failed delivery; the
-      // reset link answers the public form, which never waits for the mail server (the time of the answer must not
-      // tell if the account exists; a failed delivery is only logged)
-      const sending = UsersAuthServiceLocal.sendEmail(config, username, { ...args, token }, _ctx);
-      if (resetType === UsersAuthConstants.ResetTokenType.Signup) {
-        const rEmail = await sending;
-        emailSent = !rEmail?.error;
-      }
+      // send email with token, not waited for (the time of the answer must not tell if the account exists; a failed
+      // delivery is only logged)
+      UsersAuthServiceLocal.sendEmail(config, username, { ...args, token }, _ctx);
     }
 
     // raise event for reset password
     const newObj = { id: username, name: username, type: UsersAuthConstants.Type };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
-    // success (emailSent: the signup email was delivered to the mail server; the reset email is not waited for)
-    return { status: 200, value: { username, type: UsersAuthConstants.Type, emailSent } };
+    // success
+    return { status: 200, value: { username, type: UsersAuthConstants.Type } };
   },
 
   /**

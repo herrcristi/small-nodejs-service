@@ -99,6 +99,14 @@ const Public = {
   },
 
   /**
+   * put the time of an email of a type sent to a user, only when the last one is older than EmailInterval seconds
+   */
+  putEmailTimestamp: async (config, username, emailType, _ctx) => {
+    await Private.setupConfig(config, _ctx);
+    return Private.notImplemented();
+  },
+
+  /**
    * put (email)
    * config: { serviceName }
    * objInfo: { username, password }

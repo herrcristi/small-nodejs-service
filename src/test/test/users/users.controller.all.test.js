@@ -704,39 +704,6 @@ describe('Users Controller', function () {
   }).timeout(10000);
 
   /**
-   * recreate account and delete account (internal) with success, fail, exception
-   */
-  it('should recreate and delete an account with success, fail and exception', async () => {
-    const testUser = _.cloneDeep(TestConstants.Users[0]);
-
-    for (const [route, fn] of [
-      ['recreate-account', 'recreateAccount'],
-      ['delete-account', 'deleteAccount'],
-    ]) {
-      const url = `${UsersConstants.ApiPathInternal}/${testUser.id}/${route}`;
-      const call = () => supertest(TestConstants.WebServer).post(url).set('Origin', TestConstants.WebServer).send({});
-
-      // success
-      const stubService = sinon.stub(UsersService, fn).resolves({ status: 200, value: testUser });
-      let res = await call();
-      chai.expect(res.status, route).to.equal(200);
-      chai.expect(res.body, route).to.deep.equal({ ...testUser });
-      chai.expect(stubService.firstCall.args[0], route).to.equal(testUser.id);
-
-      // fail
-      stubService.resolves({ status: 404, error: { message: 'Test error message' } });
-      res = await call();
-      chai.expect(res.status, route).to.equal(404);
-
-      // exception
-      stubService.throws(new Error('Test error message'));
-      res = await call();
-      chai.expect(res.status, route).to.equal(500);
-      chai.expect(res.body.error, route).to.include('Test error message');
-    }
-  }).timeout(10000);
-
-  /**
    * put email with success
    */
   it('should put email with success', async () => {

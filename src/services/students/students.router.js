@@ -24,5 +24,6 @@ router.route(`${StudentsConstants.ApiPath}/:id`).patch(StudentsController.patch)
  * Internal
  */
 router.route(`${StudentsConstants.ApiPathInternal}/notifications`).post(StudentsController.notification);
+router.route(`${StudentsConstants.ApiPathInternal}/relink-traces`).post(StudentsController.relinkTraces); // called from the invite
 
 module.exports = router;
