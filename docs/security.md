@@ -17,6 +17,7 @@ The security model of the project. The short version is in the [project README](
 | Cookie and token                  | `src/core/utils/jwt.utils.js` and `src/services/users-auth/`                                                          |
 | Web server hardening              | `src/core/web-server/` (CORS, security headers, HTTPS redirect, rate limits)                                          |
 | Who may invite or hold which role | `src/services/users-auth/users-auth.signup.service.js` and `users-auth.service.js`                                    |
+| Logs                              | `CommonUtils.protectData` masks the secrets of what is logged; a public form logs its decision, not the address       |
 
 ## Review method and design guarantees
 

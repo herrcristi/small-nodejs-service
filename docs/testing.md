@@ -76,9 +76,15 @@ The shape of a service test, to copy:
 describe('Schools Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Schools' };
 
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(async function () {
     sinon.restore(); // always, so stubs never leak into the next test
   });
+
+  after(async function () {});
 
   /**
    * getOne with success
@@ -99,9 +105,11 @@ describe('Schools Service', function () {
 });
 ```
 
-- **Stub the layer below**, not the thing under test: a service test stubs `DbOpsUtils` and the `*Rest` wrappers; a controller test stubs the service and goes through the real web server with `supertest`; a REST wrapper test stubs the communication layer.
+- **Stub the layer below**, not the thing under test: a service test stubs `DbOpsUtils` and the `*Rest` wrappers (`DbOpsUtils` itself is tested with the database, in `functional.database.test.js`: a stubbed collection proves nothing about a query); a controller test stubs the service and goes through the real web server with `supertest`; a REST wrapper test stubs the communication layer.
 - **Check calls, not only results**: how many times a dependency was called, and with what.
-- **One behaviour per test**, named `should <do something> [with success | fail ...]`.
+- **One behaviour per test**, named `should <do something> [with success | fail ...]`, with a `/** ... */` comment above it and a `//` comment for each step (`// stub: ...`, `// call`, `// check: ...`, `// case: ...`).
+- **The four hooks** (`before`, `beforeEach`, `afterEach`, `after`) are in every test file, in this order, also when one has nothing to do.
+- **Values as they are**: write the values of a test directly next to the call (no helper that builds them), with generic English names (Jane Smith, John Brown) and emails on `testdomain.test`.
 - **Controller tests** replace the authentication call so the request reaches the controller, then assert the status and the body. See any `*.controller.all.test.js`.
 
 ## What a change must cover
@@ -111,7 +119,7 @@ describe('Schools Service', function () {
 | Any operation                                      | Success; invalid input (the Joi validator); a failing dependency (the error is passed on and nothing is left half done); the status codes                                                                                     |
 | A route                                            | The controller (success, error result, exception), the REST wrapper, **and the role check**: a role that is allowed gets through, one that is not is refused. Auth behaviour belongs in `users-auth.service.validate.test.js` |
 | A write                                            | That the event and the notification are raised, with the right payload                                                                                                                                                        |
-| A relationship or notification                     | `added`, `modified`, and `removed`, at each level of copy, and delivering the same notification twice                                                                                                                         |
+| A relationship or notification                     | `added`, `modified`, and `removed`, at each level of copy, delivering the same notification twice, and one object failing (the next ones are still done)                                                                      |
 | A multi-step operation                             | Each step failing in turn, and the undo of the earlier steps                                                                                                                                                                  |
 | A rule or invariant (a status, a role restriction) | The rule holding, and the case that must be refused                                                                                                                                                                           |
 | Start-up                                           | A repeated start, and a wrong configuration                                                                                                                                                                                   |

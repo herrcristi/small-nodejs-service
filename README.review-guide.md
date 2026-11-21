@@ -96,7 +96,7 @@ For scalability, severity is about the capacity and availability question being 
 3. **Injection.** Find every place where a request value is put into a query string, a database filter, a regular expression, a path, an email, or HTML. Try operators (`$where`, `$ne`), nested keys, `__proto__`, characters that break the surrounding syntax (`&`, `=`, `%`, `(`), and very long values.
 4. **Internal routes.** Can they be reached from outside? How is the service token checked (algorithm, expiry, binding to method and URL, replay)? Can the check that skips internal routes be fooled?
 5. **Tokens and cookies.** What does the token prove, how long does it live, can it be revoked, is it the same token as a password reset? Cookie flags, logout, CSRF, CORS, login limits, user enumeration (messages, status codes, timing), reset and invite tokens (entropy, expiry, single use).
-6. **Secrets, configuration, errors, logs.** What happens with the placeholder values of `src/.env.example`? What is logged? What do error bodies reveal in production and in debug mode?
+6. **Secrets, configuration, errors, logs.** What happens with the placeholder values of `src/.env.example`? What is logged? A log line must not carry a password, a token, an emailed link, or what a person typed in a public form (the email address); code scanners also flag a value read from a name with "password" in it. What do error bodies reveal in production and in debug mode?
 7. **Browser.** Rendered HTML, stored data, redirects driven by query parameters, checks that exist only in the UI.
 8. **Dependencies.** `npm audit --omit=dev` in `src` and `ui`; are the lockfiles committed?
 
@@ -136,10 +136,11 @@ For scalability, severity is about the capacity and availability question being 
 2. Invite into a school and into the Portal School (new user, existing user, pending user, deleted account, repeated invite, which email is sent and whether it can be used).
 3. Role removal and account deletion: what each service does afterwards (by the setting of the school), what the person still sees, what stays in groups and schedules.
 4. Login, session refresh, tenant selection, statuses, a person without any school.
-5. Notification propagation: make a table of every declared reference (field, service, projection) and every subscription, and check that each reference has a subscription, a sufficient projection, and a handler for added, modified, and removed, at every level.
+5. Notification propagation: make a table of every declared reference (field, service, projection) and every subscription, and check that each reference has a subscription, a sufficient projection, and a handler for added, modified, and removed, at every level. Make one object of a notification fail: the handler must still do the next objects (and the next schools), notify what changed, and return the failure, because a notification is not delivered again.
 6. Startup and timers: first run, repeated runs, wrong configuration, the cleanups of the expired invitations and signups.
 7. Browser flows: tenant selector, dashboard, schools page, the people pages, the settings, the profile, dialogs. Look for success messages after a call that did nothing.
 8. Onboarding as a person: can a new user, with nothing but the email, get to a working account?
+9. Events: every change raises an event that names who did it, also when nobody is logged in (the start, the timers, a public form), and that has a message in every language. An event refused by its own validation is lost without an error: look for refusals in the logs of a full run.
 
 **How to discover.** Trace the real code for each flow and write the trace as a numbered list of calls with the data at each step. Then break each step in turn (make the call fail, make the process stop) and check the state. Ask, for every action in the UI, what actually changed in the database.
 
