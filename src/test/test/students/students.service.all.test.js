@@ -16,4 +16,3 @@ require('./students.service.put.test.js');
 require('./students.service.patch.test.js');
 require('./students.service.notification.test.js');
 require('./students.service.translate.test.js');
-require('./students.service.fillMissingStatus.test.js');

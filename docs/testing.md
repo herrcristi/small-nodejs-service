@@ -41,7 +41,7 @@ npx mocha --require test/hooks.js --timeout 15000 --exit test/test/schools/schoo
 
 Notes:
 
-- Run the suite **without `SMALL_API_PORTAL_ADMIN_EMAIL` exported** in your shell. The tests set up their own environment; an exported value for the first portal admin is not wanted there. If it is set, run `env -u SMALL_API_PORTAL_ADMIN_EMAIL npm test`.
+- The tests set their own settings (`src/test/test-setup.utils.js`): the `SMALL_API_*` and `SMALL_UI_*` values exported in your shell are not used, and a test that needs another value sets it and restores it. The unit tests never connect to a database or a mail server of the machine.
 - `npm test` prints the coverage table at the end. A new file at less than full coverage should have a reason.
 - Add `.only` to a test while debugging, and remove it before committing.
 
@@ -65,7 +65,7 @@ src/
 ```
 
 - `tests.js` requires each service's `*.all.tests.js`, and each of those requires its test files. A new test file must be registered in the `*.all.tests.js` of its folder, or it will not run.
-- `hooks.js` runs once before everything. Unless the functional tests are on, it replaces the database connection and the mail transport with stubs, so no test needs a database or a mail server.
+- `hooks.js` is loaded before every test file. Unless the functional tests are on, it replaces the database connection and the mail transport with stubs before the service starts, so no test needs a database or a mail server; then it waits for the start. With the functional tests on, it empties their test database at the start.
 - Fixtures are in `test-constants.js`. Clone them (`_.cloneDeep`) before changing them.
 
 ## Writing a test
@@ -122,8 +122,8 @@ describe('Schools Service', function () {
 The functional tests run the real services against a real database.
 
 1. Start MongoDB: `cd src && npm run up` (uses `tools/local/docker-compose.yaml`; set `MONGODB_ROOT_USERNAME` and `MONGODB_ROOT_PASSWORD` in your environment first; the data is kept in a Docker volume, or in the folder named by `MONGODB_DATA_DIR` if you set it).
-2. Point the tests at a **dedicated test database**: they create and delete data. The database URL and name come from the test constants.
-3. `cd src && npm run testdb`.
+2. The tests use the database `Small-Test` of `SMALL_API_DATABASE_URL`, a **dedicated test database**: it is emptied at the start, and the tests create and delete data.
+3. `cd src && npm run testdb`. Besides the operations of the services, `functional.users-auth.test.js` runs the flows of the accounts through the API, with real sessions and cookies (only the emails are captured, and their links followed).
 
 Never run them against a database that holds data you need.
 

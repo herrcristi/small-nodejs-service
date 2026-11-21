@@ -548,42 +548,6 @@ const Private = {
 
     return { status: 200, value: true };
   },
-
-  /**
-   * the students of a school written by an earlier version have no status: they get the status of their user copy
-   * (pending when it has none); the groups and the schedules follow, notified
-   * returns { status, value: [ completed ids ] } or { status, error }
-   */
-  fillMissingStatusOfSchool: async (_ctx) => {
-    const config = await Private.getConfig(_ctx);
-    const filter = { filter: { status: { $exists: false } }, projection: { _id: 0, id: 1, user: 1 } };
-    const rStudents = await DbOpsUtils.getAll(config, filter, _ctx);
-    if (rStudents.error) {
-      return rStudents;
-    }
-
-    const completedIDs = [];
-    for (const student of rStudents.value) {
-      const statusInfo = { status: student.user?.status || UsersRest.Constants.Status.Pending };
-      const rStatus = await Private.putStudentStatus(config, student.id, statusInfo, null /* no event */, _ctx);
-      if (rStatus.error) {
-        return rStatus;
-      }
-      completedIDs.push(student.id);
-    }
-    if (completedIDs.length) {
-      console.log(
-        `\n${StudentsConstants.ServiceName}: the status of ${completedIDs.length} students of the school ${_ctx.tenantID} was completed`
-      );
-    }
-
-    const rNotify = await Private.notifyChangedStudents(config, completedIDs, _ctx);
-    if (rNotify.error) {
-      return rNotify;
-    }
-
-    return { status: 200, value: completedIDs };
-  },
 };
 
 const Public = {
@@ -591,44 +555,6 @@ const Public = {
    * init
    */
   init: async () => {},
-
-  /**
-   * complete the students written by an earlier version (they have no status), in every school; called at the end of
-   * the start (the schools and the notifications are ready); it finds none once they are completed
-   * a school that fails is logged and the next ones are still completed (it is tried again at the next start)
-   * returns { status, value: [ completed ids ] } or { status, error } (the schools can not be read)
-   */
-  fillMissingStatus: async () => {
-    const _ctx = { reqID: 'StudentsFillMissingStatus', lang: 'en', tenantID: process.env.SMALL_API_PORTAL_SCHOOL_ID };
-    const batch = StudentsConstants.FillMissingStatusBatch;
-
-    const completedIDs = [];
-    for (let skip = 0; ; skip += batch) {
-      const rSchools = await SchoolsRest.getAll(`projection=id&skip=${skip}&limit=${batch}`, _ctx);
-      if (rSchools.error) {
-        console.log(`\n${StudentsConstants.ServiceName}: the schools can not be read: ${rSchools.error.message}`);
-        return rSchools;
-      }
-
-      for (const school of rSchools.value) {
-        const schoolCtx = { ..._ctx, tenantID: school.id };
-        const r = await Private.fillMissingStatusOfSchool(schoolCtx);
-        if (r.error) {
-          console.log(
-            `\n${StudentsConstants.ServiceName}: the status of the students of the school ${school.id} can not be completed: ${r.error.message}`
-          );
-          continue;
-        }
-        completedIDs.push(...r.value);
-      }
-
-      if (rSchools.value.length < batch) {
-        break;
-      }
-    }
-
-    return { status: 200, value: completedIDs };
-  },
 
   /**
    * get all for a request

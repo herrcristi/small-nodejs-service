@@ -16,4 +16,3 @@ require('./admins.service.put.test.js');
 require('./admins.service.patch.test.js');
 require('./admins.service.notification.test.js');
 require('./admins.service.translate.test.js');
-require('./admins.service.fillMissingStatus.test.js');

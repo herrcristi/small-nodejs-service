@@ -95,9 +95,6 @@
                   >
 
                   <!-- email change buttons end -->
-
-                  <!-- the delete of the account is shown on demand (no accidental delete) -->
-                  <ShowDelete v-if="!loading && !nodatatext" v-model="showDelete" class="ml-2" />
                 </v-toolbar-items>
               </v-card-title>
             </v-toolbar>
@@ -131,8 +128,13 @@
       </v-row>
 
       <!-- 
-          delete the account (shown on demand, confirmed first: it can not be undone)
+          delete the account: shown on demand, here (no accidental delete), and confirmed (it can not be undone)
       -->
+      <v-row v-if="!loading && !nodatatext">
+        <v-col cols="12" md="7">
+          <ShowDelete v-model="showDelete" />
+        </v-col>
+      </v-row>
       <v-row v-if="!loading && !nodatatext && showDelete">
         <v-col cols="12" md="7">
           <v-card variant="outlined" color="error">

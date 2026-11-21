@@ -28,9 +28,6 @@ const ClassesDatabase = require('../../../services/classes/classes.database.js')
 const LocationsDatabase = require('../../../services/locations/locations.database.js');
 const GroupsDatabase = require('../../../services/groups/groups.database.js');
 const SchedulesDatabase = require('../../../services/schedules/schedules.database.js');
-const AdminsService = require('../../../services/admins/admins.service.js');
-const StudentsService = require('../../../services/students/students.service.js');
-const ProfessorsService = require('../../../services/professors/professors.service.js');
 
 describe('Users Auth Rest', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
@@ -136,8 +133,7 @@ describe('Users Auth Rest', function () {
     sinon.stub(EmailsUtils, 'init').resolves();
     sinon.stub(SchoolsSetupService, 'init').resolves(true);
     sinon.stub(UsersAuthSetupService, 'init').resolves(false);
-    // the databases keep their connection (a stub in the unit tests, the test database with IS_TEST_DB), and nothing
-    // is completed
+    // the databases keep their connection (a stub in the unit tests, the test database with IS_TEST_DB)
     for (const database of [
       SchoolsDatabase,
       UsersAuthDatabase,
@@ -153,9 +149,6 @@ describe('Users Auth Rest', function () {
       SchedulesDatabase,
     ]) {
       sinon.stub(database, 'init').resolves();
-    }
-    for (const service of [AdminsService, StudentsService, ProfessorsService]) {
-      sinon.stub(service, 'fillMissingStatus').resolves({ status: 200, value: [] });
     }
     await ConfigServices.init();
 

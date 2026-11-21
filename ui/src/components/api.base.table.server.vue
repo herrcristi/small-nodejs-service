@@ -279,7 +279,7 @@
     <template v-slot:header.actions="{ column }">
       <div class="d-flex align-center flex-wrap">
         <span class="me-1">{{ column.title }}</span>
-        <ShowDelete v-if="hasDelete" v-model="showDelete" />
+        <ShowDelete v-if="hasDelete" v-model="showDelete" icon-only />
       </div>
     </template>
 

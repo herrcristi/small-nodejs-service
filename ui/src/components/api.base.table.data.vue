@@ -52,7 +52,7 @@
           </slot>
 
           <!-- no header: the delete buttons are shown on demand next to the + (no accidental delete) -->
-          <ShowDelete v-if="hasDelete" v-model="showDelete" class="me-2" />
+          <ShowDelete v-if="hasDelete" v-model="showDelete" icon-only class="me-2" />
 
           <v-toolbar-title> </v-toolbar-title>
 

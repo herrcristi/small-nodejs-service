@@ -240,7 +240,7 @@ Each school chooses on its **Settings** page (`GET|PUT /schools/:id/settings`, i
 
 **Rejoining.** When a deleted user is invited again, its account is created again (pending, with a new setup link), with the same id. The roles it gets again make their records active again (for example the student record), and the others stay traces (the professor record stays `deleted`).
 
-**No accidental delete.** In the UI the delete buttons of a list are hidden until "Show delete" is chosen (in the header of the actions column, or next to the "+" of an inner list), and the profile shows "Delete my account" the same way; every delete is then confirmed.
+**No accidental delete.** In the UI the delete buttons of a list are hidden until its "Show delete" icon is chosen (in the header of the actions column, or next to the "+" of an inner list), and the profile shows "Delete my account" only after "Show delete", below the profile; every delete is then confirmed.
 
 ## Security model
 
@@ -315,6 +315,8 @@ Independent security, adversarial, flow, concurrency, and scalability reviews we
 | **A deleted user leaves traces**                                                | School history stays correct                                                                                                                | Person records stay, marked `disabled`                                                         |
 
 ## Design guarantees and caveats
+
+Each guarantee, with the check that proves it, is listed in [README.design-invariants.md](README.design-invariants.md).
 
 ### Guarantees
 

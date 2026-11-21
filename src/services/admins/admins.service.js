@@ -318,37 +318,6 @@ const Private = {
 
     return { status: 200, value: true };
   },
-
-  /**
-   * the admins of a school written by an earlier version have no status: they get the status of their user copy
-   * (pending when it has none); nothing is notified: no other service keeps them
-   * returns { status, value: [ completed ids ] } or { status, error }
-   */
-  fillMissingStatusOfSchool: async (_ctx) => {
-    const config = await Private.getConfig(_ctx);
-    const filter = { filter: { status: { $exists: false } }, projection: { _id: 0, id: 1, user: 1 } };
-    const rAdmins = await DbOpsUtils.getAll(config, filter, _ctx);
-    if (rAdmins.error) {
-      return rAdmins;
-    }
-
-    const completedIDs = [];
-    for (const admin of rAdmins.value) {
-      const statusInfo = { status: admin.user?.status || UsersRest.Constants.Status.Pending };
-      const rStatus = await Private.putAdminStatus(config, admin.id, statusInfo, null /* no event */, _ctx);
-      if (rStatus.error) {
-        return rStatus;
-      }
-      completedIDs.push(admin.id);
-    }
-    if (completedIDs.length) {
-      console.log(
-        `\n${AdminsConstants.ServiceName}: the status of ${completedIDs.length} admins of the school ${_ctx.tenantID} was completed`
-      );
-    }
-
-    return { status: 200, value: completedIDs };
-  },
 };
 
 const Public = {
@@ -356,44 +325,6 @@ const Public = {
    * init
    */
   init: async () => {},
-
-  /**
-   * complete the admins written by an earlier version (they have no status), in every school; called at the end of
-   * the start (the schools and the notifications are ready); it finds none once they are completed
-   * a school that fails is logged and the next ones are still completed (it is tried again at the next start)
-   * returns { status, value: [ completed ids ] } or { status, error } (the schools can not be read)
-   */
-  fillMissingStatus: async () => {
-    const _ctx = { reqID: 'AdminsFillMissingStatus', lang: 'en', tenantID: process.env.SMALL_API_PORTAL_SCHOOL_ID };
-    const batch = AdminsConstants.FillMissingStatusBatch;
-
-    const completedIDs = [];
-    for (let skip = 0; ; skip += batch) {
-      const rSchools = await SchoolsRest.getAll(`projection=id&skip=${skip}&limit=${batch}`, _ctx);
-      if (rSchools.error) {
-        console.log(`\n${AdminsConstants.ServiceName}: the schools can not be read: ${rSchools.error.message}`);
-        return rSchools;
-      }
-
-      for (const school of rSchools.value) {
-        const schoolCtx = { ..._ctx, tenantID: school.id };
-        const r = await Private.fillMissingStatusOfSchool(schoolCtx);
-        if (r.error) {
-          console.log(
-            `\n${AdminsConstants.ServiceName}: the status of the admins of the school ${school.id} can not be completed: ${r.error.message}`
-          );
-          continue;
-        }
-        completedIDs.push(...r.value);
-      }
-
-      if (rSchools.value.length < batch) {
-        break;
-      }
-    }
-
-    return { status: 200, value: completedIDs };
-  },
 
   /**
    * get all for a request

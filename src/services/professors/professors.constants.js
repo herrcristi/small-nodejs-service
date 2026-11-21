@@ -14,8 +14,6 @@ const Public = {
 
   // Type
   Type: 'professor',
-  // the most schools read at once when the status of the professors written by an earlier version is completed
-  FillMissingStatusBatch: 100,
 };
 
 module.exports = { ...Public };
