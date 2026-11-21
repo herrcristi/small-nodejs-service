@@ -102,10 +102,18 @@ describe('Users Auth Service', function () {
     const stubGet = sinon.stub(DbOpsUtils, 'getOne');
     const stubEvent = sinon.stub(EventsRest, 'raiseEventForObject');
     const stubEmail = sinon.stub(EmailsUtils, 'sendEmail');
+    const spyLog = sinon.spy(console, 'log');
 
     // call
     const res = await UsersAuthService.resetPassword({ username: testUser.id }, _ctx);
     await new Promise((resolve) => setTimeout(resolve, 20));
+    spyLog.restore();
+
+    // check: the logs of the public form name neither the address nor the kind of email
+    const logs = spyLog.args.map((args) => args.join(' ')).join('\n');
+    chai.expect(logs).to.include('the email is not sent now (status 409)');
+    chai.expect(logs).to.not.include(testUser.id);
+    chai.expect(logs).to.not.include(UsersAuthConstants.ResetTokenType.ResetPassword);
 
     // check: the time of the reset email of this user was checked, nothing else done
     chai.expect(UsersAuthServiceLocal.putEmailTimestamp.args[0][1]).to.equal(testUser.id);

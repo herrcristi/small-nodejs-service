@@ -122,6 +122,8 @@ flowchart LR
 
 Multi-step operations (signup, invite) also define what to undo when a later step fails: signup deletes the school if inviting its first admin fails, and invite deletes the user if the login record cannot be created.
 
+The event names who did it: the logged-in user, or the user of a flow without a login (`setup` at the start, `cleanup pending` for the timers that remove what was not used in time, `anonymous` for a public form). The notification is delivered to each subscriber, whose handler does all the objects of it: a failure of one object is logged, the next objects are still done, the objects whose copies changed are notified again, and the first failure is returned.
+
 ## Extending the project
 
 ### Add a route
