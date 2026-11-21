@@ -68,12 +68,16 @@ export async function bootstrapAuthFromCookie() {
       // restore auth store with user data (schools, username, etc.)
       processLoginResponse(response, { useCookies: true });
 
-      // try to restore tenantID from localStorage with validation
+      // the school chosen before the refresh: its id is kept in localStorage, the permissions only in memory, so the
+      // store is loaded first, then the school is checked against the schools of the user and its permissions are
+      // rebuilt (without them the menu and the pages are empty)
       const appStore = useAppStore();
-      const savedTenantID = appStore?.tenantID;
+      const savedTenantID = appStore.load()?.tenantID || null;
       if (savedTenantID && Array.isArray(response.data?.schools)) {
-        // validate that tenantID is in user's schools and is active
-        const isValid = response.data.schools.some((s) => s.id === savedTenantID && s.status === 'active');
+        // validate that tenantID is one of the user's active schools, with roles
+        const isValid = response.data.schools.some(
+          (s) => s.id === savedTenantID && s.status === 'active' && Array.isArray(s.roles) && s.roles.length > 0
+        );
         if (isValid) {
           // restore tenant from localStorage
           const permissions = getRolesPermissions(savedTenantID, response.data);

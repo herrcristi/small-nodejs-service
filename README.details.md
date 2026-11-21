@@ -211,7 +211,7 @@ Records that can be switched on and off carry a `status`: `pending`, `active`, `
 | Class, location, group, schedule | `pending`, `active`, `disabled` (default `pending` on creation)                                                        |
 | Admin, professor, student record | its copy of the user (`user.status`): the user's status while it has the role; `removed` or `deleted` for a trace      |
 
-**Pending records expire.** A pending user (an invitation that was not used) and a pending school (a signup that was not followed by a login) are removed `SMALL_API_PENDING_EXPIRES_IN` seconds after they were created (72 hours by default, as long as the invitation link). The users and schools services check every hour; a MongoDB TTL index is not used, because it would delete without the events and the notifications that clean the other services. The removals are in the events of the Portal School, done by the user `cleanup pending` (the events of the start are done by `setup`, and those of a public form, like a password reset, by `anonymous`: an event always names who did it). A pending portal admin expires too: while no portal admin is active, every start invites the configured one again.
+**Pending records expire.** A pending user (an invitation that was not used) and a pending school (a signup that was not followed by a login) are removed `SMALL_API_PENDING_EXPIRES_IN` seconds after they were created (72 hours by default, as long as the invitation link). The users and schools services check every hour, or as often as the expiry when it is shorter (with `600`, every 10 minutes), starting one interval after the start; the start logs the expiry and the interval in use; a MongoDB TTL index is not used, because it would delete without the events and the notifications that clean the other services. The removals are in the events of the Portal School, done by the user `cleanup pending` (the events of the start are done by `setup`, and those of a public form, like a password reset, by `anonymous`: an event always names who did it). A pending portal admin expires too: while no portal admin is active, every start invites the configured one again.
 
 ### Every record tracks its changes
 
@@ -702,7 +702,7 @@ sequenceDiagram
   U->>UI: email and password
   UI->>API: POST /users-auth/login (no tenant needed)
   API-->>UI: user, schools and roles, and the HttpOnly cookie
-  UI->>U: choose a school (skipped when the user has exactly one school and it is active)
+  UI->>U: choose a school (skipped when exactly one of the user's schools is active)
   U->>UI: North School
   UI->>API: GET /students with the cookie and x-tenant-id
   API-->>UI: the students of North School
@@ -722,7 +722,7 @@ const response = await Api.login({ username, password });
 const result = await processLoginResponse(response);
 ```
 
-`Api.login` sends credentials. If the user has exactly one school and it is active, the UI selects it. Otherwise the user chooses. From then on the API wrapper adds the school id as `x-tenant-id`.
+`Api.login` sends credentials. If exactly one of the user's schools is active, the UI selects it. Otherwise the user chooses. After a page refresh the chosen school stays chosen: it is checked again against the schools of the user (an active membership with roles) and cleared when it is not valid anymore. From then on the API wrapper adds the school id as `x-tenant-id`.
 
 ### Login with curl
 

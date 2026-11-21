@@ -14,10 +14,12 @@ export async function processLoginResponse(response, options = {}) {
     const s = useAuthStore();
     s.save({ raw: data });
 
-    // if only one school is active, set it as current tenantID
+    // if only one school is active, set it as current tenantID (the other schools, disabled or pending, can not be used)
     let tenantID = null;
-    if (Array.isArray(data?.schools) && data.schools.length == 1 && data.schools[0].status === 'active') {
-      tenantID = data.schools[0].id;
+    const schools = Array.isArray(data?.schools) ? data.schools : [];
+    const activeSchools = schools.filter((school) => school.status === 'active');
+    if (activeSchools.length === 1) {
+      tenantID = activeSchools[0].id;
       useAppStore()?.saveTenant(tenantID, getRolesPermissions(tenantID, data));
     }
 

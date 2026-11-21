@@ -236,7 +236,7 @@ const Private = {
 
     // the students that exist already
     const usersIDs = users.map((user) => user.id);
-    const existingProjection = { _id: 0, id: 1, user: 1 };
+    const existingProjection = { _id: 0, id: 1, type: 1, user: 1 }; // the type: the target of the restore event
     const rStudents = await DbOpsUtils.getAllByIDs(config, usersIDs, existingProjection, _ctx);
     if (rStudents.error) {
       return rStudents;

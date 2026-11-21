@@ -32,8 +32,10 @@
       </div>
     </v-app-bar>
 
-    <!-- the menu of the pages (not on a page without it, like the school selection) -->
+    <!-- the menu of the pages (not on a page without it, like the school selection), in regions: the daily pages, the
+         people, the setup of the school, and at the bottom the events and the settings -->
     <v-navigation-drawer app permanent color="primary" dark v-if="showMenu">
+      <!-- the daily pages -->
       <v-list dense>
         <v-list-item link to="/">
           <v-list-item-title>{{ t('home') }} </v-list-item-title>
@@ -41,45 +43,62 @@
         <v-list-item link to="/schools" v-if="permissions.schools?.read">
           <v-list-item-title>{{ t('schools') }}</v-list-item-title>
         </v-list-item>
-        <v-list-item link to="/users" v-if="permissions.users?.read">
-          <v-list-item-title>{{ t('users') }}</v-list-item-title>
-        </v-list-item>
-        <v-list-item link to="/admins" v-if="permissions.admins?.read">
-          <v-list-item-title>{{ t('admins') }}</v-list-item-title>
-        </v-list-item>
-        <v-list-item link to="/students" v-if="permissions.students?.read">
-          <v-list-item-title>{{ t('students') }}</v-list-item-title>
-        </v-list-item>
-        <v-list-item link to="/professors" v-if="permissions.professors?.read">
-          <v-list-item-title>{{ t('professors') }}</v-list-item-title>
+        <v-list-item link to="/schedules" v-if="permissions.schedules?.read">
+          <v-list-item-title>{{ t('schedules') }}</v-list-item-title>
         </v-list-item>
         <v-list-item link to="/groups" v-if="permissions.groups?.read">
           <v-list-item-title>{{ t('groups') }}</v-list-item-title>
         </v-list-item>
-        <v-list-item link to="/locations" v-if="permissions.locations?.read">
-          <v-list-item-title>{{ t('locations') }}</v-list-item-title>
-        </v-list-item>
-        <v-list-item link to="/events" v-if="permissions.events?.read">
-          <v-list-item-title>{{ t('events') }}</v-list-item-title>
-        </v-list-item>
-        <v-list-item link to="/events/global" v-if="permissions.globalEvents?.read">
-          <v-list-item-title>{{ t('events.global') }}</v-list-item-title>
-        </v-list-item>
-        <v-list-item link to="/classes" v-if="permissions.classes?.read">
-          <v-list-item-title>{{ t('classes') }}</v-list-item-title>
-        </v-list-item>
-        <v-list-item link to="/schedules" v-if="permissions.schedules?.read">
-          <v-list-item-title>{{ t('schedules') }}</v-list-item-title>
-        </v-list-item>
       </v-list>
 
-      <!-- the settings of the school: at the bottom of the menu -->
-      <template v-slot:append>
+      <!-- the people -->
+      <template v-if="hasPeopleMenu">
+        <v-divider class="menu-divider" />
         <v-list dense>
-          <v-list-item link to="/settings" v-if="permissions.settings?.read">
-            <v-list-item-title>{{ t('settings') }}</v-list-item-title>
+          <v-list-item link to="/users" v-if="permissions.users?.read">
+            <v-list-item-title>{{ t('users') }}</v-list-item-title>
+          </v-list-item>
+          <v-list-item link to="/admins" v-if="permissions.admins?.read">
+            <v-list-item-title>{{ t('admins') }}</v-list-item-title>
+          </v-list-item>
+          <v-list-item link to="/students" v-if="permissions.students?.read">
+            <v-list-item-title>{{ t('students') }}</v-list-item-title>
+          </v-list-item>
+          <v-list-item link to="/professors" v-if="permissions.professors?.read">
+            <v-list-item-title>{{ t('professors') }}</v-list-item-title>
           </v-list-item>
         </v-list>
+      </template>
+
+      <!-- the setup of the school -->
+      <template v-if="hasSetupMenu">
+        <v-divider class="menu-divider" />
+        <v-list dense>
+          <v-list-item link to="/locations" v-if="permissions.locations?.read">
+            <v-list-item-title>{{ t('locations') }}</v-list-item-title>
+          </v-list-item>
+          <v-list-item link to="/classes" v-if="permissions.classes?.read">
+            <v-list-item-title>{{ t('classes') }}</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </template>
+
+      <!-- at the bottom of the menu: the events and the settings of the school -->
+      <template v-slot:append>
+        <template v-if="hasBottomMenu">
+          <v-divider class="menu-divider" />
+          <v-list dense>
+            <v-list-item link to="/events" v-if="permissions.events?.read">
+              <v-list-item-title>{{ t('events') }}</v-list-item-title>
+            </v-list-item>
+            <v-list-item link to="/events/global" v-if="permissions.globalEvents?.read">
+              <v-list-item-title>{{ t('events.global') }}</v-list-item-title>
+            </v-list-item>
+            <v-list-item link to="/settings" v-if="permissions.settings?.read">
+              <v-list-item-title>{{ t('settings') }}</v-list-item-title>
+            </v-list-item>
+          </v-list>
+        </template>
       </template>
     </v-navigation-drawer>
 
@@ -177,6 +196,19 @@ const permissions = computed(() => {
 });
 
 /**
+ * the regions of the menu that have a page for the user (a region without one is not shown, nor its divider)
+ */
+const hasPeopleMenu = computed(() => {
+  const p = permissions.value;
+  return !!(p.users?.read || p.admins?.read || p.students?.read || p.professors?.read);
+});
+const hasSetupMenu = computed(() => !!(permissions.value.locations?.read || permissions.value.classes?.read));
+const hasBottomMenu = computed(() => {
+  const p = permissions.value;
+  return !!(p.events?.read || p.globalEvents?.read || p.settings?.read);
+});
+
+/**
  * profile
  */
 function goProfile() {
@@ -225,6 +257,12 @@ async function doLogout() {
   height: 32px;
   color: white;
   font-weight: 600;
+}
+/* the lines between the regions of the menu: visible on the dark menu */
+.menu-divider {
+  border-color: rgba(255, 255, 255, 0.5);
+  opacity: 1;
+  margin: 4px 12px;
 }
 /* Add layout-specific styles here */
 </style>

@@ -92,6 +92,10 @@ describe('Web Server Utils', function () {
 
     chai.expect(res.status).to.equal(200);
     chai.expect(res.body).to.deep.equal({ success: true });
+
+    // check: the answer is never kept by the browser, and has no ETag (no 304 with an older body)
+    chai.expect(res.headers['cache-control']).to.equal('no-store');
+    chai.expect(res.headers).to.not.have.property('etag');
     chai.expect(middlewares[0].middleware.callCount).to.equal(1);
     chai.expect(middlewares[1].callCount).to.equal(1);
     chai.expect(authMiddlewares[0].middleware.callCount).to.equal(1);
