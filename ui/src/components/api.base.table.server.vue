@@ -277,8 +277,9 @@
 
     <!-- the header of the actions: the delete buttons are shown on demand (no accidental delete) -->
     <template v-slot:header.actions="{ column }">
-      <div class="d-flex align-center flex-wrap">
-        <span class="me-1">{{ column.title }}</span>
+      <!-- the icon to the right of the title, on the same line (the column grows to fit both) -->
+      <div class="d-flex align-center flex-nowrap">
+        <span class="me-1 text-no-wrap">{{ column.title }}</span>
         <ShowDelete v-if="hasDelete" v-model="showDelete" icon-only />
       </div>
     </template>
