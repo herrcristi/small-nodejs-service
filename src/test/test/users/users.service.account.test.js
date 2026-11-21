@@ -27,6 +27,8 @@ describe('Users Service account', function () {
     schools: [{ id: 'school1', name: 'North High School', roles: ['student', 'professor'] }],
   };
 
+  before(async function () {});
+
   beforeEach(async function () {
     // the references, the events and the notifications
     sinon.stub(ReferencesUtils, 'populateReferences').resolves({ status: 200, value: true });
@@ -37,6 +39,8 @@ describe('Users Service account', function () {
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * delete a user: the record is deleted (nothing is kept), the removed notification carries the user as deleted (the

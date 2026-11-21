@@ -15,9 +15,15 @@ describe('Users Auth Service', function () {
   const janeSmith = { id: 'user1', name: 'Jane Smith', type: 'user', email: 'jane.smith@testdomain.test' };
   const johnBrown = { id: 'user2', name: 'John Brown', type: 'user', email: 'john.brown@testdomain.test' };
 
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * modified users keep their login (a deleted user is removed, see the next tests)
@@ -106,6 +112,28 @@ describe('Users Auth Service', function () {
     stubLogin.resolves({ status: 200, value: {} });
     res = await UsersAuthService.notification(notification, _ctx);
     chai.expect(res).to.deep.equal(fail);
+  }).timeout(10000);
+
+  /**
+   * a failure does not stop the removal of the logins: the next users are still done, and the first failure is
+   * returned at the end
+   */
+  it('should remove the next logins after a failure', async () => {
+    // stub: user1 and user2 do not exist anymore; the login of user1 can not be deleted
+    sinon.stub(UsersRest, 'getAllByIDs').resolves({ status: 200, value: [] });
+    const stubLogin = sinon.stub(DbOpsUtils, 'delete');
+    stubLogin.onFirstCall().resolves(fail);
+    stubLogin.onSecondCall().resolves({ status: 200, value: {} });
+    const stubEndAll = sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 1 });
+
+    // call
+    const notification = { serviceName: 'users', removed: [janeSmith, johnBrown] };
+    const res = await UsersAuthService.notification(notification, _ctx);
+
+    // check: the first failure is returned, the login and the sessions of user2 are still removed
+    chai.expect(res).to.deep.equal(fail);
+    chai.expect(stubLogin.callCount).to.equal(2);
+    chai.expect(stubEndAll.args.map((args) => args[0])).to.deep.equal(['user2']);
   }).timeout(10000);
 
   /**

@@ -15,6 +15,8 @@ describe('Users Auth Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
   const fail = { status: 500, error: { message: 'Test error message', error: new Error('Test error') } };
 
+  before(async function () {});
+
   beforeEach(async function () {
     // the current user
     const testUser = TestConstants.UsersAuth[0];
@@ -25,6 +27,8 @@ describe('Users Auth Service', function () {
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * delete the account: the user first (deleted, it can not log in), then its login, its sessions, the event and the

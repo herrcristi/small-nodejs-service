@@ -73,6 +73,8 @@ describe('Professors Service', function () {
    */
   const getEventsActions = () => EventsRest.raiseEventForObject.args.map((args) => args[1]);
 
+  before(async function () {});
+
   beforeEach(async function () {
     // the events and the notifications of the professors
     sinon.stub(EventsRest, 'raiseEventForObject');
@@ -82,6 +84,8 @@ describe('Professors Service', function () {
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * the users with the professor role: a new professor is created; the user copy of an existing one is updated (only an older
@@ -246,6 +250,36 @@ describe('Professors Service', function () {
     stubGet.resolves({ status: 200, value: { id: 'user1', user: { id: 'user1', status: 'active' } } });
     chai.expect(await notify(removed)).to.deep.equal(fail);
     chai.expect(stubPut.callCount).to.equal(1);
+  }).timeout(10000);
+
+  /**
+   * a failure does not stop the users notification: the next users and the removed users of the school are still
+   * done, and the first failure is returned at the end
+   */
+  it('should do the next users after a failure of the users notification', async () => {
+    // stub: user1 and user2 have no professor yet (the one of user1 can not be created); user3 is a professor; the
+    // setting keeps the traces
+    stubProfessorsRecords({ user3: { id: 'user3', user: { id: 'user3', status: 'active' } } });
+    sinon.stub(ReferencesUtils, 'populateReferences').resolves({ status: 200, value: true });
+    const stubPost = sinon.stub(DbOpsUtils, 'post');
+    stubPost.onFirstCall().resolves(fail);
+    stubPost.onSecondCall().resolves({ status: 201, value: { id: 'user2', user: { id: 'user2' } } });
+    sinon.stub(SchoolsRest, 'getSettings').resolves({ status: 200, value: { removedMembers: 'keep' } });
+    const stubPut = sinon
+      .stub(DbOpsUtils, 'put')
+      .resolves({ status: 200, value: { id: 'user3', user: { id: 'user3' } } });
+
+    // call: user1 and user2 got the role, user3 lost it
+    const notification = { serviceName: 'users', added: [janeSmith, johnBrown], removed: [emilyClark] };
+    const res = await ProfessorsService.notification(notification, _ctx);
+
+    // check: the first failure is returned
+    chai.expect(res).to.deep.equal(fail);
+
+    // check: the professor of user2 is still created, the one of user3 is still kept as a trace
+    chai.expect(stubPost.callCount).to.equal(2);
+    chai.expect(stubPost.secondCall.args[1]).to.include({ id: 'user2' });
+    chai.expect(stubPut.firstCall.args[1]).to.equal('user3');
   }).timeout(10000);
 
   /**

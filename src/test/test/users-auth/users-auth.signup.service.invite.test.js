@@ -938,13 +938,14 @@ describe('Users Auth Service', function () {
         chai.expect(membersRest.relinkTraces.calledBefore(stubPost)).to.equal(true);
       }
 
-      // case: the traces can not be linked: the invite fails, no user is created
+      // case: the traces can not be linked: the invite fails, no user is created (the admins are still linked)
       ProfessorsRest.relinkTraces.resolves({ status: 500, error: { message: 'Database failure' } });
       stubPost.resetHistory();
       sinon.stub(EventsRest, 'raiseEventForObject');
       const resFailed = await UsersAuthSignupService.invite({ email, school: { role: 'student' } }, _ctx);
       chai.expect(resFailed.status).to.equal(500);
       chai.expect(stubPost.callCount).to.equal(0);
+      chai.expect(AdminsRest.relinkTraces.callCount).to.equal(2);
     }).timeout(10000);
 
     /**
@@ -965,13 +966,15 @@ describe('Users Auth Service', function () {
       chai.expect(AdminsRest.relinkTraces.firstCall.args[0]).to.deep.equal({ email, userID: 'user1' });
       chai.expect(AdminsRest.relinkTraces.calledBefore(stubPatch)).to.equal(true);
 
-      // case: the traces can not be linked
+      // case: the traces can not be linked (the professors and the admins are still linked)
       StudentsRest.relinkTraces.resolves({ status: 500, error: { message: 'Database failure' } });
       stubPatch.resetHistory();
       sinon.stub(EventsRest, 'raiseEventForObject');
       const resFailed = await UsersAuthSignupService.invite({ email, school: { role: 'professor' } }, _ctx);
       chai.expect(resFailed.status).to.equal(500);
       chai.expect(stubPatch.callCount).to.equal(0);
+      chai.expect(ProfessorsRest.relinkTraces.callCount).to.equal(2);
+      chai.expect(AdminsRest.relinkTraces.callCount).to.equal(2);
     }).timeout(10000);
   });
 });

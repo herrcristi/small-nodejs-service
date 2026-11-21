@@ -10,6 +10,8 @@ describe('Users Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
   const fail = { status: 500, error: { message: 'Database failure' } };
 
+  before(async function () {});
+
   beforeEach(async function () {
     // the notifications of the users (none is expected)
     sinon.stub(UsersRest, 'raiseNotification');
@@ -18,6 +20,8 @@ describe('Users Service', function () {
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * schools notification: the copies of a modified school in the memberships are updated, a deleted school is removed
@@ -55,6 +59,30 @@ describe('Users Service', function () {
     chai.expect(await UsersService.notification(notification, _ctx)).to.deep.equal(fail);
     stubCopies.resolves(fail);
     chai.expect(await UsersService.notification(notification, _ctx)).to.deep.equal(fail);
+  }).timeout(10000);
+
+  /**
+   * a failure does not stop the schools notification: the next schools and the deleted schools are still done, and
+   * the first failure is returned at the end
+   */
+  it('should do the next schools after a failure of the schools notification', async () => {
+    // stub: the copies of school1 can not be updated
+    const stubCopies = sinon.stub(DbOpsUtils, 'updateManyReferences');
+    stubCopies.onFirstCall().resolves(fail);
+    stubCopies.onSecondCall().resolves({ status: 200, value: 1, ids: ['user1'] });
+    const stubRemove = sinon.stub(DbOpsUtils, 'deleteManyReferences').resolves({ status: 200, value: 1 });
+
+    // call: school1 and school2 changed, school3 was deleted
+    const northSchool = { id: 'school1', name: 'North High School', modifiedCount: 3 };
+    const southSchool = { id: 'school2', name: 'South High School', modifiedCount: 2 };
+    const westSchool = { id: 'school3', name: 'West High School' };
+    const notification = { serviceName: 'schools', modified: [northSchool, southSchool], removed: [westSchool] };
+    const res = await UsersService.notification(notification, _ctx);
+
+    // check: the first failure is returned, school2 and school3 are still done
+    chai.expect(res).to.deep.equal(fail);
+    chai.expect(stubCopies.secondCall.args[2].id).to.equal('school2');
+    chai.expect(stubRemove.firstCall.args[2].id).to.equal('school3');
   }).timeout(10000);
 
   /**

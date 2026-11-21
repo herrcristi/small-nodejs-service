@@ -5,9 +5,15 @@ const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 const UsersAuthMiddleware = require('../../../services/users-auth/users-auth.middleware.js');
 
 describe('Users Auth Middleware', function () {
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   const getReq = (path, tenantID) => ({
     route: { path },

@@ -156,9 +156,10 @@ const Private = {
    *   until then, and nothing is notified
    * nothing is notified (no other service keeps copies of the admins)
    * users: [ { id, status, ... } ] (as notified by the users service)
+   * a failure is logged and the next users are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
-  saveAdminsOfUsers: async (users, _ctx) => {
+  onUsersAddedOrModified: async (users, _ctx) => {
     const config = await Private.getConfig(_ctx);
     const [userRef] = config.references; // the copy of the user (user): the only reference of the admins
 
@@ -175,6 +176,7 @@ const Private = {
     }
 
     const changedAdminsIDs = new Set();
+    let failure = null; // the first failure (the next users are still done)
     for (const user of users) {
       const admin = adminsMap[user.id];
 
@@ -183,7 +185,10 @@ const Private = {
         console.log(`\n${AdminsConstants.ServiceName}: create the admin of the user ${user.id}`);
         const rPost = await Public.post({ id: user.id }, _ctx);
         if (rPost.error) {
-          return rPost;
+          console.log(
+            `\n${AdminsConstants.ServiceName}: failed to create the admin of the user ${user.id}: ${rPost.error.message}`
+          );
+          failure ??= rPost;
         }
         continue;
       }
@@ -199,7 +204,11 @@ const Private = {
       const userCopy = CommonUtils.getProjectedObj(user, userRef.projection);
       const rCopy = await DbOpsUtils.updateManyReferences(config, userRef, userCopy, _ctx);
       if (rCopy.error) {
-        return rCopy;
+        console.log(
+          `\n${AdminsConstants.ServiceName}: failed to update the copies of the user ${user.id}: ${rCopy.error.message}`
+        );
+        failure ??= rCopy;
+        continue;
       }
       rCopy.ids.forEach((id) => changedAdminsIDs.add(id));
 
@@ -218,7 +227,7 @@ const Private = {
       }
     }
 
-    return { status: 200, value: [...changedAdminsIDs] };
+    return failure || { status: 200, value: [...changedAdminsIDs] };
   },
 
   /**
@@ -231,9 +240,10 @@ const Private = {
    *   delete: the admin is deleted (no other service keeps it)
    * nothing is notified (no other service keeps copies of the admins)
    * users: [ { id, status, ... } ] (as notified by the users service)
+   * a failure is logged and the next users are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
-  removeAdminsOfUsers: async (users, _ctx) => {
+  onUsersRemoved: async (users, _ctx) => {
     const config = await Private.getConfig(_ctx);
 
     // the setting of the school
@@ -244,13 +254,18 @@ const Private = {
     const keepTraces = rSettings.value.removedMembers === SchoolsRest.Constants.Settings.RemovedMembers.Keep;
 
     const changedAdminsIDs = new Set();
+    let failure = null; // the first failure (the next users are still done)
     for (const user of users) {
       const rAdmin = await DbOpsUtils.getOne(config, user.id, { _id: 0, id: 1, user: 1 }, _ctx);
       if (rAdmin.status === 404) {
         continue;
       }
       if (rAdmin.error) {
-        return rAdmin;
+        console.log(
+          `\n${AdminsConstants.ServiceName}: failed to read the admin of the user ${user.id}: ${rAdmin.error.message}`
+        );
+        failure ??= rAdmin;
+        continue;
       }
 
       // already a trace
@@ -265,7 +280,10 @@ const Private = {
         console.log(`\n${AdminsConstants.ServiceName}: delete the admin ${user.id} (never joined: ${neverJoined})`);
         const rDelete = await Private.deleteAdmin(config, user.id, _ctx);
         if (rDelete.error && rDelete.status !== 404) {
-          return rDelete;
+          console.log(
+            `\n${AdminsConstants.ServiceName}: failed to delete the admin ${user.id}: ${rDelete.error.message}`
+          );
+          failure ??= rDelete;
         }
         continue;
       }
@@ -276,12 +294,16 @@ const Private = {
       console.log(`\n${AdminsConstants.ServiceName}: keep the admin ${user.id} as a trace, ${traceStatus}`);
       const rTrace = await Private.putTraceStatus(config, user.id, traceStatus, _ctx);
       if (rTrace.error) {
-        return rTrace;
+        console.log(
+          `\n${AdminsConstants.ServiceName}: failed to keep the admin ${user.id} as a trace: ${rTrace.error.message}`
+        );
+        failure ??= rTrace;
+        continue;
       }
       changedAdminsIDs.add(user.id);
     }
 
-    return { status: 200, value: [...changedAdminsIDs] };
+    return failure || { status: 200, value: [...changedAdminsIDs] };
   },
 
   /**
@@ -289,11 +311,13 @@ const Private = {
    * - added, modified: the admins are saved (created when missing, otherwise their status and their user copy)
    * - removed (the admin role was removed, or the account was deleted): the admins are kept as traces or
    *   deleted, by the setting of the school
+   * a failure is logged and the next schools are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
   onUsersNotification: async (notification, _ctx) => {
     const adminsNotification = UsersRest.filterNotificationByRole(notification, AdminsConstants.Type, _ctx);
     const schoolsNotifications = UsersRest.convertToTenantNotifications(adminsNotification, _ctx);
+    let failure = null; // the first failure (the next schools are still done)
 
     for (const schoolNotification of schoolsNotifications) {
       const schoolCtx = { ..._ctx, tenantID: schoolNotification.tenantID };
@@ -304,23 +328,29 @@ const Private = {
       const modifiedUsers = usersNotification[Private.Notification.Modified] || [];
       const users = [...addedUsers, ...modifiedUsers];
       if (users.length) {
-        const rSave = await Private.saveAdminsOfUsers(users, schoolCtx);
+        const rSave = await Private.onUsersAddedOrModified(users, schoolCtx);
         if (rSave.error) {
-          return rSave;
+          console.log(
+            `\n${AdminsConstants.ServiceName}: failed to save the admins of the school ${schoolNotification.tenantID}: ${rSave.error.message}`
+          );
+          failure ??= rSave;
         }
       }
 
       // the users without the admin role (or without an account)
       const removedUsers = usersNotification[Private.Notification.Removed] || [];
       if (removedUsers.length) {
-        const rRemove = await Private.removeAdminsOfUsers(removedUsers, schoolCtx);
+        const rRemove = await Private.onUsersRemoved(removedUsers, schoolCtx);
         if (rRemove.error) {
-          return rRemove;
+          console.log(
+            `\n${AdminsConstants.ServiceName}: failed to remove the admins of the school ${schoolNotification.tenantID}: ${rRemove.error.message}`
+          );
+          failure ??= rRemove;
         }
       }
     }
 
-    return { status: 200, value: true };
+    return failure || { status: 200, value: true };
   },
 };
 
@@ -518,7 +548,7 @@ const Public = {
     // the admin follows the removed role (done by the users notification; an admin kept without its role by an
     // earlier version is done now)
     const user = { ...rget.value.user, id: objID };
-    const rRemove = await Private.removeAdminsOfUsers([user], _ctx);
+    const rRemove = await Private.onUsersRemoved([user], _ctx);
     if (rRemove.error) {
       return rRemove;
     }
@@ -530,8 +560,9 @@ const Public = {
   /**
    * link the traces of a deleted account to the user invited again, by its email (called by the invite, before the
    * user gets its role, whatever the role): the admins of the school with this email and another id take the id of
-   * the user; their user copy stays deleted until the user has the role again and logs in (see saveAdminsOfUsers)
+   * the user; their user copy stays deleted until the user has the role again and logs in (see onUsersAddedOrModified)
    * objInfo: { email, userID }
+   * a failure is logged and the next traces are still done; the first failure is returned at the end
    * returns { status, value: [ the previous ids ] } or { status, error }
    */
   relinkTraces: async (objInfo, _ctx) => {
@@ -562,13 +593,16 @@ const Public = {
     }
 
     const previousIDs = [];
+    let failure = null; // the first failure (the next traces are still done)
     for (const trace of rTraces.value) {
       console.log(`\n${AdminsConstants.ServiceName}: link the trace ${trace.id} to the user ${objInfo.userID}`);
       const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
       const linked = { id: objInfo.userID, 'user.id': objInfo.userID };
       const r = await DbOpsUtils.put(config, trace.id, linked, projection, _ctx);
       if (r.error) {
-        return r;
+        console.log(`\n${AdminsConstants.ServiceName}: failed to link the trace ${trace.id}: ${r.error.message}`);
+        failure ??= r;
+        continue;
       }
 
       // raise event for the link
@@ -585,7 +619,7 @@ const Public = {
       previousIDs.push(trace.id);
     }
 
-    return { status: 200, value: previousIDs };
+    return failure || { status: 200, value: previousIDs };
   },
 
   /**

@@ -405,19 +405,25 @@ const Private = {
    * - removed (the school was deleted): the memberships of the school are removed from the users
    * (a membership is added by an invite or a role, not by a notification)
    * nothing is notified (the memberships are not copied by other services)
+   * a failure is logged and the next schools are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
   onSchoolsNotification: async (notification, _ctx) => {
     const config = await Private.getConfig(_ctx);
     const [schoolsRef] = config.references; // the copies of the schools (schools[]): the only references of the users
     const changedUsersIDs = new Set();
+    let failure = null; // the first failure (the next schools are still done)
 
     // the copies of the modified schools
     for (const school of notification[Private.Notification.Modified] || []) {
       const schoolCopy = CommonUtils.getProjectedObj(school, schoolsRef.projection);
       const rCopies = await DbOpsUtils.updateManyReferences(config, schoolsRef, schoolCopy, _ctx);
       if (rCopies.error) {
-        return rCopies;
+        console.log(
+          `\n${UsersConstants.ServiceName}: failed to update the copies of the school ${school.id}: ${rCopies.error.message}`
+        );
+        failure ??= rCopies;
+        continue;
       }
       rCopies.ids.forEach((id) => changedUsersIDs.add(id));
     }
@@ -429,11 +435,14 @@ const Private = {
       const schoolCopy = CommonUtils.getProjectedObj(school, schoolsRef.projection);
       const rRemove = await DbOpsUtils.deleteManyReferences(config, schoolsRef, schoolCopy, _ctx);
       if (rRemove.error) {
-        return rRemove;
+        console.log(
+          `\n${UsersConstants.ServiceName}: failed to remove the school ${school.id}: ${rRemove.error.message}`
+        );
+        failure ??= rRemove;
       }
     }
 
-    return { status: 200, value: [...changedUsersIDs] };
+    return failure || { status: 200, value: [...changedUsersIDs] };
   },
 };
 

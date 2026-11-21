@@ -8,9 +8,15 @@ const EventsService = require('../../../services/events/events.service.js');
 describe('Events Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Events', tenantID: 'school1' };
 
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * the events keep no copy of other services: a notification changes nothing

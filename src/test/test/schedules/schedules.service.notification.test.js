@@ -10,6 +10,8 @@ describe('Schedules Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Schedules', tenantID: 'school1' };
   const fail = { status: 500, error: { message: 'Database failure' } };
 
+  before(async function () {});
+
   beforeEach(async function () {
     // the notifications of the schedules
     sinon.stub(SchedulesRest, 'raiseNotification');
@@ -18,6 +20,8 @@ describe('Schedules Service', function () {
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * classes notification: the copies of a modified class are updated, a deleted class leaves its schedules; the
@@ -72,6 +76,37 @@ describe('Schedules Service', function () {
     chai.expect(await SchedulesService.notification(notification, _ctx)).to.deep.equal(fail);
     stubCopies.resolves(fail);
     chai.expect(await SchedulesService.notification(notification, _ctx)).to.deep.equal(fail);
+  }).timeout(10000);
+
+  /**
+   * a failure does not stop the classes notification: the next classes and the deleted classes are still done, the
+   * changed schedules are still notified, and the first failure is returned at the end
+   */
+  it('should do the next classes after a failure of the classes notification', async () => {
+    // stub: the copies of class1 can not be updated; schedule2 has an older copy of class2, schedule3 has class3
+    const stubCopies = sinon.stub(DbOpsUtils, 'updateManyReferences');
+    stubCopies.onFirstCall().resolves(fail);
+    stubCopies.onSecondCall().resolves({ status: 200, value: 1, ids: ['schedule2'] });
+    sinon.stub(DbOpsUtils, 'getAllByReference').resolves({ status: 200, value: [{ id: 'schedule3' }] });
+    const stubRemove = sinon.stub(DbOpsUtils, 'deleteManyReferences').resolves({ status: 200, value: 1 });
+    const stubRead = sinon
+      .stub(DbOpsUtils, 'getAllByIDs')
+      .resolves({ status: 200, value: [{ id: 'schedule2' }, { id: 'schedule3' }] });
+
+    // call: class1 and class2 changed, class3 was deleted
+    const mathematics = { id: 'class1', name: 'Mathematics', type: 'class', modifiedCount: 3 };
+    const physics = { id: 'class2', name: 'Physics', type: 'class', modifiedCount: 2 };
+    const chemistry = { id: 'class3', name: 'Chemistry', type: 'class' };
+    const notification = { serviceName: 'classes', modified: [mathematics, physics], removed: [chemistry] };
+    const res = await SchedulesService.notification(notification, _ctx);
+
+    // check: the first failure is returned
+    chai.expect(res).to.deep.equal(fail);
+
+    // check: class2 and class3 are still done, the changed schedules are notified
+    chai.expect(stubCopies.secondCall.args[2].id).to.equal('class2');
+    chai.expect(stubRemove.firstCall.args[2].id).to.equal('class3');
+    chai.expect(stubRead.firstCall.args[1]).to.deep.equal(['schedule2', 'schedule3']);
   }).timeout(10000);
 
   /**

@@ -24,6 +24,8 @@ describe('Admins Service', function () {
   const adminRecord = { id: 'user1', type: 'admin', user: janeSmith };
   const adminTrace = { ...adminRecord, user: { ...janeSmith, status: 'removed' } };
 
+  before(async function () {});
+
   beforeEach(async function () {
     // the events and the notifications of the admins
     sinon.stub(EventsRest, 'raiseEventForObject');
@@ -33,6 +35,8 @@ describe('Admins Service', function () {
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * delete removes the admin role of the user in the school; the admin follows by the setting of the school (keep:

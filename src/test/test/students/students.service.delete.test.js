@@ -30,6 +30,8 @@ describe('Students Service', function () {
   const studentRecord = { id: 'user1', type: 'student', user: janeSmith };
   const studentTrace = { ...studentRecord, user: { ...janeSmith, status: 'removed' } };
 
+  before(async function () {});
+
   beforeEach(async function () {
     // the events and the notifications of the students
     sinon.stub(EventsRest, 'raiseEventForObject');
@@ -39,6 +41,8 @@ describe('Students Service', function () {
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * delete removes the student role of the user in the school; the student follows by the setting of the school (keep:

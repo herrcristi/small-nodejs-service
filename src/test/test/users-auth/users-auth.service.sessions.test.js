@@ -21,6 +21,8 @@ describe('Users Auth Service sessions', function () {
   const session = { id: 'session-id2', secret: 'secret2', expiresAt: new Date(Date.now() + 60 * 1000) };
   const fail = { status: 500, error: { message: 'Test error message', error: new Error('Test error message') } };
 
+  before(async function () {});
+
   beforeEach(function () {
     // the events and the notifications
     sinon.stub(EventsRest, 'raiseEventForObject');
@@ -30,6 +32,8 @@ describe('Users Auth Service sessions', function () {
   afterEach(function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * a password change ends all the sessions of the user, then this session continues with a new one

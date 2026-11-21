@@ -16,9 +16,15 @@ describe('Users Auth Sessions Service', function () {
   const hash = (secret) => crypto.createHash('sha256').update(secret).digest('hex');
   const later = () => new Date(Date.now() + 60 * 1000);
 
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * a session record keeps the hash of a new random secret, the user and the expiry; the secret is only returned

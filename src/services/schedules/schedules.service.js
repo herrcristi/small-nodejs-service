@@ -247,6 +247,7 @@ const Private = {
    * - removed (the class was deleted): its copy keeps only its id (the schedules are notified)
    * (a class is given to a schedule by the edit of the schedule, not by a notification)
    * the schedules whose class changed are notified (the students, professors and groups keep the class of their schedules)
+   * a failure is logged and the next classes are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
   onClassesNotification: async (notification, _ctx) => {
@@ -257,13 +258,18 @@ const Private = {
     const config = await Private.getConfig(_ctx);
     const [classRef] = config.references; // class (the references: class, schedules[].location, professors[], groups[], students[])
     const changedSchedulesIDs = new Set();
+    let failure = null; // the first failure (the next classes are still done)
 
     // the copies of the modified classes
     for (const schoolClass of notification[Private.Notification.Modified] || []) {
       const classCopy = CommonUtils.getProjectedObj(schoolClass, classRef.projection);
       const rCopies = await DbOpsUtils.updateManyReferences(config, classRef, classCopy, _ctx);
       if (rCopies.error) {
-        return rCopies;
+        console.log(
+          `\n${SchedulesConstants.ServiceName}: failed to update the copies of the class ${schoolClass.id}: ${rCopies.error.message}`
+        );
+        failure ??= rCopies;
+        continue;
       }
       rCopies.ids.forEach((id) => changedSchedulesIDs.add(id));
     }
@@ -274,18 +280,27 @@ const Private = {
       // the schedules that have it (they are notified)
       const rSchedules = await DbOpsUtils.getAllByReference(config, classRef, schoolClass.id, { _id: 0, id: 1 }, _ctx);
       if (rSchedules.error) {
-        return rSchedules;
+        console.log(
+          `\n${SchedulesConstants.ServiceName}: failed to remove the class ${schoolClass.id}: ${rSchedules.error.message}`
+        );
+        failure ??= rSchedules;
+        continue;
       }
       rSchedules.value.forEach((item) => changedSchedulesIDs.add(item.id));
 
       const classCopy = CommonUtils.getProjectedObj(schoolClass, classRef.projection);
       const rRemove = await DbOpsUtils.deleteManyReferences(config, classRef, classCopy, _ctx);
       if (rRemove.error) {
-        return rRemove;
+        console.log(
+          `\n${SchedulesConstants.ServiceName}: failed to remove the class ${schoolClass.id}: ${rRemove.error.message}`
+        );
+        failure ??= rRemove;
       }
     }
 
-    return await Private.notifyChangedSchedules(config, [...changedSchedulesIDs], _ctx);
+    // the changed schedules are notified, also after a failure
+    const rNotify = await Private.notifyChangedSchedules(config, [...changedSchedulesIDs], _ctx);
+    return failure || rNotify;
   },
 
   /**
@@ -294,6 +309,7 @@ const Private = {
    * - removed (the location was deleted): its copies keep only its id
    * (a location is given by the edit of the schedule)
    * nothing is notified (the other services do not keep the locations of the schedules)
+   * a failure is logged and the next locations are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
   onLocationsNotification: async (notification, _ctx) => {
@@ -304,13 +320,18 @@ const Private = {
     const config = await Private.getConfig(_ctx);
     const [, locationsRef] = config.references; // schedules[].location (the references: class, schedules[].location, professors[], groups[], students[])
     const changedSchedulesIDs = new Set();
+    let failure = null; // the first failure (the next locations are still done)
 
     // the copies of the modified locations
     for (const location of notification[Private.Notification.Modified] || []) {
       const locationCopy = CommonUtils.getProjectedObj(location, locationsRef.projection);
       const rCopies = await DbOpsUtils.updateManyReferences(config, locationsRef, locationCopy, _ctx);
       if (rCopies.error) {
-        return rCopies;
+        console.log(
+          `\n${SchedulesConstants.ServiceName}: failed to update the copies of the location ${location.id}: ${rCopies.error.message}`
+        );
+        failure ??= rCopies;
+        continue;
       }
       rCopies.ids.forEach((id) => changedSchedulesIDs.add(id));
     }
@@ -322,11 +343,14 @@ const Private = {
       const locationCopy = CommonUtils.getProjectedObj(location, locationsRef.projection);
       const rRemove = await DbOpsUtils.deleteManyReferences(config, locationsRef, locationCopy, _ctx);
       if (rRemove.error) {
-        return rRemove;
+        console.log(
+          `\n${SchedulesConstants.ServiceName}: failed to remove the location ${location.id}: ${rRemove.error.message}`
+        );
+        failure ??= rRemove;
       }
     }
 
-    return { status: 200, value: [...changedSchedulesIDs] };
+    return failure || { status: 200, value: [...changedSchedulesIDs] };
   },
 
   /**
@@ -335,6 +359,7 @@ const Private = {
    * - removed (the professor was deleted): it is removed from the schedules
    * (a professor is put in a schedule by the edit of the schedule, not by a notification)
    * nothing is notified (the other services do not keep the professors of the schedules)
+   * a failure is logged and the next professors are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
   onProfessorsNotification: async (notification, _ctx) => {
@@ -345,6 +370,7 @@ const Private = {
     const config = await Private.getConfig(_ctx);
     const [, , professorsRef] = config.references; // professors[] (the references: class, schedules[].location, professors[], groups[], students[])
     const changedSchedulesIDs = new Set();
+    let failure = null; // the first failure (the next professors are still done)
 
     // the copies of the modified professors
     for (const professor of notification[Private.Notification.Modified] || []) {
@@ -358,7 +384,11 @@ const Private = {
           _ctx
         );
         if (rID.error) {
-          return rID;
+          console.log(
+            `\n${SchedulesConstants.ServiceName}: failed to link the copies of the professor ${professor.id}: ${rID.error.message}`
+          );
+          failure ??= rID;
+          continue;
         }
         rID.ids.forEach((id) => changedSchedulesIDs.add(id));
       }
@@ -366,7 +396,11 @@ const Private = {
       const professorCopy = CommonUtils.getProjectedObj(professor, professorsRef.projection);
       const rCopies = await DbOpsUtils.updateManyReferences(config, professorsRef, professorCopy, _ctx);
       if (rCopies.error) {
-        return rCopies;
+        console.log(
+          `\n${SchedulesConstants.ServiceName}: failed to update the copies of the professor ${professor.id}: ${rCopies.error.message}`
+        );
+        failure ??= rCopies;
+        continue;
       }
       rCopies.ids.forEach((id) => changedSchedulesIDs.add(id));
     }
@@ -380,11 +414,14 @@ const Private = {
       const professorCopy = CommonUtils.getProjectedObj(professor, professorsRef.projection);
       const rRemove = await DbOpsUtils.deleteManyReferences(config, professorsRef, professorCopy, _ctx);
       if (rRemove.error) {
-        return rRemove;
+        console.log(
+          `\n${SchedulesConstants.ServiceName}: failed to remove the professor ${professor.id}: ${rRemove.error.message}`
+        );
+        failure ??= rRemove;
       }
     }
 
-    return { status: 200, value: [...changedSchedulesIDs] };
+    return failure || { status: 200, value: [...changedSchedulesIDs] };
   },
 
   /**
@@ -393,6 +430,7 @@ const Private = {
    * - removed (the group was deleted): it is removed from the schedules
    * (a group is put in a schedule by the edit of the schedule, not by a notification)
    * nothing is notified (the other services do not keep the groups of the schedules)
+   * a failure is logged and the next groups are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
   onGroupsNotification: async (notification, _ctx) => {
@@ -403,13 +441,18 @@ const Private = {
     const config = await Private.getConfig(_ctx);
     const [, , , groupsRef] = config.references; // groups[] (the references: class, schedules[].location, professors[], groups[], students[])
     const changedSchedulesIDs = new Set();
+    let failure = null; // the first failure (the next groups are still done)
 
     // the copies of the modified groups
     for (const group of notification[Private.Notification.Modified] || []) {
       const groupCopy = CommonUtils.getProjectedObj(group, groupsRef.projection);
       const rCopies = await DbOpsUtils.updateManyReferences(config, groupsRef, groupCopy, _ctx);
       if (rCopies.error) {
-        return rCopies;
+        console.log(
+          `\n${SchedulesConstants.ServiceName}: failed to update the copies of the group ${group.id}: ${rCopies.error.message}`
+        );
+        failure ??= rCopies;
+        continue;
       }
       rCopies.ids.forEach((id) => changedSchedulesIDs.add(id));
     }
@@ -421,11 +464,14 @@ const Private = {
       const groupCopy = CommonUtils.getProjectedObj(group, groupsRef.projection);
       const rRemove = await DbOpsUtils.deleteManyReferences(config, groupsRef, groupCopy, _ctx);
       if (rRemove.error) {
-        return rRemove;
+        console.log(
+          `\n${SchedulesConstants.ServiceName}: failed to remove the group ${group.id}: ${rRemove.error.message}`
+        );
+        failure ??= rRemove;
       }
     }
 
-    return { status: 200, value: [...changedSchedulesIDs] };
+    return failure || { status: 200, value: [...changedSchedulesIDs] };
   },
 
   /**
@@ -434,6 +480,7 @@ const Private = {
    * - removed (the student was deleted): it is removed from the schedules
    * (a student is put in a schedule by the edit of the schedule, not by a notification)
    * nothing is notified (the other services do not keep the students of the schedules)
+   * a failure is logged and the next students are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
   onStudentsNotification: async (notification, _ctx) => {
@@ -444,6 +491,7 @@ const Private = {
     const config = await Private.getConfig(_ctx);
     const [, , , , studentsRef] = config.references; // students[] (the references: class, schedules[].location, professors[], groups[], students[])
     const changedSchedulesIDs = new Set();
+    let failure = null; // the first failure (the next students are still done)
 
     // the copies of the modified students
     for (const student of notification[Private.Notification.Modified] || []) {
@@ -451,7 +499,11 @@ const Private = {
       if (student.previousID) {
         const rID = await DbOpsUtils.updateManyReferencesID(config, studentsRef, student.previousID, student.id, _ctx);
         if (rID.error) {
-          return rID;
+          console.log(
+            `\n${SchedulesConstants.ServiceName}: failed to link the copies of the student ${student.id}: ${rID.error.message}`
+          );
+          failure ??= rID;
+          continue;
         }
         rID.ids.forEach((id) => changedSchedulesIDs.add(id));
       }
@@ -459,7 +511,11 @@ const Private = {
       const studentCopy = CommonUtils.getProjectedObj(student, studentsRef.projection);
       const rCopies = await DbOpsUtils.updateManyReferences(config, studentsRef, studentCopy, _ctx);
       if (rCopies.error) {
-        return rCopies;
+        console.log(
+          `\n${SchedulesConstants.ServiceName}: failed to update the copies of the student ${student.id}: ${rCopies.error.message}`
+        );
+        failure ??= rCopies;
+        continue;
       }
       rCopies.ids.forEach((id) => changedSchedulesIDs.add(id));
     }
@@ -471,11 +527,14 @@ const Private = {
       const studentCopy = CommonUtils.getProjectedObj(student, studentsRef.projection);
       const rRemove = await DbOpsUtils.deleteManyReferences(config, studentsRef, studentCopy, _ctx);
       if (rRemove.error) {
-        return rRemove;
+        console.log(
+          `\n${SchedulesConstants.ServiceName}: failed to remove the student ${student.id}: ${rRemove.error.message}`
+        );
+        failure ??= rRemove;
       }
     }
 
-    return { status: 200, value: [...changedSchedulesIDs] };
+    return failure || { status: 200, value: [...changedSchedulesIDs] };
   },
 };
 

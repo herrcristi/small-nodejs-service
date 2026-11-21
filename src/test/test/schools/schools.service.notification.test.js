@@ -8,9 +8,15 @@ const SchoolsService = require('../../../services/schools/schools.service.js');
 describe('Schools Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Schools', tenantID: 'school1' };
 
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * the schools keep no copy of other services: a notification changes nothing

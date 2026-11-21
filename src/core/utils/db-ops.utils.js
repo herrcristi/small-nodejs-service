@@ -80,14 +80,14 @@ const Utils = {
   },
 
   /**
-   * the condition of a copy (its fields under prefix) that is older than the object: a copy of the same object (the
-   * same createdTimestamp) with a smaller or missing modifiedCount, or a copy of an object with the same id that was
-   * created again (another createdTimestamp, or none); only these copies are updated, so a change that comes back
+   * the filter of one object to update: the fields under prefix hold an older version of the notified object, the same
+   * object (the same createdTimestamp) with a smaller or missing modifiedCount, or an object with the same id that was
+   * created again (another createdTimestamp, or none); only these objects are updated, so a change that comes back
    * through a cycle of notifications, or a late notification of an older change, changes nothing
-   * prefix: '' (the copy itself, inside $elemMatch) or the path of the copy ('user', 'schools', 'schedules.location')
+   * prefix: '' (the object itself, inside $elemMatch) or its path ('user', 'schools', 'schedules.location')
    * objInfo: the object, with its modifiedCount
    */
-  getOlderCopyFilter: (prefix, objInfo) => {
+  getFilterForOneObjectToUpdate: (prefix, objInfo) => {
     const field = (name) => (prefix ? `${prefix}.${name}` : name);
     const olderCount = { $not: { $gte: objInfo.modifiedCount } };
     if (typeof objInfo.createdTimestamp !== 'string') {
@@ -115,16 +115,17 @@ const Utils = {
   },
 
   /**
-   * the filter of the objects that have an older copy of an object (see getOlderCopyFilter)
+   * the filter of the objects to update: the ones that hold an older version of the notified object (see
+   * getFilterForOneObjectToUpdate)
    * user -> { 'user.id': id, $or: [ { 'user.createdTimestamp': c, 'user.modifiedCount': older }, ... ] }
    * students[] -> { students: { $elemMatch: { id, $or: [...] } } }
    * schedules[].location -> { schedules: { $elemMatch: { 'location.id': id, $or: [ ...'location.' fields ] } } }
    */
-  getOlderCopiesFilter: (fieldName, objInfo) => {
-    // from the copy to the object that has it
+  getFilterForObjectsToUpdate: (fieldName, objInfo) => {
+    // from the notified object to the object that holds it
     const segments = fieldName.split('.').reverse();
-    const olderFilter = Utils.getOlderCopyFilter('', objInfo);
-    let filter = { id: objInfo.id, ...olderFilter };
+    const objectFilter = Utils.getFilterForOneObjectToUpdate('', objInfo);
+    let filter = { id: objInfo.id, ...objectFilter };
     for (const segment of segments) {
       const field = segment.replace('[]', '');
       if (segment.endsWith('[]')) {
@@ -137,14 +138,15 @@ const Utils = {
   },
 
   /**
-   * the array filters of the copies in arrays (see getReferencesUpdateMany), only for the older copies
+   * the array filters of the objects to update in arrays (see getReferencesUpdateMany): only the older versions of the
+   * notified object
    * [ { 'schedules.location.id': id } ] -> [ { 'schedules.location.id': id, $or: [ ...'schedules.location.' fields ] } ]
    */
-  getOlderCopiesArrayFilters: (arrayFilters, objInfo) => {
+  getArrayFiltersForObjectsToUpdate: (arrayFilters, objInfo) => {
     return arrayFilters.map((arrayFilter) => {
       const idKey = Object.keys(arrayFilter)[0]; // schedules.location.id
-      const copyPrefix = idKey.replace(/\.id$/, ''); // schedules.location
-      return { ...arrayFilter, ...Utils.getOlderCopyFilter(copyPrefix, objInfo) };
+      const objectPrefix = idKey.replace(/\.id$/, ''); // schedules.location
+      return { ...arrayFilter, ...Utils.getFilterForOneObjectToUpdate(objectPrefix, objInfo) };
     });
   },
 };
@@ -654,10 +656,10 @@ const Public = {
       // only the older copies: an object with a modifiedCount (without it: all its copies)
       const hasModifiedCount = typeof objInfo.modifiedCount === 'number';
       const filter = hasModifiedCount
-        ? Utils.getOlderCopiesFilter(ref.fieldName, objInfo)
+        ? Utils.getFilterForObjectsToUpdate(ref.fieldName, objInfo)
         : { [filterField]: objInfo.id }; // schedules.location.id: ...
       const updateArrayFilters = hasModifiedCount
-        ? Utils.getOlderCopiesArrayFilters(arrayFilters, objInfo)
+        ? Utils.getArrayFiltersForObjectsToUpdate(arrayFilters, objInfo)
         : arrayFilters;
 
       // the objects to update

@@ -13,9 +13,15 @@ const SchoolsService = require('../../../services/schools/schools.service.js');
 describe('Schools Service activate', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Schools' };
 
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * a pending school becomes active

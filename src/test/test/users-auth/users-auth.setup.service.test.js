@@ -22,6 +22,8 @@ describe('Users Auth Setup Service', function () {
     return null;
   };
 
+  before(async function () {});
+
   beforeEach(function () {
     previousEmail = process.env.SMALL_API_PORTAL_ADMIN_EMAIL;
     process.env.SMALL_API_PORTAL_ADMIN_EMAIL = email;
@@ -35,6 +37,8 @@ describe('Users Auth Setup Service', function () {
       process.env.SMALL_API_PORTAL_ADMIN_EMAIL = previousEmail;
     }
   });
+
+  after(async function () {});
 
   /**
    * nothing configured: nothing is checked

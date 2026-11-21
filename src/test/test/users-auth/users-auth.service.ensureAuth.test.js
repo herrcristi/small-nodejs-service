@@ -17,9 +17,15 @@ describe('Users Auth Service ensureAuth', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
   const user = { username: 'jane.smith@testdomain.test', userID: 'user1' };
 
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * the auth record exists: nothing is created

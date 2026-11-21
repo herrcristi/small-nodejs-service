@@ -87,16 +87,19 @@ const Private = {
    * link the traces of a deleted account with this email in the school (its students, professors and admins, whatever
    * the invited role) to the user: done once, at the invite (the only way into a school), before the user gets its role,
    * so the users notifications find them by the id of the user
+   * a failure is logged and the next services are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
   relinkTraces: async (email, userID, _ctx) => {
+    let failure = null; // the first failure (the next services are still done)
     for (const membersRest of [StudentsRest, ProfessorsRest, AdminsRest]) {
       const r = await membersRest.relinkTraces({ email, userID }, _ctx);
       if (r.error) {
-        return r;
+        console.log(`\n${UsersAuthConstants.ServiceName}: failed to link the traces of ${email}: ${r.error.message}`);
+        failure ??= r;
       }
     }
-    return { status: 200, value: true };
+    return failure || { status: 200, value: true };
   },
 
   /**

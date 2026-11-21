@@ -7,9 +7,15 @@ const SchoolsRest = require('../../../services/rest/schools.rest.js');
 const SchoolsSetupService = require('../../../services/schools/schools.setup.service.js');
 
 describe('Schools Setup Service', function () {
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * test that the portal school is created if it does not exist

@@ -144,6 +144,7 @@ const Private = {
    * - removed (the student was deleted): it is removed from the groups (and these groups are notified)
    * (a student is put in a group by the edit of the group, not by a notification)
    * the groups whose copies changed are notified (the schedules keep the students of their groups)
+   * a failure is logged and the next students are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
   onStudentsNotification: async (notification, _ctx) => {
@@ -154,6 +155,7 @@ const Private = {
     const config = await Private.getConfig(_ctx);
     const [studentsRef] = config.references; // students[] (the references: students[], schedules[])
     const changedGroupsIDs = new Set();
+    let failure = null; // the first failure (the next students are still done)
 
     // the copies of the modified students
     for (const student of notification[Private.Notification.Modified] || []) {
@@ -161,7 +163,11 @@ const Private = {
       if (student.previousID) {
         const rID = await DbOpsUtils.updateManyReferencesID(config, studentsRef, student.previousID, student.id, _ctx);
         if (rID.error) {
-          return rID;
+          console.log(
+            `\n${GroupsConstants.ServiceName}: failed to link the copies of the student ${student.id}: ${rID.error.message}`
+          );
+          failure ??= rID;
+          continue;
         }
         rID.ids.forEach((id) => changedGroupsIDs.add(id));
       }
@@ -169,7 +175,11 @@ const Private = {
       const studentCopy = CommonUtils.getProjectedObj(student, studentsRef.projection);
       const rCopies = await DbOpsUtils.updateManyReferences(config, studentsRef, studentCopy, _ctx);
       if (rCopies.error) {
-        return rCopies;
+        console.log(
+          `\n${GroupsConstants.ServiceName}: failed to update the copies of the student ${student.id}: ${rCopies.error.message}`
+        );
+        failure ??= rCopies;
+        continue;
       }
       rCopies.ids.forEach((id) => changedGroupsIDs.add(id));
     }
@@ -180,18 +190,27 @@ const Private = {
       // the groups that have it (they are notified)
       const rGroups = await DbOpsUtils.getAllByReference(config, studentsRef, student.id, { _id: 0, id: 1 }, _ctx);
       if (rGroups.error) {
-        return rGroups;
+        console.log(
+          `\n${GroupsConstants.ServiceName}: failed to remove the student ${student.id}: ${rGroups.error.message}`
+        );
+        failure ??= rGroups;
+        continue;
       }
       rGroups.value.forEach((item) => changedGroupsIDs.add(item.id));
 
       const studentCopy = CommonUtils.getProjectedObj(student, studentsRef.projection);
       const rRemove = await DbOpsUtils.deleteManyReferences(config, studentsRef, studentCopy, _ctx);
       if (rRemove.error) {
-        return rRemove;
+        console.log(
+          `\n${GroupsConstants.ServiceName}: failed to remove the student ${student.id}: ${rRemove.error.message}`
+        );
+        failure ??= rRemove;
       }
     }
 
-    return await Private.notifyChangedGroups(config, [...changedGroupsIDs], _ctx);
+    // the changed groups are notified, also after a failure
+    const rNotify = await Private.notifyChangedGroups(config, [...changedGroupsIDs], _ctx);
+    return failure || rNotify;
   },
 
   /**
@@ -200,6 +219,7 @@ const Private = {
    *   groups that are not in it anymore (a group removed from it keeps its other schedules), and its copies are
    *   updated (only the older ones, modifiedCount)
    * - removed (the schedule was deleted): the schedule is removed from all the groups
+   * a failure is logged and the next schedules are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
   onSchedulesNotification: async (notification, _ctx) => {
@@ -212,6 +232,7 @@ const Private = {
 
     const addedSchedules = notification[Private.Notification.Added] || [];
     const modifiedSchedules = notification[Private.Notification.Modified] || [];
+    let failure = null; // the first failure (the next schedules are still done)
     for (const schedule of [...addedSchedules, ...modifiedSchedules]) {
       const scheduleCopy = CommonUtils.getProjectedObj(schedule, schedulesRef.projection);
 
@@ -222,7 +243,11 @@ const Private = {
         // added to its groups
         const rAdd = await DbOpsUtils.addManyReferences(config, scheduleGroupsIDs, schedulesRef, scheduleCopy, _ctx);
         if (rAdd.error) {
-          return rAdd;
+          console.log(
+            `\n${GroupsConstants.ServiceName}: failed to add the schedule ${schedule.id}: ${rAdd.error.message}`
+          );
+          failure ??= rAdd;
+          continue;
         }
 
         // removed from the groups that are not in it anymore
@@ -235,14 +260,21 @@ const Private = {
           otherGroups
         );
         if (rRemove.error) {
-          return rRemove;
+          console.log(
+            `\n${GroupsConstants.ServiceName}: failed to remove the schedule ${schedule.id}: ${rRemove.error.message}`
+          );
+          failure ??= rRemove;
+          continue;
         }
       }
 
       // its copies
       const rCopies = await DbOpsUtils.updateManyReferences(config, schedulesRef, scheduleCopy, _ctx);
       if (rCopies.error) {
-        return rCopies;
+        console.log(
+          `\n${GroupsConstants.ServiceName}: failed to update the copies of the schedule ${schedule.id}: ${rCopies.error.message}`
+        );
+        failure ??= rCopies;
       }
     }
 
@@ -251,11 +283,14 @@ const Private = {
       console.log(`\n${GroupsConstants.ServiceName}: remove the deleted schedule ${schedule.id} from the groups`);
       const rRemove = await DbOpsUtils.deleteManyReferences(config, schedulesRef, { id: schedule.id }, _ctx);
       if (rRemove.error) {
-        return rRemove;
+        console.log(
+          `\n${GroupsConstants.ServiceName}: failed to remove the schedule ${schedule.id}: ${rRemove.error.message}`
+        );
+        failure ??= rRemove;
       }
     }
 
-    return { status: 200, value: true };
+    return failure || { status: 200, value: true };
   },
 };
 

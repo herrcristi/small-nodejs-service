@@ -73,6 +73,8 @@ describe('Students Service', function () {
    */
   const getEventsActions = () => EventsRest.raiseEventForObject.args.map((args) => args[1]);
 
+  before(async function () {});
+
   beforeEach(async function () {
     // the events and the notifications of the students
     sinon.stub(EventsRest, 'raiseEventForObject');
@@ -82,6 +84,8 @@ describe('Students Service', function () {
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * the users with the student role: a new student is created; the user copy of an existing one is updated (only an older
@@ -249,6 +253,36 @@ describe('Students Service', function () {
   }).timeout(10000);
 
   /**
+   * a failure does not stop the users notification: the next users and the removed users of the school are still
+   * done, and the first failure is returned at the end
+   */
+  it('should do the next users after a failure of the users notification', async () => {
+    // stub: user1 and user2 have no student yet (the one of user1 can not be created); user3 is a student; the
+    // setting keeps the traces
+    stubStudentsRecords({ user3: { id: 'user3', user: { id: 'user3', status: 'active' } } });
+    sinon.stub(ReferencesUtils, 'populateReferences').resolves({ status: 200, value: true });
+    const stubPost = sinon.stub(DbOpsUtils, 'post');
+    stubPost.onFirstCall().resolves(fail);
+    stubPost.onSecondCall().resolves({ status: 201, value: { id: 'user2', user: { id: 'user2' } } });
+    sinon.stub(SchoolsRest, 'getSettings').resolves({ status: 200, value: { removedMembers: 'keep' } });
+    const stubPut = sinon
+      .stub(DbOpsUtils, 'put')
+      .resolves({ status: 200, value: { id: 'user3', user: { id: 'user3' } } });
+
+    // call: user1 and user2 got the role, user3 lost it
+    const notification = { serviceName: 'users', added: [janeSmith, johnBrown], removed: [emilyClark] };
+    const res = await StudentsService.notification(notification, _ctx);
+
+    // check: the first failure is returned
+    chai.expect(res).to.deep.equal(fail);
+
+    // check: the student of user2 is still created, the one of user3 is still kept as a trace
+    chai.expect(stubPost.callCount).to.equal(2);
+    chai.expect(stubPost.secondCall.args[1]).to.include({ id: 'user2' });
+    chai.expect(stubPut.firstCall.args[1]).to.equal('user3');
+  }).timeout(10000);
+
+  /**
    * classes notification: the copies of a modified class are updated, a deleted class is removed from the students
    */
   it('should follow the classes in the students', async () => {
@@ -293,6 +327,30 @@ describe('Students Service', function () {
     // case: no school
     const resNoTenant = await StudentsService.notification(notification, { ..._ctx, tenantID: undefined });
     chai.expect(resNoTenant.status).to.equal(400);
+  }).timeout(10000);
+
+  /**
+   * a failure does not stop the classes notification: the next classes and the deleted classes are still done, and
+   * the first failure is returned at the end
+   */
+  it('should do the next classes after a failure of the classes notification', async () => {
+    // stub: the copies of class1 can not be updated
+    const stubCopies = sinon.stub(DbOpsUtils, 'updateManyReferences');
+    stubCopies.onFirstCall().resolves(fail);
+    stubCopies.onSecondCall().resolves({ status: 200, value: 1, ids: ['user1'] });
+    const stubRemove = sinon.stub(DbOpsUtils, 'deleteManyReferences').resolves({ status: 200, value: 1 });
+
+    // call: class1 and class2 changed, class3 was deleted
+    const mathematics = { id: 'class1', name: 'Mathematics', modifiedCount: 3 };
+    const physics = { id: 'class2', name: 'Physics', modifiedCount: 2 };
+    const chemistry = { id: 'class3', name: 'Chemistry' };
+    const notification = { serviceName: 'classes', modified: [mathematics, physics], removed: [chemistry] };
+    const res = await StudentsService.notification(notification, _ctx);
+
+    // check: the first failure is returned, class2 and class3 are still done
+    chai.expect(res).to.deep.equal(fail);
+    chai.expect(stubCopies.secondCall.args[2].id).to.equal('class2');
+    chai.expect(stubRemove.firstCall.args[2].id).to.equal('class3');
   }).timeout(10000);
 
   /**

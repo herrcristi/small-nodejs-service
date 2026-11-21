@@ -14,9 +14,15 @@ const SchoolsService = require('../../../services/schools/schools.service.js');
 describe('Schools Service settings and expiry', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Schools', tenantID: 'school1' };
 
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * the settings with the defaults of the ones that are not set

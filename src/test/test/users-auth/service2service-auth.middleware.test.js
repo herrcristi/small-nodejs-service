@@ -6,9 +6,15 @@ const RequestMiddleware = require('../../../core/web-server/request.middleware.j
 const Service2ServiceAuthMiddleware = require('../../../services/users-auth/service2service-auth.middleware.js');
 
 describe('Service 2 Service Auth Middleware', function () {
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * build the context like the server does (request middleware first), from the headers of a call

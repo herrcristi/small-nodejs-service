@@ -8,9 +8,15 @@ const UsersAuthDatabase = require('../../../services/users-auth/users-local-auth
 const UsersLocalAuthService = require('../../../services/users-auth/users-local-auth.service.js');
 
 describe('Users Local Auth Service', function () {
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * each recipient gets the email with their own link, not the link of the first email sent

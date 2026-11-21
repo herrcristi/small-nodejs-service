@@ -186,6 +186,8 @@ describe('Users Auth Functional', function () {
     await (await EventsDatabase.collection(_ctx)).deleteMany();
   };
 
+  before(async function () {});
+
   beforeEach(async function () {
     // a clean database; the emails are captured (and reported as sent)
     await cleanup();
@@ -201,6 +203,8 @@ describe('Users Auth Functional', function () {
     delete process.env.SMALL_API_PORTAL_ADMIN_EMAIL;
     await cleanup();
   });
+
+  after(async function () {});
 
   /**
    * login, the validation of every request by its session, logout

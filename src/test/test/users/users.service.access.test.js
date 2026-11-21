@@ -46,6 +46,8 @@ describe('Users Service access', function () {
     error: { message: `Not found ${id}`, error: new Error(`Not found ${id}`) },
   });
 
+  before(async function () {});
+
   beforeEach(function () {
     previousPortalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
     process.env.SMALL_API_PORTAL_SCHOOL_ID = portalSchoolID;
@@ -59,6 +61,8 @@ describe('Users Service access', function () {
       process.env.SMALL_API_PORTAL_SCHOOL_ID = previousPortalSchoolID;
     }
   });
+
+  after(async function () {});
 
   describe('get one', function () {
     /**

@@ -21,6 +21,8 @@ describe('Groups Service', function () {
   };
   const johnBrown = { id: 'user2', type: 'student', status: 'active', user: { name: 'John Brown' } };
 
+  before(async function () {});
+
   beforeEach(async function () {
     // the notifications of the groups
     sinon.stub(GroupsRest, 'raiseNotification');
@@ -29,6 +31,8 @@ describe('Groups Service', function () {
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * students notification: the copies of a modified student are updated, a deleted student is removed from its
@@ -80,6 +84,36 @@ describe('Groups Service', function () {
     const resNone = await GroupsService.notification({ serviceName: 'students', modified: [janeSmith] }, _ctx);
     chai.expect(resNone).to.deep.equal({ status: 200, value: [] });
     chai.expect(GroupsRest.raiseNotification.callCount).to.equal(0);
+  }).timeout(10000);
+
+  /**
+   * a failure does not stop the students notification: the next students and the deleted students are still done,
+   * the changed groups are still notified, and the first failure is returned at the end
+   */
+  it('should do the next students after a failure of the students notification', async () => {
+    // stub: the copies of user1 can not be updated; group2 has an older copy of user2, group3 has the deleted user3
+    const stubCopies = sinon.stub(DbOpsUtils, 'updateManyReferences');
+    stubCopies.onFirstCall().resolves(fail);
+    stubCopies.onSecondCall().resolves({ status: 200, value: 1, ids: ['group2'] });
+    sinon.stub(DbOpsUtils, 'getAllByReference').resolves({ status: 200, value: [{ id: 'group3' }] });
+    const stubRemove = sinon.stub(DbOpsUtils, 'deleteManyReferences').resolves({ status: 200, value: 1 });
+    const stubRead = sinon
+      .stub(DbOpsUtils, 'getAllByIDs')
+      .resolves({ status: 200, value: [{ id: 'group2' }, { id: 'group3' }] });
+
+    // call: user1 and user2 changed, user3 was deleted
+    const emilyClark = { id: 'user3', type: 'student', user: { name: 'Emily Clark' } };
+    const notification = { serviceName: 'students', modified: [janeSmith, johnBrown], removed: [emilyClark] };
+    const res = await GroupsService.notification(notification, _ctx);
+
+    // check: the first failure is returned
+    chai.expect(res).to.deep.equal(fail);
+
+    // check: user2 and user3 are still done, the changed groups are notified
+    chai.expect(stubCopies.secondCall.args[2].id).to.equal('user2');
+    chai.expect(stubRemove.firstCall.args[2].id).to.equal('user3');
+    chai.expect(stubRead.firstCall.args[1]).to.deep.equal(['group2', 'group3']);
+    chai.expect(GroupsRest.raiseNotification.firstCall.args[0]).to.equal('modified');
   }).timeout(10000);
 
   /**

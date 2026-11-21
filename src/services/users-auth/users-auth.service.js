@@ -263,28 +263,38 @@ const Private = {
   },
 
   /**
-   * the users that do not exist anymore (a user removed because its invitation was not used in time): their login is deleted and all their sessions and emailed links are ended
+   * the removed users that do not exist anymore (a user removed because its invitation was not used in time): their
+   * login is deleted and all their sessions and emailed links are ended
    * users: [ { id, email } ]
+   * a failure is logged and the next users are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
-  removeLoginsOfUsers: async (users, _ctx) => {
+  onUsersRemoved: async (users, _ctx) => {
     const config = await Private.getConfig(_ctx);
 
+    let failure = null; // the first failure (the next users are still done)
     for (const user of users) {
       console.log(`${UsersAuthConstants.ServiceName}: the account of ${user.id} was removed, its login is removed`);
 
       const rLogin = await Private.deleteLogin(config, user.email, _ctx);
       if (rLogin.error) {
-        return rLogin;
+        console.log(
+          `\n${UsersAuthConstants.ServiceName}: failed to delete the login of ${user.id}: ${rLogin.error.message}`
+        );
+        failure ??= rLogin;
+        continue;
       }
 
       const rEnd = await UsersAuthSessionsService.endAll(user.id, _ctx);
       if (rEnd.error) {
-        return rEnd;
+        console.log(
+          `\n${UsersAuthConstants.ServiceName}: failed to end the sessions of ${user.id}: ${rEnd.error.message}`
+        );
+        failure ??= rEnd;
       }
     }
 
-    return { status: 200, value: true };
+    return failure || { status: 200, value: true };
   },
 
   /**
@@ -318,7 +328,7 @@ const Private = {
     if (!users.length) {
       return { status: 200, value: false };
     }
-    return await Private.removeLoginsOfUsers(users, _ctx);
+    return await Private.onUsersRemoved(users, _ctx);
   },
 
   /**

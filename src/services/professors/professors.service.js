@@ -225,9 +225,10 @@ const Private = {
    *   until then, and nothing is notified
    * the professors whose user copy changed are notified (the groups and the schedules keep their copies of them)
    * users: [ { id, status, ... } ] (as notified by the users service)
+   * a failure is logged and the next users are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
-  saveProfessorsOfUsers: async (users, _ctx) => {
+  onUsersAddedOrModified: async (users, _ctx) => {
     const config = await Private.getConfig(_ctx);
     const [userRef] = config.references; // user (the references: user, classes[], schedules[])
 
@@ -244,6 +245,7 @@ const Private = {
     }
 
     const changedProfessorsIDs = new Set();
+    let failure = null; // the first failure (the next users are still done)
     for (const user of users) {
       const professor = professorsMap[user.id];
 
@@ -252,7 +254,10 @@ const Private = {
         console.log(`\n${ProfessorsConstants.ServiceName}: create the professor of the user ${user.id}`);
         const rPost = await Public.post({ id: user.id, classes: [] }, _ctx);
         if (rPost.error) {
-          return rPost;
+          console.log(
+            `\n${ProfessorsConstants.ServiceName}: failed to create the professor of the user ${user.id}: ${rPost.error.message}`
+          );
+          failure ??= rPost;
         }
         continue;
       }
@@ -268,7 +273,11 @@ const Private = {
       const userCopy = CommonUtils.getProjectedObj(user, userRef.projection);
       const rCopy = await DbOpsUtils.updateManyReferences(config, userRef, userCopy, _ctx);
       if (rCopy.error) {
-        return rCopy;
+        console.log(
+          `\n${ProfessorsConstants.ServiceName}: failed to update the copies of the user ${user.id}: ${rCopy.error.message}`
+        );
+        failure ??= rCopy;
+        continue;
       }
       rCopy.ids.forEach((id) => changedProfessorsIDs.add(id));
 
@@ -287,7 +296,9 @@ const Private = {
       }
     }
 
-    return await Private.notifyChangedProfessors(config, [...changedProfessorsIDs], _ctx);
+    // the changed professors are notified, also after a failure
+    const rNotify = await Private.notifyChangedProfessors(config, [...changedProfessorsIDs], _ctx);
+    return failure || rNotify;
   },
 
   /**
@@ -300,9 +311,10 @@ const Private = {
    *   delete: the professor is deleted (the groups and the schedules remove it)
    * the professors whose user copy changed are notified (the groups and the schedules keep their copies of them)
    * users: [ { id, status, ... } ] (as notified by the users service)
+   * a failure is logged and the next users are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
-  removeProfessorsOfUsers: async (users, _ctx) => {
+  onUsersRemoved: async (users, _ctx) => {
     const config = await Private.getConfig(_ctx);
 
     // the setting of the school
@@ -313,13 +325,18 @@ const Private = {
     const keepTraces = rSettings.value.removedMembers === SchoolsRest.Constants.Settings.RemovedMembers.Keep;
 
     const changedProfessorsIDs = new Set();
+    let failure = null; // the first failure (the next users are still done)
     for (const user of users) {
       const rProfessor = await DbOpsUtils.getOne(config, user.id, { _id: 0, id: 1, user: 1 }, _ctx);
       if (rProfessor.status === 404) {
         continue;
       }
       if (rProfessor.error) {
-        return rProfessor;
+        console.log(
+          `\n${ProfessorsConstants.ServiceName}: failed to read the professor of the user ${user.id}: ${rProfessor.error.message}`
+        );
+        failure ??= rProfessor;
+        continue;
       }
 
       // already a trace
@@ -336,7 +353,10 @@ const Private = {
         );
         const rDelete = await Private.deleteProfessor(config, user.id, _ctx);
         if (rDelete.error && rDelete.status !== 404) {
-          return rDelete;
+          console.log(
+            `\n${ProfessorsConstants.ServiceName}: failed to delete the professor ${user.id}: ${rDelete.error.message}`
+          );
+          failure ??= rDelete;
         }
         continue;
       }
@@ -347,12 +367,18 @@ const Private = {
       console.log(`\n${ProfessorsConstants.ServiceName}: keep the professor ${user.id} as a trace, ${traceStatus}`);
       const rTrace = await Private.putTraceStatus(config, user.id, traceStatus, _ctx);
       if (rTrace.error) {
-        return rTrace;
+        console.log(
+          `\n${ProfessorsConstants.ServiceName}: failed to keep the professor ${user.id} as a trace: ${rTrace.error.message}`
+        );
+        failure ??= rTrace;
+        continue;
       }
       changedProfessorsIDs.add(user.id);
     }
 
-    return await Private.notifyChangedProfessors(config, [...changedProfessorsIDs], _ctx);
+    // the changed professors are notified, also after a failure
+    const rNotify = await Private.notifyChangedProfessors(config, [...changedProfessorsIDs], _ctx);
+    return failure || rNotify;
   },
 
   /**
@@ -360,11 +386,13 @@ const Private = {
    * - added, modified: the professors are saved (created when missing, otherwise their status and their user copy)
    * - removed (the professor role was removed, or the account was deleted): the professors are kept as traces or
    *   deleted, by the setting of the school
+   * a failure is logged and the next schools are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
   onUsersNotification: async (notification, _ctx) => {
     const professorsNotification = UsersRest.filterNotificationByRole(notification, ProfessorsConstants.Type, _ctx);
     const schoolsNotifications = UsersRest.convertToTenantNotifications(professorsNotification, _ctx);
+    let failure = null; // the first failure (the next schools are still done)
 
     for (const schoolNotification of schoolsNotifications) {
       const schoolCtx = { ..._ctx, tenantID: schoolNotification.tenantID };
@@ -375,23 +403,29 @@ const Private = {
       const modifiedUsers = usersNotification[Private.Notification.Modified] || [];
       const users = [...addedUsers, ...modifiedUsers];
       if (users.length) {
-        const rSave = await Private.saveProfessorsOfUsers(users, schoolCtx);
+        const rSave = await Private.onUsersAddedOrModified(users, schoolCtx);
         if (rSave.error) {
-          return rSave;
+          console.log(
+            `\n${ProfessorsConstants.ServiceName}: failed to save the professors of the school ${schoolNotification.tenantID}: ${rSave.error.message}`
+          );
+          failure ??= rSave;
         }
       }
 
       // the users without the professor role (or without an account)
       const removedUsers = usersNotification[Private.Notification.Removed] || [];
       if (removedUsers.length) {
-        const rRemove = await Private.removeProfessorsOfUsers(removedUsers, schoolCtx);
+        const rRemove = await Private.onUsersRemoved(removedUsers, schoolCtx);
         if (rRemove.error) {
-          return rRemove;
+          console.log(
+            `\n${ProfessorsConstants.ServiceName}: failed to remove the professors of the school ${schoolNotification.tenantID}: ${rRemove.error.message}`
+          );
+          failure ??= rRemove;
         }
       }
     }
 
-    return { status: 200, value: true };
+    return failure || { status: 200, value: true };
   },
 
   /**
@@ -399,6 +433,7 @@ const Private = {
    * - modified: the copies are updated (only the older ones, modifiedCount)
    * - removed (the class was deleted): the class is removed from the professors
    * (a class is given to a professor by the edit of the professor, not by a notification)
+   * a failure is logged and the next classes are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
   onClassesNotification: async (notification, _ctx) => {
@@ -408,13 +443,17 @@ const Private = {
 
     const config = await Private.getConfig(_ctx);
     const [, classesRef] = config.references; // classes[] (the references: user, classes[], schedules[])
+    let failure = null; // the first failure (the next classes are still done)
 
     // the copies of the modified classes
     for (const schoolClass of notification[Private.Notification.Modified] || []) {
       const classCopy = CommonUtils.getProjectedObj(schoolClass, classesRef.projection);
       const rCopies = await DbOpsUtils.updateManyReferences(config, classesRef, classCopy, _ctx);
       if (rCopies.error) {
-        return rCopies;
+        console.log(
+          `\n${ProfessorsConstants.ServiceName}: failed to update the copies of the class ${schoolClass.id}: ${rCopies.error.message}`
+        );
+        failure ??= rCopies;
       }
     }
 
@@ -425,11 +464,14 @@ const Private = {
       );
       const rRemove = await DbOpsUtils.deleteManyReferences(config, classesRef, { id: schoolClass.id }, _ctx);
       if (rRemove.error) {
-        return rRemove;
+        console.log(
+          `\n${ProfessorsConstants.ServiceName}: failed to remove the class ${schoolClass.id}: ${rRemove.error.message}`
+        );
+        failure ??= rRemove;
       }
     }
 
-    return { status: 200, value: true };
+    return failure || { status: 200, value: true };
   },
 
   /**
@@ -438,6 +480,7 @@ const Private = {
    *   professors that are not in it anymore (a professor removed from it keeps its other schedules), and its copies are
    *   updated (only the older ones, modifiedCount)
    * - removed (the schedule was deleted): the schedule is removed from all the professors
+   * a failure is logged and the next schedules are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
   onSchedulesNotification: async (notification, _ctx) => {
@@ -450,6 +493,7 @@ const Private = {
 
     const addedSchedules = notification[Private.Notification.Added] || [];
     const modifiedSchedules = notification[Private.Notification.Modified] || [];
+    let failure = null; // the first failure (the next schedules are still done)
     for (const schedule of [...addedSchedules, ...modifiedSchedules]) {
       const scheduleCopy = CommonUtils.getProjectedObj(schedule, schedulesRef.projection);
 
@@ -466,7 +510,11 @@ const Private = {
           _ctx
         );
         if (rAdd.error) {
-          return rAdd;
+          console.log(
+            `\n${ProfessorsConstants.ServiceName}: failed to add the schedule ${schedule.id}: ${rAdd.error.message}`
+          );
+          failure ??= rAdd;
+          continue;
         }
 
         // removed from the professors that are not in it anymore
@@ -479,14 +527,21 @@ const Private = {
           otherProfessors
         );
         if (rRemove.error) {
-          return rRemove;
+          console.log(
+            `\n${ProfessorsConstants.ServiceName}: failed to remove the schedule ${schedule.id}: ${rRemove.error.message}`
+          );
+          failure ??= rRemove;
+          continue;
         }
       }
 
       // its copies
       const rCopies = await DbOpsUtils.updateManyReferences(config, schedulesRef, scheduleCopy, _ctx);
       if (rCopies.error) {
-        return rCopies;
+        console.log(
+          `\n${ProfessorsConstants.ServiceName}: failed to update the copies of the schedule ${schedule.id}: ${rCopies.error.message}`
+        );
+        failure ??= rCopies;
       }
     }
 
@@ -497,11 +552,14 @@ const Private = {
       );
       const rRemove = await DbOpsUtils.deleteManyReferences(config, schedulesRef, { id: schedule.id }, _ctx);
       if (rRemove.error) {
-        return rRemove;
+        console.log(
+          `\n${ProfessorsConstants.ServiceName}: failed to remove the schedule ${schedule.id}: ${rRemove.error.message}`
+        );
+        failure ??= rRemove;
       }
     }
 
-    return { status: 200, value: true };
+    return failure || { status: 200, value: true };
   },
 };
 
@@ -692,7 +750,7 @@ const Public = {
     // the professor follows the removed role (done by the users notification; a professor kept without its role by an
     // earlier version is done now)
     const user = { ...rget.value.user, id: objID };
-    const rRemove = await Private.removeProfessorsOfUsers([user], _ctx);
+    const rRemove = await Private.onUsersRemoved([user], _ctx);
     if (rRemove.error) {
       return rRemove;
     }
@@ -704,9 +762,10 @@ const Public = {
   /**
    * link the traces of a deleted account to the user invited again, by its email (called by the invite, before the
    * user gets its role, whatever the role): the professors of the school with this email and another id take the id of
-   * the user; their user copy stays deleted until the user has the role again and logs in (see saveProfessorsOfUsers); the groups and the schedules follow the new id
+   * the user; their user copy stays deleted until the user has the role again and logs in (see onUsersAddedOrModified); the groups and the schedules follow the new id
    * (the modified notification has previousID)
    * objInfo: { email, userID }
+   * a failure is logged and the next traces are still done; the first failure is returned at the end
    * returns { status, value: [ the previous ids ] } or { status, error }
    */
   relinkTraces: async (objInfo, _ctx) => {
@@ -737,13 +796,16 @@ const Public = {
     }
 
     const previousIDs = [];
+    let failure = null; // the first failure (the next traces are still done)
     for (const trace of rTraces.value) {
       console.log(`\n${ProfessorsConstants.ServiceName}: link the trace ${trace.id} to the user ${objInfo.userID}`);
       const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
       const linked = { id: objInfo.userID, 'user.id': objInfo.userID };
       const r = await DbOpsUtils.put(config, trace.id, linked, projection, _ctx);
       if (r.error) {
-        return r;
+        console.log(`\n${ProfessorsConstants.ServiceName}: failed to link the trace ${trace.id}: ${r.error.message}`);
+        failure ??= r;
+        continue;
       }
 
       // raise event for the link
@@ -768,7 +830,7 @@ const Public = {
       previousIDs.push(trace.id);
     }
 
-    return { status: 200, value: previousIDs };
+    return failure || { status: 200, value: previousIDs };
   },
 
   /**

@@ -11,6 +11,8 @@ describe('Admins Service relink traces', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Admins', tenantID: 'school1' };
   const fail = { status: 500, error: { message: 'Database failure' } };
 
+  before(async function () {});
+
   beforeEach(async function () {
     // the events and the notifications of the admins
     sinon.stub(EventsRest, 'raiseEventForObject');
@@ -20,6 +22,8 @@ describe('Admins Service relink traces', function () {
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * the traces of a deleted account with the email of the invited user take its id (their user copy stays deleted)
@@ -76,5 +80,12 @@ describe('Admins Service relink traces', function () {
     stubGetAll.resolves({ status: 200, value: [{ id: 'old1' }] });
     chai.expect(await AdminsService.relinkTraces(objInfo, _ctx)).to.deep.equal(fail);
     chai.expect(stubPut.callCount).to.equal(1);
+
+    // case: the first trace can not be changed: the next one is still linked, the first failure is returned
+    stubGetAll.resolves({ status: 200, value: [{ id: 'old1' }, { id: 'old2' }] });
+    stubPut.callsFake(async (config, id) => (id === 'old1' ? fail : { status: 200, value: { id: 'user1', user: {} } }));
+    stubPut.resetHistory();
+    chai.expect(await AdminsService.relinkTraces(objInfo, _ctx)).to.deep.equal(fail);
+    chai.expect(stubPut.args.map((args) => args[1])).to.deep.equal(['old1', 'old2']);
   }).timeout(10000);
 });

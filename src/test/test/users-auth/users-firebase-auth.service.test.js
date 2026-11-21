@@ -6,6 +6,14 @@ describe('Users Firebase Auth Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users Auth' };
   const config = { serviceName: 'users-auth' };
 
+  before(async function () {});
+
+  beforeEach(async function () {});
+
+  afterEach(async function () {});
+
+  after(async function () {});
+
   /**
    * the firebase provider is not implemented: every operation answers 500 Not implemented
    */

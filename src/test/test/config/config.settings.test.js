@@ -15,6 +15,8 @@ describe('Config Settings', function () {
   ];
   const saved = {};
 
+  before(async function () {});
+
   beforeEach(async function () {
     for (const name of names) {
       saved[name] = process.env[name];
@@ -30,6 +32,8 @@ describe('Config Settings', function () {
       }
     }
   });
+
+  after(async function () {});
 
   /**
    * the expiry of the pending users and schools, in seconds: the configured value, 72 hours by default (also for a
