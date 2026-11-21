@@ -24,5 +24,6 @@ router.route(`${AdminsConstants.ApiPath}/:id`).patch(AdminsController.patch);
  * Internal
  */
 router.route(`${AdminsConstants.ApiPathInternal}/notifications`).post(AdminsController.notification);
+router.route(`${AdminsConstants.ApiPathInternal}/relink-traces`).post(AdminsController.relinkTraces); // called from the invite
 
 module.exports = router;

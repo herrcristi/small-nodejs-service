@@ -38,18 +38,18 @@
 
     "deny-not-current-school": {
       "schools": {
-        "GET": ["/api/v1/schools/:id"],
+        "GET": ["/api/v1/schools/:id", "/api/v1/schools/:id/settings"],
         "DELETE": ["/api/v1/schools/:id"],
-        "PUT": ["/api/v1/schools/:id"],
+        "PUT": ["/api/v1/schools/:id", "/api/v1/schools/:id/settings"],
         "PATCH": ["/api/v1/schools/:id"]
       }
     },
 
     "admin": {
       "schools": {
-        "GET": ["/api/v1/schools/:id"],
+        "GET": ["/api/v1/schools/:id", "/api/v1/schools/:id/settings"],
         "DELETE": ["/api/v1/schools/:id"],
-        "PUT": ["/api/v1/schools/:id"],
+        "PUT": ["/api/v1/schools/:id", "/api/v1/schools/:id/settings"],
         "PATCH": ["/api/v1/schools/:id"]
       },
       "users-auth": {
@@ -165,13 +165,11 @@
       },
       "professors": {
         "GET": ["/api/v1/professors/:id"],
-        "DELETE": ["/api/v1/professors/:id"],
         "PUT": ["/api/v1/professors/:id"],
         "PATCH": ["/api/v1/professors/:id"]
       },
       "students": {
         "GET": ["/api/v1/students/:id"],
-        "DELETE": ["/api/v1/students/:id"],
         "PUT": ["/api/v1/students/:id"],
         "PATCH": ["/api/v1/students/:id"]
       }

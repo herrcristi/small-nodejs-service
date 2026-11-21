@@ -5,6 +5,10 @@
 // core tests
 require('../core/test/core.all.tests.js');
 
+// the setup of the tests
+require('./test/test-setup/test-setup.all.tests.js');
+require('./test/config/config.settings.test.js');
+
 // services tests
 require('./test/index/index.all.tests.js');
 require('./test/web-server/web-server.all.tests.js');

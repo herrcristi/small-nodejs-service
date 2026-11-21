@@ -194,7 +194,7 @@ const Utils = {
 
     // actions
     if (options?.actions) {
-      h.push({ width: 100, title: t('actions'), value: 'actions', sortable: false });
+      h.push({ width: 100, title: t('actions'), key: 'actions', value: 'actions', sortable: false });
     }
 
     // x-small width
@@ -273,6 +273,10 @@ const Utils = {
         return 'green';
 
       case 'disabled':
+        return 'grey';
+
+      case 'deleted':
+      case 'removed':
         return 'grey';
 
       default:

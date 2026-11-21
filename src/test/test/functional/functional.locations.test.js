@@ -22,7 +22,7 @@ describe('Locations Functional', function () {
   beforeEach(async function () {
     sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
-      return { status: 200, value: { userID: 'user.id', username: 'user.email' } };
+      return { status: 200, value: { userID: 'user.id', username: 'user.email', tenantVerified: true } };
     });
     await TestsUtils.initDatabase(_ctx);
   });
@@ -97,8 +97,6 @@ describe('Locations Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${LocationsConstants.ApiPath}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer)
       .send({ ...testLocation });
@@ -130,8 +128,6 @@ describe('Locations Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${LocationsConstants.ApiPath}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer)
       .send({ ...testLocation });
@@ -183,8 +179,6 @@ describe('Locations Functional', function () {
     // call put first to update users
     let res = await supertest(TestConstants.WebServer)
       .put(`${LocationsConstants.ApiPath}/${testLocationID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer)
       .send({ ...testLocation });
@@ -199,8 +193,6 @@ describe('Locations Functional', function () {
     // call
     res = await supertest(TestConstants.WebServer)
       .delete(`${LocationsConstants.ApiPath}/${testLocationID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -247,8 +239,6 @@ describe('Locations Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .put(`${LocationsConstants.ApiPath}/${testLocationID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer)
       .send({ ...testLocation });
@@ -295,8 +285,6 @@ describe('Locations Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .patch(`${LocationsConstants.ApiPath}/${testLocationID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer)
       .send({ set: { ...testLocation } });

@@ -70,6 +70,22 @@ const Public = {
   },
 
   /**
+   * relink traces (internal) called from the invite: the traces of a deleted account with the email take the id of the
+   * user invited again
+   * objInfo: { email, userID }
+   */
+  relinkTraces: async (objInfo, _ctx) => {
+    const config = {
+      serviceName: ProfessorsConstants.ServiceNameInternal,
+      method: 'POST',
+      path: '/relink-traces',
+      body: objInfo,
+      localCall: { fn: 'relinkTraces', params: { objInfo } },
+    };
+    return await RestCommsUtils.call(config, _ctx);
+  },
+
+  /**
    * subscribe to receive sync notifications (this is called in the same service as the implementation)
    * subscriber: { callback, projection }
    */

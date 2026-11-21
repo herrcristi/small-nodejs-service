@@ -230,6 +230,34 @@ const Public = {
       res.end();
     }
   },
+
+  /**
+   * relink traces (internal) called from the invite: the traces of a deleted account take the id of the user invited
+   * again
+   */
+  relinkTraces: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = StudentsConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Relink traces called, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+      );
+
+      const r = await StudentsService.relinkTraces(req.body, _ctx);
+      if (r.error) {
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
+    } finally {
+      res.end();
+    }
+  },
 };
 
 module.exports = { ...Public };

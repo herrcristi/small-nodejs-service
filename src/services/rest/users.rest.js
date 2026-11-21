@@ -28,6 +28,23 @@ const Public = {
   },
 
   /**
+   * get the portal admins (internal) called from the bootstrap: the users with the portal-admin role on the portal
+   * school (the tenant of _ctx must be the portal school)
+   * queryParams: the filters of the list (status=active, projection, limit)
+   * returns { status, value: { data, meta } } or { status, error }
+   */
+  getPortalAdmins: async (queryParams, _ctx) => {
+    const config = {
+      serviceName: UsersConstants.ServiceNameInternal,
+      method: 'GET',
+      path: '/portal-admins',
+      query: queryParams,
+      localCall: { fn: 'getPortalAdminsForReq', params: { req: { query: queryParams } } },
+    };
+    return await RestCommsUtils.call(config, _ctx);
+  },
+
+  /**
    * get one
    */
   getOne: async (objID, projection, _ctx) => {

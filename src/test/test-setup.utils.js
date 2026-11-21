@@ -1,4 +1,4 @@
-const TestConstants = require('../../test/test-constants.js');
+const TestConstants = require('./test-constants.js');
 
 /**
  * Test utils
@@ -6,8 +6,19 @@ const TestConstants = require('../../test/test-constants.js');
 const Public = {
   /**
    * setup env
+   * the tests do not depend on the environment of the shell: the environment is reset completely (only IS_TEST_DB is
+   * kept: the functional tests), then the test values are set; a test that needs another value (or no value) changes
+   * it and restores it afterwards
    */
   setupEnv: () => {
+    const isTestDB = process.env.IS_TEST_DB;
+    for (const name of Object.keys(process.env)) {
+      delete process.env[name];
+    }
+    if (isTestDB) {
+      process.env.IS_TEST_DB = isTestDB;
+    }
+
     // env
     process.env.NODE_ENV = 'test';
     process.env.SMALL_API_PORT = TestConstants.Port;

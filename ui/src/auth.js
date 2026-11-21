@@ -78,6 +78,8 @@ export function getRolesPermissions(tenantID, loginData) {
       classes: { read: isAtLeast.student, write: isAtLeast.admin },
       schedules: { read: isAtLeast.student, write: isAtLeast.admin },
 
+      settings: { read: isAtLeast.admin, write: isAtLeast.admin }, // the settings of the school
+
       events: { read: isAtLeast.admin, write: 0 },
       globalEvents: { read: isAtLeast.portalAdmin, write: 0 }, // the events outside the schools (logins, password resets)
     };

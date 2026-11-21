@@ -17,6 +17,8 @@ describe('Users Local Auth Service session', function () {
   const issuer = `${UsersAuthConstants.ServiceName}-local`;
   const userInfo = { username: 'user@testdomain.test', userID: 'user1', secret: 'secret1' };
 
+  before(async function () {});
+
   beforeEach(function () {
     sinon.stub(UsersAuthDatabase, 'collection').resolves(null);
   });
@@ -24,6 +26,8 @@ describe('Users Local Auth Service session', function () {
   afterEach(function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * a session token carries its purpose and the secret of its session, and expires with the session

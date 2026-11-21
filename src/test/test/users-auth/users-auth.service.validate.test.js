@@ -97,6 +97,7 @@ describe('Users Auth Service', function () {
         sessionExpiresAt: session.expiresAt,
         status: testInfoUser.status,
         tenantName: testInfoUser.schools[0].name,
+        tenantVerified: true,
         name: testInfoUser.name,
         schools: testInfoUser.schools,
       },
@@ -158,15 +159,15 @@ describe('Users Auth Service', function () {
     chai.expect(wrongTenantResult.status).to.equal(401);
     chai.expect(wrongTenantResult.error.message).to.equal('Failed to validate school');
 
-    // a member of the portal school without the portal-admin role: refused
+    // a membership of the portal school without roles (left by an earlier version): not a membership, refused
     _ctx.tenantID = portalSchoolID;
     testInfoUser.schools[0].roles = [];
     const nonAdminResult = await UsersAuthService.validate(
       { token: 'token', method: 'get', route: '/api/v1/schools' },
       _ctx
     );
-    chai.expect(nonAdminResult.status).to.equal(403);
-    chai.expect(nonAdminResult.error.message).to.equal('Route is not accesible: get /api/v1/schools');
+    chai.expect(nonAdminResult.status).to.equal(401);
+    chai.expect(nonAdminResult.error.message).to.equal('Failed to validate school');
   }).timeout(10000);
 
   /**
@@ -194,8 +195,88 @@ describe('Users Auth Service', function () {
       _ctx
     );
 
-    // check: accepted
+    // check: accepted, the tenant is not used (not a member of it)
     chai.expect(res.status).to.equal(200);
+    chai.expect(res.value.tenantVerified).to.equal(false);
+  }).timeout(10000);
+
+  /**
+   * the own user record (the profile) is valid also without a school (a user left without schools); the record of
+   * another user is checked by the roles in the school
+   */
+  it('should validate the own user record also without a school', async () => {
+    const testAuthUser = _.cloneDeep(TestConstants.UsersAuth[0]);
+    const testInfoUser = _.cloneDeep(TestConstants.Users[0]);
+
+    // stub: a user without schools, and a valid session token
+    sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 200, value: { ...testInfoUser, schools: [] } });
+    sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'decoded' });
+    sinon.stub(UsersLocalAuthService, 'validateToken').returns({
+      status: 200,
+      value: { username: testAuthUser.id, userID: testInfoUser.id },
+    });
+
+    // call: its own record, without a school
+    _ctx.tenantID = undefined;
+    _ctx.reqUrl = `/api/v1/users/${testInfoUser.id}`;
+    const route = { token: 'token', method: 'put', route: '/api/v1/users/:id' };
+    const res = await UsersAuthService.validate(route, _ctx);
+
+    // check: accepted, without a school
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.value.tenantVerified).to.equal(false);
+
+    // case: the record of another user: the roles in the school decide (no school: refused)
+    _ctx.reqUrl = '/api/v1/users/other-user';
+    const resOther = await UsersAuthService.validate(route, _ctx);
+    chai.expect(resOther.status).to.equal(401);
+
+    // case: its own record with a school of the user: the school is used, unless it is disabled
+    const school = { ...testInfoUser.schools[0], status: 'active' };
+    UsersRest.getOneByEmail.returns({ status: 200, value: { ...testInfoUser, schools: [school] } });
+    _ctx.tenantID = school.id;
+    _ctx.reqUrl = `/api/v1/users/${testInfoUser.id}`;
+    const resSchool = await UsersAuthService.validate(route, _ctx);
+    chai.expect(resSchool.value.tenantVerified).to.equal(true);
+    UsersRest.getOneByEmail.returns({
+      status: 200,
+      value: { ...testInfoUser, schools: [{ ...school, status: 'disabled' }] },
+    });
+    const resDisabled = await UsersAuthService.validate(route, _ctx);
+    chai.expect(resDisabled.status).to.equal(200);
+    chai.expect(resDisabled.value.tenantVerified).to.equal(false);
+  }).timeout(10000);
+
+  /**
+   * the memberships of the answer: only the schools with a role (none for a user without schools)
+   */
+  it('should answer only the memberships with a role', async () => {
+    const testAuthUser = _.cloneDeep(TestConstants.UsersAuth[0]);
+    const testInfoUser = _.cloneDeep(TestConstants.Users[0]);
+
+    // stub: a user with a membership left without roles, and a valid session token
+    testInfoUser.schools = [{ ...testInfoUser.schools[0], roles: [] }, ...testInfoUser.schools.slice(1)];
+    const stubUser = sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 200, value: testInfoUser });
+    sinon.stub(JwtUtils, 'decrypt').returns({ status: 200, value: 'decoded' });
+    sinon.stub(UsersLocalAuthService, 'validateToken').returns({
+      status: 200,
+      value: { username: testAuthUser.id, userID: testInfoUser.id },
+    });
+
+    // call a global route
+    _ctx.reqUrl = '/api/v1/users-auth/me';
+    const route = { token: 'token', method: 'get', route: '/api/v1/users-auth/me' };
+    const res = await UsersAuthService.validate(route, _ctx);
+
+    // check: the membership without roles is not in the answer
+    const schoolIDs = res.value.schools.map((school) => school.id);
+    chai.expect(schoolIDs).to.not.include(testInfoUser.schools[0].id);
+    chai.expect(schoolIDs.length).to.equal(testInfoUser.schools.length - 1);
+
+    // case: a user without schools: no memberships
+    stubUser.returns({ status: 200, value: { ...testInfoUser, schools: undefined } });
+    const resNone = await UsersAuthService.validate(route, _ctx);
+    chai.expect(resNone.value.schools).to.deep.equal([]);
   }).timeout(10000);
 
   /**
@@ -349,6 +430,7 @@ describe('Users Auth Service', function () {
         sessionExpiresAt: session.expiresAt,
         status: testInfoUser.status,
         tenantName: 'school-high2',
+        tenantVerified: true,
         name: testInfoUser.name,
         schools: testInfoUser.schools,
       },
@@ -417,6 +499,7 @@ describe('Users Auth Service', function () {
         sessionExpiresAt: session.expiresAt,
         status: testInfoUser.status,
         tenantName: 'school-high2',
+        tenantVerified: true,
         name: testInfoUser.name,
         schools: testInfoUser.schools,
       },

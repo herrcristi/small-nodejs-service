@@ -8,6 +8,7 @@ const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
+const UsersAuthServiceLocal = require('../../../services/users-auth/users-local-auth.service.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
 const UsersAuthSignupService = require('../../../services/users-auth/users-auth.signup.service.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
@@ -15,13 +16,26 @@ const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 const SchoolsRest = require('../../../services/rest/schools.rest.js');
 const UsersRest = require('../../../services/rest/users.rest.js');
+const StudentsRest = require('../../../services/rest/students.rest.js');
+const ProfessorsRest = require('../../../services/rest/professors.rest.js');
+const AdminsRest = require('../../../services/rest/admins.rest.js');
 
 describe('Users Auth Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users', tenantID: 'tenantID1' };
 
   before(async function () {});
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    // the auth record of an existing user exists (an interrupted invite is tested on its own)
+    sinon.stub(UsersAuthService, 'ensureAuth').resolves({ status: 200, value: {} });
+    // no email of the same type was sent to the user less than EmailInterval ago: it can be sent now
+    sinon.stub(UsersAuthServiceLocal, 'putEmailTimestamp').resolves({ status: 200, value: {} });
+
+    // the school has no traces of a deleted account with the invited email (they are tested on their own)
+    sinon.stub(StudentsRest, 'relinkTraces').resolves({ status: 200, value: [] });
+    sinon.stub(ProfessorsRest, 'relinkTraces').resolves({ status: 200, value: [] });
+    sinon.stub(AdminsRest, 'relinkTraces').resolves({ status: 200, value: [] });
+  });
 
   afterEach(async function () {
     sinon.restore();
@@ -59,6 +73,7 @@ describe('Users Auth Service', function () {
     let stubUsersPost = sinon.stub(UsersRest, 'post').callsFake((userReq) => {
       console.log(`\nUsersRest.post called with ${JSON.stringify(userReq, null, 2)}`);
       chai.expect(userReq).to.deep.equal({
+        id: userReq.id, // a new id, given by the invite
         email: testUser.email,
         schools: [
           {
@@ -233,6 +248,7 @@ describe('Users Auth Service', function () {
       .returns({ status: 404, error: { message: 'Not found', error: 'Not found' } });
     const stubUsersPost = sinon.stub(UsersRest, 'post').callsFake((userReq) => {
       chai.expect(userReq).to.deep.equal({
+        id: userReq.id, // a new id, given by the invite
         email,
         schools: [{ id: TestConstants.PortalSchoolID, roles: [UsersRest.Constants.Roles.PortalAdmin] }],
       });
@@ -686,6 +702,7 @@ describe('Users Auth Service', function () {
       // check: the new user is an admin of school1, the email names it
       chai.expect(res.status).to.equal(201);
       chai.expect(stubUsersPost.firstCall.args[0]).to.deep.equal({
+        id: stubUsersPost.firstCall.args[0].id, // a new id, given by the invite
         email,
         schools: [{ id: 'school1', roles: ['admin'] }],
       });
@@ -813,4 +830,151 @@ describe('Users Auth Service', function () {
     chai.expect(authPost.firstCall.args[0].username).to.equal('john.doe@testdomain.test');
     chai.expect(reset.firstCall.args[0]).to.deep.equal({ username: 'john.doe@testdomain.test' });
   }).timeout(10000);
+
+  describe('the account state decides the email; an interrupted invite is completed', function () {
+    const email = 'jane.smith@testdomain.test';
+    const existingUser = (status) => ({
+      id: 'user1',
+      email,
+      name: 'Jane Smith',
+      status,
+      schools: [{ id: _ctx.tenantID, roles: ['student'] }],
+    });
+
+    /**
+     * a pending user invited again (the first email was lost): a new setup link, not the invitation
+     */
+    it('should send the setup link to a pending user invited again', async () => {
+      // stub: a pending member (the role is there); the emails
+      sinon.stub(UsersRest, 'getOneByEmail').resolves({ status: 200, value: existingUser('pending') });
+      const stubReset = sinon.stub(UsersAuthService, 'resetPassword').resolves({ status: 200, value: {} });
+      const stubInvite = sinon.stub(UsersAuthService, 'sendInvite');
+
+      // call
+      const res = await UsersAuthSignupService.invite({ email, school: { role: 'student' } }, _ctx);
+
+      // check: the setup link (a signup link with a new token)
+      chai.expect(res.status).to.equal(204);
+      chai.expect(stubReset.firstCall.args[2]).to.equal(UsersAuthConstants.ResetTokenType.Signup);
+      chai.expect(stubInvite.callCount).to.equal(0);
+    }).timeout(10000);
+
+    /**
+     * an active user gets the invitation (it has a password)
+     */
+    it('should send the invitation to an active user', async () => {
+      // stub: an active user, the role is added; the email
+      sinon.stub(UsersRest, 'getOneByEmail').resolves({ status: 200, value: existingUser('active') });
+      sinon.stub(UsersRest, 'patchSchool').resolves({ status: 200, value: {} });
+      const stubReset = sinon.stub(UsersAuthService, 'resetPassword');
+      const stubInvite = sinon.stub(UsersAuthService, 'sendInvite').resolves({ status: 200, value: {} });
+
+      // call: another role
+      const res = await UsersAuthSignupService.invite({ email, school: { role: 'professor' } }, _ctx);
+
+      // check: the invitation
+      chai.expect(res.status).to.equal(200);
+      chai.expect(stubInvite.callCount).to.equal(1);
+      chai.expect(stubReset.callCount).to.equal(0);
+    }).timeout(10000);
+
+    /**
+     * an invite interrupted after the user was created: its auth record is created now, and it gets the setup link
+     */
+    it('should complete an interrupted invite: the auth record is created, the setup link is sent', async () => {
+      // stub: an active-looking user without auth record (created now: 201)
+      sinon.stub(UsersRest, 'getOneByEmail').resolves({ status: 200, value: existingUser('active') });
+      UsersAuthService.ensureAuth.resolves({ status: 201, value: { userID: 'user1' } });
+      sinon.stub(UsersRest, 'patchSchool').resolves({ status: 200, value: {} });
+      const stubReset = sinon.stub(UsersAuthService, 'resetPassword').resolves({ status: 200, value: {} });
+
+      // call
+      const res = await UsersAuthSignupService.invite({ email, school: { role: 'professor' } }, _ctx);
+
+      // check: the auth record for the user, then the setup link
+      chai.expect(UsersAuthService.ensureAuth.firstCall.args[0]).to.deep.equal({ username: email, userID: 'user1' });
+      chai.expect(stubReset.callCount).to.equal(1);
+      chai.expect(res.status).to.equal(200);
+    }).timeout(10000);
+
+    /**
+     * the auth record can not be created: the invite fails (nothing else is changed)
+     */
+    it('should fail the invite when the auth record can not be created', async () => {
+      // stub: the auth record can not be read or created; no role is added
+      sinon.stub(UsersRest, 'getOneByEmail').resolves({ status: 200, value: existingUser('active') });
+      UsersAuthService.ensureAuth.resolves({ status: 500, error: { message: 'Database failure' } });
+      const stubPatch = sinon.stub(UsersRest, 'patchSchool');
+      sinon.stub(EventsRest, 'raiseEventForObject');
+
+      // call
+      const res = await UsersAuthSignupService.invite({ email, school: { role: 'professor' } }, _ctx);
+
+      // check: the error, no role
+      chai.expect(res.status).to.equal(500);
+      chai.expect(stubPatch.callCount).to.equal(0);
+    }).timeout(10000);
+
+    /**
+     * a new email: a new id, the traces of a deleted account with this email in the school are linked to it (students,
+     * professors and admins, whatever the role) before the user is created
+     */
+    it('should invite a new email and link the traces of the school to its new id first', async () => {
+      // stub: no user with this email; the new user, its login, the email
+      sinon.stub(UsersRest, 'getOneByEmail').resolves({ status: 404, error: { message: 'Not found' } });
+      const stubPost = sinon.stub(UsersRest, 'post').callsFake(async (userInfo) => ({ status: 201, value: userInfo }));
+      sinon.stub(UsersAuthService, 'post').resolves({ status: 201, value: { userID: 'user1', username: email } });
+      sinon.stub(UsersAuthService, 'resetPassword').resolves({ status: 200, value: {} });
+
+      // call
+      const res = await UsersAuthSignupService.invite({ email, school: { role: 'student' } }, _ctx);
+
+      // check: the traces of each member service linked to the new id, before the user is created
+      chai.expect(res.status).to.equal(201);
+      const userID = stubPost.firstCall.args[0].id;
+      chai.expect(userID).to.be.a('string');
+      for (const membersRest of [StudentsRest, ProfessorsRest, AdminsRest]) {
+        chai.expect(membersRest.relinkTraces.firstCall.args[0]).to.deep.equal({ email, userID });
+        chai.expect(membersRest.relinkTraces.calledBefore(stubPost)).to.equal(true);
+      }
+
+      // case: the traces can not be linked: the invite fails, no user is created (the admins are still linked)
+      ProfessorsRest.relinkTraces.resolves({ status: 500, error: { message: 'Database failure' } });
+      stubPost.resetHistory();
+      sinon.stub(EventsRest, 'raiseEventForObject');
+      const resFailed = await UsersAuthSignupService.invite({ email, school: { role: 'student' } }, _ctx);
+      chai.expect(resFailed.status).to.equal(500);
+      chai.expect(stubPost.callCount).to.equal(0);
+      chai.expect(AdminsRest.relinkTraces.callCount).to.equal(2);
+    }).timeout(10000);
+
+    /**
+     * an existing user (active by another school): the traces of the school are linked to its id before it gets its
+     * role; they can not be linked: the invite fails, no role is added
+     */
+    it('should invite an existing user and link the traces of the school to its id first', async () => {
+      // stub: an active user; the role is added
+      sinon.stub(UsersRest, 'getOneByEmail').resolves({ status: 200, value: existingUser('active') });
+      const stubPatch = sinon.stub(UsersRest, 'patchSchool').resolves({ status: 200, value: {} });
+      sinon.stub(UsersAuthService, 'sendInvite').resolves({ status: 200, value: {} });
+
+      // call
+      const res = await UsersAuthSignupService.invite({ email, school: { role: 'professor' } }, _ctx);
+
+      // check: linked to the id of the user, before the role
+      chai.expect(res.status).to.equal(200);
+      chai.expect(AdminsRest.relinkTraces.firstCall.args[0]).to.deep.equal({ email, userID: 'user1' });
+      chai.expect(AdminsRest.relinkTraces.calledBefore(stubPatch)).to.equal(true);
+
+      // case: the traces can not be linked (the professors and the admins are still linked)
+      StudentsRest.relinkTraces.resolves({ status: 500, error: { message: 'Database failure' } });
+      stubPatch.resetHistory();
+      sinon.stub(EventsRest, 'raiseEventForObject');
+      const resFailed = await UsersAuthSignupService.invite({ email, school: { role: 'professor' } }, _ctx);
+      chai.expect(resFailed.status).to.equal(500);
+      chai.expect(stubPatch.callCount).to.equal(0);
+      chai.expect(ProfessorsRest.relinkTraces.callCount).to.equal(2);
+      chai.expect(AdminsRest.relinkTraces.callCount).to.equal(2);
+    }).timeout(10000);
+  });
 });

@@ -49,7 +49,7 @@ describe('Base Service', function () {
     sinon.stub(config.references[0].service, 'getAllByIDs').callsFake((ids, projection) => {
       console.log(`\nrest service called with ids ${JSON.stringify(ids)} and projection ${JSON.stringify(projection)}`);
       chai.expect(ids).to.deep.equal(['targetID4']);
-      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1 });
+      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 });
 
       return {
         status: 200,
@@ -105,7 +105,7 @@ describe('Base Service', function () {
     sinon.stub(refConfig.references[0].service, 'getAllByIDs').callsFake((ids, projection) => {
       console.log(`\nrest service called with ids ${JSON.stringify(ids)} and projection ${JSON.stringify(projection)}`);
       chai.expect(ids).to.deep.equal(['targetID4']);
-      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1 });
+      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 });
 
       return {
         status: 200,
@@ -184,7 +184,7 @@ describe('Base Service', function () {
     sinon.stub(config.references[0].service, 'getAllByIDs').callsFake((ids, projection) => {
       console.log(`\nrest service called with ids ${JSON.stringify(ids)} and projection ${JSON.stringify(projection)}`);
       chai.expect(ids).to.deep.equal(['targetID4']);
-      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1 });
+      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 });
 
       return {
         status: 200,
@@ -237,7 +237,7 @@ describe('Base Service', function () {
     sinon.stub(config.references[0].service, 'getAllByIDs').callsFake((ids, projection) => {
       console.log(`\nrest service called with ids ${JSON.stringify(ids)} and projection ${JSON.stringify(projection)}`);
       chai.expect(ids).to.deep.equal(['targetID4']);
-      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1 });
+      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 });
 
       return {
         status: 500,

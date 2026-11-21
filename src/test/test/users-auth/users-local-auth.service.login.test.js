@@ -15,6 +15,8 @@ describe('Users Local Auth Service login', function () {
   const config = { serviceName: UsersAuthConstants.ServiceName };
   const objInfo = { username: 'user@testdomain.test', password: 'Password1!' };
 
+  before(async function () {});
+
   beforeEach(function () {
     sinon.stub(UsersAuthDatabase, 'collection').resolves(null);
   });
@@ -22,6 +24,8 @@ describe('Users Local Auth Service login', function () {
   afterEach(function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * an unknown account takes the time of a wrong password (the hash is computed anyway)

@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const RestCommsUtils = require('../../../core/utils/rest-communications.utils.js');
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
 
@@ -167,6 +166,23 @@ describe('Students Rest', function () {
     // check
     chai.expect(stub.callCount).to.equal(1);
     chai.expect(res?.value).to.equal(true);
+  }).timeout(10000);
+
+  /**
+   * rest relink traces: an internal call (POST /relink-traces)
+   */
+  it('should relink traces via rest', async () => {
+    // stub: the call
+    const stub = sinon.stub(RestCommsUtils, 'call').resolves({ status: 200, value: ['old1'] });
+    const objInfo = { email: 'jane.smith@testdomain.test', userID: 'user1' };
+
+    // call
+    const res = await StudentsRest.relinkTraces(objInfo, _ctx);
+
+    // check
+    chai.expect(stub.firstCall.args[0]).to.deep.include({ method: 'POST', path: '/relink-traces', body: objInfo });
+    chai.expect(stub.firstCall.args[0].localCall).to.deep.equal({ fn: 'relinkTraces', params: { objInfo } });
+    chai.expect(res.value).to.deep.equal(['old1']);
   }).timeout(10000);
 
   /**

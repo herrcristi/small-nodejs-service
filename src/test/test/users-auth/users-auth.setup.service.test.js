@@ -10,6 +10,20 @@ describe('Users Auth Setup Service', function () {
   const email = 'first.portal.admin@testdomain.test';
   let previousEmail;
 
+  /**
+   * the init must throw: returns the error
+   */
+  const initError = async () => {
+    try {
+      await UsersAuthSetupService.init();
+    } catch (e) {
+      return e;
+    }
+    return null;
+  };
+
+  before(async function () {});
+
   beforeEach(function () {
     previousEmail = process.env.SMALL_API_PORTAL_ADMIN_EMAIL;
     process.env.SMALL_API_PORTAL_ADMIN_EMAIL = email;
@@ -24,39 +38,40 @@ describe('Users Auth Setup Service', function () {
     }
   });
 
+  after(async function () {});
+
   /**
-   * nothing configured
+   * nothing configured: nothing is checked
    */
-  it('does nothing when no first portal admin email is configured', async () => {
-    // no email; no read and no invite are expected
+  it('does not invite when no portal admin email is configured', async () => {
+    // stub: no email
     delete process.env.SMALL_API_PORTAL_ADMIN_EMAIL;
-    const stubGetAll = sinon.stub(UsersRest, 'getAll');
+    const stubAdmins = sinon.stub(UsersRest, 'getPortalAdmins');
     const stubInvite = sinon.stub(UsersAuthSignupService, 'invite');
 
     // call: nothing done
     chai.expect(await UsersAuthSetupService.init()).to.equal(false);
 
-    // check: nothing read, nobody invited
-    chai.expect(stubGetAll.callCount).to.equal(0);
+    // check: no portal admin read, nobody invited
+    chai.expect(stubAdmins.callCount).to.equal(0);
     chai.expect(stubInvite.callCount).to.equal(0);
   });
 
   /**
-   * no portal admin yet
+   * no active portal admin: the configured email is invited
    */
-  it('invites the configured email as portal admin when there is none', async () => {
-    // stub: no portal admin, and the invite
-    const stubGetAll = sinon.stub(UsersRest, 'getAll').resolves({ status: 200, value: [] });
-    const stubInvite = sinon.stub(UsersAuthSignupService, 'invite').resolves({ status: 201, value: {} });
+  it('invites the configured email when no portal admin is active', async () => {
+    // stub: no active portal admin (none, a former one, or only a disabled one); the invite
+    const stubAdmins = sinon.stub(UsersRest, 'getPortalAdmins').resolves({ status: 200, value: { data: [] } });
+    const invited = { status: 201, value: {} };
+    const stubInvite = sinon.stub(UsersAuthSignupService, 'invite').resolves(invited);
 
     // call: invited
     chai.expect(await UsersAuthSetupService.init()).to.equal(true);
 
-    // check: the members of the portal school were read, the email invited as portal admin of the portal school
-    chai
-      .expect(stubGetAll.firstCall.args[0])
-      .to.equal(`schools.id=${TestConstants.PortalSchoolID}&limit=1&projection=id`);
-    chai.expect(stubInvite.calledOnce).to.equal(true);
+    // check: only the active portal admins count; the email invited as portal admin of the portal school
+    chai.expect(stubAdmins.firstCall.args[0]).to.equal('status=active&limit=1&projection=id');
+    chai.expect(stubAdmins.firstCall.args[1].tenantID).to.equal(TestConstants.PortalSchoolID);
     chai.expect(stubInvite.firstCall.args[0]).to.deep.equal({
       email,
       school: { role: UsersRest.Constants.Roles.PortalAdmin },
@@ -65,11 +80,11 @@ describe('Users Auth Setup Service', function () {
   });
 
   /**
-   * already has a portal admin
+   * an active portal admin exists: nothing to do
    */
-  it('does not invite again when a portal admin already exists', async () => {
-    // stub: a portal admin exists; no invite is expected
-    sinon.stub(UsersRest, 'getAll').resolves({ status: 200, value: [{ id: 'user1' }] });
+  it('does not invite when a portal admin is active', async () => {
+    // stub: an active portal admin; no invite is expected
+    sinon.stub(UsersRest, 'getPortalAdmins').resolves({ status: 200, value: { data: [{ id: 'user1' }] } });
     const stubInvite = sinon.stub(UsersAuthSignupService, 'invite');
 
     // call and check: nobody invited
@@ -80,66 +95,24 @@ describe('Users Auth Setup Service', function () {
   /**
    * failures stop the startup, the operator must fix the configuration
    */
-  it('fails when the portal admins cannot be checked', async () => {
-    // stub: the read fails; no invite is expected
-    sinon.stub(UsersRest, 'getAll').resolves({ status: 500, error: { message: 'db down' } });
+  it('fails when the portal admins can not be checked or the invitation fails', async () => {
+    // stub: the portal admins can not be read
+    const stubAdmins = sinon
+      .stub(UsersRest, 'getPortalAdmins')
+      .resolves({ status: 500, error: { message: 'db down' } });
     const stubInvite = sinon.stub(UsersAuthSignupService, 'invite');
 
-    // call: it throws
-    let error = null;
-    try {
-      await UsersAuthSetupService.init();
-    } catch (e) {
-      error = e;
-    }
-
-    // check: the error of the read, nobody invited
-    chai.expect(error?.message).to.equal('db down');
+    // case: the active portal admins can not be read: the error, nobody invited
+    chai.expect((await initError())?.message).to.equal('db down');
     chai.expect(stubInvite.callCount).to.equal(0);
-  });
+    stubAdmins.resolves({ status: 500, error: {} });
+    chai.expect((await initError())?.message).to.equal('Failed to check the portal admins');
 
-  /**
-   * a failed invitation stops the startup too
-   */
-  it('fails when the invitation fails', async () => {
-    // stub: no portal admin; the invite fails
-    sinon.stub(UsersRest, 'getAll').resolves({ status: 200, value: [] });
-    sinon.stub(UsersAuthSignupService, 'invite').resolves({ status: 400, error: { message: 'bad email' } });
-
-    // call: it throws
-    let error = null;
-    try {
-      await UsersAuthSetupService.init();
-    } catch (e) {
-      error = e;
-    }
-
-    // check: the error of the invite
-    chai.expect(error?.message).to.equal('bad email');
-  });
-
-  /**
-   * default messages when the errors have none
-   */
-  it('uses default messages when the errors have no message', async () => {
-    // the read fails without a message
-    const stubGetAll = sinon.stub(UsersRest, 'getAll').resolves({ status: 500, error: {} });
-    let error = null;
-    try {
-      await UsersAuthSetupService.init();
-    } catch (e) {
-      error = e;
-    }
-    chai.expect(error?.message).to.equal('Failed to check the portal admins');
-
-    // the invite fails without a message
-    stubGetAll.resolves({ status: 200, value: [] });
-    sinon.stub(UsersAuthSignupService, 'invite').resolves({ status: 500, error: {} });
-    try {
-      await UsersAuthSetupService.init();
-    } catch (e) {
-      error = e;
-    }
-    chai.expect(error?.message).to.equal('Failed to invite the first portal admin');
+    // case: the invite fails (an invalid email): the error
+    stubAdmins.resolves({ status: 200, value: { data: [] } });
+    stubInvite.resolves({ status: 400, error: { message: 'bad email' } });
+    chai.expect((await initError())?.message).to.equal('bad email');
+    stubInvite.resolves({ status: 500, error: {} });
+    chai.expect((await initError())?.message).to.equal('Failed to invite the first portal admin');
   });
 });

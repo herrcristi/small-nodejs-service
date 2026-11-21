@@ -13,5 +13,6 @@ require('./schools.service.delete.test.js');
 require('./schools.service.put.test.js');
 require('./schools.service.patch.test.js');
 require('./schools.service.activate.test.js');
+require('./schools.service.settings.test.js');
 require('./schools.service.notification.test.js');
 require('./schools.service.translate.test.js');

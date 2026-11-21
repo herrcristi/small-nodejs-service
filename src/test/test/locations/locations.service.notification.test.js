@@ -1,22 +1,12 @@
-const _ = require('lodash');
-const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const supertest = require('supertest');
 
-
-const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
-const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 
-const TestConstants = require('../../test-constants.js');
 const LocationsService = require('../../../services/locations/locations.service.js');
-const LocationsRest = require('../../../services/rest/locations.rest.js');
-const EventsRest = require('../../../services/rest/events.rest.js');
 
 describe('Locations Service', function () {
-  const tenantID = _.cloneDeep(TestConstants.Schools[0].id);
-  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Locations' };
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Locations', tenantID: 'school1' };
 
   before(async function () {});
 
@@ -29,40 +19,28 @@ describe('Locations Service', function () {
   after(async function () {});
 
   /**
-   * notification with success
+   * the locations keep no copy of other services: a notification changes nothing
    */
   it('should do notification with success', async () => {
-    const notifications = _.cloneDeep(TestConstants.LocationsNotifications);
-    const notif = notifications[0];
-
-    // stub
-    let stubBase = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification) => {
-      console.log(`\nNotificationsUtils.notification called\n`);
-      return {
-        status: 200,
-        value: true,
-      };
-    });
+    // stub: no change is expected
+    const stubPut = sinon.stub(DbOpsUtils, 'updateManyReferences');
 
     // call
-    let res = await LocationsService.notification(notif, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    const notification = { serviceName: 'schedules', modified: [{ id: 'schedule1', name: 'Mathematics Monday' }] };
+    const res = await LocationsService.notification(notification, _ctx);
 
-    // check
-    chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: true,
-    });
+    // check: ignored
+    chai.expect(res).to.deep.equal({ status: 200, value: false });
+    chai.expect(stubPut.callCount).to.equal(0);
   }).timeout(10000);
 
   /**
-   * notification failed no tenant
+   * notification failed tenant
    */
   it('should notification failed tenant', async () => {
-    // call
-    let res = await LocationsService.notification({}, { ..._ctx, tenantID: undefined });
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    // call: without a school
+    const notification = { serviceName: 'schedules', modified: [{ id: 'schedule1' }] };
+    const res = await LocationsService.notification(notification, { ..._ctx, tenantID: undefined });
 
     // check
     chai.expect(res.status).to.equal(400);
@@ -73,25 +51,10 @@ describe('Locations Service', function () {
    * notification fail validation
    */
   it('should notification fail validation', async () => {
-    const notifications = _.cloneDeep(TestConstants.LocationsNotifications);
-    const notif = notifications[0];
-    delete notif.serviceName;
-
-    // stub
-    let stubBase = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification) => {
-      console.log(`\nNotificationsUtils.notification called\n`);
-      return {
-        status: 200,
-        value: true,
-      };
-    });
-
-    // call
-    let res = await LocationsService.notification(notif, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    // call: no service name
+    const res = await LocationsService.notification({ modified: [{ id: 'schedule1' }] }, _ctx);
 
     // check
-    chai.expect(stubBase.callCount).to.equal(0);
     chai.expect(res.status).to.equal(400);
     chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "serviceName" is required');
   }).timeout(10000);

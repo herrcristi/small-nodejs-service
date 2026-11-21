@@ -159,7 +159,10 @@ Every document has `createdTimestamp`, `lastModifiedTimestamp`, and `modifiedCou
 
 ### Users can be deleted, their traces stay
 
-A person can delete their account. The records they leave in schools (admin, professor, student) and the events that name them **stay, marked disabled**, so a school's history is not rewritten. Removing someone from a school is a different action: an admin removes the role, and the account is untouched.
+A person can delete their account: the account is deleted. The records they leave in schools (admin, professor, student) and the events that name them **stay, marked deleted**, so a school's history is not rewritten. Removing someone from a school is a different action: an admin removes the role, the account is untouched, and the record stays marked removed. Each school chooses whether it keeps these traces or deletes them:
+
+- **A university keeps them.** Year after year a student joins new groups and new schedules, with new professors, and is graded in classes that end. When a student leaves (or a professor), the groups, the schedules, and the grades of past years must still show who was there: the traces keep that history true.
+- **A sports gym deletes them.** Someone joins a training group and a schedule; when they leave, nothing about them is needed anymore, so the record is deleted, with its entries in the groups and the schedules.
 
 ## Roles and who sees what
 
@@ -249,9 +252,9 @@ Each decision, with its trade-off, is in [Design decisions](README.details.md#de
 
 ## How it is verified
 
-- **Unit tests:** more than 1,300 Mocha tests, with Sinon stubs for service dependencies, in one suite per service. Coverage of the application code is above 99%.
-- **Functional tests** against a real MongoDB are separate (`npm run testdb`).
-- **Independent reviews** were run for security, adversarial behaviour, flow correctness, concurrency, and scalability, with runnable scripts. Their conclusions feed the [security model](README.details.md#security-model) and the [sizing guide](README.details.md#sizing-guide).
+- **Unit tests:** about 1,500 Mocha tests, with Sinon stubs for service dependencies, in one suite per service. They cover all the application code, and they set their own settings: nothing of the shell or of the machine is used.
+- **Functional tests** against a real MongoDB are separate (`npm run testdb`): the operations of the services, and the flows of the accounts through the API (login, signup, invite, the remove of a role, the delete of an account and its invitation again, the expiry of the invitations).
+- **Independent reviews** were run for security, adversarial behaviour, flow correctness, concurrency, and scalability, with runnable scripts. Their conclusions feed the [security model](README.details.md#security-model), the [sizing guide](README.details.md#sizing-guide), and the [design invariants](README.design-invariants.md): the promises of the design, each with the check that proves it. The method is the [review guide](README.review-guide.md).
 
 ## Getting started
 
@@ -268,12 +271,14 @@ The API reads its settings from the process environment: database, secrets, mail
 
 ## Documentation
 
-| Where                                      | What                                                                                                                                                                                                                                                |
-| ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **[README.details.md](README.details.md)** | The details: access model, statuses, security model, design decisions, both data modes with configuration, sizing guide, local development, authentication, API conventions, a walkthrough, every service with UI and curl examples, and a code map |
-| [docs/design.md](docs/design.md)           | How it is built: layers, the anatomy of a service, how services talk to each other, and how to extend it                                                                                                                                            |
-| [docs/testing.md](docs/testing.md)         | How to test it: kinds of tests, how to run and write them, and what a change must cover                                                                                                                                                             |
-| [docs/security.md](docs/security.md)       | The security model, where it is enforced, and (to be added) hardening and review guides                                                                                                                                                             |
-| [src/.env.example](src/.env.example)       | The backend settings                                                                                                                                                                                                                                |
-| `src/services/config.roles.json`           | Which role may call which route                                                                                                                                                                                                                     |
-| `src/services/config.services.js`          | Services and the notifications between them                                                                                                                                                                                                         |
+| Where                                                      | What                                                                                                                                                                                                                                                |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **[README.details.md](README.details.md)**                 | The details: access model, statuses, security model, design decisions, both data modes with configuration, sizing guide, local development, authentication, API conventions, a walkthrough, every service with UI and curl examples, and a code map |
+| [README.design-invariants.md](README.design-invariants.md) | The promises of the design, each with the check that proves it, and the caveats                                                                                                                                                                     |
+| [README.review-guide.md](README.review-guide.md)           | How to review it: security, adversarial, flows, concurrency, scalability, documentation, and the regression pass                                                                                                                                    |
+| [docs/design.md](docs/design.md)                           | How it is built: layers, the anatomy of a service, how services talk to each other, and how to extend it                                                                                                                                            |
+| [docs/testing.md](docs/testing.md)                         | How to test it: kinds of tests, how to run and write them, and what a change must cover                                                                                                                                                             |
+| [docs/security.md](docs/security.md)                       | The security model, where it is enforced, and (to be added) the hardening guide                                                                                                                                                                     |
+| [src/.env.example](src/.env.example)                       | The backend settings                                                                                                                                                                                                                                |
+| `src/services/config.roles.json`                           | Which role may call which route                                                                                                                                                                                                                     |
+| `src/services/config.services.js`                          | Services and the notifications between them                                                                                                                                                                                                         |

@@ -9,6 +9,7 @@ const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
 const CommonUtils = require('../../core/utils/common.utils');
+const ConfigSettings = require('../config.settings.js');
 const ValidationUtils = require('../../core/utils/validation.utils.js');
 const ReferencesUtils = require('../../core/utils/base-service.references.utils.js');
 const NotificationsUtils = require('../../core/utils/base-service.notifications.utils.js');
@@ -78,6 +79,7 @@ const Validators = {
   },
 
   Post: Schema.UserEmail.keys({
+    id: Joi.string().min(1).max(64), // (internal) a new id given by the invite (the traces are linked to it first)
     name: Joi.string().min(1).max(128),
     type: Joi.string().valid(UsersConstants.Type),
     schools: SchemaSchools,
@@ -110,6 +112,11 @@ const Validators = {
       schools: SchemaSchools,
     }),
   }),
+
+  // the internal changes of the status (never from a request)
+  Activate: Joi.object().keys({
+    status: Joi.string().valid(UsersConstants.Status.Active).required(),
+  }),
 };
 
 const Private = {
@@ -121,6 +128,50 @@ const Private = {
     PatchSchool: 'patchSchool',
     Activate: 'activate',
   },
+
+  /**
+   * the timer of the cleanup of the pending users (see Public.deleteExpiredPending), and the most users removed at once
+   */
+  PendingCleanupTimer: null,
+  PendingCleanupBatch: 100,
+
+  /**
+   * start the regular cleanup of the users whose invitation was not used in time (every pod runs it: a user removed
+   * by another pod is not found, which is fine); the timer does not keep the process alive
+   */
+  startPendingCleanup: () => {
+    // an init again (the tests) starts it again
+    clearInterval(Private.PendingCleanupTimer);
+
+    const interval = UsersConstants.PendingCleanupInterval * 1000;
+    Private.PendingCleanupTimer = setInterval(async () => {
+      // the events of the cleanup are written in the log of the portal school
+      const _ctx = { reqID: 'UsersPendingCleanup', lang: 'en', tenantID: process.env.SMALL_API_PORTAL_SCHOOL_ID };
+      try {
+        const r = await Public.deleteExpiredPending(_ctx);
+        if (r.error) {
+          console.log(`\n${UsersConstants.ServiceName}: the cleanup of the pending users failed: ${r.error.message}`);
+        }
+      } catch (e) {
+        console.log(
+          `\n${UsersConstants.ServiceName}: the cleanup of the pending users failed: ${CommonUtils.getLogError(e)}`
+        );
+      }
+    }, interval);
+    Private.PendingCleanupTimer.unref();
+  },
+
+  /**
+   * the user as it is now (a conditional change that did not apply: the status was changed meanwhile)
+   * returns { status, value } with the default projection, or { status, error }
+   */
+  getCurrentStatus: async (objID, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
+    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
+    return BaseServiceUtils.getProjectedResponse(rget, null /*default projection */, _ctx);
+  },
+
   Notification: NotificationsUtils.Constants.Notification,
 
   /**
@@ -215,11 +266,20 @@ const Private = {
         {
           fieldName: 'schools[]',
           service: SchoolsRest,
-          projection: null /*default*/,
+          projection: { id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 }, // the createdTimestamp and modifiedCount of the copy
         },
       ],
       notifications: {
-        projection: { id: 1, name: 1, type: 1, status: 1, email: 1, schools: 1 } /* for sync+async */,
+        projection: {
+          id: 1,
+          name: 1,
+          type: 1,
+          status: 1,
+          email: 1,
+          schools: 1,
+          createdTimestamp: 1,
+          modifiedCount: 1,
+        } /* for sync+async */,
       },
     };
     return config;
@@ -338,13 +398,62 @@ const Private = {
 
     return userDiff;
   },
+
+  /**
+   * schools notification: the copies of the schools in the users (schools[])
+   * - modified: the copies are updated (only the older ones, modifiedCount)
+   * - removed (the school was deleted): the memberships of the school are removed from the users
+   * (a membership is added by an invite or a role, not by a notification)
+   * nothing is notified (the memberships are not copied by other services)
+   * a failure is logged and the next schools are still done; the first failure is returned at the end
+   * returns { status, value } or { status, error }
+   */
+  onSchoolsNotification: async (notification, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+    const [schoolsRef] = config.references; // the copies of the schools (schools[]): the only references of the users
+    const changedUsersIDs = new Set();
+    let failure = null; // the first failure (the next schools are still done)
+
+    // the copies of the modified schools
+    for (const school of notification[Private.Notification.Modified] || []) {
+      const schoolCopy = CommonUtils.getProjectedObj(school, schoolsRef.projection);
+      const rCopies = await DbOpsUtils.updateManyReferences(config, schoolsRef, schoolCopy, _ctx);
+      if (rCopies.error) {
+        console.log(
+          `\n${UsersConstants.ServiceName}: failed to update the copies of the school ${school.id}: ${rCopies.error.message}`
+        );
+        failure ??= rCopies;
+        continue;
+      }
+      rCopies.ids.forEach((id) => changedUsersIDs.add(id));
+    }
+
+    // the deleted schools
+    for (const school of notification[Private.Notification.Removed] || []) {
+      console.log(`\n${UsersConstants.ServiceName}: remove the deleted school ${school.id} from the users`);
+
+      const schoolCopy = CommonUtils.getProjectedObj(school, schoolsRef.projection);
+      const rRemove = await DbOpsUtils.deleteManyReferences(config, schoolsRef, schoolCopy, _ctx);
+      if (rRemove.error) {
+        console.log(
+          `\n${UsersConstants.ServiceName}: failed to remove the school ${school.id}: ${rRemove.error.message}`
+        );
+        failure ??= rRemove;
+      }
+    }
+
+    return failure || { status: 200, value: [...changedUsersIDs] };
+  },
 };
 
 const Public = {
   /**
    * init
    */
-  init: async () => {},
+  init: async () => {
+    // the users whose invitation was not used in time are removed regularly
+    Private.startPendingCleanup();
+  },
 
   /**
    * get all users for a request: only portal admins (on the portal school), for the users page
@@ -503,7 +612,7 @@ const Public = {
     }
     objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
-    objInfo.status = UsersConstants.Status.Pending; // add default status pending
+    objInfo.status = UsersConstants.Status.Pending; // add default status pending (removed when its invitation is not used in time)
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
@@ -552,9 +661,11 @@ const Public = {
     // raise event for delete
     await EventsRest.raiseEventForObject(UsersConstants.ServiceName, Private.Action.Delete, r.value, r.value, _ctx);
 
-    // raise a notification for removed obj
+    // raise a notification for removed obj: the user does not exist anymore, its copies kept by the schools as traces
+    // are deleted (see the setting of each school)
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
-    let rn = await UsersRest.raiseNotification(Private.Notification.Removed, [rnp.value], _ctx);
+    const removedUser = { ...rnp.value, status: UsersConstants.Status.Deleted };
+    let rn = await UsersRest.raiseNotification(Private.Notification.Removed, [removedUser], _ctx);
 
     // success
     return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
@@ -562,8 +673,9 @@ const Public = {
 
   /**
    * put
+   * options: { filter? } a conditional update (see DbOpsUtils.put): 409 when the user does not match the filter
    */
-  putInternal: async (objID, objInfo, validator, action, _ctx) => {
+  putInternal: async (objID, objInfo, validator, action, _ctx, options = null) => {
     // validation is done in caller functions
     const v = validator.validate(objInfo);
     if (v.error) {
@@ -599,7 +711,7 @@ const Public = {
     await Public.translate(objInfo, _ctx);
 
     // put
-    const r = await DbOpsUtils.put(config, objID, objInfo, projection, _ctx);
+    const r = await DbOpsUtils.put(config, objID, objInfo, projection, _ctx, options);
     if (r.error) {
       return r;
     }
@@ -637,34 +749,71 @@ const Public = {
    * put status: only a portal admin (on the portal school), for any user
    * active <-> disabled, pending -> active | disabled, never back to pending; a portal admin can not disable itself
    */
-  putStatus: async (objID, objInfo, _ctx) => {
+  putStatus: async (objID, objInfo, _ctx, action = Private.Action.PutStatus) => {
     if (!Private.isPortalTenant(_ctx)) {
       return Private.portalRequired();
     }
 
     // the response has the default projection (not the schools of the user)
-    return await Public.putInternal(objID, objInfo, Validators.PutStatus, Private.Action.PutStatus, _ctx);
+    return await Public.putInternal(objID, objInfo, Validators.PutStatus, action, _ctx);
   },
 
   /**
    * activate (internal) called from users-auth at login: a pending user becomes active
-   * a user that is not pending is not changed (an active user stays active, a disabled user stays disabled)
+   * a user that is not pending is not changed (an active user stays active, a disabled user stays disabled): the
+   * status is changed only if it is still pending when it is written (one conditional write), so a disable done
+   * meanwhile is never overwritten
    * returns { status, value } with the current status of the user, or { status, error }
    */
   activate: async (objID, _ctx) => {
-    const config = await Private.getConfig(_ctx);
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
-
-    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
-    if (rget.error) {
-      return rget;
-    }
-    if (rget.value.status !== UsersConstants.Status.Pending) {
-      return BaseServiceUtils.getProjectedResponse(rget, null /*default projection */, _ctx);
-    }
-
+    // active: not pending anymore (no expiry)
     const objInfo = { status: UsersConstants.Status.Active };
-    return await Public.putInternal(objID, objInfo, Validators.PutStatus, Private.Action.Activate, _ctx);
+    const options = { filter: { status: UsersConstants.Status.Pending } };
+    const r = await Public.putInternal(objID, objInfo, Validators.Activate, Private.Action.Activate, _ctx, options);
+    if (r.status !== 409) {
+      return r;
+    }
+
+    // not pending (anymore): the user is not changed, its current status is returned
+    return await Private.getCurrentStatus(objID, _ctx);
+  },
+
+  /**
+   * remove the users whose invitation was not used in time (pending and created longer than
+   * ConfigSettings.getPendingExpiresIn ago): the user is deleted, its pending records in the schools are deleted and
+   * its login too (the removed notification; the traces of an earlier account with the same id stay as they are)
+   * (a pending portal admin too: while no portal admin is active, the next start invites the configured one again)
+   * a failure is logged and the next users are still removed
+   * returns { status, value: [ removed ids ] } or { status, error }
+   */
+  deleteExpiredPending: async (_ctx) => {
+    const config = await Private.getConfig(_ctx);
+    const expiresIn = ConfigSettings.getPendingExpiresIn() * 1000;
+    const expiredBefore = new Date(Date.now() - expiresIn).toISOString();
+    const filter = {
+      filter: { status: UsersConstants.Status.Pending, createdTimestamp: { $lt: expiredBefore } },
+      projection: { _id: 0, id: 1, email: 1 },
+      limit: Private.PendingCleanupBatch,
+    };
+    const rUsers = await DbOpsUtils.getAll(config, filter, _ctx);
+    if (rUsers.error) {
+      return rUsers;
+    }
+
+    const removedIDs = [];
+    for (const user of rUsers.value) {
+      console.log(`\n${UsersConstants.ServiceName}: the invitation of ${user.id} was not used in time: it is removed`);
+      const r = await Public.delete(user.id, _ctx);
+      if (r.error) {
+        console.log(
+          `\n${UsersConstants.ServiceName}: failed to remove the pending user ${user.id}: ${r.error.message}`
+        );
+        continue;
+      }
+      removedIDs.push(user.id);
+    }
+
+    return { status: 200, value: removedIDs };
   },
 
   putEmail: async (objID, objInfo, _ctx) => {
@@ -683,17 +832,7 @@ const Public = {
     }
     patchInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
-    // if current user is trying to change the status to disabled, skip it for himself
-    if (objID === _ctx.userID && patchInfo.set?.status === UsersConstants.Status.Disabled) {
-      console.log(`\nSkipping disabling status of current user ${objID}`);
-      return {
-        error: {
-          message: 'Skipping disabling status of current user',
-          error: new Error('Skipping disabling status of current user'),
-        },
-        status: 400,
-      };
-    }
+    // the status is changed by putStatus (its guard: a user does not disable itself), never by a patch
 
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
@@ -714,6 +853,11 @@ const Public = {
 
     // translate
     await Public.translate(patchInfo.set, _ctx);
+
+    // a membership without roles is not a membership: removed with its last role (in the same patch)
+    if (action === Private.Action.PatchSchool) {
+      patchInfo.removeWhere = { schools: { roles: { $size: 0 } } };
+    }
 
     // patch
     const r = await DbOpsUtils.patch(config, objID, patchInfo, projection, _ctx);
@@ -764,7 +908,14 @@ const Public = {
       return Private.portalRequired();
     }
 
-    const r = await Public.patchInternal(objID, patchInfo, Validators.PatchStatus, Private.Action.PatchStatus, _ctx);
+    // validate, then the same change as put (a deleted account is not changed)
+    const v = Validators.PatchStatus.validate(patchInfo);
+    if (v.error) {
+      return CommonUtils.getSchemaValidationError(v, patchInfo, _ctx);
+    }
+    patchInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
+
+    const r = await Public.putStatus(objID, patchInfo.set, _ctx, Private.Action.PatchStatus);
     return Private.getResponseForAccess(r, Private.Access.Portal, _ctx);
   },
 
@@ -774,7 +925,9 @@ const Public = {
   },
 
   /**
-   * notification
+   * notification: the copies kept by the users follow the changes of their sources (each source has its own flow)
+   * - schools: the copies of the schools in the memberships of the users (a deleted school: its memberships are removed)
+   * notification: { serviceName, added?, modified?, removed? }
    */
   notification: async (notification, _ctx) => {
     // validate
@@ -784,11 +937,15 @@ const Public = {
     }
     notification = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
-    // { serviceName, collection, references, fillReferences }
-    const config = await Private.getConfig(_ctx);
-
-    // notification (process references)
-    return await NotificationsUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
+    switch (notification.serviceName) {
+      case SchoolsRest.Constants.ServiceName:
+        return await Private.onSchoolsNotification(notification, _ctx);
+      default:
+        console.log(
+          `\n${UsersConstants.ServiceName}: notification of ${notification.serviceName} ignored (no copy of it)`
+        );
+        return { status: 200, value: false };
+    }
   },
 
   /**

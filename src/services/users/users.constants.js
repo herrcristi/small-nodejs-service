@@ -16,11 +16,19 @@ const Public = {
   Type: 'user',
 
   // status
+  // pending: invited, never logged in (removed when the invitation is not used in time, see PendingExpiresDays)
+  // the copies of a user kept by the schools (students, professors, admins) as traces have also:
+  // deleted: the user deleted its account (the user does not exist anymore), removed: its role was removed
   Status: {
     Pending: 'pending',
     Active: 'active',
     Disabled: 'disabled',
+    Deleted: 'deleted',
+    Removed: 'removed',
   },
+
+  // how often the pending users are checked for an expired invitation (seconds)
+  PendingCleanupInterval: 60 * 60,
 
   // roles (must match the services types)
   Roles: {

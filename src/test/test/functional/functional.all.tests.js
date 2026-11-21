@@ -16,3 +16,4 @@ require('./functional.groups.test.js');
 require('./functional.schedules.test.js');
 
 // TODO add tests for signup+invite and login+validate + logout (and routes)
+require('./functional.users-auth.test.js');

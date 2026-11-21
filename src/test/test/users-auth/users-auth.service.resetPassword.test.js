@@ -9,7 +9,9 @@ const NotificationsUtils = require('../../../core/utils/base-service.notificatio
 
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
+const UsersAuthServiceLocal = require('../../../services/users-auth/users-local-auth.service.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
+const UsersAuthSessionsService = require('../../../services/users-auth/users-auth.sessions.service.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 const EmailsUtils = require('../../../core/utils/emails.utils.js');
@@ -21,7 +23,15 @@ describe('Users Auth Service', function () {
 
   before(async function () {});
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    // the sessions and the emailed links (their own collection): a new one, and all the ones of the user ended
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const link = { id: 'session-hash1', secret: 'secret1', expiresAt };
+    sinon.stub(UsersAuthSessionsService, 'create').resolves({ status: 201, value: link });
+    sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 1 });
+    // no email of the same type was sent to the user less than EmailInterval ago: it can be sent now
+    sinon.stub(UsersAuthServiceLocal, 'putEmailTimestamp').resolves({ status: 200, value: {} });
+  });
 
   afterEach(async function () {
     sinon.restore();
@@ -61,7 +71,10 @@ describe('Users Auth Service', function () {
     let res = await UsersAuthService.resetPassword(postReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // the reset email is sent without waiting for it (the time of the answer must not tell if the account exists)
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    // check: sent (the answer does not wait for the delivery)
     chai.expect(stubGet.callCount).to.equal(1);
     chai.expect(stubEmail.callCount).to.equal(1);
     chai.expect(stubEvent.callCount).to.equal(1);
@@ -72,6 +85,38 @@ describe('Users Auth Service', function () {
         type: testUser.type,
       },
     });
+  }).timeout(10000);
+
+  /**
+   * resetPassword again less than EmailInterval after the last one (a repeated click, a flood of the public form): no
+   * new link (the link sent before stays the valid one), no email, the same answer
+   */
+  it('should resetPassword not again within the email interval', async () => {
+    const testUser = _.cloneDeep(TestConstants.UsersAuth[0]);
+
+    // stub: a reset email was sent to the user less than EmailInterval ago
+    UsersAuthServiceLocal.putEmailTimestamp.resolves({
+      status: 409,
+      error: { message: 'Not matched', error: new Error('Not matched') },
+    });
+    const stubGet = sinon.stub(DbOpsUtils, 'getOne');
+    const stubEvent = sinon.stub(EventsRest, 'raiseEventForObject');
+    const stubEmail = sinon.stub(EmailsUtils, 'sendEmail');
+
+    // call
+    const res = await UsersAuthService.resetPassword({ username: testUser.id }, _ctx);
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    // check: the time of the reset email of this user was checked, nothing else done
+    chai.expect(UsersAuthServiceLocal.putEmailTimestamp.args[0][1]).to.equal(testUser.id);
+    chai
+      .expect(UsersAuthServiceLocal.putEmailTimestamp.args[0][2])
+      .to.equal(UsersAuthConstants.ResetTokenType.ResetPassword);
+    chai.expect(stubGet.callCount).to.equal(0);
+    chai.expect(UsersAuthSessionsService.create.callCount).to.equal(0);
+    chai.expect(stubEmail.callCount).to.equal(0);
+    chai.expect(stubEvent.callCount).to.equal(0);
+    chai.expect(res).to.deep.equal({ status: 200, value: { username: testUser.id, type: testUser.type } });
   }).timeout(10000);
 
   /**
@@ -125,9 +170,9 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * resetPassword with success for type invite
+   * resetPassword for a signup link (sent by an invite): sent like a reset link
    */
-  it('should resetPassword with success for type invite', async () => {
+  it('should resetPassword with success for a signup link', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
@@ -153,8 +198,11 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.resetPassword(postReq, _ctx, UsersAuthConstants.ResetTokenType.Invite);
+    let res = await UsersAuthService.resetPassword(postReq, _ctx, UsersAuthConstants.ResetTokenType.Signup);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // the email is sent without waiting for it
+    await new Promise((resolve) => setTimeout(resolve, 20));
 
     // check
     chai.expect(stubGet.callCount).to.equal(1);
@@ -184,6 +232,7 @@ describe('Users Auth Service', function () {
     await UsersAuthService.init();
 
     try {
+      sinon.stub(UsersAuthServiceFirebase, 'putEmailTimestamp').resolves({ status: 200, value: {} });
       const stubFirebase = sinon.stub(UsersAuthServiceFirebase, 'resetPassword').resolves({ status: 200, value: {} });
       const stubEvent = sinon.stub(EventsRest, 'raiseEventForObject');
       const stubEmail = sinon.stub(EmailsUtils, 'sendEmail');
@@ -193,7 +242,10 @@ describe('Users Auth Service', function () {
       chai.expect(stubFirebase.callCount).to.equal(1);
       chai.expect(stubEmail.callCount).to.equal(0);
       chai.expect(stubEvent.callCount).to.equal(1);
-      chai.expect(res).to.deep.equal({ status: 200, value: { username: testUser.id, type: testUser.type } });
+      chai.expect(res).to.deep.equal({
+        status: 200,
+        value: { username: testUser.id, type: testUser.type },
+      });
     } finally {
       // back to the provider of the other tests
       process.env.SMALL_API_AUTH_PROVIDER_TYPE = authProviderType;

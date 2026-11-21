@@ -1,26 +1,28 @@
 const _ = require('lodash');
-const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const supertest = require('supertest');
 
-const BaseServiceUtils = require('../../../core/utils/base-service.utils.js');
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
-const RestApiUtils = require('../../../core/utils/rest-api.utils.js');
 
 const TestConstants = require('../../test-constants.js');
-const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
+const UsersAuthSessionsService = require('../../../services/users-auth/users-auth.sessions.service.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 const UsersRest = require('../../../services/rest/users.rest.js');
 
 describe('Users Auth Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
+  const fail = { status: 500, error: { message: 'Test error message', error: new Error('Test error') } };
 
   before(async function () {});
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    // the current user
+    const testUser = TestConstants.UsersAuth[0];
+    _ctx.userID = testUser.userID;
+    _ctx.username = testUser.id;
+  });
 
   afterEach(async function () {
     sinon.restore();
@@ -29,128 +31,74 @@ describe('Users Auth Service', function () {
   after(async function () {});
 
   /**
-   * delete with success
+   * delete the account: the user first (deleted, it can not log in), then its login, its sessions, the event and the
+   * notification
    */
   it('should delete with success', async () => {
-    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
-    const testUser = testUsers[0];
+    const testUser = _.cloneDeep(TestConstants.UsersAuth[0]);
 
-    const testUsersDetails = _.cloneDeep(TestConstants.Users);
-    const testUserDetails = testUsersDetails[0];
-
-    let stubBase = sinon.stub(DbOpsUtils, 'delete').callsFake((config, objID) => {
-      console.log(`\nDbOpsUtils.delete called`);
-      return {
-        status: 200,
-        value: { ...testUser },
-      };
-    });
-
-    let stubUserDetails = sinon.stub(UsersRest, 'delete').callsFake((objID) => {
-      console.log(`\nUsersRest.delete called ${JSON.stringify(objID, null, 2)}\n`);
-      return {
-        status: 200,
-        value: { ...testUserDetails },
-      };
-    });
-
-    let stubUsersAuthRest = sinon.stub(UsersAuthRest, 'raiseNotification').callsFake(() => {
-      console.log(`\nUsersAuthRest raiseNotification called`);
-    });
-
-    let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject');
+    // stub: the user is deleted, the login is removed, the sessions are ended
+    const stubAccount = sinon.stub(UsersRest, 'delete').resolves({ status: 200, value: { id: testUser.userID } });
+    const stubLogin = sinon.stub(DbOpsUtils, 'delete').resolves({ status: 200, value: { ...testUser } });
+    const stubEndAll = sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 1 });
+    const stubEvents = sinon.stub(EventsRest, 'raiseEventForObject');
+    const stubNotification = sinon.stub(UsersAuthRest, 'raiseNotification');
 
     // call
-    _ctx.userID = testUser.userID;
-    _ctx.username = testUser.id;
-    let res = await UsersAuthService.delete(_ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    const res = await UsersAuthService.delete(_ctx);
 
-    // check
-    chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubUserDetails.callCount).to.equal(1);
+    // check: in this order, for the current user
+    chai.expect(stubAccount.firstCall.args[0]).to.equal(testUser.userID);
+    chai.expect(stubLogin.firstCall.args[1]).to.equal(testUser.id);
+    chai.expect(stubAccount.calledBefore(stubLogin)).to.equal(true);
+    chai.expect(stubEndAll.firstCall.args[0]).to.equal(testUser.userID);
     chai.expect(stubEvents.callCount).to.equal(1);
-    chai.expect(stubUsersAuthRest.callCount).to.equal(1);
+    chai.expect(stubNotification.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,
-      value: {
-        userID: testUser.userID,
-        username: testUser.id,
-        type: testUser.type,
-      },
+      value: { userID: testUser.userID, username: testUser.id, type: testUser.type },
     });
   }).timeout(10000);
 
   /**
-   * delete fail
+   * the user can not be deleted: the error, the login is kept
    */
-  it('should delete fail ', async () => {
-    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
-    const testUser = testUsers[0];
-
-    // stub
-    let stubBase = sinon.stub(DbOpsUtils, 'delete').callsFake((config, objID) => {
-      console.log(`\nDbOpsUtils.delete called`);
-      return { status: 500, error: { message: 'Test error message', error: new Error('Test error') } };
-    });
+  it('should delete fail when the account can not be deleted', async () => {
+    // stub: the user can not be deleted
+    sinon.stub(UsersRest, 'delete').resolves(fail);
+    const stubLogin = sinon.stub(DbOpsUtils, 'delete');
 
     // call
-    _ctx.userID = testUser.userID;
-    _ctx.username = testUser.id;
-    let res = await UsersAuthService.delete(_ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    const res = await UsersAuthService.delete(_ctx);
 
-    // check
-    chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 500,
-      error: { message: 'Test error message', error: new Error('Test error') },
-    });
+    // check: the error, nothing else
+    chai.expect(res).to.deep.equal(fail);
+    chai.expect(stubLogin.callCount).to.equal(0);
   }).timeout(10000);
 
   /**
-   * delete fail user details
+   * the login can not be removed: the error (the user is deleted: it can not log in anyway); a login that does not
+   * exist anymore is not an error
    */
-  it('should fail user details', async () => {
-    const testUsers = _.cloneDeep(TestConstants.UsersAuth);
-    const testUser = testUsers[0];
-
-    const testUsersDetails = _.cloneDeep(TestConstants.Users);
-    const testUserDetails = testUsersDetails[0];
-
-    let stubBase = sinon.stub(DbOpsUtils, 'delete').callsFake((config, objID) => {
-      console.log(`\nDbOpsUtils.delete called`);
-      return {
-        status: 200,
-        value: { ...testUser },
-      };
-    });
-
-    let stubUserDetails = sinon.stub(UsersRest, 'delete').callsFake((objID) => {
-      console.log(`\nUsersRest.delete called ${JSON.stringify(objID, null, 2)}\n`);
-      return { status: 500, error: { message: 'Test error message', error: new Error('Test error') } };
-    });
-
-    let stubUsersAuthRest = sinon.stub(UsersAuthRest, 'raiseNotification').callsFake(() => {
-      console.log(`\nUsersAuthRest raiseNotification called`);
-    });
-
-    let stubEvents = sinon.stub(EventsRest, 'raiseEventForObject');
+  it('should delete fail when the login can not be removed, and ignore a missing login', async () => {
+    // stub: the user is deleted; the login can not be removed
+    sinon.stub(UsersRest, 'delete').resolves({ status: 200, value: {} });
+    const stubLogin = sinon.stub(DbOpsUtils, 'delete').resolves(fail);
+    const stubEndAll = sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 1 });
+    sinon.stub(EventsRest, 'raiseEventForObject');
+    sinon.stub(UsersAuthRest, 'raiseNotification');
 
     // call
-    _ctx.userID = testUser.userID;
-    _ctx.username = testUser.id;
-    let res = await UsersAuthService.delete(_ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    const res = await UsersAuthService.delete(_ctx);
 
-    // check
-    chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubUserDetails.callCount).to.equal(1);
-    chai.expect(stubEvents.callCount).to.equal(0);
-    chai.expect(stubUsersAuthRest.callCount).to.equal(0);
-    chai.expect(res).to.deep.equal({
-      status: 500,
-      error: { message: 'Test error message', error: new Error('Test error') },
-    });
+    // check: the error, the sessions are not ended here
+    chai.expect(res).to.deep.equal(fail);
+    chai.expect(stubEndAll.callCount).to.equal(0);
+
+    // case: the login does not exist anymore: done
+    stubLogin.resolves({ status: 404, error: { message: 'Not found' } });
+    const resMissing = await UsersAuthService.delete(_ctx);
+    chai.expect(resMissing.status).to.equal(200);
+    chai.expect(stubEndAll.callCount).to.equal(1);
   }).timeout(10000);
 });

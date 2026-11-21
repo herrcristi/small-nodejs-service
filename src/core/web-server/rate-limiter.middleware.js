@@ -2,8 +2,9 @@
  * Rate limiter middleware
  *
  * the limits are kept in the memory of each process (per pod): with more than one pod use a shared store
- * the client address is req.ip, which is the real client only when 'trust proxy' is configured
- * (SMALL_API_TRUST_PROXY, see web-server.utils), otherwise the address of the proxy
+ * the client address is req.ip, which is the real client only when 'trust proxy' is configured (see
+ * web-server.utils), otherwise the address of the proxy
+ * the limits are given by the application (init); a missing or a wrong one is the default
  */
 const { ipKeyGenerator } = require('express-rate-limit');
 
@@ -12,12 +13,15 @@ const CommonUtils = require('../utils/common.utils.js');
 const Private = {
   Window: 15 * 60 * 1000, // 15 minutes
 
+  // the limits given by the application: { max, loginMax, loginAccountMax, resetMax }
+  Limits: {},
+
   /**
-   * a limit from the environment, or the default
+   * a limit given by the application (a positive integer, also as a string), or the default
    */
-  limit: (name, defaultValue) => {
-    const value = Number.parseInt(process.env[name], 10);
-    return Number.isInteger(value) && value > 0 ? value : defaultValue;
+  limit: (value, defaultValue) => {
+    const limit = Number.parseInt(value, 10);
+    return Number.isInteger(limit) && limit > 0 ? limit : defaultValue;
   },
 
   /**
@@ -40,13 +44,20 @@ const Private = {
 
 const Public = {
   /**
+   * the limits of the application (its settings): { max, loginMax, loginAccountMax, resetMax }
+   */
+  init: (limits) => {
+    Private.Limits = { ...limits };
+  },
+
+  /**
    * all the requests of a client address
    * a UI session makes many requests (lists, details, refreshes), so the limit is high
    */
   authLimiter: {
     ...Private.common,
     windowMs: Private.Window,
-    limit: () => Private.limit('SMALL_API_RATE_LIMIT_MAX', 1000),
+    limit: () => Private.limit(Private.Limits.max, 1000),
   },
 
   /**
@@ -55,7 +66,7 @@ const Public = {
   loginLimiter: {
     ...Private.common,
     windowMs: Private.Window,
-    limit: () => Private.limit('SMALL_API_RATE_LIMIT_LOGIN_MAX', 5),
+    limit: () => Private.limit(Private.Limits.loginMax, 5),
     skipSuccessfulRequests: true,
     keyGenerator: (req) => {
       const ip = ipKeyGenerator(req.ip);
@@ -70,7 +81,7 @@ const Public = {
   loginAccountLimiter: {
     ...Private.common,
     windowMs: Private.Window,
-    limit: () => Private.limit('SMALL_API_RATE_LIMIT_LOGIN_ACCOUNT_MAX', 20),
+    limit: () => Private.limit(Private.Limits.loginAccountMax, 20),
     skipSuccessfulRequests: true,
     keyGenerator: (req) => {
       const account = Private.account(req);
@@ -84,7 +95,7 @@ const Public = {
   resetPasswordLimiter: {
     ...Private.common,
     windowMs: Private.Window,
-    limit: () => Private.limit('SMALL_API_RATE_LIMIT_RESET_MAX', 3),
+    limit: () => Private.limit(Private.Limits.resetMax, 3),
     keyGenerator: (req) => {
       const account = Private.account(req);
       return `reset-password|${account}`;

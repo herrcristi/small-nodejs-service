@@ -14,6 +14,8 @@ describe('Events Service global', function () {
   const _ctxPortal = { ..._ctx, tenantID: portalSchoolID };
   let previous;
 
+  before(async function () {});
+
   beforeEach(function () {
     previous = process.env.SMALL_API_PORTAL_SCHOOL_ID;
     process.env.SMALL_API_PORTAL_SCHOOL_ID = portalSchoolID;
@@ -27,6 +29,8 @@ describe('Events Service global', function () {
       process.env.SMALL_API_PORTAL_SCHOOL_ID = previous;
     }
   });
+
+  after(async function () {});
 
   /**
    * the global events list: only on the portal school, read from the collection without a tenant

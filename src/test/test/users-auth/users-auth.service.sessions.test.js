@@ -21,6 +21,8 @@ describe('Users Auth Service sessions', function () {
   const session = { id: 'session-id2', secret: 'secret2', expiresAt: new Date(Date.now() + 60 * 1000) };
   const fail = { status: 500, error: { message: 'Test error message', error: new Error('Test error message') } };
 
+  before(async function () {});
+
   beforeEach(function () {
     // the events and the notifications
     sinon.stub(EventsRest, 'raiseEventForObject');
@@ -30,6 +32,8 @@ describe('Users Auth Service sessions', function () {
   afterEach(function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * a password change ends all the sessions of the user, then this session continues with a new one
@@ -107,9 +111,9 @@ describe('Users Auth Service sessions', function () {
    * a removed account ends all its sessions and links; the failure is returned
    */
   it('should delete end all the sessions of the user', async () => {
-    // stub: the auth and the user details are removed, the sessions are ended
-    sinon.stub(UsersLocalAuthService, 'delete').resolves({ status: 200, value: { id: _ctx.username } });
+    // stub: the user is deleted, its login is removed, the sessions are ended
     sinon.stub(UsersRest, 'delete').resolves({ status: 200, value: { id: 'user1' } });
+    sinon.stub(UsersLocalAuthService, 'delete').resolves({ status: 200, value: { id: _ctx.username } });
     const stubEndAll = sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 1 });
 
     // call
@@ -162,7 +166,8 @@ describe('Users Auth Service sessions', function () {
    * a reset password email is not sent when its link can not be recorded
    */
   it('should resetPassword fail when the link can not be recorded', async () => {
-    // stub: the account exists; the link can not be recorded
+    // stub: the email can be sent, the account exists; the link can not be recorded
+    sinon.stub(UsersLocalAuthService, 'putEmailTimestamp').resolves({ status: 200, value: {} });
     sinon.stub(DbOpsUtils, 'getOne').resolves({ status: 200, value: { id: _ctx.username, userID: 'user1' } });
     const stubCreate = sinon.stub(UsersAuthSessionsService, 'create').resolves(fail);
     const stubSend = sinon.stub(UsersLocalAuthService, 'sendEmail');

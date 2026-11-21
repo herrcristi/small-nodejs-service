@@ -162,6 +162,17 @@ const Public = {
   },
 
   /**
+   * get the auth record of a user (without the password): it exists, or 404
+   * config: { serviceName }
+   */
+  getOne: async (config, username, _ctx) => {
+    // { serviceName, collection, notifications.projection }
+    await Private.setupConfig(config, _ctx);
+
+    return await DbOpsUtils.getOne(config, username /*id*/, { _id: 0, id: 1, userID: 1 }, _ctx);
+  },
+
+  /**
    * post
    * config: { serviceName }
    * objInfo: { username, password, userID }
@@ -315,6 +326,25 @@ const Public = {
   },
 
   /**
+   * put the time of an email of a type sent to a user (emailTimestamps.<type> of its auth record), only when the last
+   * one is older than EmailInterval seconds: at most one each interval, in one database call, so it holds with several
+   * processes
+   * returns { status: 200, value } when it can be sent now, 409 when one was sent less than EmailInterval ago, 404
+   * when the user has no auth record, or { status, error }
+   */
+  putEmailTimestamp: async (config, username, emailType, _ctx) => {
+    // { serviceName, collection, notifications.projection }
+    await Private.setupConfig(config, _ctx);
+
+    const field = `emailTimestamps.${emailType}`;
+    const now = new Date();
+    const sentBefore = new Date(now.getTime() - UsersAuthConstants.EmailInterval * 1000).toISOString();
+    const options = { filter: { $or: [{ [field]: { $exists: false } }, { [field]: { $lt: sentBefore } }] } };
+    const projection = { _id: 0, id: 1 };
+    return await DbOpsUtils.put(config, username, { [field]: now.toISOString() }, projection, _ctx, options);
+  },
+
+  /**
    * check reset token is valid: a valid jwt made for a reset (not a session), and its link is still valid (not used,
    * not replaced by a newer link, not ended by a password change)
    * config: { serviceName }
@@ -375,6 +405,7 @@ const Public = {
    * send email
    * config: { serviceName }
    * args: { token, resetType, emailType }
+   * returns { status, value } or { status, error } (the email could not be delivered to the mail server)
    */
   sendEmail: async (config, username, args, _ctx) => {
     // { serviceName, collection, notifications.projection }
@@ -397,8 +428,8 @@ const Public = {
 
     let emailTemplate = TranslationsUtils.email(args.emailType, _ctx, emailArgs);
 
-    // send email
-    /* no await */ EmailsUtils.sendEmail(username, emailTemplate['en'].subject, emailTemplate['en'].email, _ctx);
+    // send email (the result tells if it was delivered to the mail server)
+    return await EmailsUtils.sendEmail(username, emailTemplate['en'].subject, emailTemplate['en'].email, _ctx);
   },
 };
 

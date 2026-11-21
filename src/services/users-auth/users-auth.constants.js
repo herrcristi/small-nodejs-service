@@ -47,6 +47,10 @@ const Public = {
     signup: 72 * 60 * 60, // 72h: an invitation can wait some days
   },
 
+  // the shortest time between two emails of the same type to a user, in seconds (a repeated click, a flood of the
+  // public forms): an email asked for sooner is not sent
+  EmailInterval: 60,
+
   // the limits of the sessions (besides TokenExpiresIn.session, the longest a session lasts)
   SessionLimits: {
     IdleTimeout: 30 * 60, // seconds without a request: the session ends (a computer left open)

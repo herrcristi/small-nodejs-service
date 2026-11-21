@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const TranslationsUtils = require('../../../core/utils/translations.utils.js');
 
 const TestConstants = require('../../test-constants.js');
@@ -50,7 +49,7 @@ describe('Students Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubString.callCount).to.equal(0);
+    chai.expect(stubString.callCount).to.equal(0); // nothing to translate (the status is in the user copy)
     chai.expect(stubAddTranslations.callCount).to.equal(1);
   }).timeout(10000);
 });

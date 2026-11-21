@@ -169,6 +169,23 @@ describe('Admins Rest', function () {
   }).timeout(10000);
 
   /**
+   * rest relink traces: an internal call (POST /relink-traces)
+   */
+  it('should relink traces via rest', async () => {
+    // stub: the call
+    const stub = sinon.stub(RestCommsUtils, 'call').resolves({ status: 200, value: ['old1'] });
+    const objInfo = { email: 'jane.smith@testdomain.test', userID: 'user1' };
+
+    // call
+    const res = await AdminsRest.relinkTraces(objInfo, _ctx);
+
+    // check
+    chai.expect(stub.firstCall.args[0]).to.deep.include({ method: 'POST', path: '/relink-traces', body: objInfo });
+    chai.expect(stub.firstCall.args[0].localCall).to.deep.equal({ fn: 'relinkTraces', params: { objInfo } });
+    chai.expect(res.value).to.deep.equal(['old1']);
+  }).timeout(10000);
+
+  /**
    * subscribe
    */
   it('should do subscribe', async () => {

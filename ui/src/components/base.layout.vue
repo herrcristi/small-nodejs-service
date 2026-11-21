@@ -17,8 +17,8 @@
           </template>
 
           <v-list>
-            <!-- the profile needs a selected school; the school selection is hidden on its own page -->
-            <v-list-item link @click="goProfile" v-if="hasTenant">
+            <!-- the profile is always there (also without a school); the school selection is hidden on its own page -->
+            <v-list-item link @click="goProfile" v-if="!isProfilePage">
               <v-list-item-title>{{ t('profile') }}</v-list-item-title>
             </v-list-item>
             <v-list-item link @click="goTenants" v-if="!isTenantsPage">
@@ -72,6 +72,15 @@
           <v-list-item-title>{{ t('schedules') }}</v-list-item-title>
         </v-list-item>
       </v-list>
+
+      <!-- the settings of the school: at the bottom of the menu -->
+      <template v-slot:append>
+        <v-list dense>
+          <v-list-item link to="/settings" v-if="permissions.settings?.read">
+            <v-list-item-title>{{ t('settings') }}</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </template>
     </v-navigation-drawer>
 
     <v-main>
@@ -110,15 +119,17 @@ const authStore = useAuthStore();
 const appStore = useAppStore();
 
 /**
- * the menu of the pages and the breadcrumbs: not on a page with meta noMenu (the school selection: no school is chosen)
- */
-const showMenu = computed(() => !route.meta?.noMenu);
-
-/**
- * the user menu: the profile needs a selected school, the school selection is not offered on its own page
+ * the user menu: the profile and the school selection are not offered on their own pages
  */
 const hasTenant = computed(() => !!appStore?.tenantID);
 const isTenantsPage = computed(() => route.path === '/tenants');
+const isProfilePage = computed(() => route.path === '/profile');
+
+/**
+ * the menu of the pages and the breadcrumbs: not on a page with meta noMenu (the school selection), and not without a
+ * school (the profile of a user that is not in any school: the pages are of a school)
+ */
+const showMenu = computed(() => !route.meta?.noMenu && hasTenant.value);
 
 /**
  * breadcrumbs

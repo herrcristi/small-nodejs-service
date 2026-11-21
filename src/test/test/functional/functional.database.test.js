@@ -903,6 +903,213 @@ describe('Database Functional', function () {
   }).timeout(10000);
 
   /**
+   * updateManyReferences of a single copy with a modifiedCount and a createdTimestamp: only the older copies are
+   * updated (the same object with a smaller or missing modifiedCount, or an object with the same id created again)
+   */
+  it('should updateManyReferences only the older copies of a single copy', async () => {
+    // the objects with copies of the user U1 (created on 2026-11-01, now at its 5th change)
+    const config = { serviceName: 'ServiceTest', collection: database.collection('dbtests') };
+    const created = '2026-11-01T10:00:00.000Z';
+    await database.collection('dbtests').insertMany([
+      { id: 'O1', user: { id: 'U1', name: 'Old Name', createdTimestamp: created, modifiedCount: 3 } },
+      { id: 'O2', user: { id: 'U1', name: 'Same Name', createdTimestamp: created, modifiedCount: 5 } },
+      { id: 'O3', user: { id: 'U1', name: 'Newer Name', createdTimestamp: created, modifiedCount: 7 } },
+      {
+        id: 'O4',
+        user: { id: 'U1', name: 'Earlier Account', createdTimestamp: '2026-01-01T10:00:00.000Z', modifiedCount: 9 },
+      },
+      { id: 'O5', user: { id: 'U1', name: 'No Count' } },
+      { id: 'O6', user: { id: 'U2', name: 'Other User', createdTimestamp: created, modifiedCount: 1 } },
+    ]);
+
+    // update the copies of U1
+    const objInfo = { id: 'U1', name: 'John Smith', createdTimestamp: created, modifiedCount: 5 };
+    const res = await DBOpsUtils.updateManyReferences(config, { fieldName: 'user' }, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check: the older copy, the copy of the earlier account and the copy without a count
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.value).to.equal(3);
+    chai.expect(res.ids.sort()).to.deep.equal(['O1', 'O4', 'O5']);
+
+    // check the stored copies
+    const objects = await database
+      .collection('dbtests')
+      .find({})
+      .project({ _id: 0, id: 1, user: 1 })
+      .sort({ id: 1 })
+      .toArray();
+    chai.expect(objects).to.deep.equal([
+      { id: 'O1', user: { id: 'U1', name: 'John Smith', createdTimestamp: created, modifiedCount: 5 } },
+      { id: 'O2', user: { id: 'U1', name: 'Same Name', createdTimestamp: created, modifiedCount: 5 } },
+      { id: 'O3', user: { id: 'U1', name: 'Newer Name', createdTimestamp: created, modifiedCount: 7 } },
+      { id: 'O4', user: { id: 'U1', name: 'John Smith', createdTimestamp: created, modifiedCount: 5 } },
+      { id: 'O5', user: { id: 'U1', name: 'John Smith', createdTimestamp: created, modifiedCount: 5 } },
+      { id: 'O6', user: { id: 'U2', name: 'Other User', createdTimestamp: created, modifiedCount: 1 } },
+    ]);
+  }).timeout(10000);
+
+  /**
+   * updateManyReferences of copies in an array with a modifiedCount: only the older copies are updated, the other
+   * copies of the same array are not changed
+   */
+  it('should updateManyReferences only the older copies in an array', async () => {
+    // the objects with copies of the school S1 (at its 4th change) next to the copies of S2
+    const config = { serviceName: 'ServiceTest', collection: database.collection('dbtests') };
+    const created = '2026-11-01T10:00:00.000Z';
+    await database.collection('dbtests').insertMany([
+      {
+        id: 'O1',
+        schools: [
+          { id: 'S1', name: 'Old School', createdTimestamp: created, modifiedCount: 2 },
+          { id: 'S2', name: 'Other School', createdTimestamp: created, modifiedCount: 1 },
+        ],
+      },
+      { id: 'O2', schools: [{ id: 'S1', name: 'Newer School', createdTimestamp: created, modifiedCount: 6 }] },
+    ]);
+
+    // update the copies of S1
+    const objInfo = { id: 'S1', name: 'Central School', createdTimestamp: created, modifiedCount: 4 };
+    const res = await DBOpsUtils.updateManyReferences(config, { fieldName: 'schools[]' }, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check: only O1 has an older copy
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.ids).to.deep.equal(['O1']);
+
+    // check the stored copies
+    const objects = await database
+      .collection('dbtests')
+      .find({})
+      .project({ _id: 0, id: 1, schools: 1 })
+      .sort({ id: 1 })
+      .toArray();
+    chai.expect(objects).to.deep.equal([
+      {
+        id: 'O1',
+        schools: [
+          { id: 'S1', name: 'Central School', createdTimestamp: created, modifiedCount: 4 },
+          { id: 'S2', name: 'Other School', createdTimestamp: created, modifiedCount: 1 },
+        ],
+      },
+      { id: 'O2', schools: [{ id: 'S1', name: 'Newer School', createdTimestamp: created, modifiedCount: 6 }] },
+    ]);
+  }).timeout(10000);
+
+  /**
+   * updateManyReferences of copies inside the elements of an array (schedules[].location) with a modifiedCount: only
+   * the older copies are updated, also when an element of the same array has a newer copy
+   */
+  it('should updateManyReferences only the older copies inside an array', async () => {
+    // an object with two schedules: the first one has an older copy of the location L1, the second one a newer copy
+    const config = { serviceName: 'ServiceTest', collection: database.collection('dbtests') };
+    const created = '2026-11-01T10:00:00.000Z';
+    await database.collection('dbtests').insertOne({
+      id: 'O1',
+      schedules: [
+        { id: 'SC1', location: { id: 'L1', name: 'Old Room', createdTimestamp: created, modifiedCount: 1 } },
+        { id: 'SC2', location: { id: 'L1', name: 'Newer Room', createdTimestamp: created, modifiedCount: 6 } },
+      ],
+    });
+
+    // update the copies of L1
+    const objInfo = { id: 'L1', name: 'Main Room', createdTimestamp: created, modifiedCount: 3 };
+    const res = await DBOpsUtils.updateManyReferences(config, { fieldName: 'schedules[].location' }, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.ids).to.deep.equal(['O1']);
+
+    // check the stored copies: only the older one changed
+    const object = await database.collection('dbtests').findOne({ id: 'O1' }, { projection: { _id: 0, schedules: 1 } });
+    chai.expect(object).to.deep.equal({
+      schedules: [
+        { id: 'SC1', location: { id: 'L1', name: 'Main Room', createdTimestamp: created, modifiedCount: 3 } },
+        { id: 'SC2', location: { id: 'L1', name: 'Newer Room', createdTimestamp: created, modifiedCount: 6 } },
+      ],
+    });
+  }).timeout(10000);
+
+  /**
+   * updateManyReferences when no copy is older (a change that comes back through a cycle of notifications): nothing is
+   * updated
+   */
+  it('should updateManyReferences nothing when no copy is older', async () => {
+    // an object with the same version of the copy
+    const config = { serviceName: 'ServiceTest', collection: database.collection('dbtests') };
+    const created = '2026-11-01T10:00:00.000Z';
+    await database.collection('dbtests').insertOne({
+      id: 'O1',
+      modifiedCount: 1,
+      user: { id: 'U1', name: 'John Smith', createdTimestamp: created, modifiedCount: 5 },
+    });
+
+    // update with the same version
+    const objInfo = { id: 'U1', name: 'John Smith', createdTimestamp: created, modifiedCount: 5 };
+    const res = await DBOpsUtils.updateManyReferences(config, { fieldName: 'user' }, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check: nothing updated, the object is not changed (its modifiedCount too)
+    chai.expect(res.value).to.equal(0);
+    chai.expect(res.ids).to.deep.equal([]);
+    const object = await database.collection('dbtests').findOne({ id: 'O1' }, { projection: { _id: 0 } });
+    chai.expect(object).to.deep.equal({
+      id: 'O1',
+      modifiedCount: 1,
+      user: { id: 'U1', name: 'John Smith', createdTimestamp: created, modifiedCount: 5 },
+    });
+  }).timeout(10000);
+
+  /**
+   * updateManyReferencesID: the copies of an object that got another id take its new id (in an array and inside the
+   * elements of an array); the other copies and the other fields are not changed
+   */
+  it('should updateManyReferencesID the copies with the previous id', async () => {
+    // a group with the copy of the student old1 next to another one, a schedule with old1 in a schedule of a class
+    const config = { serviceName: 'ServiceTest', collection: database.collection('dbtests') };
+    await database.collection('dbtests').insertMany([
+      {
+        id: 'G1',
+        students: [
+          { id: 'old1', name: 'Jane Smith' },
+          { id: 'user2', name: 'John Brown' },
+        ],
+      },
+      { id: 'G2', students: [{ id: 'user2', name: 'John Brown' }] },
+    ]);
+
+    // call
+    const res = await DBOpsUtils.updateManyReferencesID(config, { fieldName: 'students[]' }, 'old1', 'user1', _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check: only the copy of old1
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.ids).to.deep.equal(['G1']);
+    const objects = await database
+      .collection('dbtests')
+      .find({})
+      .project({ _id: 0, id: 1, students: 1 })
+      .sort({ id: 1 })
+      .toArray();
+    chai.expect(objects).to.deep.equal([
+      {
+        id: 'G1',
+        students: [
+          { id: 'user1', name: 'Jane Smith' },
+          { id: 'user2', name: 'John Brown' },
+        ],
+      },
+      { id: 'G2', students: [{ id: 'user2', name: 'John Brown' }] },
+    ]);
+
+    // case: no copy with the previous id: nothing changed
+    const resNone = await DBOpsUtils.updateManyReferencesID(config, { fieldName: 'students[]' }, 'old1', 'user1', _ctx);
+    chai.expect(resNone.value).to.equal(0);
+    chai.expect(resNone.ids).to.deep.equal([]);
+  }).timeout(10000);
+
+  /**
    * operations deleteManyReferences array
    */
   it('should deleteManyReferences array', async () => {

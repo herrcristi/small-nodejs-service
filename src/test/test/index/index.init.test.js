@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const TranslationsUtils = require('../../../core/utils/translations.utils.js');
 
 const TestConstants = require('../../test-constants.js');
@@ -26,9 +25,26 @@ describe('Index', function () {
   after(async function () {});
 
   /**
-   * init success
+   * init: the service started once (when index.js was loaded), init waits for the same start
    */
-  it('should init with success', async () => {
+  it('should init the service once', async () => {
+    // stub: a start again would init the services
+    const stubConfig = sinon.stub(ConfigServices, 'init').resolves(true);
+
+    // call twice
+    const res = await Index.init();
+    const resAgain = await Index.init();
+
+    // check: started, not again
+    chai.expect(res).to.equal(true);
+    chai.expect(resAgain).to.equal(true);
+    chai.expect(stubConfig.callCount).to.equal(0);
+  }).timeout(10000);
+
+  /**
+   * start success
+   */
+  it('should start with success', async () => {
     // stub
     let stubTranslations = sinon.stub(TranslationsUtils, 'initStrings').callsFake(() => {
       console.log(`\nTranslationsUtils.initStrings called`);
@@ -43,7 +59,7 @@ describe('Index', function () {
     });
 
     // call
-    let res = await Index.init();
+    let res = await Index.start();
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -54,9 +70,9 @@ describe('Index', function () {
   }).timeout(10000);
 
   /**
-   * init fail
+   * start fail
    */
-  it('should init fail', async () => {
+  it('should start fail', async () => {
     // stub
     let stubProcess = sinon.stub(process, 'exit').callsFake(() => {
       console.log(`\nProcess exit called`);
@@ -68,7 +84,7 @@ describe('Index', function () {
     });
 
     // call
-    let res = await Index.init();
+    let res = await Index.start();
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

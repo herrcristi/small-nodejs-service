@@ -7,9 +7,15 @@ const SchoolsRest = require('../../../services/rest/schools.rest.js');
 describe('Users Auth Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
 
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * activatePendingSchools makes active only the pending schools

@@ -22,6 +22,11 @@ const Constants = {
 
 const Private = {
   /**
+   * the start of the service (its promise, see init)
+   */
+  Started: null,
+
+  /**
    * the example values of the secrets (src/.env.example): never accepted in production
    */
   SecretPlaceholders: ['00001111222233334444555566667777', 'bccc'.repeat(16)],
@@ -108,9 +113,19 @@ const Public = {
   },
 
   /**
-   * init micro service
+   * init micro service: it is started once (when index.js is loaded), the next calls wait for the same start (the
+   * tests: the service may have started before they listen to the inited event)
+   * returns its promise: true when started
    */
-  init: async () => {
+  init: () => {
+    Private.Started ??= Public.start();
+    return Private.Started;
+  },
+
+  /**
+   * start micro service (once, see init)
+   */
+  start: async () => {
     try {
       console.log('\nInit service');
 
@@ -144,9 +159,7 @@ const Public = {
   },
 };
 
-/**
- * auto init
- */
+// auto init
 Public.init();
 
 module.exports = {

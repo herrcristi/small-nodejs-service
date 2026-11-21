@@ -36,12 +36,12 @@ const Private = {
 
 const Public = {
   /**
-   * the 'trust proxy' setting of express from SMALL_API_TRUST_PROXY
+   * the 'trust proxy' setting of express from the setting of the application (trustProxy)
    * a number of proxies (1), or their addresses / subnets ('loopback, 10.0.0.0/8'); not set: no proxy is trusted
    * 'true' (trust every proxy) is not accepted: any client could then choose its address with x-forwarded-for
    */
-  getTrustProxy: () => {
-    const value = `${process.env.SMALL_API_TRUST_PROXY || ''}`.trim();
+  getTrustProxy: (trustProxy) => {
+    const value = `${trustProxy || ''}`.trim();
     const lowerValue = value.toLowerCase();
     if (!value || ['false', 'true'].includes(lowerValue)) {
       return false;
@@ -54,23 +54,32 @@ const Public = {
 
   /**
    * init a webserver
+   * settings: the settings of the application { corsOrigins: [], trustProxy, rateLimits: { max, loginMax,
+   * loginAccountMax, resetMax } } (the core never reads the environment of an application)
    */
-  init: async (port, routers /*: [] */, middlewares /* :[] */ = null, usersAuthMiddleware /* :[] */ = null) => {
+  init: async (
+    port,
+    routers /*: [] */,
+    middlewares /* :[] */ = null,
+    usersAuthMiddleware /* :[] */ = null,
+    settings = {}
+  ) => {
     console.log(`\nInit web server on port ${port}`);
 
     // init
-    await CorsMiddleware.init();
+    RateLimiterMiddleware.init(settings.rateLimits);
 
     // setup express app and middlewares
     let app = express();
 
     // the proxies in front of the service: req.ip is then the client (from x-forwarded-for), used by the rate limits
     // and the events; without it req.ip is the address of the proxy and a client can not choose its own address
-    const trustProxy = Public.getTrustProxy();
+    const trustProxy = Public.getTrustProxy(settings.trustProxy);
     app.set('trust proxy', trustProxy);
     let bodyParser = require('body-parser');
 
-    const corsMiddleware = cors(CorsMiddleware.cors);
+    const corsOptions = CorsMiddleware.getCors(settings.corsOrigins);
+    const corsMiddleware = cors(corsOptions);
     app.use(corsMiddleware);
 
     const cookieMiddleware = cookieParser();

@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 

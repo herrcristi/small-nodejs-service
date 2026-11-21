@@ -707,4 +707,25 @@ describe('Users Rest', function () {
     chai.expect(res.status).to.equal(404);
     chai.expect(res.error.message).to.equal('Not found student@example.test');
   }).timeout(10000);
+
+  /**
+   * the portal admins (internal, for the bootstrap)
+   */
+  it('should get the portal admins via rest', async () => {
+    // stub: the call
+    const stub = sinon.stub(RestCommsUtils, 'call').resolves({ status: 200, value: { data: [] } });
+
+    // call
+    const res = await UsersRest.getPortalAdmins('status=active&limit=1', _ctx);
+
+    // check: the internal route with the query, the local function with the request
+    chai.expect(res.value).to.deep.equal({ data: [] });
+    chai
+      .expect(stub.firstCall.args[0])
+      .to.deep.include({ method: 'GET', path: '/portal-admins', query: 'status=active&limit=1' });
+    chai.expect(stub.firstCall.args[0].localCall).to.deep.equal({
+      fn: 'getPortalAdminsForReq',
+      params: { req: { query: 'status=active&limit=1' } },
+    });
+  }).timeout(10000);
 });

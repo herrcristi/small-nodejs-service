@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
@@ -54,14 +53,6 @@ describe('Schedules Service', function () {
     const patchReq = _.cloneDeep(testPatchReq);
 
     // stub
-    let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
-      console.log(`\nDbOpsUtils.get called`);
-      return {
-        status: 200,
-        value: { ...testSchedule },
-      };
-    });
-
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
       return { status: 200, value: true };
     });
@@ -87,7 +78,6 @@ describe('Schedules Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubGet.callCount).to.equal(1);
     chai.expect(stubPopulateReferences.callCount).to.equal(1);
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(stubEvent.callCount).to.equal(1);
@@ -105,9 +95,10 @@ describe('Schedules Service', function () {
   }).timeout(10000);
 
   /**
-   * patch with success with removed notif
+   * patch that removes members: one modified notification, with the members that stay (each subscriber removes the
+   * schedule only from the members that are not listed)
    */
-  it('should patch with success with removed notif', async () => {
+  it('should patch with one modified notification when members are removed', async () => {
     const patchReq = _.cloneDeep(testPatchReq);
     patchReq.set.schedules = []; // no more schedules
     patchReq.set.professors = []; // no more professors
@@ -115,14 +106,6 @@ describe('Schedules Service', function () {
     patchReq.set.students = []; // no more students
 
     // stub
-    let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
-      console.log(`\nDbOpsUtils.get called`);
-      return {
-        status: 200,
-        value: { ...testSchedule },
-      };
-    });
-
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
       return { status: 200, value: true };
     });
@@ -160,37 +143,16 @@ describe('Schedules Service', function () {
         },
       ]);
     });
-    stubSchedulesRest.onCall(1).callsFake((notificationType, objs) => {
-      console.log(`\nSchedulesRest raiseNotification called`);
-      console.log(`\nNotificationType: ${JSON.stringify(notificationType, null, 2)}`);
-      console.log(`\nNotifications: ${JSON.stringify(objs, null, 2)}`);
-
-      chai.expect(notificationType).to.equal(NotificationsUtils.Constants.Notification.Removed);
-      chai.expect(objs).to.deep.equal([
-        {
-          id: testSchedule.id,
-          name: testSchedule.name,
-          type: testSchedule.type,
-          status: testSchedule.status,
-          class: testSchedule.class,
-          schedules: [testSchedule.schedules[0]],
-          professors: [testSchedule.professors[0]],
-          groups: [testSchedule.groups[0]],
-          students: [testSchedule.students[0]],
-        },
-      ]);
-    });
 
     // call
     let res = await SchedulesService.patch(testSchedule.id, patchReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubGet.callCount).to.equal(1);
     chai.expect(stubPopulateReferences.callCount).to.equal(1);
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(stubEvent.callCount).to.equal(1);
-    chai.expect(stubSchedulesRest.callCount).to.equal(2);
+    chai.expect(stubSchedulesRest.callCount).to.equal(1); // no removed notification
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {
@@ -233,47 +195,12 @@ describe('Schedules Service', function () {
   }).timeout(10000);
 
   /**
-   * patch fail get
-   */
-  it('should patch fail get', async () => {
-    const patchReq = _.cloneDeep(testPatchReq);
-
-    // stub
-    let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
-      console.log(`\nDbOpsUtils.get called`);
-      return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
-    });
-
-    // call
-    let res = await SchedulesService.patch(testSchedule.id, patchReq, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubGet.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 500,
-      error: {
-        message: 'Test error message',
-        error: 'Error: Test error',
-      },
-    });
-  }).timeout(10000);
-
-  /**
    * patch fail references
    */
   it('should patch fail references', async () => {
     const patchReq = _.cloneDeep(testPatchReq);
 
     // stub
-    let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
-      console.log(`\nDbOpsUtils.get called`);
-      return {
-        status: 200,
-        value: { ...testSchedule },
-      };
-    });
-
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
       return { status: 500, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
@@ -283,7 +210,6 @@ describe('Schedules Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubGet.callCount).to.equal(1);
     chai.expect(stubPopulateReferences.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 500,
@@ -301,14 +227,6 @@ describe('Schedules Service', function () {
     const patchReq = _.cloneDeep(testPatchReq);
 
     // stub
-    let stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake((config, objID) => {
-      console.log(`\nDbOpsUtils.get called`);
-      return {
-        status: 200,
-        value: { ...testSchedule },
-      };
-    });
-
     let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake(() => {
       return { status: 200, value: true };
     });
@@ -323,7 +241,6 @@ describe('Schedules Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubGet.callCount).to.equal(1);
     chai.expect(stubPopulateReferences.callCount).to.equal(1);
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({

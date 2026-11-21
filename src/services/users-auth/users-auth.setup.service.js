@@ -6,33 +6,37 @@ const UsersAuthSignupService = require('./users-auth.signup.service.js');
 
 const Public = {
   /**
-   * bootstrap the first portal admin
+   * bootstrap the portal admin
    *
-   * if the Portal School has no portal admin yet and SMALL_API_PORTAL_ADMIN_EMAIL is set, that email is invited to the
-   * Portal School with the portal-admin role, using the same invite flow as any other invitation:
-   * a new user gets the signup/password setup email, so no password is ever configured.
-   * It does nothing when a portal admin already exists, so it is safe to run on every startup.
+   * if the Portal School has no portal admin that can work (the portal-admin role and an active account) and
+   * SMALL_API_PORTAL_ADMIN_EMAIL is set, that email is invited to the Portal School with the portal-admin role, using
+   * the same invite flow as any other invitation: a new user gets the signup/password setup email, so no password is
+   * ever configured. It is repeated at every start until a portal admin is active, and the invite repairs what is
+   * left: a pending user gets a new setup link (the first email was lost, or the address was wrong and is corrected),
+   * an invite interrupted after the user was created gets its auth record. A former portal admin (the role removed, also
+   * by itself) and a disabled one do not count, so a portal left without a portal admin gets the configured one again.
+   * It does nothing while an active portal admin exists, so it is safe on every start.
    * Must run after the Portal School is created (SchoolsSetupService.init).
    */
   init: async () => {
+    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
+    const _ctx = { reqID: 'UsersAuthSetup', lang: 'en', tenantID: portalSchoolID, tenantName: 'Portal School' };
+
     const email = process.env.SMALL_API_PORTAL_ADMIN_EMAIL;
     if (!email) {
       return false;
     }
 
-    const portalSchoolID = process.env.SMALL_API_PORTAL_SCHOOL_ID;
-    const _ctx = { reqID: 'UsersAuthSetup', lang: 'en', tenantID: portalSchoolID, tenantName: 'Portal School' };
-
-    // only the portal admins are members of the portal school
-    const schoolParam = encodeURIComponent(portalSchoolID);
-    const existing = await UsersRest.getAll(`schools.id=${schoolParam}&limit=1&projection=id`, _ctx);
-    if (existing.error) {
-      throw new Error(existing.error.message || 'Failed to check the portal admins');
+    // a portal admin that can work: the role on the portal school and an active account
+    const rActive = await UsersRest.getPortalAdmins('status=active&limit=1&projection=id', _ctx);
+    if (rActive.error) {
+      throw new Error(rActive.error.message || 'Failed to check the portal admins');
     }
-    if (existing.value?.length) {
+    if (rActive.value?.data?.length) {
       return false;
     }
 
+    // none: the configured email is invited (or its invite is repaired)
     const invited = await UsersAuthSignupService.invite(
       { email, school: { role: UsersRest.Constants.Roles.PortalAdmin } },
       _ctx
@@ -41,7 +45,7 @@ const Public = {
       throw new Error(invited.error.message || 'Failed to invite the first portal admin');
     }
 
-    console.log(`\nInvited the first portal admin ${email}`);
+    console.log(`\nInvited the portal admin ${email}`);
     return true;
   },
 };

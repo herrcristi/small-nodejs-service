@@ -1,26 +1,85 @@
-const _ = require('lodash');
-const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const supertest = require('supertest');
 
-const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
-const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
+const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 
-const TestConstants = require('../../test-constants.js');
 const AdminsService = require('../../../services/admins/admins.service.js');
-const UsersRest = require('../../../services/rest/users.rest.js');
 const AdminsRest = require('../../../services/rest/admins.rest.js');
+const SchoolsRest = require('../../../services/rest/schools.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 
 describe('Admins Service', function () {
-  const tenantID = _.cloneDeep(TestConstants.Schools[1].id);
-  const _ctx = { reqID: 'testReq', tenantID, lang: 'en', service: 'Admins' };
+  const _ctx = { reqID: 'testReq', lang: 'en', service: 'Admins', tenantID: 'school1' };
+  const fail = { status: 500, error: { message: 'Database failure' } };
+
+  // the users with the admin role in the school, as notified by the users service
+  const janeSmith = {
+    id: 'user1',
+    name: 'Jane Smith',
+    type: 'user',
+    status: 'active',
+    email: 'jane.smith@testdomain.test',
+    modifiedCount: 4,
+    schools: [{ id: 'school1', roles: ['admin'] }],
+  };
+  const johnBrown = {
+    id: 'user2',
+    name: 'John Brown',
+    type: 'user',
+    status: 'active',
+    email: 'john.brown@testdomain.test',
+    modifiedCount: 4,
+    schools: [{ id: 'school1', roles: ['admin'] }],
+  };
+  const emilyClark = {
+    id: 'user3',
+    name: 'Emily Clark',
+    type: 'user',
+    status: 'active',
+    email: 'emily.clark@testdomain.test',
+    modifiedCount: 4,
+    schools: [{ id: 'school1', roles: ['admin'] }],
+  };
+  const michaelDavis = {
+    id: 'user4',
+    name: 'Michael Davis',
+    type: 'user',
+    status: 'pending',
+    email: 'michael.davis@testdomain.test',
+    modifiedCount: 1,
+    schools: [{ id: 'school1', roles: ['admin'] }],
+  };
+
+  /**
+   * the admins records of the school (by id), read by getAllByIDs and getOne
+   */
+  const stubAdminsRecords = (admins) => {
+    sinon.stub(DbOpsUtils, 'getAllByIDs').callsFake((config, ids) => {
+      const found = ids.filter((id) => admins[id]);
+      const records = found.map((id) => admins[id]);
+      return { status: 200, value: records };
+    });
+    sinon.stub(DbOpsUtils, 'getOne').callsFake((config, id) => {
+      if (!admins[id]) {
+        return { status: 404, error: { message: 'Not found' } };
+      }
+      return { status: 200, value: admins[id] };
+    });
+  };
+
+  /**
+   * the action of each event that was raised
+   */
+  const getEventsActions = () => EventsRest.raiseEventForObject.args.map((args) => args[1]);
 
   before(async function () {});
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    // the events and the notifications of the admins
+    sinon.stub(EventsRest, 'raiseEventForObject');
+    sinon.stub(AdminsRest, 'raiseNotification');
+  });
 
   afterEach(async function () {
     sinon.restore();
@@ -29,355 +88,201 @@ describe('Admins Service', function () {
   after(async function () {});
 
   /**
-   * notification with success for user modified
+   * the users with the admin role: a new admin is created; the user copy of an existing one is updated (only an older
+   * one): a trace is an admin again (with an event); the trace of a user invited again is kept while the user
+   * is pending (nothing is changed or notified until its first login)
    */
-  it('should do notification with success for user modified', async () => {
-    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
-    const notif = notifications[0];
-    const userID = notif.modified[0].id;
-    const userType = notif.modified[0].type;
-    const userStatus = notif.modified[0].status;
-    const username = notif.modified[0].name;
-    const userEmail = notif.modified[0].email;
-
-    // stub
-    let stubGet = sinon.stub(DbOpsUtils, 'getAllByIDs').callsFake((config, ids) => {
-      console.log(`\nDbOpsUtils.getAllByIDs called. ids: ${JSON.stringify(ids, null, 2)}\n`);
-      chai.expect(ids).to.have.deep.members([userID]);
-
-      return {
-        status: 200,
-        value: [],
-      };
+  it('should save the admins of the users with the admin role', async () => {
+    // stub: user2 is an admin, user3 a trace of a removed role, user4 a trace of a deleted account; user1 is new
+    stubAdminsRecords({
+      user2: { id: 'user2', user: { id: 'user2', status: 'pending' } },
+      user3: { id: 'user3', user: { id: 'user3', status: 'removed' } },
+      user4: { id: 'user4', user: { id: 'user4', status: 'deleted' } },
     });
-
-    let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake((config, objInfo) => {
-      console.log(`\nReferencesUtils.populateReferences called\n`);
-      objInfo.user = {
-        id: userID,
-        name: username,
-        type: userType,
-        status: userStatus,
-        email: userEmail,
-      };
+    sinon.stub(ReferencesUtils, 'populateReferences').callsFake((config, objInfo) => {
+      objInfo.user = { id: objInfo.id, name: 'Jane Smith', status: 'active' };
       return { status: 200, value: true };
     });
-
-    let stubPost = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`\nDbOpsUtils.post called: ${JSON.stringify(postObj, null, 2)}`);
-      return {
-        status: 201,
-        value: { ...postObj, id: userID },
-      };
+    const stubPost = sinon.stub(DbOpsUtils, 'post').callsFake((config, objInfo) => ({ status: 201, value: objInfo }));
+    const stubCopies = sinon.stub(DbOpsUtils, 'updateManyReferences').callsFake((config, ref, userCopy) => {
+      return { status: 200, value: 1, ids: [userCopy.id] };
     });
 
-    let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`\nEventsRest.raiseEventForObject called`);
-    });
+    // call: user1 got the role, user2 logged in, user3 got the role again, user4 was invited again (pending)
+    const notification = { serviceName: 'users', added: [janeSmith, michaelDavis], modified: [johnBrown, emilyClark] };
+    const res = await AdminsService.notification(notification, _ctx);
 
-    let stubAdminsRest = sinon.stub(AdminsRest, 'raiseNotification').callsFake(() => {
-      console.log(`\nAdminsRest raiseNotification called`);
-    });
-
-    let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
-      console.log(`\nNotificationsUtils.notification called\n`);
-      chai.expect(ctx.tenantID).to.equal(notif.modified[0].schools[1].id);
-      return {
-        status: 200,
-        value: true,
-      };
-    });
-
-    // call
-    let res = await AdminsService.notification(notif, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubGet.callCount).to.equal(1);
-    chai.expect(stubPopulateReferences.callCount).to.equal(1);
+    // check: the new admin, with the copy of its user
+    chai.expect(res).to.deep.equal({ status: 200, value: true });
     chai.expect(stubPost.callCount).to.equal(1);
-    chai.expect(stubEvent.callCount).to.equal(1);
-    chai.expect(stubAdminsRest.callCount).to.equal(1);
-    chai.expect(stubNotification.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: true,
-    });
+    chai.expect(stubPost.firstCall.args[1]).to.include({ id: 'user1' });
+
+    // check: the user copies of user2 and user3 (only the fields of the copy), not of the pending user4
+    chai.expect(stubCopies.args.map((args) => args[2].id)).to.deep.equal(['user2', 'user3']);
+    chai.expect(stubCopies.firstCall.args[1].fieldName).to.equal('user');
+    chai.expect(stubCopies.firstCall.args[2]).to.not.have.property('schools');
+
+    // check: the trace of user3 is an admin again (an event)
+    chai.expect(getEventsActions()).to.deep.equal(['post', 'restore']);
+
+    // check: nothing is notified (no other service keeps copies of the admins)
+    const modified = AdminsRest.raiseNotification.args.filter((args) => args[0] === 'modified');
+    chai.expect(modified.length).to.equal(0);
   }).timeout(10000);
 
   /**
-   * notification with success for user added
+   * the users without the admin role (keep setting): an admin that never logged in leaves nothing; the others stay as
+   * traces, removed (the role was removed) or deleted (the account was deleted), with an event; a trace is not changed
    */
-  it('should do notification with success for user added', async () => {
-    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
-    const notif = notifications[0];
-    const userID = notif.modified[0].id;
-    const userType = notif.modified[0].type;
-    const userStatus = notif.modified[0].status;
-    const username = notif.modified[0].name;
-    const userEmail = notif.modified[0].email;
-    notif.added = notif.modified;
-    delete notif.modified;
-
-    // stub
-    let stubGet = sinon.stub(DbOpsUtils, 'getAllByIDs').callsFake((config, ids) => {
-      console.log(`\nDbOpsUtils.getAllByIDs called. ids: ${JSON.stringify(ids, null, 2)}\n`);
-      chai.expect(ids).to.have.deep.members([userID]);
-
-      return {
-        status: 200,
-        value: [],
-      };
+  it('should keep the admins of the removed users as traces', async () => {
+    // stub: the setting keeps them; user3 is already a trace; user4 never logged in; there is no record of user5
+    sinon.stub(SchoolsRest, 'getSettings').resolves({ status: 200, value: { removedMembers: 'keep' } });
+    stubAdminsRecords({
+      user1: { id: 'user1', user: { id: 'user1', status: 'active' } },
+      user2: { id: 'user2', user: { id: 'user2', status: 'active' } },
+      user3: { id: 'user3', user: { id: 'user3', status: 'removed' } },
+      user4: { id: 'user4', user: { id: 'user4', status: 'pending' } },
     });
+    const stubDelete = sinon.stub(DbOpsUtils, 'delete').resolves({ status: 200, value: { id: 'user4', user: {} } });
+    const stubPut = sinon.stub(DbOpsUtils, 'put').callsFake((config, id, changes) => ({
+      status: 200,
+      value: { id, user: { id, name: 'Jane Smith', status: changes['user.status'] } },
+    }));
 
-    let stubPopulateReferences = sinon.stub(ReferencesUtils, 'populateReferences').callsFake((config, objInfo) => {
-      console.log(`\nReferencesUtils.populateReferences called\n`);
-      objInfo.user = {
-        id: userID,
-        name: username,
-        type: userType,
-        status: userStatus,
-        email: userEmail,
-      };
-      return { status: 200, value: true };
-    });
+    // call: user1 lost the role, user2 deleted its account, user3 lost it before
+    const deletedAccount = { ...johnBrown, status: 'deleted' };
+    const noRecord = { ...janeSmith, id: 'user5' };
+    const notification = {
+      serviceName: 'users',
+      removed: [janeSmith, deletedAccount, emilyClark, michaelDavis, noRecord],
+    };
+    const res = await AdminsService.notification(notification, _ctx);
 
-    let stubPost = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => {
-      console.log(`\nDbOpsUtils.post called: ${JSON.stringify(postObj, null, 2)}`);
-      return {
-        status: 201,
-        value: { ...postObj, id: userID },
-      };
-    });
+    // check: the setting of the school
+    chai.expect(res).to.deep.equal({ status: 200, value: true });
+    chai.expect(SchoolsRest.getSettings.firstCall.args[0]).to.equal('school1');
 
-    let stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').callsFake(() => {
-      console.log(`\nEventsRest.raiseEventForObject called`);
-    });
+    // check: the one that never logged in is deleted
+    chai.expect(stubDelete.callCount).to.equal(1);
+    chai.expect(stubDelete.firstCall.args[1]).to.equal('user4');
 
-    let stubAdminsRest = sinon.stub(AdminsRest, 'raiseNotification').callsFake((notificationType, objs) => {
-      console.log(`\nAdminsRest raiseNotification called`);
-      console.log(`\nNotificationType: ${JSON.stringify(notificationType, null, 2)}`);
-      console.log(`\nObjs: ${JSON.stringify(objs, null, 2)}`);
-    });
+    // check: the traces, only the status of the user copy (the one that was already a trace is not changed)
+    chai.expect(stubPut.args.map((args) => args[1])).to.deep.equal(['user1', 'user2']);
+    chai.expect(stubPut.firstCall.args[2]).to.deep.equal({ 'user.status': 'removed' });
+    chai.expect(stubPut.secondCall.args[2]).to.deep.equal({ 'user.status': 'deleted' });
+    chai.expect(getEventsActions()).to.have.members(['delete', 'remove', 'accountDeleted']);
+  }).timeout(10000);
 
-    let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
-      console.log(`\nNotificationsUtils.notification called with ${JSON.stringify(notification, null, 2)}\n`);
-      chai.expect(ctx.tenantID).to.equal(notif.added[0].schools[1].id);
-      return {
-        status: 200,
-        value: true,
-      };
-    });
+  /**
+   * the users without the admin role (delete setting): the admins are deleted (one that is not there is fine)
+   */
+  it('should delete the admins of the removed users by the setting of the school', async () => {
+    // stub: the setting deletes them; user2 has no record
+    sinon.stub(SchoolsRest, 'getSettings').resolves({ status: 200, value: { removedMembers: 'delete' } });
+    stubAdminsRecords({ user1: { id: 'user1', user: { id: 'user1', status: 'active' } } });
+    const stubDelete = sinon.stub(DbOpsUtils, 'delete');
+    stubDelete.resolves({ status: 200, value: { id: 'user1', user: { name: 'Jane Smith' } } });
+    const stubPut = sinon.stub(DbOpsUtils, 'put');
 
     // call
-    let res = await AdminsService.notification(notif, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    const notification = { serviceName: 'users', removed: [janeSmith, johnBrown] };
+    const res = await AdminsService.notification(notification, _ctx);
 
-    // check
-    chai.expect(stubGet.callCount).to.equal(1);
-    chai.expect(stubPopulateReferences.callCount).to.equal(1);
+    // check: deleted, with the removed notification, no trace
+    chai.expect(res).to.deep.equal({ status: 200, value: true });
+    chai.expect(stubDelete.callCount).to.equal(1);
+    chai.expect(stubPut.callCount).to.equal(0);
+    chai.expect(AdminsRest.raiseNotification.firstCall.args[0]).to.equal('removed');
+  }).timeout(10000);
+
+  /**
+   * the failures of the users notification are returned (the notification can be processed again)
+   */
+  it('should return the failures of the users notification', async () => {
+    // stub: every step fails, one after the other
+    const stubAll = sinon.stub(DbOpsUtils, 'getAllByIDs').resolves(fail);
+    const stubGet = sinon.stub(DbOpsUtils, 'getOne').resolves(fail);
+    sinon.stub(ReferencesUtils, 'populateReferences').resolves({ status: 200, value: true });
+    const stubPost = sinon.stub(DbOpsUtils, 'post').resolves(fail);
+    const stubPut = sinon.stub(DbOpsUtils, 'put').resolves(fail);
+    const stubCopies = sinon.stub(DbOpsUtils, 'updateManyReferences').resolves(fail);
+    const stubDelete = sinon.stub(DbOpsUtils, 'delete').resolves(fail);
+    const stubSettings = sinon.stub(SchoolsRest, 'getSettings').resolves(fail);
+    const modified = { serviceName: 'users', modified: [janeSmith] };
+    const removed = { serviceName: 'users', removed: [janeSmith] };
+    const notify = (notification) => AdminsService.notification(notification, _ctx);
+
+    // case: the existing admins can not be read
+    chai.expect(await notify(modified)).to.deep.equal(fail);
+
+    // case: a new admin can not be created
+    stubAll.resolves({ status: 200, value: [] });
+    chai.expect(await notify(modified)).to.deep.equal(fail);
     chai.expect(stubPost.callCount).to.equal(1);
-    chai.expect(stubEvent.callCount).to.equal(1);
-    chai.expect(stubAdminsRest.callCount).to.equal(1);
-    chai.expect(stubNotification.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: true,
-    });
+
+    // case: the user copy can not be changed
+    stubAll.resolves({ status: 200, value: [{ id: 'user1', user: { id: 'user1', status: 'pending' } }] });
+    chai.expect(await notify(modified)).to.deep.equal(fail);
+
+    // case: the setting can not be read
+    chai.expect(await notify(removed)).to.deep.equal(fail);
+
+    // case: the admin can not be read
+    stubSettings.resolves({ status: 200, value: { removedMembers: 'keep' } });
+    chai.expect(await notify(removed)).to.deep.equal(fail);
+
+    // case: an admin that never logged in can not be deleted
+    stubGet.resolves({ status: 200, value: { id: 'user1', user: { id: 'user1', status: 'pending' } } });
+    chai.expect(await notify(removed)).to.deep.equal(fail);
+    chai.expect(stubDelete.callCount).to.equal(1);
+
+    // case: the trace can not be written
+    stubGet.resolves({ status: 200, value: { id: 'user1', user: { id: 'user1', status: 'active' } } });
+    chai.expect(await notify(removed)).to.deep.equal(fail);
+    chai.expect(stubPut.callCount).to.equal(1);
   }).timeout(10000);
 
   /**
-   * notification with success for user removed
+   * a failure does not stop the users notification: the next users and the removed users of the school are still
+   * done, and the first failure is returned at the end
    */
-  it('should do notification with success for user removed', async () => {
-    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
-    const notif = notifications[0];
-    const userID = notif.modified[0].id;
-    const userType = notif.modified[0].type;
-    const userStatus = notif.modified[0].status;
-    const username = notif.modified[0].name;
-    const userEmail = notif.modified[0].email;
+  it('should do the next users after a failure of the users notification', async () => {
+    // stub: user1 and user2 have no admin yet (the one of user1 can not be created); user3 is a admin; the
+    // setting keeps the traces
+    stubAdminsRecords({ user3: { id: 'user3', user: { id: 'user3', status: 'active' } } });
+    sinon.stub(ReferencesUtils, 'populateReferences').resolves({ status: 200, value: true });
+    const stubPost = sinon.stub(DbOpsUtils, 'post');
+    stubPost.onFirstCall().resolves(fail);
+    stubPost.onSecondCall().resolves({ status: 201, value: { id: 'user2', user: { id: 'user2' } } });
+    sinon.stub(SchoolsRest, 'getSettings').resolves({ status: 200, value: { removedMembers: 'keep' } });
+    const stubPut = sinon
+      .stub(DbOpsUtils, 'put')
+      .resolves({ status: 200, value: { id: 'user3', user: { id: 'user3' } } });
 
-    notif.removed = notif.modified;
-    delete notif.modified;
+    // call: user1 and user2 got the role, user3 lost it
+    const notification = { serviceName: 'users', added: [janeSmith, johnBrown], removed: [emilyClark] };
+    const res = await AdminsService.notification(notification, _ctx);
 
-    // stub
-    let stubGet = sinon.stub(DbOpsUtils, 'getAllByIDs').callsFake((config, ids) => {
-      console.log(`\nDbOpsUtils.getAllByIDs called. ids: ${JSON.stringify(ids, null, 2)}\n`);
-      chai.expect(ids).to.have.deep.members([userID]);
+    // check: the first failure is returned
+    chai.expect(res).to.deep.equal(fail);
 
-      return {
-        status: 200,
-        value: [],
-      };
-    });
-
-    let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
-      console.log(`\nNotificationsUtils.notification called ${JSON.stringify(notification, null, 2)}\n`);
-      chai.expect(ctx.tenantID).to.equal(notif.removed[0].schools[1].id);
-
-      chai.expect(notification.modified[0].status).to.equal(UsersRest.Constants.Status.Disabled);
-
-      return {
-        status: 200,
-        value: true,
-      };
-    });
-
-    // call
-    let res = await AdminsService.notification(notif, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubGet.callCount).to.equal(0);
-    chai.expect(stubNotification.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: true,
-    });
+    // check: the admin of user2 is still created, the one of user3 is still kept as a trace
+    chai.expect(stubPost.callCount).to.equal(2);
+    chai.expect(stubPost.secondCall.args[1]).to.include({ id: 'user2' });
+    chai.expect(stubPut.firstCall.args[1]).to.equal('user3');
   }).timeout(10000);
 
   /**
-   * notification fail validation
+   * the notifications of the other services are ignored (no copy of them), an invalid one is refused
    */
-  it('should notification fail validation', async () => {
-    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
-    const notif = notifications[0];
-    delete notif.serviceName;
+  it('should ignore other services and refuse an invalid notification', async () => {
+    // call: another service
+    const res = await AdminsService.notification({ serviceName: 'locations', modified: [{ id: 'location1' }] }, _ctx);
+    chai.expect(res).to.deep.equal({ status: 200, value: false });
 
-    // call
-    let res = await AdminsService.notification(notif, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "serviceName" is required');
-  }).timeout(10000);
-
-  /**
-   * notification user fail error
-   */
-  it('should do notification user fail error', async () => {
-    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
-    const notif = notifications[0];
-    const userID = notif.modified[0].id;
-
-    // stub
-    let stubGet = sinon.stub(DbOpsUtils, 'getAllByIDs').callsFake((config, ids) => {
-      console.log(`\nDbOpsUtils.getAllByIDs called. ids: ${JSON.stringify(ids, null, 2)}\n`);
-      chai.expect(ids).to.have.deep.members([userID]);
-
-      return {
-        status: 500,
-        error: { message: 'Test error message', error: new Error('Test error').toString() },
-      };
-    });
-
-    // call
-    let res = await AdminsService.notification(notif, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubGet.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 500,
-      error: { message: 'Test error message', error: new Error('Test error').toString() },
-    });
-  }).timeout(10000);
-
-  /**
-   * notification groups service
-   */
-  it('should do notification groups service', async () => {
-    const notifications = _.cloneDeep(TestConstants.GroupsNotifications);
-    const notif = notifications[0];
-
-    // stub
-    let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
-      console.log(`\nNotificationsUtils.notification called\n`);
-
-      chai.expect(notification).to.deep.equal(notif);
-      chai.expect(ctx.tenantID).to.deep.equal(_ctx.tenantID);
-
-      return {
-        status: 200,
-        value: true,
-      };
-    });
-
-    // call
-    let res = await AdminsService.notification(notif, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubNotification.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: true,
-    });
-  }).timeout(10000);
-
-  /**
-   * notification schedules service
-   */
-  it('should do notification schedules service', async () => {
-    const notifications = _.cloneDeep(TestConstants.SchedulesNotifications);
-    const notif = notifications[0];
-
-    // stub
-    let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
-      console.log(`\nNotificationsUtils.notification called\n`);
-
-      chai.expect(notification).to.deep.equal(notif);
-      chai.expect(ctx.tenantID).to.deep.equal(_ctx.tenantID);
-
-      return {
-        status: 200,
-        value: true,
-      };
-    });
-
-    // call
-    let res = await AdminsService.notification(notif, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubNotification.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: true,
-    });
-  }).timeout(10000);
-
-  /**
-   * notification groups service and fail
-   */
-  it('should do notification group service and fail', async () => {
-    const notifications = _.cloneDeep(TestConstants.AdminsNotifications);
-    const notif = notifications[0];
-
-    // stub
-    let stubNotification = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification, ctx) => {
-      console.log(`\nNotificationsUtils.notification called\n`);
-
-      chai.expect(notification).to.deep.equal(notif);
-      chai.expect(ctx.tenantID).to.deep.equal(_ctx.tenantID);
-
-      return {
-        status: 500,
-        error: { message: 'Test error message', error: new Error('Test error').toString() },
-      };
-    });
-
-    // call
-    let res = await AdminsService.notification(notif, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubNotification.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 500,
-      error: { message: 'Test error message', error: new Error('Test error').toString() },
-    });
+    // call: no service name
+    const resInvalid = await AdminsService.notification({ modified: [{ id: 'user1' }] }, _ctx);
+    chai.expect(resInvalid.status).to.equal(400);
+    chai.expect(resInvalid.error.message).to.equal('Failed to validate schema. Error: "serviceName" is required');
   }).timeout(10000);
 });
