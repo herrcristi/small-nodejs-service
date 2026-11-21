@@ -19,3 +19,4 @@ require('./db-ops.utils.patch.test.js');
 require('./db-ops.utils.addManyReferences.test.js');
 require('./db-ops.utils.updateManyReferences.test.js');
 require('./db-ops.utils.deleteManyReferences.test.js');
+require('./db-ops.utils.filter.test.js');

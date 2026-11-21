@@ -125,6 +125,44 @@ const Private = {
   },
 
   /**
+   * invite an existing user: the role is added (if not there yet); an invite interrupted after the user was created
+   * is completed (its missing auth record is created)
+   * userInfo: { id, name, email, status, schools: [ { id, roles } ] }
+   * objInfo: { email, school: { role } }
+   * returns { status, value, needsSetup } or { status, error }; needsSetup: the user has not set a password yet
+   * (pending, or its auth record was just created), so it gets the setup link and not the invitation
+   * a deleted account is created again (pending, it sets its password again like a new user): its records left in the
+   * schools are members again for the roles given again, the others stay traces
+   */
+  inviteExistingUser: async (userInfo, objInfo, _ctx) => {
+    // a deleted account: created again first, so the role below is added to a pending user (not to a deleted one)
+    if (userInfo.status === UsersRest.Constants.Status.Deleted) {
+      console.log(`\nThe account of ${userInfo.id} was deleted: it is created again by the invite`);
+      const rAccount = await UsersRest.recreateAccount(userInfo.id, _ctx);
+      if (rAccount.error) {
+        return rAccount;
+      }
+      userInfo = { ...userInfo, status: rAccount.value.status };
+    }
+
+    // the auth record (created when it is missing)
+    const authInfo = { username: objInfo.email, userID: userInfo.id };
+    const rAuth = await UsersAuth.ensureAuth(authInfo, _ctx);
+    if (rAuth.error) {
+      return rAuth;
+    }
+
+    // the role
+    const rRole = await Private.putUserRole(userInfo, objInfo, _ctx);
+    if (rRole.error) {
+      return rRole;
+    }
+
+    const needsSetup = userInfo.status === UsersRest.Constants.Status.Pending || rAuth.status === 201;
+    return { ...rRole, needsSetup };
+  },
+
+  /**
    * put user role
    * userInfo: { id, name, schools: [ { id, roles } ] }
    * objInfo: { email, school: { role } }
@@ -267,12 +305,14 @@ const Public = {
     );
 
     const isNewUser = rUser.status === 404;
+    let needsSetup = isNewUser;
     if (isNewUser) {
       // the user does not exists -> create
       rUser = await Private.postNewUser(objInfo, _ctx);
     } else if (rUser.status === 200) {
-      // user already exists, check if already has the school and role
-      rUser = await Private.putUserRole(rUser.value, objInfo, _ctx);
+      // user already exists: the role (if not there yet), and an interrupted invite is completed
+      rUser = await Private.inviteExistingUser(rUser.value, objInfo, _ctx);
+      needsSetup = !!rUser.needsSetup;
     }
 
     if (rUser.error) {
@@ -284,17 +324,24 @@ const Public = {
       return rUser;
     }
 
-    // send invitation email and for signup reset password email (dont fail if this returns error)
+    // the email: the setup link (a new token) while the user has not set a password (a new user, a pending user invited
+    // again because the first email was lost, a completed invite), otherwise the invitation; emailSent tells if it was
+    // delivered to the mail server (invite again to send it again)
     const userInfo = { username: objInfo.email };
-    if (isNewUser) {
-      /* const rr = */ await UsersAuth.resetPassword(userInfo, _ctx, UsersAuthConstants.ResetTokenType.Signup);
+    let rEmail = null;
+    if (needsSetup) {
+      rEmail = await UsersAuth.resetPassword(userInfo, _ctx, UsersAuthConstants.ResetTokenType.Signup);
     } else {
-      /* const rr = */ await UsersAuth.sendInvite(userInfo, _ctx);
+      rEmail = await UsersAuth.sendInvite(userInfo, _ctx);
+    }
+    const emailSent = !!rEmail.value?.emailSent;
+    if (!emailSent) {
+      console.log(`\nThe invitation email to ${objInfo.email} could not be sent: ${rEmail.error?.message || ''}`);
     }
 
     // the real result (201 a new user, 200 a role added to an existing user, 204 already a member, with the user):
     // the callers inside the service need it; the controllers decide what a user sees
-    return rUser;
+    return { status: rUser.status, value: rUser.value, emailSent };
   },
 };
 

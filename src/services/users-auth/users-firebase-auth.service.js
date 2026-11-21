@@ -1,10 +1,6 @@
 /**
- * Users service
+ * Users auth: the firebase provider (not implemented: every operation answers 500 Not implemented)
  */
-
-const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
-const RestApiUtils = require('../../core/utils/rest-api.utils.js');
-const CommonUtils = require('../../core/utils/common.utils.js');
 
 const UsersAuthConstants = require('./users-auth.constants.js');
 
@@ -14,6 +10,14 @@ const Private = {
    */
   setupConfig: async (config, _ctx) => {
     return config;
+  },
+
+  /**
+   * the answer of every operation that is not implemented
+   */
+  notImplemented: () => {
+    const msg = 'Not implemented';
+    return { status: 500, error: { message: msg, error: new Error(msg) } };
   },
 };
 const Public = {
@@ -31,7 +35,7 @@ const Public = {
   login: async (config, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
 
-    return { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
+    return Private.notImplemented();
   },
 
   /**
@@ -41,7 +45,7 @@ const Public = {
   logout: async (config, _ctx) => {
     await Private.setupConfig(config, _ctx);
 
-    return { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
+    return Private.notImplemented();
   },
 
   /**
@@ -62,12 +66,7 @@ const Public = {
    * objInfo: { token }
    */
   validateToken: async (config, objInfo, _ctx) => {
-    const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
-    if (r.error) {
-      return r;
-    }
-
-    return { status: 200, value: { username: 'email' } };
+    return Private.notImplemented();
   },
 
   /**
@@ -77,15 +76,7 @@ const Public = {
    */
   post: async (config, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
-
-    // post
-    const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
-    if (r.error) {
-      return r;
-    }
-
-    // success
-    return { status: 200, value: { username: objInfo.username } };
+    return Private.notImplemented();
   },
 
   /**
@@ -94,14 +85,7 @@ const Public = {
    */
   delete: async (config, username, _ctx) => {
     await Private.setupConfig(config, _ctx);
-
-    const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
-    if (r.error) {
-      return r;
-    }
-
-    // success
-    return { status: 200, value: { username: username } };
+    return Private.notImplemented();
   },
 
   /**
@@ -111,15 +95,7 @@ const Public = {
    */
   putPassword: async (config, username, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
-
-    // patch
-    const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
-    if (r.error) {
-      return r;
-    }
-
-    // success
-    return { status: 200, value: { username: username } };
+    return Private.notImplemented();
   },
 
   /**
@@ -129,15 +105,7 @@ const Public = {
    */
   putID: async (config, username, objInfo, _ctx) => {
     await Private.setupConfig(config, _ctx);
-
-    // patch
-    const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
-    if (r.error) {
-      return r;
-    }
-
-    // success
-    return { status: 200, value: { username: objInfo.username } };
+    return Private.notImplemented();
   },
 
   /**
@@ -146,14 +114,7 @@ const Public = {
    */
   resetPassword: async (config, username, resetType, _ctx) => {
     await Private.setupConfig(config, _ctx);
-
-    const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
-    if (r.error) {
-      return r;
-    }
-
-    // success
-    return { status: 200, value: { username: username } };
+    return Private.notImplemented();
   },
 
   /**
@@ -163,14 +124,7 @@ const Public = {
    */
   sendEmail: async (config, username, args, _ctx) => {
     await Private.setupConfig(config, _ctx);
-
-    const r = { status: 500, error: { message: `Not implemented`, error: new Error(`Not implemented`) } };
-    if (r.error) {
-      return r;
-    }
-
-    // success
-    return { status: 200, value: { username: username } };
+    return Private.notImplemented();
   },
 };
 

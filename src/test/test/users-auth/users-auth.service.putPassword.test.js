@@ -10,6 +10,7 @@ const NotificationsUtils = require('../../../core/utils/base-service.notificatio
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
+const UsersAuthSessionsService = require('../../../services/users-auth/users-auth.sessions.service.js');
 const UsersLocalAuthService = require('../../../services/users-auth/users-local-auth.service.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
@@ -19,7 +20,13 @@ describe('Users Auth Service', function () {
 
   before(async function () {});
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    // the sessions and the emailed links (their own collection): a new one, and all the ones of the user ended
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const link = { id: 'session-hash1', secret: 'secret1', expiresAt };
+    sinon.stub(UsersAuthSessionsService, 'create').resolves({ status: 201, value: link });
+    sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 1 });
+  });
 
   afterEach(async function () {
     sinon.restore();

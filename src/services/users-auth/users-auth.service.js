@@ -237,6 +237,105 @@ const Private = {
   },
 
   /**
+   * a user that can not log in: disabled, or its account was deleted (its login is removed with it, see
+   * onUsersNotification; refused here too, so a login left by a failure never works)
+   */
+  isLoginRefused: (status) => {
+    const refused = [UsersRest.Constants.Status.Disabled, UsersRest.Constants.Status.Deleted];
+    return refused.includes(status);
+  },
+
+  /**
+   * delete the login of a user (its email) from the provider: a login that does not exist anymore is not an error
+   * returns { status, value: true when it was deleted } or { status, error }
+   */
+  deleteLogin: async (config, email, _ctx) => {
+    const Providers = {
+      firebase: UsersAuthServiceFirebase.delete,
+      local: UsersAuthServiceLocal.delete,
+    };
+    const r = await Providers[Private.UsersAuthProviderType](config, email, _ctx);
+    if (r.status === 404) {
+      return { status: 200, value: false };
+    }
+    if (r.error) {
+      return r;
+    }
+    return { status: 200, value: true };
+  },
+
+  /**
+   * the users that have no account anymore (a deleted account, or a user removed because its invitation was not used
+   * in time): their login is deleted and all their sessions and emailed links are ended
+   * users: [ { id, email } ]
+   * returns { status, value } or { status, error }
+   */
+  removeLoginsOfUsers: async (users, _ctx) => {
+    const config = await Private.getConfig(_ctx);
+
+    for (const user of users) {
+      console.log(`
+${UsersAuthConstants.ServiceName}: the account of ${user.id} was removed, its login is removed`);
+
+      const rLogin = await Private.deleteLogin(config, user.email, _ctx);
+      if (rLogin.error) {
+        return rLogin;
+      }
+
+      const rEnd = await UsersAuthSessionsService.endAll(user.id, _ctx);
+      if (rEnd.error) {
+        return rEnd;
+      }
+    }
+
+    return { status: 200, value: true };
+  },
+
+  /**
+   * the users notification: the logins of the users without an account are removed
+   * - modified with the status deleted: the account was deleted
+   * - removed: a removed user (an invitation not used in time), or only some roles removed from a user (the user still
+   *   exists, its login is kept)
+   * the users are read again, so only the ones without an account now lose their login (it does not exist anymore, or
+   * its account is still deleted: a notification that arrives after the account was created again changes nothing)
+   * returns { status, value } or { status, error }
+   */
+  onUsersNotification: async (notification, _ctx) => {
+    const modifiedUsers = notification[Private.Notification.Modified] || [];
+    const deletedAccounts = modifiedUsers.filter((user) => user.status === UsersRest.Constants.Status.Deleted);
+    const removedUsers = notification[Private.Notification.Removed] || [];
+    const notifiedUsers = [...deletedAccounts, ...removedUsers].filter((user) => user.email);
+    if (!notifiedUsers.length) {
+      return { status: 200, value: false };
+    }
+
+    // the current status of the notified users (a missing one: the user does not exist anymore)
+    const notifiedIDs = notifiedUsers.map((user) => user.id);
+    const rCurrent = await UsersRest.getAllByIDs(notifiedIDs, { id: 1, status: 1 }, _ctx);
+    if (rCurrent.error) {
+      return rCurrent;
+    }
+    const currentStatuses = {};
+    for (const user of rCurrent.value) {
+      currentStatuses[user.id] = user.status;
+    }
+
+    // the users without an account now (once each)
+    const users = [];
+    for (const user of notifiedUsers) {
+      const currentStatus = currentStatuses[user.id];
+      const hasAccount = currentStatus && currentStatus !== UsersRest.Constants.Status.Deleted;
+      if (!hasAccount && !users.some((item) => item.id === user.id)) {
+        users.push(user);
+      }
+    }
+    if (!users.length) {
+      return { status: 200, value: false };
+    }
+    return await Private.removeLoginsOfUsers(users, _ctx);
+  },
+
+  /**
    * check route roles
    */
   isValidRouteForRoles: (roles, method, route) => {
@@ -262,6 +361,14 @@ const Private = {
     }
 
     return false;
+  },
+
+  /**
+   * the memberships of a user: a school with at least one role (a membership left without roles by an earlier version
+   * is not a membership)
+   */
+  getMemberships: (user) => {
+    return (user.schools || []).filter((school) => school.roles?.length);
   },
 
   /**
@@ -296,18 +403,38 @@ const Private = {
     }
 
     const portalSchool = user.schools.find((school) => school.id === portalSchoolID);
-    return { status: 200, value: true, tenantName: portalSchool.name };
+    return { status: 200, value: true, tenantName: portalSchool.name, tenantVerified: true };
+  },
+
+  /**
+   * the answer for a route that does not need a school (all, self): the school of the request (x-tenant-id) is used
+   * only if the user is a member of it and it is not disabled (tenantVerified), so nobody writes events into a school
+   * that is not its own, or that is disabled
+   */
+  validNoSchoolRoute: (user, _ctx) => {
+    const memberships = Private.getMemberships(user);
+    const tenantSchool = memberships.find(
+      (school) => school.id === _ctx.tenantID && school.status !== SchoolsRest.Constants.Status.Disabled
+    );
+    return { status: 200, value: true, tenantName: tenantSchool?.name, tenantVerified: !!tenantSchool };
   },
 
   /**
    * validate route
    * _ctx: { userID, username, tenantID }
+   * returns { status, value, tenantName, tenantVerified } or { status, error }
    */
   validateRoute: (user, method, route, _ctx) => {
     // validate for all (non-tenant) route
     const validGlobalRole = Private.isValidRouteForRoles(['all'], method, route);
     if (validGlobalRole) {
-      return { status: 200, value: true };
+      return Private.validNoSchoolRoute(user, _ctx);
+    }
+
+    // the own user record (its profile): also without a school, so a user left without schools can still change it
+    const isSelfRoute = Private.isValidRouteForRoles(['self'], method, route);
+    if (isSelfRoute && Private.isValidRouteForParam(route, _ctx.userID /* paramID */, _ctx)) {
+      return Private.validNoSchoolRoute(user, _ctx);
     }
 
     const portalAdminRoute = Private.validatePortalAdminRoute(user, method, route, _ctx);
@@ -325,8 +452,9 @@ const Private = {
       }
     }
 
-    // validate per tenant
-    const validSchool = user.schools.find((item) => item.id === _ctx.tenantID);
+    // validate per tenant (a membership with a role)
+    const memberships = Private.getMemberships(user);
+    const validSchool = memberships.find((item) => item.id === _ctx.tenantID);
     if (!validSchool) {
       const msg = 'Failed to validate school';
       return { status: 401, error: { message: msg, error: new Error(msg) } };
@@ -353,7 +481,7 @@ const Private = {
 
     if (validRole || validCurrentUser) {
       // valid
-      return { status: 200, value: true, tenantName: validSchool.name };
+      return { status: 200, value: true, tenantName: validSchool.name, tenantVerified: true };
     }
 
     const msg = `Route is not accesible: ${method} ${route}`;
@@ -451,9 +579,9 @@ const Public = {
     _ctx.userID = rUserDetails.value.id; // set userID in context for events and notifications
     eventO.id = _ctx.userID; // set userID in event object
 
-    // fail login if user is disabled
+    // fail login if user is disabled (or its account was deleted)
     const user = rUserDetails.value;
-    if (user.status === UsersRest.Constants.Status.Disabled) {
+    if (Private.isLoginRefused(user.status)) {
       const rDisabled = disabled();
       return loginFailed(rDisabled, 'User is disabled');
     }
@@ -467,8 +595,8 @@ const Public = {
         return { status: 500, error: { message: msg, error: new Error(msg) } };
       }
 
-      // disabled while this login was running: it stays disabled
-      if (rP.value?.status === UsersRest.Constants.Status.Disabled) {
+      // disabled (or deleted) while this login was running: it stays disabled
+      if (Private.isLoginRefused(rP.value?.status)) {
         const rDisabled = disabled();
         return loginFailed(rDisabled, 'User is disabled');
       }
@@ -504,7 +632,7 @@ const Public = {
         username: _ctx.username,
         status: user.status,
         name: user.name,
-        schools: user.schools,
+        schools: Private.getMemberships(user),
       },
     };
   },
@@ -597,10 +725,10 @@ const Public = {
       return { ...rUserDetails, status: 401 };
     }
 
-    // fail if user is disabled
+    // fail if user is disabled (or its account was deleted)
     const user = rUserDetails.value;
     _ctx.userID = user.id;
-    if (user.status === UsersRest.Constants.Status.Disabled) {
+    if (Private.isLoginRefused(user.status)) {
       const msg = 'User is disabled';
       return { status: 401, error: { message: msg, error: new Error(msg) } };
     }
@@ -624,9 +752,10 @@ const Public = {
         sessionID: rSession.value.id, // the id of the record of the session (not its secret), for the logout
         sessionExpiresAt: rSession.value.expiresAt,
         tenantName: rr.tenantName,
+        tenantVerified: rr.tenantVerified, // false: the school of the request is not used (not a member)
         status: user.status,
         name: user.name,
-        schools: user.schools,
+        schools: Private.getMemberships(user),
       },
     };
   },
@@ -694,26 +823,25 @@ const Public = {
   },
 
   /**
-   * delete the user can be done only by login user (_ctx)
-   * (admins can delete users from tenants using patchUserSchool)
+   * delete the account of the user, can be done only by login user (_ctx)
+   * (admins remove users from their schools using patchUserSchool)
+   * the user is kept as deleted (its id, name and email): its records in the schools stay as traces or are deleted, by
+   * the setting of each school; its login, its sessions and its links are removed
    */
   delete: async (_ctx) => {
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
 
-    const Providers = {
-      firebase: UsersAuthServiceFirebase.delete,
-      local: UsersAuthServiceLocal.delete,
-    };
-    let r = await Providers[Private.UsersAuthProviderType](config, _ctx.username, _ctx);
-    if (r.error) {
-      return r;
-    }
-
-    // delete user details
-    const rUserDetails = await UsersRest.delete(_ctx.userID, _ctx);
+    // the account first: from now the user can not log in (a deleted account is refused), even if the next steps fail
+    const rUserDetails = await UsersRest.deleteAccount(_ctx.userID, _ctx);
     if (rUserDetails.error) {
       return rUserDetails;
+    }
+
+    // its login
+    const r = await Private.deleteLogin(config, _ctx.username, _ctx);
+    if (r.error) {
+      return r;
     }
 
     // end all the sessions and the links of the user
@@ -924,13 +1052,10 @@ const Public = {
         return rRoles;
       }
 
-      // prevent removing itself as admin (or portal admin), so there is always someone to manage the school
-      // return an error and not a success, because nothing is removed
-      if (
-        op === 'remove' &&
-        _ctx.userID === userID &&
-        roles.some((item) => [UsersRest.Constants.Roles.Admin, UsersRest.Constants.Roles.PortalAdmin].includes(item))
-      ) {
+      // a school admin can not remove its own admin role (another admin, or a portal admin, removes it); return an
+      // error and not a success, because nothing is removed. A portal admin can remove its own portal-admin role (a
+      // portal left without one gets the configured portal admin again at the next start)
+      if (op === 'remove' && _ctx.userID === userID && roles.includes(UsersRest.Constants.Roles.Admin)) {
         const msg = 'You cannot remove yourself as admin';
         return { status: 400, error: { message: msg, error: new Error(msg) } };
       }
@@ -943,6 +1068,31 @@ const Public = {
     // patch user schools
     const rUserDetails = await UsersRest.patchSchool(userID, patchSchoolInfo, _ctx);
     return rUserDetails;
+  },
+
+  /**
+   * make sure that a user has its auth record (local auth): an invite or a bootstrap interrupted after the user was
+   * created left a user that can not log in nor reset its password; the auth record is created now, with a random
+   * password (the user sets its own with the setup link)
+   * objInfo: { username, userID }
+   * returns { status: 200 (it exists) | 201 (created), value } or { status, error }
+   */
+  ensureAuth: async (objInfo, _ctx) => {
+    if (Private.UsersAuthProviderType !== 'local') {
+      return { status: 200, value: { username: objInfo.username } };
+    }
+
+    // config: { serviceName }
+    const config = await Private.getConfig(_ctx);
+    const rAuth = await UsersAuthServiceLocal.getOne(config, objInfo.username, _ctx);
+    if (rAuth.status !== 404) {
+      return rAuth;
+    }
+
+    // missing: created with a random password (with the complexity rules)
+    console.log(`\nThe auth record of ${objInfo.userID} is missing: it is created`);
+    const password = CommonUtils.getRandomBytes(30).toString('hex') + 'aA1!';
+    return await Public.post({ username: objInfo.username, password, userID: objInfo.userID }, _ctx);
   },
 
   /**
@@ -969,14 +1119,15 @@ const Public = {
       firebase: UsersAuthServiceFirebase.sendEmail,
       local: UsersAuthServiceLocal.sendEmail,
     };
-    await Providers[Private.UsersAuthProviderType](config, username, args, _ctx);
+    const rEmail = await Providers[Private.UsersAuthProviderType](config, username, args, _ctx);
 
     // raise event for reset password
     const newObj = { id: username, name: username, type: UsersAuthConstants.Type };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
-    // success
-    return { status: 200, value: { username, type: UsersAuthConstants.Type } };
+    // success (emailSent: the email was delivered to the mail server)
+    const emailSent = !rEmail?.error;
+    return { status: 200, value: { username, type: UsersAuthConstants.Type, emailSent } };
   },
 
   /**
@@ -1009,19 +1160,27 @@ const Public = {
     }
 
     // only for local auth
+    let emailSent = false;
     if (Private.UsersAuthProviderType === 'local') {
       // encrypt token again
       const token = JwtUtils.encrypt(r.value, Private.Issuer, _ctx).value;
-      // send email with token
-      await UsersAuthServiceLocal.sendEmail(config, username, { ...args, token }, _ctx);
+
+      // send email with token: the signup link is sent by an invite, which waits and reports a failed delivery; the
+      // reset link answers the public form, which never waits for the mail server (the time of the answer must not
+      // tell if the account exists; a failed delivery is only logged)
+      const sending = UsersAuthServiceLocal.sendEmail(config, username, { ...args, token }, _ctx);
+      if (resetType === UsersAuthConstants.ResetTokenType.Signup) {
+        const rEmail = await sending;
+        emailSent = !rEmail?.error;
+      }
     }
 
     // raise event for reset password
     const newObj = { id: username, name: username, type: UsersAuthConstants.Type };
     await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, args, _ctx);
 
-    // success
-    return { status: 200, value: { username, type: UsersAuthConstants.Type } };
+    // success (emailSent: the signup email was delivered to the mail server; the reset email is not waited for)
+    return { status: 200, value: { username, type: UsersAuthConstants.Type, emailSent } };
   },
 
   /**
@@ -1133,11 +1292,15 @@ const Public = {
     }
     notification = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
-    // config: { serviceName }
-    const config = await Private.getConfig(_ctx);
-
-    // notification (process references)
-    return await NotificationsUtils.notification({ ...config, fillReferences: true }, notification, _ctx);
+    switch (notification.serviceName) {
+      case UsersRest.Constants.ServiceName:
+        return await Private.onUsersNotification(notification, _ctx);
+      default:
+        console.log(
+          `\n${UsersAuthConstants.ServiceName}: notification of ${notification.serviceName} ignored (no copy of it)`
+        );
+        return { status: 200, value: false };
+    }
   },
 };
 

@@ -21,7 +21,10 @@ describe('Users Auth Service', function () {
 
   before(async function () {});
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    // the auth record of an existing user exists (an interrupted invite is tested on its own)
+    sinon.stub(UsersAuthService, 'ensureAuth').resolves({ status: 200, value: {} });
+  });
 
   afterEach(async function () {
     sinon.restore();
@@ -148,6 +151,7 @@ describe('Users Auth Service', function () {
     // the real result (the controller answers the same for all of them)
     chai.expect(res).to.deep.equal({
       status: 201,
+      emailSent: false, // the stub of the email does not report a delivery
       value: {
         username: testUser.email,
         type: UsersAuthRest.Constants.Type,
@@ -408,6 +412,7 @@ describe('Users Auth Service', function () {
     // the real result (the controller answers the same for all of them)
     chai.expect(res).to.deep.equal({
       status: 200,
+      emailSent: false, // the stub of the email does not report a delivery
       value: {
         username: testUser.email,
         name: testUser.email,
@@ -618,6 +623,7 @@ describe('Users Auth Service', function () {
     // the real result (the controller answers the same for all of them)
     chai.expect(res).to.deep.equal({
       status: 204,
+      emailSent: false, // the stub of the email does not report a delivery
       value: {
         username: testUser.email,
         name: testUser.email,
@@ -656,6 +662,7 @@ describe('Users Auth Service', function () {
       chai.expect(res).to.deep.equal({
         status: 200,
         value: { userID: 'user1', username: email, name: 'School Admin', type: UsersAuthRest.Constants.Type },
+        emailSent: false, // the stub of the email does not report a delivery
       });
       chai.expect(stubSchool.firstCall.args[0]).to.equal('school1');
 
@@ -807,10 +814,154 @@ describe('Users Auth Service', function () {
     );
 
     // check: the lower-case email is used everywhere
-    chai.expect(res).to.deep.equal({ status: 201, value: { userID: 'user1' } });
+    chai.expect(res).to.deep.equal({ status: 201, value: { userID: 'user1' }, emailSent: false });
     chai.expect(getByEmail.firstCall.args[0]).to.equal('john.doe@testdomain.test');
     chai.expect(post.firstCall.args[0].email).to.equal('john.doe@testdomain.test');
     chai.expect(authPost.firstCall.args[0].username).to.equal('john.doe@testdomain.test');
     chai.expect(reset.firstCall.args[0]).to.deep.equal({ username: 'john.doe@testdomain.test' });
   }).timeout(10000);
+
+  describe('the account state decides the email; an interrupted invite is completed', function () {
+    const email = 'ana.pop@testdomain.test';
+    const existingUser = (status) => ({
+      id: 'user1',
+      email,
+      name: 'Ana Pop',
+      status,
+      schools: [{ id: _ctx.tenantID, roles: ['student'] }],
+    });
+
+    /**
+     * a pending user invited again (the first email was lost): a new setup link, not the invitation (L-6)
+     */
+    it('should send the setup link to a pending user invited again', async () => {
+      // stub: a pending member (the role is there); the emails; the delivery is reported
+      sinon.stub(UsersRest, 'getOneByEmail').resolves({ status: 200, value: existingUser('pending') });
+      const stubReset = sinon
+        .stub(UsersAuthService, 'resetPassword')
+        .resolves({ status: 200, value: { emailSent: true } });
+      const stubInvite = sinon.stub(UsersAuthService, 'sendInvite');
+
+      // call
+      const res = await UsersAuthSignupService.invite({ email, school: { role: 'student' } }, _ctx);
+
+      // check: the setup link (a signup link with a new token), delivered
+      chai.expect(res.status).to.equal(204);
+      chai.expect(stubReset.firstCall.args[2]).to.equal(UsersAuthConstants.ResetTokenType.Signup);
+      chai.expect(stubInvite.callCount).to.equal(0);
+      chai.expect(res.emailSent).to.equal(true);
+    }).timeout(10000);
+
+    /**
+     * an active user gets the invitation (it has a password)
+     */
+    it('should send the invitation to an active user', async () => {
+      // stub: an active user, the role is added; the email is delivered
+      sinon.stub(UsersRest, 'getOneByEmail').resolves({ status: 200, value: existingUser('active') });
+      sinon.stub(UsersRest, 'patchSchool').resolves({ status: 200, value: {} });
+      const stubReset = sinon.stub(UsersAuthService, 'resetPassword');
+      const stubInvite = sinon
+        .stub(UsersAuthService, 'sendInvite')
+        .resolves({ status: 200, value: { emailSent: true } });
+
+      // call: another role
+      const res = await UsersAuthSignupService.invite({ email, school: { role: 'professor' } }, _ctx);
+
+      // check: the invitation
+      chai.expect(res.status).to.equal(200);
+      chai.expect(stubInvite.callCount).to.equal(1);
+      chai.expect(stubReset.callCount).to.equal(0);
+      chai.expect(res.emailSent).to.equal(true);
+    }).timeout(10000);
+
+    /**
+     * an invite interrupted after the user was created: its auth record is created now, and it gets the setup link
+     * (C-8)
+     */
+    it('should complete an interrupted invite: the auth record is created, the setup link is sent', async () => {
+      // stub: an active-looking user without auth record (created now: 201)
+      sinon.stub(UsersRest, 'getOneByEmail').resolves({ status: 200, value: existingUser('active') });
+      UsersAuthService.ensureAuth.resolves({ status: 201, value: { userID: 'user1' } });
+      sinon.stub(UsersRest, 'patchSchool').resolves({ status: 200, value: {} });
+      const stubReset = sinon
+        .stub(UsersAuthService, 'resetPassword')
+        .resolves({ status: 200, value: { emailSent: true } });
+
+      // call
+      const res = await UsersAuthSignupService.invite({ email, school: { role: 'professor' } }, _ctx);
+
+      // check: the auth record for the user, then the setup link
+      chai.expect(UsersAuthService.ensureAuth.firstCall.args[0]).to.deep.equal({ username: email, userID: 'user1' });
+      chai.expect(stubReset.callCount).to.equal(1);
+      chai.expect(res.status).to.equal(200);
+    }).timeout(10000);
+
+    /**
+     * the auth record can not be created: the invite fails (nothing else is changed)
+     */
+    it('should fail the invite when the auth record can not be created', async () => {
+      // stub: the auth record can not be read or created; no role is added
+      sinon.stub(UsersRest, 'getOneByEmail').resolves({ status: 200, value: existingUser('active') });
+      UsersAuthService.ensureAuth.resolves({ status: 500, error: { message: 'Database failure' } });
+      const stubPatch = sinon.stub(UsersRest, 'patchSchool');
+      sinon.stub(EventsRest, 'raiseEventForObject');
+
+      // call
+      const res = await UsersAuthSignupService.invite({ email, school: { role: 'professor' } }, _ctx);
+
+      // check: the error, no role
+      chai.expect(res.status).to.equal(500);
+      chai.expect(stubPatch.callCount).to.equal(0);
+    }).timeout(10000);
+
+    /**
+     * a deleted account invited again: it is created again (pending) before its role is added, then the setup link
+     */
+    it('should create again a deleted account invited again and send the setup link', async () => {
+      // stub: a deleted user (no memberships left); its account is created again; the role; the emails
+      const deletedUser = { ...existingUser('deleted'), schools: [] };
+      sinon.stub(UsersRest, 'getOneByEmail').resolves({ status: 200, value: deletedUser });
+      const stubRecreate = sinon
+        .stub(UsersRest, 'recreateAccount')
+        .resolves({ status: 200, value: { id: 'user1', status: 'pending' } });
+      const stubPatch = sinon.stub(UsersRest, 'patchSchool').resolves({ status: 200, value: {} });
+      const stubReset = sinon
+        .stub(UsersAuthService, 'resetPassword')
+        .resolves({ status: 200, value: { emailSent: true } });
+      sinon.stub(EventsRest, 'raiseEventForObject');
+
+      // call
+      const res = await UsersAuthSignupService.invite({ email, school: { role: 'student' } }, _ctx);
+
+      // check: created again first, then the role, then the setup link
+      chai.expect(res.status).to.equal(200);
+      chai.expect(stubRecreate.firstCall.args[0]).to.equal('user1');
+      chai.expect(stubRecreate.calledBefore(stubPatch)).to.equal(true);
+      chai.expect(stubReset.firstCall.args[2]).to.equal(UsersAuthConstants.ResetTokenType.Signup);
+
+      // case: the account can not be created again: the error, no role
+      stubRecreate.resolves({ status: 500, error: { message: 'Database failure' } });
+      stubPatch.resetHistory();
+      const resFailed = await UsersAuthSignupService.invite({ email, school: { role: 'student' } }, _ctx);
+      chai.expect(resFailed.status).to.equal(500);
+      chai.expect(stubPatch.callCount).to.equal(0);
+    }).timeout(10000);
+
+    /**
+     * the email can not be sent: the invite is done, emailSent is false (invite again to send it again)
+     */
+    it('should report an invitation email that could not be sent', async () => {
+      // stub: an active user; the mail server refuses the email
+      sinon.stub(UsersRest, 'getOneByEmail').resolves({ status: 200, value: existingUser('active') });
+      sinon.stub(UsersRest, 'patchSchool').resolves({ status: 200, value: {} });
+      sinon.stub(UsersAuthService, 'sendInvite').resolves({ status: 200, value: { emailSent: false } });
+
+      // call
+      const res = await UsersAuthSignupService.invite({ email, school: { role: 'professor' } }, _ctx);
+
+      // check: done, not sent
+      chai.expect(res.status).to.equal(200);
+      chai.expect(res.emailSent).to.equal(false);
+    }).timeout(10000);
+  });
 });

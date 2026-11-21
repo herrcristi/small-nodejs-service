@@ -49,7 +49,8 @@ describe('Admins Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubString.callCount).to.equal(0);
+    chai.expect(stubString.callCount).to.equal(1); // the status
+    chai.expect(stubString.firstCall.args[0]).to.equal(testAdmin.status);
     chai.expect(stubAddTranslations.callCount).to.equal(1);
   }).timeout(10000);
 });

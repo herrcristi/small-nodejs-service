@@ -21,7 +21,10 @@ describe('Users Auth Service', function () {
 
   before(async function () {});
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    // the auth record of an existing user exists (an interrupted invite is tested on its own)
+    sinon.stub(UsersAuthService, 'ensureAuth').resolves({ status: 200, value: {} });
+  });
 
   afterEach(async function () {
     sinon.restore();
@@ -161,6 +164,7 @@ describe('Users Auth Service', function () {
     // the real result (the controller answers the same for all of them)
     chai.expect(res).to.deep.equal({
       status: 201,
+      emailSent: false, // the stub of the email does not report a delivery
       value: {
         username: testUser.email,
         type: UsersAuthRest.Constants.Type,

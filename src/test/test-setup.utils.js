@@ -1,4 +1,11 @@
-const TestConstants = require('../../test/test-constants.js');
+const TestConstants = require('./test-constants.js');
+
+const Private = {
+  /**
+   * the settings of the service in the environment (all of them start with these prefixes)
+   */
+  ServiceEnvPrefixes: ['SMALL_API_', 'SMALL_UI_'],
+};
 
 /**
  * Test utils
@@ -6,8 +13,17 @@ const TestConstants = require('../../test/test-constants.js');
 const Public = {
   /**
    * setup env
+   * the tests do not depend on the environment of the shell: every setting of the service is removed first, then the
+   * test values are set; a test that needs another value (or no value) changes it and restores it afterwards
    */
   setupEnv: () => {
+    for (const name of Object.keys(process.env)) {
+      const isServiceSetting = Private.ServiceEnvPrefixes.some((prefix) => name.startsWith(prefix));
+      if (isServiceSetting) {
+        delete process.env[name];
+      }
+    }
+
     // env
     process.env.NODE_ENV = 'test';
     process.env.SMALL_API_PORT = TestConstants.Port;

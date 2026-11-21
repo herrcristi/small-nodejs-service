@@ -25,6 +25,22 @@ const Utils = {
   },
 
   /**
+   * a write that matched nothing: without an extra filter the object does not exist (404); with an extra filter the
+   * object may exist and not match it (409: it was changed by somebody else, like a status that is not pending anymore)
+   */
+  notMatched: async (config, objID, extraFilter, time, _ctx) => {
+    if (!extraFilter) {
+      return Utils.error(404, `Not found ${objID}`, time, _ctx);
+    }
+
+    const count = await config.collection.countDocuments({ id: objID }, { limit: 1 });
+    if (!count) {
+      return Utils.error(404, `Not found ${objID}`, time, _ctx);
+    }
+    return Utils.error(409, `Not changed ${objID}: it does not match the filter`, time, _ctx);
+  },
+
+  /**
    * get references fields (filter and update) to be used in updateMany
    */
   getReferencesUpdateMany: (referenceFieldName, objInfo, _ctx) => {
@@ -61,6 +77,67 @@ const Utils = {
       updateField: updateFields.join('.'),
       arrayFilters,
     };
+  },
+
+  /**
+   * the condition of a copy (its fields under prefix) that is older than the object: a copy of the same object (the
+   * same createdTimestamp) with a smaller or missing modifiedCount, or a copy of an object with the same id that was
+   * created again (another createdTimestamp, or none); only these copies are updated, so a change that comes back
+   * through a cycle of notifications, or a late notification of an older change, changes nothing
+   * null when the object has no modifiedCount (then every copy is updated)
+   * prefix: '' (the copy itself, inside $elemMatch) or the path of the copy ('user', 'schools', 'schedules.location')
+   */
+  getOlderCopyFilter: (prefix, objInfo) => {
+    if (typeof objInfo.modifiedCount !== 'number') {
+      return null;
+    }
+
+    const field = (name) => (prefix ? `${prefix}.${name}` : name);
+    const olderCount = { $not: { $gte: objInfo.modifiedCount } };
+    if (typeof objInfo.createdTimestamp !== 'string') {
+      return { [field('modifiedCount')]: olderCount };
+    }
+
+    const sameObject = { [field('createdTimestamp')]: objInfo.createdTimestamp, [field('modifiedCount')]: olderCount };
+    const createdAgain = { [field('createdTimestamp')]: { $ne: objInfo.createdTimestamp } };
+    return { $or: [sameObject, createdAgain] };
+  },
+
+  /**
+   * a filter moved under a prefix: { id } -> { 'user.id' }, also inside $or
+   */
+  prefixFilter: (filter, prefix) => {
+    const prefixed = {};
+    for (const key in filter) {
+      if (key === '$or') {
+        prefixed.$or = filter.$or.map((condition) => Utils.prefixFilter(condition, prefix));
+        continue;
+      }
+      prefixed[`${prefix}.${key}`] = filter[key];
+    }
+    return prefixed;
+  },
+
+  /**
+   * the filter of the objects that have an older copy of an object (see getOlderCopyFilter)
+   * user -> { 'user.id': id, $or: [ { 'user.createdTimestamp': c, 'user.modifiedCount': older }, ... ] }
+   * students[] -> { students: { $elemMatch: { id, $or: [...] } } }
+   * schedules[].location -> { schedules: { $elemMatch: { 'location.id': id, $or: [ ...'location.' fields ] } } }
+   */
+  getOlderCopiesFilter: (fieldName, objInfo) => {
+    // from the copy to the object that has it
+    const segments = fieldName.split('.').reverse();
+    const olderFilter = Utils.getOlderCopyFilter('', objInfo);
+    let filter = { id: objInfo.id, ...olderFilter };
+    for (const segment of segments) {
+      const field = segment.replace('[]', '');
+      if (segment.endsWith('[]')) {
+        filter = { [field]: { $elemMatch: filter } };
+        continue;
+      }
+      filter = Utils.prefixFilter(filter, field);
+    }
+    return filter;
   },
 };
 
@@ -134,6 +211,16 @@ const Public = {
 
   getAllByIDs: async (config, ids, projection, _ctx) => {
     return Public.getAll(config, { filter: { id: { $in: ids } }, projection }, _ctx);
+  },
+
+  /**
+   * get all the objects that have a reference (a copy) of an object
+   * ref: { fieldName } (user, students[], schedules[].location)
+   * return: { status, value } or { status, error: { message, error } }
+   */
+  getAllByReference: async (config, ref, refID, projection, _ctx) => {
+    const fieldName = ref.fieldName.replaceAll('[]', '');
+    return Public.getAll(config, { filter: { [`${fieldName}.id`]: refID }, projection }, _ctx);
   },
 
   /**
@@ -288,16 +375,19 @@ const Public = {
   /**
    * put
    * config: { serviceName, collection, returnDocument? }
+   * options: { filter? } the object is changed only when it also matches this filter (a conditional update, done in
+   *   one database call: { status: 'pending' }); otherwise nothing is changed and the answer is 409 (or 404)
    * return: { status, value } or { status, error: { message, error } }
    */
-  put: async (config, objID, objInfo, projection, _ctx) => {
+  put: async (config, objID, objInfo, projection, _ctx, options = null) => {
     const time = new Date();
+    const extraFilter = options?.filter;
 
     try {
       const returnDocument = config.returnDocument || 'after';
 
       const r = await config.collection.findOneAndUpdate(
-        { id: objID },
+        { ...extraFilter, id: objID },
         {
           $set: { ...objInfo, lastModifiedTimestamp: new Date().toISOString() },
           $inc: { modifiedCount: 1 },
@@ -308,16 +398,16 @@ const Public = {
       console.log(
         `\nDB Calling: ${config.serviceName} put for ${objID} with ${JSON.stringify(
           CommonUtils.protectData(objInfo)
-        )} returned document ${returnDocument} ${JSON.stringify(
+        )} with filter ${JSON.stringify(extraFilter || {})} returned document ${returnDocument} ${JSON.stringify(
           { ...r, value: CommonUtils.protectData(r.value) },
           null,
           2
         )}. Finished in ${new Date() - time} ms`
       );
 
-      // not found
+      // not found (or the filter is not matched)
       if (r.lastErrorObject?.n === 0) {
-        return Utils.error(404, `Not found ${objID}`, time, _ctx);
+        return await Utils.notMatched(config, objID, extraFilter, time, _ctx);
       }
 
       return { status: 200, value: r.value, time: new Date() - time };
@@ -334,7 +424,9 @@ const Public = {
   /**
    * patch
    * config: { serviceName, collection }
-   * patchInfo: { set, unset, add, remove }
+   * patchInfo: { set, unset, add, remove, removeWhere }
+   *   removeWhere: { <array field>: <condition> } removes the elements of an array that match a condition (internal
+   *   only, never from a request: { schools: { roles: { $size: 0 } } } removes the memberships without roles)
    * return: { status, value } or { status, error: { message, error } }
    */
   patch: async (config, objID, patchInfo, projection, _ctx) => {
@@ -346,7 +438,7 @@ const Public = {
     try {
       const filter = { id: objID };
 
-      // order is set, add, remove, unset
+      // order is set, add, remove, removeWhere, unset
 
       // set
       if (Object.keys(patchInfo.set || {}).length) {
@@ -367,6 +459,13 @@ const Public = {
       // remove
       const pullOperations = DbOpsArrayUtils.getPullBulkOpsFromArray(filter, patchInfo.remove, _ctx);
       bulkOperations = bulkOperations.concat(pullOperations);
+
+      // remove the elements that match a condition
+      if (Object.keys(patchInfo.removeWhere || {}).length) {
+        bulkOperations.push({
+          updateOne: { filter, update: { $pull: { ...patchInfo.removeWhere } } },
+        });
+      }
 
       // unset
       if (Array.isArray(patchInfo.unset) && patchInfo.unset.length) {
@@ -523,10 +622,13 @@ const Public = {
   },
 
   /**
-   * references update many
+   * references update many: the copies of an object are updated, only the copies that are older than it (their
+   * modifiedCount is missing or smaller than the one of the object): a change that comes back through a cycle of
+   * notifications, or a late notification of an older change, changes nothing
    * config: { serviceName, collection }
    * ref: { fieldName }
-   * return: { status, value } or { status, error: { message, error } }
+   * objInfo: the object (projected), with its modifiedCount
+   * return: { status, value: updated count, ids: [ the ids of the updated objects ] } or { status, error }
    */
   updateManyReferences: async (config, ref, objInfo, _ctx) => {
     const time = new Date();
@@ -541,9 +643,35 @@ const Public = {
         setObj[`${updateField}.${key}`] = objInfo[key]; // schedules.$[schedules].location.id: ...
       }
 
+      // only the older copies (without a modifiedCount in the object: all its copies)
+      const hasOlderCondition = !!Utils.getOlderCopyFilter('', objInfo);
+      let filter = { [filterField]: objInfo.id }; // schedules.location.id: ...
+      let olderArrayFilters = arrayFilters;
+      if (hasOlderCondition) {
+        filter = Utils.getOlderCopiesFilter(ref.fieldName, objInfo);
+        olderArrayFilters = arrayFilters.map((arrayFilter) => {
+          const idKey = Object.keys(arrayFilter)[0]; // schedules.location.id
+          const copyPrefix = idKey.replace(/\.id$/, ''); // schedules.location
+          const olderFilter = Utils.getOlderCopyFilter(copyPrefix, objInfo);
+          return { ...arrayFilter, ...olderFilter };
+        });
+      }
+
+      // the objects to update
+      const objects = await config.collection.find(filter).project({ _id: 0, id: 1 }).toArray();
+      const ids = objects.map((item) => item.id);
+      if (!ids.length) {
+        console.log(
+          `\nDB Calling: ${config.serviceName} updateManyReferences for '${ref.fieldName}' with info ${JSON.stringify(
+            objInfo
+          )}: no older copy. Finished in ${new Date() - time} ms`
+        );
+        return { status: 200, value: 0, ids: [], time: new Date() - time };
+      }
+
       // update obj
       const r = await config.collection.updateMany(
-        { [filterField]: objInfo.id }, // schedules.location.id: ...
+        { id: { $in: ids } },
         {
           $set: {
             ...setObj,
@@ -554,7 +682,7 @@ const Public = {
           },
         },
         {
-          arrayFilters, // [{ schedules.location.id: '...' }]
+          arrayFilters: olderArrayFilters, // [{ schedules.location.id: '...', schedules.location.modifiedCount: ... }]
           //explain: 'executionStats'
         }
       );
@@ -562,10 +690,10 @@ const Public = {
       console.log(
         `\nDB Calling: ${config.serviceName} updateManyReferences for '${ref.fieldName}' with info ${JSON.stringify(
           objInfo
-        )} returned ${JSON.stringify(r, null, 2)}. Finished in ${new Date() - time} ms`
+        )} for ids ${JSON.stringify(ids)} returned ${JSON.stringify(r, null, 2)}. Finished in ${new Date() - time} ms`
       );
 
-      return { status: 200, value: r.modifiedCount, time: new Date() - time };
+      return { status: 200, value: r.modifiedCount, ids, time: new Date() - time };
     } catch (e) {
       console.log(
         `\nDB Calling Failed: ${config.serviceName} updateManyReferences for '${
@@ -582,10 +710,12 @@ const Public = {
    * references delete many
    * config: { serviceName, collection }
    * ref: { fieldName }
+   * options: { filter? } only the objects that also match this filter ({ id: { $nin: ids } }: all but these)
    * return: { status, value } or { status, error: { message, error } }
    */
-  deleteManyReferences: async (config, ref, objInfo, _ctx) => {
+  deleteManyReferences: async (config, ref, objInfo, _ctx, options = null) => {
     const time = new Date();
+    const extraFilter = options?.filter;
 
     try {
       // examples of fieldName:
@@ -613,7 +743,7 @@ const Public = {
       if (lastFieldIsArray) {
         // remove from array
         r = await config.collection.updateMany(
-          { [filterField]: objInfo.id }, // schedules.location.id: ...
+          { ...extraFilter, [filterField]: objInfo.id }, // schedules.location.id: ...
           {
             $pull: {
               [updateField]: { id: objInfo.id }, //  schedules.$[schedules].location: ...
@@ -631,7 +761,7 @@ const Public = {
         );
       } else {
         r = await config.collection.updateMany(
-          { [filterField]: objInfo.id }, // schedules.location.id: ...
+          { ...extraFilter, [filterField]: objInfo.id }, // schedules.location.id: ...
           {
             $unset: setProps, //  schedules.$[schedules].location.name ....
             $set: {
@@ -650,7 +780,7 @@ const Public = {
       console.log(
         `\nDB Calling: ${config.serviceName} deleteManyReferences for '${ref.fieldName}' with info ${JSON.stringify(
           objInfo
-        )} returned ${JSON.stringify(r, null, 2)}. Finished in ${new Date() - time} ms`
+        )} and filter ${JSON.stringify(extraFilter || {})} returned ${JSON.stringify(r, null, 2)}. Finished in ${new Date() - time} ms`
       );
 
       return { status: 200, value: r.modifiedCount, time: new Date() - time };

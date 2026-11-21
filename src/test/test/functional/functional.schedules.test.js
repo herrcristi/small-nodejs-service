@@ -26,7 +26,7 @@ describe('Schedules Functional', function () {
   beforeEach(async function () {
     sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
-      return { status: 200, value: { userID: 'user.id', username: 'user.email' } };
+      return { status: 200, value: { userID: 'user.id', username: 'user.email', tenantVerified: true } };
     });
     await TestsUtils.initDatabase(_ctx);
   });
@@ -101,8 +101,6 @@ describe('Schedules Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${SchedulesConstants.ApiPath}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer)
       .send({
@@ -159,8 +157,6 @@ describe('Schedules Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${SchedulesConstants.ApiPath}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer)
       .send({
@@ -272,8 +268,6 @@ describe('Schedules Functional', function () {
     // call
     res = await supertest(TestConstants.WebServer)
       .delete(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -356,8 +350,6 @@ describe('Schedules Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .put(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer)
       .send({
@@ -446,8 +438,6 @@ describe('Schedules Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .patch(`${SchedulesConstants.ApiPath}/${testScheduleID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer)
       .send({

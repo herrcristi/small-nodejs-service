@@ -264,6 +264,31 @@ describe('Users Rest', function () {
   }).timeout(10000);
 
   /**
+   * rest recreate account and delete account: internal calls (POST /:id/recreate-account, POST /:id/delete-account)
+   */
+  it('should recreate and delete an account via rest', async () => {
+    // stub
+    const stub = sinon.stub(RestCommsUtils, 'call').resolves({ status: 200, value: 'dummy' });
+
+    // call
+    const resRecreate = await UsersRest.recreateAccount('id1', _ctx);
+    const resDelete = await UsersRest.deleteAccount('id1', _ctx);
+
+    // check: the internal routes, the local functions
+    chai.expect(stub.firstCall.args[0]).to.deep.equal({
+      serviceName: 'users-internal',
+      method: 'POST',
+      path: '/id1/recreate-account',
+      body: {},
+      localCall: { fn: 'recreateAccount', params: { objID: 'id1' } },
+    });
+    chai.expect(stub.secondCall.args[0]).to.deep.include({ method: 'POST', path: '/id1/delete-account' });
+    chai.expect(stub.secondCall.args[0].localCall).to.deep.equal({ fn: 'deleteAccount', params: { objID: 'id1' } });
+    chai.expect(resRecreate.value).to.equal('dummy');
+    chai.expect(resDelete.value).to.equal('dummy');
+  }).timeout(10000);
+
+  /**
    * rest patch
    */
   it('should patch a call via rest', async () => {
@@ -706,5 +731,26 @@ describe('Users Rest', function () {
     // check
     chai.expect(res.status).to.equal(404);
     chai.expect(res.error.message).to.equal('Not found student@example.test');
+  }).timeout(10000);
+
+  /**
+   * the portal admins (internal, for the bootstrap)
+   */
+  it('should get the portal admins via rest', async () => {
+    // stub: the call
+    const stub = sinon.stub(RestCommsUtils, 'call').resolves({ status: 200, value: { data: [] } });
+
+    // call
+    const res = await UsersRest.getPortalAdmins('status=active&limit=1', _ctx);
+
+    // check: the internal route with the query, the local function with the request
+    chai.expect(res.value).to.deep.equal({ data: [] });
+    chai
+      .expect(stub.firstCall.args[0])
+      .to.deep.include({ method: 'GET', path: '/portal-admins', query: 'status=active&limit=1' });
+    chai.expect(stub.firstCall.args[0].localCall).to.deep.equal({
+      fn: 'getPortalAdminsForReq',
+      params: { req: { query: 'status=active&limit=1' } },
+    });
   }).timeout(10000);
 });

@@ -353,6 +353,12 @@ const Public = {
 
     // bootstrap the first portal admin (if configured and there is none yet), needs the portal school
     await UsersAuthSetupService.init();
+
+    // complete the admins, students and professors written by an earlier version (their status), needs the schools
+    // and the notifications
+    for (const service of [AdminsService, StudentsService, ProfessorsService]) {
+      await service.fillMissingStatus();
+    }
   },
 
   /**

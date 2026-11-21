@@ -87,4 +87,20 @@ describe('Users Local Auth Service', function () {
     chai.expect(sent[0].subject).to.equal('You have been invited to GitHub University');
     chai.expect(sent[0].body).to.include('You have been invited to GitHub University');
   }).timeout(10000);
+
+  /**
+   * the send returns its result (an invite reports a failed delivery)
+   */
+  it('should return the result of the send', async () => {
+    // stub: the mail server refuses the email
+    sinon.stub(UsersAuthDatabase, 'collection').resolves(null);
+    sinon.stub(EmailsUtils, 'sendEmail').resolves({ status: 500, error: { message: 'Failed to send email' } });
+
+    // call
+    const config = { serviceName: UsersAuthConstants.ServiceName };
+    const res = await UsersLocalAuthService.sendEmail(config, 'user1@testdomain.test', { emailType: 'invite' }, {});
+
+    // check: the error of the send
+    chai.expect(res.status).to.equal(500);
+  }).timeout(10000);
 });

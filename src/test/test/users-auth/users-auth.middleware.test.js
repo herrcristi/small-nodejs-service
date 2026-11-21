@@ -41,13 +41,12 @@ describe('Users Auth Middleware', function () {
   });
 
   /**
-   * an authenticated route keeps the tenant (it is checked by the validation)
+   * an authenticated route keeps the tenant that the validation verified (the user is a member of it)
    */
   it('should keep the tenant on an authenticated route', async () => {
-    // stub: a valid session
-    const stubValidate = sinon
-      .stub(UsersAuthRest, 'validate')
-      .resolves({ status: 200, value: { userID: 'user1', username: 'user@test.test', tenantName: 'School A' } });
+    // stub: a valid session, the tenant is verified
+    const validated = { userID: 'user1', username: 'user@test.test', tenantName: 'School A', tenantVerified: true };
+    const stubValidate = sinon.stub(UsersAuthRest, 'validate').resolves({ status: 200, value: validated });
     const req = getReq('/api/v1/students', 'school-a');
     const next = sinon.stub();
 
@@ -60,5 +59,24 @@ describe('Users Auth Middleware', function () {
     chai.expect(req._ctx.tenantID).to.equal('school-a');
     chai.expect(req._ctx.userID).to.equal('user1');
     chai.expect(req._ctx.tenantName).to.equal('School A');
+  });
+
+  /**
+   * a route without a school (all, self) called with a school that is not one of the user: the school is not used
+   */
+  it('should not keep a tenant that the validation did not verify', async () => {
+    // stub: a valid session, the user is not a member of the tenant
+    const validated = { userID: 'user1', username: 'user@test.test', tenantVerified: false };
+    sinon.stub(UsersAuthRest, 'validate').resolves({ status: 200, value: validated });
+    const req = getReq('/api/v1/users/:id', 'school-b');
+    const next = sinon.stub();
+
+    // call
+    await UsersAuthMiddleware.middleware(req, {}, next);
+
+    // check: continued, without the tenant
+    chai.expect(next.calledOnce).to.equal(true);
+    chai.expect(req._ctx.userID).to.equal('user1');
+    chai.expect(req._ctx.tenantID).to.equal(undefined);
   });
 });

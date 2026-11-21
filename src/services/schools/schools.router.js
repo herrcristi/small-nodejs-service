@@ -14,6 +14,8 @@ const router = express.Router();
  */
 router.route(`${SchoolsConstants.ApiPath}`).get(SchoolsController.getAll);
 router.route(`${SchoolsConstants.ApiPath}/:id`).get(SchoolsController.getOne);
+router.route(`${SchoolsConstants.ApiPath}/:id/settings`).get(SchoolsController.getSettings); // the admins of the school
+router.route(`${SchoolsConstants.ApiPath}/:id/settings`).put(SchoolsController.putSettings); // the admins of the school
 
 router.route(`${SchoolsConstants.ApiPath}/:id`).delete(SchoolsController.delete);
 router.route(`${SchoolsConstants.ApiPath}/:id`).put(SchoolsController.put);

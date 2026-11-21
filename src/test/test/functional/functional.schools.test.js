@@ -23,7 +23,7 @@ describe('Schools Functional', function () {
   beforeEach(async function () {
     sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
-      return { status: 200, value: { userID: 'user.id', username: 'user.email' } };
+      return { status: 200, value: { userID: 'user.id', username: 'user.email', tenantVerified: true } };
     });
     await TestsUtils.initDatabase(_ctx);
   });
@@ -174,16 +174,17 @@ describe('Schools Functional', function () {
     delete testSchool.type;
     delete testSchool._lang_en;
 
-    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+    // stub: a valid service token; it carries the user of the call (headers never set it)
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake((s2sToken, ctx) => {
       console.log(`\nRestCommunicationsUtils.restValidation called`);
+      ctx.userID = 'user.id';
+      ctx.username = 'user.email';
       return { status: 200, value: {} };
     });
 
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${SchoolsConstants.ApiPathInternal}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('Origin', TestConstants.WebServer)
       .send({ ...testSchool });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -211,16 +212,17 @@ describe('Schools Functional', function () {
     let eventsCountBefore = await (await EventsDatabase.collection(_ctx)).countDocuments();
     console.log(`\nEvents count before: ${eventsCountBefore}\n`);
 
-    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake(() => {
+    // stub: a valid service token; it carries the user of the call (headers never set it)
+    sinon.stub(RestCommunicationsUtils, 'restValidation').callsFake((s2sToken, ctx) => {
       console.log(`\nRestCommunicationsUtils.restValidation called`);
+      ctx.userID = 'user.id';
+      ctx.username = 'user.email';
       return { status: 200, value: {} };
     });
 
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${SchoolsConstants.ApiPathInternal}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('Origin', TestConstants.WebServer)
       .send({ ...testSchool });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -284,8 +286,6 @@ describe('Schools Functional', function () {
     // call put first to update users
     let res = await supertest(TestConstants.WebServer)
       .put(`${SchoolsConstants.ApiPath}/${testSchoolID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('Origin', TestConstants.WebServer)
       .send({ ...testSchool });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -313,8 +313,6 @@ describe('Schools Functional', function () {
     // call
     res = await supertest(TestConstants.WebServer)
       .delete(`${SchoolsConstants.ApiPath}/${testSchoolID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
@@ -378,8 +376,6 @@ describe('Schools Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .put(`${SchoolsConstants.ApiPath}/${testSchoolID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('Origin', TestConstants.WebServer)
       .send({ ...testSchool });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -452,8 +448,6 @@ describe('Schools Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .patch(`${SchoolsConstants.ApiPath}/${testSchoolID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('Origin', TestConstants.WebServer)
       .send({ set: { ...testSchool } });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);

@@ -95,6 +95,9 @@
                   >
 
                   <!-- email change buttons end -->
+
+                  <!-- the delete of the account is shown on demand (no accidental delete) -->
+                  <ShowDelete v-if="!loading && !nodatatext" v-model="showDelete" class="ml-2" />
                 </v-toolbar-items>
               </v-card-title>
             </v-toolbar>
@@ -126,6 +129,37 @@
           </v-card>
         </v-col>
       </v-row>
+
+      <!-- 
+          delete the account (shown on demand, confirmed first: it can not be undone)
+      -->
+      <v-row v-if="!loading && !nodatatext && showDelete">
+        <v-col cols="12" md="7">
+          <v-card variant="outlined" color="error">
+            <v-card-title>{{ t('account.delete') }}</v-card-title>
+            <v-card-text class="text-medium-emphasis">{{ t('account.delete.description') }}</v-card-text>
+            <v-card-actions>
+              <v-spacer />
+              <v-btn
+                color="error"
+                variant="flat"
+                :disabled="deleteCall.inProgress"
+                :loading="deleteCall.loading"
+                @click="confirmDeleteAccount = true"
+                >{{ t('account.delete') }}</v-btn
+              >
+            </v-card-actions>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <ConfirmDialog
+        v-model="confirmDeleteAccount"
+        titleKey="account.delete"
+        messageKey="account.delete.confirm"
+        okKey="account.delete"
+        @confirm="handleDeleteAccount"
+      />
 
       <!-- 
           edit dialog 
@@ -204,9 +238,12 @@ import KeyValue from './base.keyvalue.vue';
 import ActionIcon from './base.action.icon.vue';
 import PasswordChange from './api.user.change.password.vue';
 import EmailChange from './api.user.change.email.vue';
+import ConfirmDialog from './base.confirm.dialog.vue';
+import ShowDelete from './base.show.delete.vue';
 import Api from '../api/api.js';
 import ComponentsUtils from './components.utils.js';
-import { useAuthStore } from '../stores/stores.js';
+import { useAuthStore, useAppStore } from '../stores/stores.js';
+import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
@@ -220,6 +257,7 @@ const loading = ref(false);
 const nodatatext = ref('');
 
 const auth = useAuthStore();
+const router = useRouter();
 
 // edit
 const editDialog = ref(false);
@@ -230,6 +268,9 @@ const formValid = ref(false);
 const saveCall = ComponentsUtils.useSingleCall(); // the profile (handleSave)
 const passwordCall = ComponentsUtils.useSingleCall(); // the password change (PasswordChange)
 const emailCall = ComponentsUtils.useSingleCall(); // the email change (EmailChange)
+const deleteCall = ComponentsUtils.useSingleCall(); // the delete of the account
+const confirmDeleteAccount = ref(false);
+const showDelete = ref(false); // the delete of the account is hidden until the user asks for it (ShowDelete)
 const editForm = ref(null);
 const datePicker = ref(null);
 
@@ -440,6 +481,30 @@ function openPasswordDialog() {
  */
 function openEmailDialog() {
   emailChangeComponent.value.openDialog();
+}
+
+/**
+ * delete the account: one call at a time; then the session is gone, so the local data is cleared and the login is shown
+ */
+async function handleDeleteAccount() {
+  await deleteCall.run(deleteAccount);
+}
+
+async function deleteAccount() {
+  try {
+    await Api.deleteAccount();
+
+    auth.clear();
+    useAppStore().clear();
+    router.push('/login');
+  } catch (e) {
+    console.error('Error deleting the account', e);
+    const errText = ComponentsUtils.getErrorText(e, t);
+
+    snackbarText.value = t('account.delete.error') + ' - ' + errText;
+    snackbarColor.value = 'error';
+    snackbar.value = true;
+  }
 }
 
 async function onEmailChanged(emailNew) {

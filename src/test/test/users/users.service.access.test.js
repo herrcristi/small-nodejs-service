@@ -334,7 +334,7 @@ describe('Users Service access', function () {
        */
       it(`should ${method} the status only on the portal school`, async () => {
         // stub: no write is expected
-        const stubWrite = sinon.stub(DbOpsUtils, method);
+        const stubWrite = sinon.stub(DbOpsUtils, 'put'); // put and patch: one conditional write
 
         // a school admin (school A): refused
         let res = await UsersService[fn]('member1', body('disabled'), _ctx /* schoolA */);
@@ -355,7 +355,8 @@ describe('Users Service access', function () {
       it(`should ${method} the status active or disabled, never back to pending`, async () => {
         // stub: the reads and the writes
         sinon.stub(DbOpsUtils, 'getOne').callsFake(() => ({ status: 200, value: _.cloneDeep(member) }));
-        const stubWrite = sinon.stub(DbOpsUtils, method).callsFake(() => ({ status: 200, value: _.cloneDeep(member) }));
+        // put and patch: one conditional write
+        const stubWrite = sinon.stub(DbOpsUtils, 'put').callsFake(() => ({ status: 200, value: _.cloneDeep(member) }));
         stubWrites();
 
         // disabled and active are accepted
@@ -380,7 +381,7 @@ describe('Users Service access', function () {
        */
       it(`should not ${method} a portal admin to disable itself`, async () => {
         // stub: no write is expected
-        const stubWrite = sinon.stub(DbOpsUtils, method);
+        const stubWrite = sinon.stub(DbOpsUtils, 'put'); // put and patch: one conditional write
 
         // call on the own account
         const res = await UsersService[fn]('portalAdmin1', body('disabled'), _ctxPortal);
@@ -389,6 +390,22 @@ describe('Users Service access', function () {
         chai.expect(res.status).to.equal(400);
         chai.expect(res.error.message).to.equal('Skipping disabling status of current user');
         chai.expect(stubWrite.callCount).to.equal(0);
+      });
+
+      /**
+       * the status of a deleted account is not changed (it has no login): only if it is not deleted, in the same write
+       */
+      it(`should not ${method} the status of a deleted account`, async () => {
+        // stub: the write does not match (the account is deleted); the account exists
+        const stubWrite = sinon.stub(DbOpsUtils, 'put').resolves({ status: 409, error: { message: 'Not changed' } });
+
+        // call
+        const res = await UsersService[fn]('member1', body('active'), _ctxPortal);
+
+        // check: written only if not deleted, refused with the reason
+        chai.expect(stubWrite.firstCall.args[5]).to.deep.equal({ filter: { status: { $ne: 'deleted' } } });
+        chai.expect(res.status).to.equal(400);
+        chai.expect(res.error.message).to.equal('The account of this user was deleted: its status can not be changed');
       });
     }
   });
@@ -434,8 +451,10 @@ describe('Users Service access', function () {
       // check: the patch removes the admin role only
       chai.expect(res.status).to.equal(200);
       chai.expect(res.value.schools).to.equal(undefined); // a portal admin does not see the schools of the user
+      // (and the membership is removed with its last role)
       chai.expect(stubPatch.firstCall.args[2]).to.deep.equal({
         remove: { schools: [{ id: 'schoolA', roles: ['admin'] }] },
+        removeWhere: { schools: { roles: { $size: 0 } } },
       });
     });
 
@@ -494,18 +513,18 @@ describe('Users Service access', function () {
      * a pending user becomes active (at the first login)
      */
     it('should activate a pending user', async () => {
-      // stub: a pending user, and the write
-      sinon.stub(DbOpsUtils, 'getOne').callsFake(() => ({ status: 200, value: { ...member, status: 'pending' } }));
+      // stub: the write (the user is still pending when it is written)
       const stubPut = sinon.stub(DbOpsUtils, 'put').callsFake(() => ({ status: 200, value: { ...member } }));
       stubWrites();
 
       // call
       const res = await UsersService.activate('member1', _ctx);
 
-      // check: active, with its own event
+      // check: active, written only if still pending (one conditional write), with its own event
       chai.expect(res.status).to.equal(200);
       chai.expect(res.value.status).to.equal('active');
       chai.expect(stubPut.firstCall.args[2]).to.include({ status: 'active' });
+      chai.expect(stubPut.firstCall.args[5]).to.deep.equal({ filter: { status: 'pending' } });
       chai.expect(EventsRest.raiseEventForObject.firstCall.args[1]).to.equal('activate');
     });
 
@@ -513,9 +532,11 @@ describe('Users Service access', function () {
      * a user that is not pending is not changed (a disabled user stays disabled)
      */
     it('should not change a user that is not pending (a disabled user stays disabled)', async () => {
-      // stub: the reads change in the loop; no write is expected
+      // stub: the conditional write matches nothing (409: not pending, for example disabled meanwhile); the reads
+      // change in the loop; no event and no notification are expected
       const stubGet = sinon.stub(DbOpsUtils, 'getOne');
-      const stubPut = sinon.stub(DbOpsUtils, 'put');
+      sinon.stub(DbOpsUtils, 'put').resolves({ status: 409, error: { message: 'Not changed member1' } });
+      const stubEvent = sinon.stub(EventsRest, 'raiseEventForObject');
 
       // a disabled and an active user: answered with the current status
       for (const status of ['disabled', 'active']) {
@@ -526,24 +547,24 @@ describe('Users Service access', function () {
         chai.expect(res.value.schools).to.equal(undefined);
       }
 
-      // check: nothing was written
-      chai.expect(stubPut.callCount).to.equal(0);
+      // check: nothing was changed (no event)
+      chai.expect(stubEvent.callCount).to.equal(0);
     });
 
     /**
      * a user that does not exist is not activated
      */
     it('should not activate a user that does not exist', async () => {
-      // stub: no stored user; no write is expected
-      sinon.stub(DbOpsUtils, 'getOne').callsFake(() => notFound('nobody'));
-      const stubPut = sinon.stub(DbOpsUtils, 'put');
+      // stub: no stored user (the write matches nothing: 404)
+      sinon.stub(DbOpsUtils, 'put').callsFake(() => notFound('nobody'));
+      const stubGet = sinon.stub(DbOpsUtils, 'getOne');
 
       // call
       const res = await UsersService.activate('nobody', _ctx);
 
-      // check: 404, nothing written
+      // check: 404, no read after it
       chai.expect(res.status).to.equal(404);
-      chai.expect(stubPut.callCount).to.equal(0);
+      chai.expect(stubGet.callCount).to.equal(0);
     });
   });
 });

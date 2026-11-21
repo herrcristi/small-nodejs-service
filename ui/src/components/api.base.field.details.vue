@@ -157,8 +157,8 @@
     </template>
 
     <!-- actions -->
-    <template #item.actions="{ item }">
-      <slot name="item.actions" :item="item"> </slot>
+    <template #item.actions="{ item, deleteCalls, showDelete }">
+      <slot name="item.actions" :item="item" :deleteCalls="deleteCalls" :showDelete="showDelete"> </slot>
     </template>
   </ApiTableData>
 

@@ -50,9 +50,10 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * patchUserSchool remove another portal admin, but not itself (it is an error)
+   * patchUserSchool removes a portal admin, also itself (no portal admin is kept on purpose: the configured one is
+   * invited again at the next start)
    */
-  it('should patchUserSchool remove another portal admin but fail removing itself', async () => {
+  it('should patchUserSchool remove another portal admin and also itself', async () => {
     // stub: the write
     const portalCtx = { ..._ctx, tenantID: TestConstants.PortalSchoolID, userID: 'portal-admin-1' };
     const stubPatch = sinon.stub(UsersRest, 'patchSchool').resolves({ status: 200, value: {} });
@@ -65,15 +66,15 @@ describe('Users Auth Service', function () {
       remove: { schools: [{ id: TestConstants.PortalSchoolID, roles: ['portal-admin'] }] },
     });
 
-    // itself: an error, nothing is removed
+    // itself: removed too
     const res = await UsersAuthService.patchUserSchool(
       'portal-admin-1',
       { remove: { roles: ['portal-admin'] } },
       portalCtx
     );
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.error.message).to.equal('You cannot remove yourself as admin');
-    chai.expect(stubPatch.callCount).to.equal(1);
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubPatch.callCount).to.equal(2);
+    chai.expect(stubPatch.secondCall.args[0]).to.equal('portal-admin-1');
   }).timeout(10000);
 
   /**

@@ -17,6 +17,7 @@ import Login from '../components/api.user.login.vue';
 import ResetPassword from '../components/api.user.reset.password.vue';
 import TenantSelect from '../components/base.tenant.select.vue';
 import Profile from '../components/api.user.profile.vue';
+import SchoolSettings from '../components/api.school.settings.vue';
 
 import { useAppStore } from '../stores/stores.js';
 
@@ -143,6 +144,16 @@ const Router = createRouter({
       },
     },
     {
+      path: '/settings',
+      name: 'Settings',
+      component: SchoolSettings,
+      meta: {
+        requiresAuth: true,
+        requiresSchoolAdmin: true,
+        breadcrumbs: [{ text: 'Settings', to: '/settings' }],
+      },
+    },
+    {
       path: '/login',
       name: 'Login',
       component: Login,
@@ -168,7 +179,8 @@ const Router = createRouter({
       path: '/profile',
       name: 'Profile',
       component: Profile,
-      meta: { requiresAuth: true, breadcrumbs: [{ text: 'Profile', to: '/profile' }] },
+      // the profile is of the user, not of a school: also without a school (a user that is not in any school)
+      meta: { requiresAuth: true, noTenant: true, breadcrumbs: [{ text: 'Profile', to: '/profile' }] },
     },
   ],
 });
@@ -194,11 +206,14 @@ Router.beforeEach((to, from, next) => {
     if (to.meta.requiresPortalAdmin && !appStore?.rolesPermissions?.schools?.read) {
       return next('/');
     }
+    if (to.meta.requiresSchoolAdmin && !appStore?.rolesPermissions?.settings?.read) {
+      return next('/');
+    }
     return next();
   }
 
-  // redirect to tenant select if authenticated but no tenant selected
-  if (to.path === '/tenants') {
+  // redirect to tenant select if authenticated but no tenant selected (a page without a school is opened)
+  if (to.path === '/tenants' || to.meta.noTenant) {
     return next();
   }
 

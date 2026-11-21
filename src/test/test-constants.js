@@ -22,7 +22,10 @@ const Public = {
   },
 
   Database: {
-    Url: `${process.env.SMALL_API_DATABASE_URL}`, // mongodb://${MONGODB_ROOT_USERNAME}:${MONGODB_ROOT_PASSWORD}@localhost/
+    // the unit tests never connect (the connection is a stub): a test address, never the database of the shell; the
+    // functional tests (npm run testdb, IS_TEST_DB) use the database of SMALL_API_DATABASE_URL
+    // (mongodb://${MONGODB_ROOT_USERNAME}:${MONGODB_ROOT_PASSWORD}@localhost/)
+    Url: process.env.IS_TEST_DB ? `${process.env.SMALL_API_DATABASE_URL}` : 'mongodb://database.testdomain.test:27017/',
     Db: 'Small-Test',
   },
 

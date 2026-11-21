@@ -4,7 +4,6 @@
 const Joi = require('joi');
 
 const CommonUtils = require('./common.utils.js');
-const ReferencesUtils = require('./base-service.references.utils.js');
 
 const Constants = {
   /**
@@ -105,21 +104,6 @@ const Public = {
    */
   getNotificationSchema: () => {
     return Schema.Notification;
-  },
-
-  /**
-   * process notification
-   * config: { serviceName, collection, ..., references, fillReferences }
-   * notification: { serviceName, added: [ { id, ... } ], removed, modified  }
-   * returns: { status, value } or { status, error }
-   */
-  notification: async (config, notification, _ctx) => {
-    if (!config.fillReferences) {
-      return { status: 200, value: null }; // skipped
-    }
-
-    // apply changes to references
-    return await ReferencesUtils.onNotificationReferences(config, notification, _ctx);
   },
 };
 

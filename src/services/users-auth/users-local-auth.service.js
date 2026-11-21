@@ -162,6 +162,17 @@ const Public = {
   },
 
   /**
+   * get the auth record of a user (without the password): it exists, or 404
+   * config: { serviceName }
+   */
+  getOne: async (config, username, _ctx) => {
+    // { serviceName, collection, notifications.projection }
+    await Private.setupConfig(config, _ctx);
+
+    return await DbOpsUtils.getOne(config, username /*id*/, { _id: 0, id: 1, userID: 1 }, _ctx);
+  },
+
+  /**
    * post
    * config: { serviceName }
    * objInfo: { username, password, userID }
@@ -375,6 +386,7 @@ const Public = {
    * send email
    * config: { serviceName }
    * args: { token, resetType, emailType }
+   * returns { status, value } or { status, error } (the email could not be delivered to the mail server)
    */
   sendEmail: async (config, username, args, _ctx) => {
     // { serviceName, collection, notifications.projection }
@@ -397,8 +409,8 @@ const Public = {
 
     let emailTemplate = TranslationsUtils.email(args.emailType, _ctx, emailArgs);
 
-    // send email
-    /* no await */ EmailsUtils.sendEmail(username, emailTemplate['en'].subject, emailTemplate['en'].email, _ctx);
+    // send email (the result tells if it was delivered to the mail server)
+    return await EmailsUtils.sendEmail(username, emailTemplate['en'].subject, emailTemplate['en'].email, _ctx);
   },
 };
 

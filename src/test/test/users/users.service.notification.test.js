@@ -1,80 +1,73 @@
-const _ = require('lodash');
-const assert = require('assert');
 const sinon = require('sinon');
 const chai = require('chai');
-const supertest = require('supertest');
 
+const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 
-const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
-
-const TestConstants = require('../../test-constants.js');
 const UsersService = require('../../../services/users/users.service.js');
+const UsersRest = require('../../../services/rest/users.rest.js');
 
 describe('Users Service', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Users' };
+  const fail = { status: 500, error: { message: 'Database failure' } };
 
-  before(async function () {});
-
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    // the notifications of the users (none is expected)
+    sinon.stub(UsersRest, 'raiseNotification');
+  });
 
   afterEach(async function () {
     sinon.restore();
   });
 
-  after(async function () {});
-
   /**
-   * notification with success
+   * schools notification: the copies of a modified school in the memberships are updated, a deleted school is removed
+   * from the memberships; nothing is notified
    */
   it('should do notification with success', async () => {
-    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
-    const notif = notifications[0];
-
-    // stub
-    let stubBase = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification) => {
-      console.log(`\nNotificationsUtils.notification called\n`);
-      return {
-        status: 200,
-        value: true,
-      };
-    });
+    // stub: user1 had an older copy of school1
+    const stubCopies = sinon
+      .stub(DbOpsUtils, 'updateManyReferences')
+      .resolves({ status: 200, value: 1, ids: ['user1'] });
+    const stubRemove = sinon.stub(DbOpsUtils, 'deleteManyReferences').resolves({ status: 200, value: 1 });
 
     // call
-    let res = await UsersService.notification(notif, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+    const northSchool = { id: 'school1', name: 'North High School', status: 'disabled', modifiedCount: 3, extra: 1 };
+    const southSchool = { id: 'school2', name: 'South High School' };
+    const notification = { serviceName: 'schools', modified: [northSchool], removed: [southSchool] };
+    const res = await UsersService.notification(notification, _ctx);
 
-    // check
-    chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(res).to.deep.equal({
-      status: 200,
-      value: true,
-    });
+    // check: the copy (only its fields), the removed school, nothing notified
+    chai.expect(res).to.deep.equal({ status: 200, value: ['user1'] });
+    chai.expect(stubCopies.firstCall.args[1].fieldName).to.equal('schools[]');
+    chai.expect(stubCopies.firstCall.args[2]).to.include({ id: 'school1', status: 'disabled', modifiedCount: 3 });
+    chai.expect(stubCopies.firstCall.args[2]).to.not.have.property('extra');
+    chai.expect(stubRemove.firstCall.args[2].id).to.equal('school2');
+    chai.expect(UsersRest.raiseNotification.callCount).to.equal(0);
+
+    // case: only one kind of change
+    const resRemoved = await UsersService.notification({ serviceName: 'schools', removed: [southSchool] }, _ctx);
+    chai.expect(resRemoved).to.deep.equal({ status: 200, value: [] });
+    const resModified = await UsersService.notification({ serviceName: 'schools', modified: [northSchool] }, _ctx);
+    chai.expect(resModified).to.deep.equal({ status: 200, value: ['user1'] });
+
+    // case: failures
+    stubRemove.resolves(fail);
+    chai.expect(await UsersService.notification(notification, _ctx)).to.deep.equal(fail);
+    stubCopies.resolves(fail);
+    chai.expect(await UsersService.notification(notification, _ctx)).to.deep.equal(fail);
   }).timeout(10000);
 
   /**
-   * notification fail validation
+   * the notifications of the other services are ignored (no copy of them), an invalid one is refused
    */
   it('should notification fail validation', async () => {
-    const notifications = _.cloneDeep(TestConstants.UsersNotifications);
-    const notif = notifications[0];
-    delete notif.serviceName;
+    // call: another service
+    const res = await UsersService.notification({ serviceName: 'events', modified: [{ id: 'event1' }] }, _ctx);
+    chai.expect(res).to.deep.equal({ status: 200, value: false });
 
-    // stub
-    let stubBase = sinon.stub(NotificationsUtils, 'notification').callsFake((config, notification) => {
-      console.log(`\nNotificationsUtils.notification called\n`);
-      return {
-        status: 200,
-        value: true,
-      };
-    });
-
-    // call
-    let res = await UsersService.notification(notif, _ctx);
-    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-
-    // check
-    chai.expect(stubBase.callCount).to.equal(0);
-    chai.expect(res.status).to.equal(400);
-    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "serviceName" is required');
+    // call: no service name
+    const resInvalid = await UsersService.notification({ modified: [{ id: 'school1' }] }, _ctx);
+    chai.expect(resInvalid.status).to.equal(400);
+    chai.expect(resInvalid.error.message).to.equal('Failed to validate schema. Error: "serviceName" is required');
   }).timeout(10000);
 });

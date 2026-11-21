@@ -9,32 +9,21 @@ const WebServerUtils = require('../../web-server/web-server.utils.js');
 
 /**
  * the limits are skipped in debug mode (the tests run in it), so these tests run as production
+ * the limits are given by the application (init), as strings like the environment
  */
 describe('Rate limiter middleware', function () {
-  const saved = {};
-  const env = {
-    NODE_ENV: 'production',
-    SMALL_API_RATE_LIMIT_LOGIN_MAX: '2',
-    SMALL_API_RATE_LIMIT_LOGIN_ACCOUNT_MAX: '3',
-    SMALL_API_RATE_LIMIT_RESET_MAX: '2',
-    SMALL_API_TRUST_PROXY: '1',
-  };
+  let savedNodeEnv;
+  const limits = { loginMax: '2', loginAccountMax: '3', resetMax: '2' };
 
   beforeEach(function () {
-    for (const key in env) {
-      saved[key] = process.env[key];
-      process.env[key] = env[key];
-    }
+    savedNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    RateLimiterMiddleware.init(limits);
   });
 
   afterEach(function () {
-    for (const key in env) {
-      if (saved[key] === undefined) {
-        delete process.env[key];
-      } else {
-        process.env[key] = saved[key];
-      }
-    }
+    process.env.NODE_ENV = savedNodeEnv;
+    RateLimiterMiddleware.init({}); // the defaults (the tests of the service run in debug mode: no limit)
   });
 
   /**
@@ -42,7 +31,7 @@ describe('Rate limiter middleware', function () {
    */
   const getApp = () => {
     const app = express();
-    app.set('trust proxy', WebServerUtils.getTrustProxy());
+    app.set('trust proxy', WebServerUtils.getTrustProxy('1'));
     app.use(express.json());
     const login = [rateLimit(RateLimiterMiddleware.loginLimiter), rateLimit(RateLimiterMiddleware.loginAccountLimiter)];
     app.post('/login', ...login, (req, res) => res.status(req.body.password === 'right' ? 200 : 401).end());
@@ -124,8 +113,7 @@ describe('Rate limiter middleware', function () {
    */
   it('should use the default limits when they are not configured', async () => {
     // no login limit, a wrong account limit
-    delete process.env.SMALL_API_RATE_LIMIT_LOGIN_MAX;
-    process.env.SMALL_API_RATE_LIMIT_LOGIN_ACCOUNT_MAX = 'not a number';
+    RateLimiterMiddleware.init({ loginAccountMax: 'not a number' });
     const app = getApp();
 
     // default: 5 failures of an account from an address
@@ -140,20 +128,6 @@ describe('Rate limiter middleware', function () {
  * the client address: from the trusted proxies only
  */
 describe('Trust proxy and client address', function () {
-  let saved;
-
-  beforeEach(function () {
-    saved = process.env.SMALL_API_TRUST_PROXY;
-  });
-
-  afterEach(function () {
-    if (saved === undefined) {
-      delete process.env.SMALL_API_TRUST_PROXY;
-    } else {
-      process.env.SMALL_API_TRUST_PROXY = saved;
-    }
-  });
-
   /**
    * the trust proxy setting: a number of proxies or a list of addresses, never "trust all"
    */
@@ -169,14 +143,8 @@ describe('Trust proxy and client address', function () {
       [' 2 ', 2],
       ['loopback, 10.0.0.0/8', 'loopback, 10.0.0.0/8'],
     ]) {
-      if (value === undefined) {
-        delete process.env.SMALL_API_TRUST_PROXY;
-      } else {
-        process.env.SMALL_API_TRUST_PROXY = value;
-      }
-
       // check
-      chai.expect(WebServerUtils.getTrustProxy()).to.deep.equal(expected);
+      chai.expect(WebServerUtils.getTrustProxy(value), `${value}`).to.deep.equal(expected);
     }
   });
 

@@ -381,24 +381,6 @@ const Public = {
     // use the default projection
     return Public.getProjectedResponse(r, null, _ctx);
   },
-
-  /**
-   * process notification
-   * config: { serviceName, collection, ..., references, fillReferences }
-   * notification: { serviceName, added: [ { id, ... } ], removed, modified  }
-   * returns: { status, value } or { status, error }
-   */
-  notification: async (config, notification, _ctx) => {
-    // validate
-    const v = NotificationsUtils.getNotificationSchema().validate(notification);
-    if (v.error) {
-      return CommonUtils.getSchemaValidationError(v, notification, _ctx);
-    }
-    notification = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
-
-    // notification (process references)
-    return await NotificationsUtils.notification(config, notification, _ctx);
-  },
 };
 
 module.exports = { ...Public, Constants };

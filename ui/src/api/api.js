@@ -102,6 +102,9 @@ const Api = {
   getSchool: (id) => instance.get(`/schools/${id}`),
   updateSchool: (id, data) => instance.put(`/schools/${id}`, data),
   deleteSchool: (id) => instance.delete(`/schools/${id}`),
+  // the settings of a school (its admins): what happens to the removed members
+  getSchoolSettings: (id) => instance.get(`/schools/${id}/settings`),
+  updateSchoolSettings: (id, data) => instance.put(`/schools/${id}/settings`, data),
 
   // Admins API
   getAdmins: (params) => instance.get(`/admins?${params}`),
@@ -291,7 +294,8 @@ const Api = {
   updateUserPassword: (data) => instance.put(`/users-auth/password`, data),
   updateUsername: (data) => instance.put(`/users-auth/id`, data),
 
-  deleteUser: () => instance.delete(`/users-auth`),
+  // the current user deletes its account (it is logged out)
+  deleteAccount: () => instance.delete(`/users-auth`),
 
   invite: (data) => instance.post(`/users-auth/invite`, data),
 

@@ -9,6 +9,19 @@
     <!-- 
           the Portal School first (only for portal admins), then a separator, then the other schools
     -->
+    <!-- 
+          not in any school (all its roles were removed, or not added yet): only its profile and its password
+    -->
+    <v-row v-if="loaded && !tenants.length">
+      <v-col cols="12" md="8">
+        <v-alert type="info" variant="tonal">
+          <div class="font-weight-bold">{{ t('tenants.none') }}</div>
+          <div class="mt-2">{{ t('tenants.none.description') }}</div>
+          <v-btn class="mt-4" color="primary" variant="flat" to="/profile">{{ t('profile') }}</v-btn>
+        </v-alert>
+      </v-col>
+    </v-row>
+
     <v-row>
       <template v-for="(group, index) in tenantGroups" :key="index">
         <v-col cols="12" v-if="index > 0">
@@ -54,6 +67,7 @@ const appStore = useAppStore();
 const router = useRouter();
 const route = useRoute();
 const selected = ref(appStore.tenantID || null);
+const loaded = ref(false); // the schools were read (the empty text is not shown while they are read)
 
 /**
  * the schools in groups: the Portal School first (the one where the user is portal admin), then the other schools
@@ -87,6 +101,7 @@ async function loadTenants() {
   tenants.value = tenants.value.filter((t) => t.status === 'active');
   // sort by name
   tenants.value.sort((a, b) => a.name.localeCompare(b.name));
+  loaded.value = true;
 }
 
 function selectTenant(t) {

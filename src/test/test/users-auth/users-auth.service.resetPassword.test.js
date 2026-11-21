@@ -10,6 +10,7 @@ const NotificationsUtils = require('../../../core/utils/base-service.notificatio
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
+const UsersAuthSessionsService = require('../../../services/users-auth/users-auth.sessions.service.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 const EmailsUtils = require('../../../core/utils/emails.utils.js');
@@ -21,7 +22,13 @@ describe('Users Auth Service', function () {
 
   before(async function () {});
 
-  beforeEach(async function () {});
+  beforeEach(async function () {
+    // the sessions and the emailed links (their own collection): a new one, and all the ones of the user ended
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+    const link = { id: 'session-hash1', secret: 'secret1', expiresAt };
+    sinon.stub(UsersAuthSessionsService, 'create').resolves({ status: 201, value: link });
+    sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 1 });
+  });
 
   afterEach(async function () {
     sinon.restore();
@@ -61,7 +68,10 @@ describe('Users Auth Service', function () {
     let res = await UsersAuthService.resetPassword(postReq, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // the reset email is sent without waiting for it (the time of the answer must not tell if the account exists)
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    // check: sent; the answer does not wait for the delivery (emailSent false)
     chai.expect(stubGet.callCount).to.equal(1);
     chai.expect(stubEmail.callCount).to.equal(1);
     chai.expect(stubEvent.callCount).to.equal(1);
@@ -70,6 +80,7 @@ describe('Users Auth Service', function () {
       value: {
         username: testUser.id,
         type: testUser.type,
+        emailSent: false,
       },
     });
   }).timeout(10000);
@@ -125,9 +136,9 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * resetPassword with success for type invite
+   * resetPassword for a signup link (sent by an invite): it waits for the delivery and reports it
    */
-  it('should resetPassword with success for type invite', async () => {
+  it('should resetPassword with success for a signup link and report the delivery', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testUser = testUsers[0];
 
@@ -153,7 +164,7 @@ describe('Users Auth Service', function () {
     });
 
     // call
-    let res = await UsersAuthService.resetPassword(postReq, _ctx, UsersAuthConstants.ResetTokenType.Invite);
+    let res = await UsersAuthService.resetPassword(postReq, _ctx, UsersAuthConstants.ResetTokenType.Signup);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
@@ -165,6 +176,7 @@ describe('Users Auth Service', function () {
       value: {
         username: testUser.id,
         type: testUser.type,
+        emailSent: true, // the signup link is sent by an invite: it waits for the delivery
       },
     });
   }).timeout(10000);
@@ -193,7 +205,10 @@ describe('Users Auth Service', function () {
       chai.expect(stubFirebase.callCount).to.equal(1);
       chai.expect(stubEmail.callCount).to.equal(0);
       chai.expect(stubEvent.callCount).to.equal(1);
-      chai.expect(res).to.deep.equal({ status: 200, value: { username: testUser.id, type: testUser.type } });
+      chai.expect(res).to.deep.equal({
+        status: 200,
+        value: { username: testUser.id, type: testUser.type, emailSent: false },
+      });
     } finally {
       // back to the provider of the other tests
       process.env.SMALL_API_AUTH_PROVIDER_TYPE = authProviderType;

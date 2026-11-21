@@ -22,7 +22,7 @@ describe('Classes Functional', function () {
   beforeEach(async function () {
     sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
-      return { status: 200, value: { userID: 'user.id', username: 'user.email' } };
+      return { status: 200, value: { userID: 'user.id', username: 'user.email', tenantVerified: true } };
     });
     await TestsUtils.initDatabase(_ctx);
   });
@@ -97,8 +97,6 @@ describe('Classes Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${ClassesConstants.ApiPath}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer)
       .send({ ...testClass });
@@ -130,8 +128,6 @@ describe('Classes Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .post(`${ClassesConstants.ApiPath}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer)
       .send({ ...testClass });
@@ -183,8 +179,6 @@ describe('Classes Functional', function () {
     // call put first to update users
     let res = await supertest(TestConstants.WebServer)
       .put(`${ClassesConstants.ApiPath}/${testClassID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer)
       .send({ ...testClass });
@@ -199,8 +193,6 @@ describe('Classes Functional', function () {
     // call
     res = await supertest(TestConstants.WebServer)
       .delete(`${ClassesConstants.ApiPath}/${testClassID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
@@ -247,8 +239,6 @@ describe('Classes Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .put(`${ClassesConstants.ApiPath}/${testClassID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer)
       .send({ ...testClass });
@@ -295,8 +285,6 @@ describe('Classes Functional', function () {
     // call
     let res = await supertest(TestConstants.WebServer)
       .patch(`${ClassesConstants.ApiPath}/${testClassID}`)
-      .set('x-user-id', 'testid')
-      .set('x-user-name', 'testname')
       .set('x-tenant-id', _ctx.tenantID)
       .set('Origin', TestConstants.WebServer)
       .send({ set: { ...testClass } });
