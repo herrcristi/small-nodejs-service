@@ -319,7 +319,7 @@ Independent security, adversarial, flow, concurrency, and scalability reviews we
 | **Only admins invite, no public signup**                                        | Closed system for schools: nobody joins unless a responsible person adds them                                                               | An admin must always exist (see the rules about people)                                        |
 | **HttpOnly cookie, not a token in JavaScript**                                  | A script injected into the page cannot steal the session                                                                                    | Needs correct CORS and cookie settings when the UI and API are on different origins            |
 | **Not a queue for every call**                                                  | Login and token checks are latency-sensitive and cost the same CPU in any design; a job per call adds writes, polling, and a hot collection | Background work is queued instead (see [Sizing guide](#sizing-guide))                          |
-| **A deleted user leaves traces**                                                | School history stays correct                                                                                                                | Person records stay, marked `disabled`                                                         |
+| **A deleted user leaves traces**                                                | School history stays correct                                                                                                                | Person records stay, marked `deleted`                                                          |
 
 ## Design guarantees and caveats
 
@@ -874,7 +874,7 @@ curl --cookie cookies.txt -H "x-tenant-id: $TENANT_ID" \
 
 School status can be edited so disabled schools are unavailable in tenant selection. The Portal School cannot be deleted or disabled. School deletion is not granted to portal admins.
 
-The admins of a school read and change its settings (the Settings page): `removedMembers` is `keep` (the removed people stay, marked `disabled` or `deleted`) or `delete` (their records are deleted, with their places in groups and schedules).
+The admins of a school read and change its settings (the Settings page): `removedMembers` is `keep` (the removed people stay, marked `removed` or `deleted`) or `delete` (their records are deleted, with their places in groups and schedules).
 
 ```js
 await Api.getSchoolSettings('school-id');
@@ -891,7 +891,7 @@ curl --cookie cookies.txt -H "x-tenant-id: $TENANT_ID" \
 
 ### Admins, Students, and Professors
 
-These records are linked to users. The UI's add action uses the invite endpoint; it does not create a person record that has no user. Invite bodies require the role and selected school context. The delete of a person removes its role in the school; the record follows the school setting (kept as `disabled`, or deleted). The delete of a record that is already kept (`disabled` or `deleted`) removes it for good. The lists show the status of the record, so a removed person is visible as `disabled` or `deleted`.
+These records are linked to users. The UI's add action uses the invite endpoint; it does not create a person record that has no user. Invite bodies require the role and selected school context. The delete of a person removes its role in the school; the record follows the school setting (kept as `removed`, or deleted). The delete of a record that is already kept (`removed` or `deleted`) removes it for good. The lists show the status of the user of the record (`user.status`), so a removed person is visible as `removed` or `deleted`.
 
 | Record    | UI call                                                       | Collection curl                         | Invite role |
 | --------- | ------------------------------------------------------------- | --------------------------------------- | ----------- |

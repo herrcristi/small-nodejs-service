@@ -343,7 +343,9 @@ const Private = {
     };
     const r = await Providers[Private.UsersAuthProviderType](config, username, emailType, _ctx);
     if (r.error) {
-      console.log(`\n${UsersAuthConstants.ServiceName}: no ${emailType} email to ${username} now: ${r.error.message}`);
+      // only the decision is logged: not the kind of email (a reset of a password) nor the address of the person (the
+      // forms are public)
+      console.log(`\n${UsersAuthConstants.ServiceName}: the email is not sent now (status ${r.status})`);
       return false;
     }
     return true;
