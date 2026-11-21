@@ -339,6 +339,9 @@ describe('Users Auth Functional', function () {
     trace = await recordOf(StudentsConstants.ApiPath, adminCookie, schoolID, studentEmail);
     chai.expect(trace.user.status).to.equal('active');
     chai.expect(trace.user.name).to.equal('Jane Mary Smith');
+    const schoolEvents = await EventsDatabase.collection({ ..._ctx, tenantID: schoolID });
+    const restored = await schoolEvents.findOne({ messageID: 'students.restore', 'target.id': student.id });
+    chai.expect(restored.target).to.deep.equal({ id: student.id, name: 'Jane Mary Smith', type: 'student' });
     const rAgain = await login(studentEmail);
     chai.expect(rAgain.r.body.schools.map((school) => school.id)).to.deep.equal([schoolID]);
   }).timeout(30000);

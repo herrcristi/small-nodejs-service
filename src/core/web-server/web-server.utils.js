@@ -76,6 +76,10 @@ const Public = {
     // and the events; without it req.ip is the address of the proxy and a client can not choose its own address
     const trustProxy = Public.getTrustProxy(settings.trustProxy);
     app.set('trust proxy', trustProxy);
+
+    // no ETag: the answers are not kept by the browser (Cache-Control: no-store), so a request is never answered 304
+    // with an older body
+    app.set('etag', false);
     let bodyParser = require('body-parser');
 
     const corsOptions = CorsMiddleware.getCors(settings.corsOrigins);

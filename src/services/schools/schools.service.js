@@ -87,7 +87,13 @@ const Private = {
     // an init again (the tests) starts it again
     clearInterval(Private.PendingCleanupTimer);
 
-    const interval = SchoolsConstants.PendingCleanupInterval * 1000;
+    // every hour, or as often as the expiry when it is shorter (SMALL_API_PENDING_EXPIRES_IN): a pending record is
+    // removed at most one interval after it expired
+    const expiresIn = ConfigSettings.getPendingExpiresIn();
+    const interval = Math.min(SchoolsConstants.PendingCleanupInterval, expiresIn) * 1000;
+    console.log(
+      `\n${SchoolsConstants.ServiceName}: the pending schools expire ${expiresIn} s after they were created, checked every ${interval / 1000} s`
+    );
     Private.PendingCleanupTimer = setInterval(async () => {
       // the events of the cleanup are written in the log of the portal school
       const cleanupUser = EventsRest.Constants.NoLoginUsers.PendingCleanup;

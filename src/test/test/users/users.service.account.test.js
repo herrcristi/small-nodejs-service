@@ -135,4 +135,26 @@ describe('Users Service account', function () {
     await clock.tickAsync(interval);
     chai.expect(stubGetAll.callCount).to.equal(3);
   }).timeout(10000);
+
+  /**
+   * an expiry shorter than an hour (SMALL_API_PENDING_EXPIRES_IN): the cleanup runs as often as the expiry, so an
+   * expired user is removed at most one interval later
+   */
+  it('should run the cleanup of the pending users as often as a short expiry', async () => {
+    // stub: an expiry of 10 minutes, the clock (the init starts the timer again), the read of the users
+    process.env.SMALL_API_PENDING_EXPIRES_IN = '600';
+    const clock = sinon.useFakeTimers({ shouldClearNativeTimers: true });
+    const stubGetAll = sinon.stub(DbOpsUtils, 'getAll').resolves({ status: 200, value: [] });
+
+    // call: the init, then 10 minutes, then 10 more
+    await UsersService.init();
+    await clock.tickAsync(600 * 1000);
+    const callsAfterOne = stubGetAll.callCount;
+    await clock.tickAsync(600 * 1000);
+    delete process.env.SMALL_API_PENDING_EXPIRES_IN;
+
+    // check: run every 10 minutes (not after an hour)
+    chai.expect(callsAfterOne).to.equal(1);
+    chai.expect(stubGetAll.callCount).to.equal(2);
+  }).timeout(10000);
 });
