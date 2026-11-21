@@ -276,7 +276,7 @@ const Utils = {
         return 'grey';
 
       case 'deleted':
-        return 'red';
+        return 'grey';
 
       default:
         return 'grey'; // for any other values
