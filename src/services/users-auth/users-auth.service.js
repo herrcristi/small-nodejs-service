@@ -1091,11 +1091,13 @@ const Public = {
 
     // the roles of the user in the school: a user who is not a member is not found here (a role is given by an
     // invite), and a patch that changes no role is refused (no write, no event, no notification for nothing)
-    const rUser = await UsersRest.getOne(userID, { _id: 0, id: 1, schools: 1 }, _ctx);
-    if (rUser.error) {
-      return rUser;
+    // (an internal read: the memberships of the user, whatever the access of the caller to its profile)
+    const rUsers = await UsersRest.getAllByIDs([userID], { _id: 0, id: 1, schools: 1 }, _ctx);
+    if (rUsers.error) {
+      return rUsers;
     }
-    const currentRoles = (rUser.value.schools || []).find((school) => school.id === _ctx.tenantID)?.roles || [];
+    const memberships = rUsers.value[0]?.schools || [];
+    const currentRoles = memberships.find((school) => school.id === _ctx.tenantID)?.roles || [];
     if (!currentRoles.length) {
       const msg = 'The user is not a member of this school';
       return { status: 404, error: { message: msg, error: new Error(msg) } };

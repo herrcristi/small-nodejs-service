@@ -56,9 +56,9 @@ describe('Users Auth Service', function () {
   it('should patchUserSchool remove another portal admin and also itself', async () => {
     // stub: both are portal admins; the write
     const portalCtx = { ..._ctx, tenantID: TestConstants.PortalSchoolID, userID: 'portal-admin-1' };
-    sinon.stub(UsersRest, 'getOne').callsFake(async (userID) => ({
+    sinon.stub(UsersRest, 'getAllByIDs').callsFake(async ([userID]) => ({
       status: 200,
-      value: { id: userID, schools: [{ id: TestConstants.PortalSchoolID, roles: ['portal-admin'] }] },
+      value: [{ id: userID, schools: [{ id: TestConstants.PortalSchoolID, roles: ['portal-admin'] }] }],
     }));
     const stubPatch = sinon.stub(UsersRest, 'patchSchool').resolves({ status: 200, value: {} });
 
@@ -95,9 +95,9 @@ describe('Users Auth Service', function () {
     };
 
     // stub: the user is a student of the school; the write
-    sinon.stub(UsersRest, 'getOne').resolves({
+    sinon.stub(UsersRest, 'getAllByIDs').resolves({
       status: 200,
-      value: { id: testUser.userID, schools: [{ id: _ctx.tenantID, roles: ['student'] }] },
+      value: [{ id: testUser.userID, schools: [{ id: _ctx.tenantID, roles: ['student'] }] }],
     });
     let stubUserDetails = sinon.stub(UsersRest, 'patchSchool').callsFake((objID, patchInfo) => {
       console.log(`\nUsersRest.patchSchool called ${JSON.stringify({ objID, patchInfo }, null, 2)}\n`);
@@ -145,9 +145,9 @@ describe('Users Auth Service', function () {
   it('should patchUserSchool with success when the admin removes another own role', async () => {
     // stub: the admin is also a student of the school; the write
     const testUser = _.cloneDeep(TestConstants.UsersAuth)[0];
-    sinon.stub(UsersRest, 'getOne').resolves({
+    sinon.stub(UsersRest, 'getAllByIDs').resolves({
       status: 200,
-      value: { id: testUser.userID, schools: [{ id: _ctx.tenantID, roles: ['admin', 'student'] }] },
+      value: [{ id: testUser.userID, schools: [{ id: _ctx.tenantID, roles: ['admin', 'student'] }] }],
     });
     const stubUserDetails = sinon
       .stub(UsersRest, 'patchSchool')
@@ -204,9 +204,9 @@ describe('Users Auth Service', function () {
     };
 
     // stub: the other user is an admin of the school; the write fails
-    sinon.stub(UsersRest, 'getOne').resolves({
+    sinon.stub(UsersRest, 'getAllByIDs').resolves({
       status: 200,
-      value: { id: 'another-user-id', schools: [{ id: _ctx.tenantID, roles: ['admin'] }] },
+      value: [{ id: 'another-user-id', schools: [{ id: _ctx.tenantID, roles: ['admin'] }] }],
     });
     let stubUserDetails = sinon.stub(UsersRest, 'patchSchool').callsFake((objID, patchInfo) => {
       console.log(`\nUsersRest.patchSchool called ${JSON.stringify({ objID, patchInfo }, null, 2)}\n`);
@@ -234,12 +234,13 @@ describe('Users Auth Service', function () {
    */
   it('should patchUserSchool refuse a user that is not a member and a patch that changes nothing', async () => {
     // stub: user1 is a student of the school, user2 is a member of another school only; no write is expected
-    sinon.stub(UsersRest, 'getOne').callsFake(async (userID) => {
+    sinon.stub(UsersRest, 'getAllByIDs').callsFake(async ([userID]) => {
       const schools = {
         user1: [{ id: _ctx.tenantID, roles: ['student'] }],
         user2: [{ id: 'other-school', roles: ['admin'] }],
       };
-      return { status: 200, value: { id: userID, schools: schools[userID] } };
+      // user3 does not exist
+      return { status: 200, value: userID === 'user3' ? [] : [{ id: userID, schools: schools[userID] }] };
     });
     const stubPatch = sinon.stub(UsersRest, 'patchSchool');
     const adminCtx = { ..._ctx, userID: 'admin1', username: 'admin@testdomain.test' };
@@ -249,7 +250,7 @@ describe('Users Auth Service', function () {
     chai.expect(res.status).to.equal(404);
     chai.expect(res.error.message).to.equal('The user is not a member of this school');
 
-    // case: a user without any school
+    // case: a user that does not exist
     res = await UsersAuthService.patchUserSchool('user3', { remove: { roles: ['admin'] } }, adminCtx);
     chai.expect(res.status).to.equal(404);
 
@@ -268,7 +269,7 @@ describe('Users Auth Service', function () {
     chai.expect(stubPatch.callCount).to.equal(0);
 
     // case: the user can not be read
-    UsersRest.getOne.resolves({ status: 500, error: { message: 'Database failure' } });
+    UsersRest.getAllByIDs.resolves({ status: 500, error: { message: 'Database failure' } });
     res = await UsersAuthService.patchUserSchool('user1', { remove: { roles: ['student'] } }, adminCtx);
     chai.expect(res.status).to.equal(500);
   }).timeout(10000);

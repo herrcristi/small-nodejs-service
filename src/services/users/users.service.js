@@ -42,7 +42,7 @@ const SchemaSchools = Joi.array().items(
 const Schema = {
   // the profile fields that the user (and the admins of the school) can change
   UserProfile: Joi.object().keys({
-    name: Joi.string().min(1).max(128),
+    name: Joi.string().trim().min(1).max(128), // without the spaces around it (only spaces: refused)
     birthday: Joi.string().isoDate(), // kept as an iso string (a date would be converted to a Date object)
     phoneNumber: Joi.string()
       .min(1)
@@ -53,7 +53,7 @@ const Schema = {
 
   // what a portal admin can change of another user (the other profile fields are personal, the email is the login)
   UserName: Joi.object().keys({
-    name: Joi.string().min(1).max(128),
+    name: Joi.string().trim().min(1).max(128), // without the spaces around it (only spaces: refused)
   }),
 
   // pending is only the initial state (set on create): a status never goes back to pending
@@ -80,25 +80,29 @@ const Validators = {
 
   Post: Schema.UserEmail.keys({
     id: Joi.string().min(1).max(64), // (internal) a new id given by the invite (the traces are linked to it first)
-    name: Joi.string().min(1).max(128),
+    name: Joi.string().trim().min(1).max(128), // without the spaces around it (only spaces: refused)
     type: Joi.string().valid(UsersConstants.Type),
     schools: SchemaSchools,
   }).fork(['email', 'schools'], (x) => x.required() /*make required */),
 
   // profile fields only: the status is global (all the schools of the user) and has its own route (portal admin)
-  Put: Schema.UserProfile,
-  PutPortal: Schema.UserName,
+  Put: Schema.UserProfile.min(1), // a change has at least one field
+  PutPortal: Schema.UserName.min(1),
   PutStatus: Schema.UserStatus,
   PutEmail: Schema.UserEmail.fork(['email'], (x) => x.required() /*make required */),
 
-  Patch: Joi.object().keys({
-    // for patch allowed operations are set, unset
-    set: Schema.UserProfile,
-    unset: Joi.array().items(Joi.string().min(1).max(128).valid('phoneNumber')),
-  }),
-  PatchPortal: Joi.object().keys({
-    set: Schema.UserName,
-  }),
+  Patch: Joi.object()
+    .keys({
+      // for patch allowed operations are set, unset
+      set: Schema.UserProfile,
+      unset: Joi.array().items(Joi.string().min(1).max(128).valid('phoneNumber')),
+    })
+    .min(1), // a change has at least one operation
+  PatchPortal: Joi.object()
+    .keys({
+      set: Schema.UserName,
+    })
+    .min(1),
   PatchStatus: Joi.object().keys({
     set: Schema.UserStatus.required(),
   }),
