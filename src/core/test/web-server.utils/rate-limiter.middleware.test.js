@@ -15,6 +15,8 @@ describe('Rate limiter middleware', function () {
   let savedNodeEnv;
   const limits = { loginMax: '2', loginAccountMax: '3', resetMax: '2' };
 
+  before(async function () {});
+
   beforeEach(function () {
     savedNodeEnv = process.env.NODE_ENV;
     process.env.NODE_ENV = 'production';
@@ -25,6 +27,8 @@ describe('Rate limiter middleware', function () {
     process.env.NODE_ENV = savedNodeEnv;
     RateLimiterMiddleware.init({}); // the defaults (the tests of the service run in debug mode: no limit)
   });
+
+  after(async function () {});
 
   /**
    * a small app with the login and reset password limits; the password 'right' logs in, any other fails

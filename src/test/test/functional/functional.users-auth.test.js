@@ -574,6 +574,40 @@ describe('Users Auth Functional', function () {
   }).timeout(30000);
 
   /**
+   * a portal admin removes another portal admin (its role on the portal school); a role patch for a user that is not
+   * a member of the portal school is not found (a role is given by an invite)
+   */
+  it('should let a portal admin remove another portal admin', async () => {
+    // a second portal admin, invited (pending), and a user of another school
+    const portalCookie = await startPortal();
+    const body = { email: 'second.admin@testdomain.test', school: { role: 'portal-admin' } };
+    const rInvite = await api('post', `${AuthPath}/invite`, { cookie: portalCookie, tenant: portalID(), body });
+    chai.expect(rInvite.status).to.equal(200);
+    const users = await UsersDatabase.collection(_ctx);
+    const second = await users.findOne({ email: 'second.admin@testdomain.test' });
+    await startSchool(portalCookie);
+    const schoolAdmin = await users.findOne({ email: schoolAdminEmail });
+
+    // call: the portal admin removes the role of the second one
+    const rolesPath = `${AuthPath}/school/user/${second.id}`;
+    const remove = { remove: { roles: ['portal-admin'] } };
+    const rRemove = await api('patch', rolesPath, { cookie: portalCookie, tenant: portalID(), body: remove });
+
+    // check: removed, one portal admin is left
+    chai.expect(rRemove.status).to.equal(200);
+    const rAdmins = await api('get', `${UsersConstants.ApiPath}/portal-admins`, {
+      cookie: portalCookie,
+      tenant: portalID(),
+    });
+    chai.expect(rAdmins.body.data.map((item) => item.email)).to.deep.equal([portalAdminEmail]);
+
+    // case: the admin of a school is not a member of the portal school: not found
+    const otherPath = `${AuthPath}/school/user/${schoolAdmin.id}`;
+    const rOther = await api('patch', otherPath, { cookie: portalCookie, tenant: portalID(), body: remove });
+    chai.expect(rOther.status).to.equal(404);
+  }).timeout(30000);
+
+  /**
    * a portal admin can remove its own role; the start invites the configured portal admin again
    */
   it('should let a portal admin remove its own role and invite the configured one again at the start', async () => {

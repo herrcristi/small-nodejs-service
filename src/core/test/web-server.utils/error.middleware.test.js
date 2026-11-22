@@ -11,10 +11,16 @@ const ErrorMiddleware = require('../../web-server/error.middleware.js');
 describe('Error Middleware', function () {
   let server = null;
 
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(function () {
     sinon.restore();
     server?.close();
   });
+
+  after(async function () {});
 
   const start = () => {
     const app = express();

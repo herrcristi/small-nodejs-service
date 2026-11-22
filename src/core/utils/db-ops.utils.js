@@ -16,7 +16,19 @@ const Utils = {
     };
   },
 
+  // the error code of MongoDB for a value that is already used in a unique index
+  DuplicateKeyCode: 11000,
+
   exception: (e, time, _ctx) => {
+    // a value that must be unique is already used (a unique index): a conflict the user can fix, with the fields of
+    // the index (not the text of the driver, which names the collection and the value)
+    if (e?.code === Utils.DuplicateKeyCode) {
+      const fields = Object.keys(e.keyPattern || {}).join(', ') || 'value';
+      const msg = `"${fields}" is already used`;
+      console.log(`\nDB Calling: duplicate key: ${e.message}`);
+      return { status: 409, error: { message: msg, error: new Error(msg) }, time: new Date() - time };
+    }
+
     return {
       status: 500,
       error: { message: e.message || e, error: e },

@@ -3,6 +3,14 @@ const chai = require('chai');
 const ValidationUtils = require('../../utils/validation.utils.js');
 
 describe('Validation Utils', function () {
+  before(async function () {});
+
+  beforeEach(async function () {});
+
+  afterEach(async function () {});
+
+  after(async function () {});
+
   /**
    * emails: normal ones pass, anything that can change a query string, a path or html is refused
    */

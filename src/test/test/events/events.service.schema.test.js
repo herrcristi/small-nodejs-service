@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const TestConstants = require('../../test-constants.js');
 const EventsConstants = require('../../../services/events/events.constants.js');
 const EventsService = require('../../../services/events/events.service.js');

@@ -30,7 +30,7 @@ const SchemaStudents = Joi.array().items(
 
 const Schema = {
   Group: Joi.object().keys({
-    name: Joi.string().min(1).max(64),
+    name: Joi.string().trim().min(1).max(64), // without the spaces around it (only spaces: refused)
     status: Joi.string()
       .min(1)
       .max(64)
@@ -59,19 +59,21 @@ const Validators = {
     type: Joi.string().valid(GroupsConstants.Type),
   }),
 
-  Put: Schema.Group,
+  Put: Schema.Group.min(1), // a change has at least one field
 
-  Patch: Joi.object().keys({
-    // for patch allowed operations are set, unset, add, remove
-    set: Schema.Group,
-    unset: Joi.array().items(Joi.string().min(1).max(128).valid('description')),
-    add: Joi.object().keys({
-      students: SchemaStudents,
-    }),
-    remove: Joi.object().keys({
-      students: SchemaStudents,
-    }),
-  }),
+  Patch: Joi.object()
+    .keys({
+      // for patch allowed operations are set, unset, add, remove
+      set: Schema.Group,
+      unset: Joi.array().items(Joi.string().min(1).max(128).valid('description')),
+      add: Joi.object().keys({
+        students: SchemaStudents,
+      }),
+      remove: Joi.object().keys({
+        students: SchemaStudents,
+      }),
+    })
+    .min(1), // a change has at least one operation
 };
 
 const Private = {

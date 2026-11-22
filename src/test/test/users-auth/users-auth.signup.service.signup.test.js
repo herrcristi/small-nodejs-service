@@ -203,6 +203,18 @@ describe('Users Auth Service', function () {
     // check
     chai.expect(res.status).to.equal(400);
     chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "something" is not allowed');
+
+    // case: no school (it is required: a signup creates one)
+    res = await UsersAuthSignupService.signup({ email: testUser.email }, _ctx);
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.error.message).to.equal('Failed to validate schema. Error: "school" is required');
+
+    // case: a school name of spaces only (the name is trimmed)
+    res = await UsersAuthSignupService.signup({ email: testUser.email, school: { name: '   ' } }, _ctx);
+    chai.expect(res.status).to.equal(400);
+    chai
+      .expect(res.error.message)
+      .to.equal('Failed to validate schema. Error: "school.name" is not allowed to be empty');
   }).timeout(10000);
 
   /**

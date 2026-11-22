@@ -424,4 +424,58 @@ describe('Rest Api Utils', function () {
       },
     });
   }).timeout(10000);
+
+  /**
+   * the limit: -1 (the "All" of the UI), 0 or none give the most (MaxLimit), a larger one is capped; a negative skip,
+   * a negative limit or a value that is not a whole number are refused (MongoDB would answer one object, or an error)
+   */
+  it('should buildFilterFromReq take -1 as all and refuse a wrong limit or skip', async () => {
+    const schema = { filter: ['name', 'status'] };
+    const build = (query) => RestApiUtils.buildFilterFromReq({ query: querystring.parse(query) }, schema, _ctx);
+
+    // call: all, nothing, a page, too many
+    const limits = [];
+    for (const query of ['?limit=-1', '?limit=0', '?name=John', '?limit=5', '?limit=20000']) {
+      const res = await build(query);
+      limits.push(res.value.limit);
+    }
+
+    // check: the most for all, the page, the cap
+    chai.expect(limits).to.deep.equal([10000, 10000, 10000, 5, 10000]);
+
+    // case: the values that are refused
+    for (const query of ['?limit=-5', '?limit=abc', '?limit=2.5', '?skip=-5', '?skip=1.5']) {
+      const res = await build(query);
+      chai.expect(res.status, query).to.equal(400);
+    }
+  }).timeout(10000);
+
+  /**
+   * the value of a filter field: a text, a number, a regular expression (a search, also with escaped characters and
+   * diacritics) or an object of the allowed operators; another operator ($where) is refused
+   */
+  it('should buildFilterFromReq refuse an operator that is not allowed in a field', async () => {
+    const schema = { filter: ['name', 'status'] };
+    const build = (query) => RestApiUtils.buildFilterFromReq({ query: querystring.parse(query) }, schema, _ctx);
+
+    // call: the allowed ones (a list, not equal, a number, a search with escaped characters and with diacritics)
+    // (the values are encoded as the UI sends them: a + in a query is a space)
+    const cpp = `?name=${encodeURIComponent('/c\\+\\+/i')}`;
+    const school = `?name=${encodeURIComponent('/[sșşSȘŞ]coala/i')}`;
+    for (const query of ['?name=a,b', '?name!=x', '?status>1', cpp, school]) {
+      const res = await build(query);
+
+      // check: accepted
+      chai.expect(res.status, query).to.equal(200);
+    }
+
+    // case: an operator that is not allowed, inside a field that is allowed
+    const res = await build('?filter={"name":{"$where":"1"}}');
+    chai.expect(res.status).to.equal(400);
+    chai.expect(res.error.message).to.include('"$and[0].name"');
+
+    // case: the search of the UI, as a regular expression
+    const search = await build(cpp);
+    chai.expect(search.value.filter.$and[0].name.test('C++ Programming')).to.equal(true);
+  }).timeout(10000);
 });

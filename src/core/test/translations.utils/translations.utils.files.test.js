@@ -17,6 +17,14 @@ describe('Translations files', function () {
     return found.sort();
   };
 
+  before(async function () {});
+
+  beforeEach(async function () {});
+
+  afterEach(async function () {});
+
+  after(async function () {});
+
   /**
    * every language has the English keys, each with the same placeholders
    */

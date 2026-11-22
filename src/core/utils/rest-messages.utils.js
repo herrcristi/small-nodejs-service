@@ -48,6 +48,40 @@ const Public = {
   },
 
   /**
+   * a conflict (409): a value that must be unique is already used, or the object was changed meanwhile; the reason is
+   * sent (detail), so the user knows what to change
+   */
+  conflict: async (error, _ctx) => {
+    let msg = {
+      message: 'Request is in conflict with the current data',
+    };
+    const detail = Private.getDetail(error);
+    if (detail) {
+      msg.detail = detail;
+    }
+    if (CommonUtils.isDebug()) {
+      msg.error = CommonUtils.getLogError(error);
+    }
+    console.log(`\nStatus message: ${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
+    return msg;
+  },
+
+  /**
+   * a body of a type that is not supported (415): the API takes JSON
+   */
+  notSupported: async (error, _ctx) => {
+    let msg = {
+      message: 'Request has a content type that is not supported',
+    };
+    const detail = Private.getDetail(error);
+    if (detail) {
+      msg.detail = detail;
+    }
+    console.log(`\nStatus message: ${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
+    return msg;
+  },
+
+  /**
    * request is not authorized
    */
   notAuthorized: async (error, _ctx) => {
@@ -135,6 +169,12 @@ const Public = {
 
       case 404:
         return await Public.notFound(error, _ctx);
+
+      case 409:
+        return await Public.conflict(error, _ctx);
+
+      case 415:
+        return await Public.notSupported(error, _ctx);
 
       case 500:
         return await Public.exception(error, _ctx);

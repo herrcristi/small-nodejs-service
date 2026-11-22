@@ -102,11 +102,10 @@ describe('Locations Functional', function () {
       .send({ ...testLocation });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
-    // check
-    chai.expect(res.status).to.equal(500);
-    chai
-      .expect(res.body.error)
-      .to.include(`E11000 duplicate key error collection: Small-Test.locations_${_ctx.tenantID} index: name_1 dup key`);
+    // check: a conflict, with the field that is already used (not the text of the database)
+    chai.expect(res.status).to.equal(409);
+    chai.expect(res.body.detail).to.equal('"name" is already used');
+    chai.expect(JSON.stringify(res.body)).to.not.include('E11000');
   }).timeout(10000);
 
   /**

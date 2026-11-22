@@ -643,9 +643,10 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * login fail to make school active
+   * login when a pending school can not be made active: the login goes on (one broken school does not lock the user
+   * out), the school stays pending and is tried again at the next session refresh
    */
-  it('should login fail to make school active', async () => {
+  it('should login when a pending school can not be made active', async () => {
     const testAuthUsers = _.cloneDeep(TestConstants.UsersAuth);
     const testAuthUser = testAuthUsers[0];
 
@@ -685,18 +686,12 @@ describe('Users Auth Service', function () {
     let res = await UsersAuthService.login({ username: testAuthUser.id, password: testAuthData.origPassword }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // check: logged in, every pending school was tried and stays pending
     chai.expect(stubBase.callCount).to.equal(1);
     chai.expect(stubUsersGet.callCount).to.equal(1);
-    chai.expect(stubSchoolsActive.callCount).to.equal(1);
-    chai.expect(stubEvents.callCount).to.equal(0);
-    chai.expect(res).to.deep.equal({
-      status: 500,
-      error: {
-        message: 'Failed to make school active',
-        error: new Error('Failed to make school active'),
-      },
-    });
+    chai.expect(stubSchoolsActive.callCount).to.equal(testInfoUser.schools.length);
+    chai.expect(res.status).to.equal(200);
+    chai.expect(testInfoUser.schools.every((school) => school.status === 'pending')).to.equal(true);
   }).timeout(10000);
 
   /**

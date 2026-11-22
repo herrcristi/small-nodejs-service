@@ -22,7 +22,7 @@ const LocationsDatabase = require('./locations.database.js');
  */
 const Schema = {
   Location: Joi.object().keys({
-    name: Joi.string().min(1).max(64),
+    name: Joi.string().trim().min(1).max(64), // without the spaces around it (only spaces: refused)
     status: Joi.string()
       .min(1)
       .max(64)
@@ -41,12 +41,14 @@ const Validators = {
     type: Joi.string().valid(LocationsConstants.Type),
   }),
 
-  Put: Schema.Location,
+  Put: Schema.Location.min(1), // a change has at least one field
 
-  Patch: Joi.object().keys({
-    // for patch allowed operations are set
-    set: Schema.Location,
-  }),
+  Patch: Joi.object()
+    .keys({
+      // for patch allowed operations are set
+      set: Schema.Location,
+    })
+    .min(1), // a change has at least one operation
 };
 
 const Private = {

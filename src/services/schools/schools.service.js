@@ -23,7 +23,7 @@ const SchoolsDatabase = require('./schools.database.js');
  */
 const Schema = {
   School: Joi.object().keys({
-    name: Joi.string().min(1).max(64),
+    name: Joi.string().trim().min(1).max(64), // without the spaces around it (only spaces: refused)
     description: Joi.string().min(0).max(1024).allow(null),
     status: Joi.string()
       .min(1)
@@ -31,6 +31,12 @@ const Schema = {
       .valid(...Object.values(SchoolsConstants.Status)),
   }),
 };
+
+// the status of a change: a school is pending only from its creation (the signup) until the first login of one of its
+// members, which makes it active; it never goes back to pending
+Schema.SchoolChange = Schema.School.keys({
+  status: Joi.string().valid(SchoolsConstants.Status.Active, SchoolsConstants.Status.Disabled),
+});
 
 const Validators = {
   Get: {
@@ -43,13 +49,15 @@ const Validators = {
     type: Joi.string().valid(SchoolsConstants.Type),
   }),
 
-  Put: Schema.School,
+  Put: Schema.SchoolChange.min(1), // a change has at least one field
 
-  Patch: Joi.object().keys({
-    // for patch allowed operations are add, remove, set, unset
-    set: Schema.School,
-    unset: Joi.array().items(Joi.string().min(1).max(128).valid('description')),
-  }),
+  Patch: Joi.object()
+    .keys({
+      // for patch allowed operations are add, remove, set, unset
+      set: Schema.SchoolChange,
+      unset: Joi.array().items(Joi.string().min(1).max(128).valid('description')),
+    })
+    .min(1), // a change has at least one operation
 
   // the settings of a school (its admins)
   Settings: Joi.object().keys({
@@ -132,10 +140,13 @@ const Private = {
     }
     objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
-    // prevent changing the portal school status
+    // prevent changing the portal school status or its name
     if (Private.isPortalSchool(objID) && objInfo.status && objInfo.status !== SchoolsConstants.Status.Active) {
       const msg = 'The portal school cannot be deactivated';
       return { status: 403, error: { message: msg, error: new Error(msg) } };
+    }
+    if (Private.isPortalSchool(objID) && objInfo.name !== undefined) {
+      return Private.errorPortalRename();
     }
 
     // { serviceName, collection, references, notifications.projection }
@@ -168,6 +179,14 @@ const Private = {
     return BaseServiceUtils.getProjectedResponse(r, null /*default projection */, _ctx);
   },
   Notification: NotificationsUtils.Constants.Notification,
+
+  /**
+   * the portal school keeps its name (its name is not part of a change)
+   */
+  errorPortalRename: () => {
+    const msg = 'The portal school cannot be renamed';
+    return { status: 403, error: { message: msg, error: new Error(msg) } };
+  },
 
   /**
    * check whether the ID belongs to the protected portal school
@@ -489,6 +508,9 @@ const Public = {
     ) {
       const msg = 'The portal school cannot be deactivated';
       return { status: 403, error: { message: msg, error: new Error(msg) } };
+    }
+    if (Private.isPortalSchool(objID) && patchInfo.set?.name !== undefined) {
+      return Private.errorPortalRename();
     }
 
     // { serviceName, collection, references, notifications.projection }

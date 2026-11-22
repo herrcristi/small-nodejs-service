@@ -159,4 +159,34 @@ describe('Rest Messages Utils', function () {
       error: 'Error',
     });
   }).timeout(10000);
+
+  /**
+   * a conflict (409) and a content type that is not supported (415) give their reason, so the user knows what to change
+   */
+  it('should give the reason of a conflict and of a content type that is not supported', async () => {
+    // stub: production (no debug details)
+    sinon.stub(CommonUtils, 'isDebug').returns(false);
+
+    // call
+    const res409 = await RestMessagesUtils.statusError(409, { message: '"name" is already used' }, _ctx);
+    const res415 = await RestMessagesUtils.statusError(415, { message: 'Request body must be JSON' }, _ctx);
+
+    // check: the generic text and the reason
+    chai.expect(res409).to.deep.equal({
+      message: 'Request is in conflict with the current data',
+      detail: '"name" is already used',
+    });
+    chai.expect(res415).to.deep.equal({
+      message: 'Request has a content type that is not supported',
+      detail: 'Request body must be JSON',
+    });
+
+    // case: without a reason
+    chai.expect(await RestMessagesUtils.statusError(409, null, _ctx)).to.deep.equal({
+      message: 'Request is in conflict with the current data',
+    });
+    chai.expect(await RestMessagesUtils.statusError(415, null, _ctx)).to.deep.equal({
+      message: 'Request has a content type that is not supported',
+    });
+  }).timeout(10000);
 });

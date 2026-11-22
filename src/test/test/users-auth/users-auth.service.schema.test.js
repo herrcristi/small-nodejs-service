@@ -263,11 +263,11 @@ describe('Users Auth Service', function () {
    * schema patchUserSchool
    */
   it('should validate patchUserSchool schema set', async () => {
-    // nothing is required
+    // an empty change is refused (nothing to do)
     let patchReq = {};
     let res = UsersAuthService.Validators.PatchUserSchool.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
+    chai.expect(res.error.details[0].message).to.include('"value" must contain at least one of [add, remove]');
 
     // other params
     patchReq = {

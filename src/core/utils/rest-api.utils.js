@@ -6,7 +6,23 @@ const Joi = require('joi');
 
 const CommonUtils = require('./common.utils.js');
 
+const Constants = {
+  // the most objects of one list request (also for "all": limit -1)
+  MaxLimit: 10000,
+  // the operators allowed inside a filter field (`a=x,y` gives $in, `a!=x` $ne, `a>1` $gt, ...); any other one is
+  // refused, like $where
+  FilterOperators: ['$in', '$nin', '$eq', '$ne', '$gt', '$gte', '$lt', '$lte', '$exists', '$not', '$regex', '$options'],
+};
+
 const Utils = {
+  /**
+   * a list request that is not valid (400)
+   */
+  invalid: (msg, _ctx) => {
+    console.log(`\nList request not valid: ${msg}`);
+    return { status: 400, error: { message: msg, error: new Error(msg) } };
+  },
+
   /**
    *  convert multi fields into OR fields
    */
@@ -38,10 +54,26 @@ const Utils = {
   getValidator: (config, _ctx) => {
     let validateKeys = {};
 
+    // the value of a field: a text, a number, a boolean, a date, a regular expression (a search), null, or an object
+    // of the allowed operators only
+    const simpleValue = Joi.alternatives().try(
+      Joi.string().allow(''),
+      Joi.number(),
+      Joi.boolean(),
+      Joi.date(),
+      Joi.object().instance(RegExp),
+      Joi.valid(null)
+    );
+    const operatorValue = Joi.alternatives().try(simpleValue, Joi.array().items(simpleValue));
+    const fieldValue = Joi.alternatives().try(
+      simpleValue,
+      Joi.object().pattern(Joi.string().valid(...Constants.FilterOperators), operatorValue)
+    );
+
     // all other fields
     for (const field of config.filter) {
-      validateKeys[field] = Joi.any();
-      validateKeys[`_lang_${_ctx.lang}.${field}`] = Joi.any();
+      validateKeys[field] = fieldValue;
+      validateKeys[`_lang_${_ctx.lang}.${field}`] = fieldValue;
     }
 
     return Joi.object().keys({
@@ -76,9 +108,20 @@ const Public = {
       filter.projection ??= {};
       filter.projection['_id'] = 0;
 
-      // set limit to some value like 10000 (if not set)
-      filter.limit = Math.min(filter.limit || 10000, 10000);
-      filter.skip = filter.skip || 0;
+      // the limit: a whole number from 1, or -1 / 0 / none for all (the UI sends -1 for "All"), at most MaxLimit; a
+      // negative limit would give one object (MongoDB reads it as "one batch")
+      const limit = filter.limit ?? -1;
+      if (!Number.isInteger(limit) || limit < -1) {
+        return Utils.invalid('"limit" must be a whole number from 1, or -1 for all', _ctx);
+      }
+      filter.limit = limit <= 0 ? Constants.MaxLimit : Math.min(limit, Constants.MaxLimit);
+
+      // the skip: a whole number from 0
+      const skip = filter.skip ?? 0;
+      if (!Number.isInteger(skip) || skip < 0) {
+        return Utils.invalid('"skip" must be a whole number from 0', _ctx);
+      }
+      filter.skip = skip;
       filter.sort = filter.sort || config?.sort;
 
       // convert multi fields into OR fields
@@ -139,4 +182,4 @@ const Public = {
   },
 };
 
-module.exports = { ...Public };
+module.exports = { ...Public, Constants };
