@@ -96,11 +96,13 @@ const Validators = {
     set: Schema.UserName,
   }),
 
-  PatchUserSchool: Joi.object().keys({
-    // for patch school roles allowed operations are add, remove
-    add: Schema.SchoolRoles,
-    remove: Schema.SchoolRoles,
-  }),
+  PatchUserSchool: Joi.object()
+    .keys({
+      // for patch school roles allowed operations are add, remove
+      add: Schema.SchoolRoles,
+      remove: Schema.SchoolRoles,
+    })
+    .or('add', 'remove'), // an empty change is refused
 
   Invite: Joi.object().keys({
     username: ValidationUtils.email(),
@@ -622,11 +624,8 @@ const Public = {
       user.status = UsersRest.Constants.Status.Active;
     }
 
-    // if school pending make active
-    const rActive = await Public.activatePendingSchools(user, _ctx);
-    if (rActive.error) {
-      return rActive;
-    }
+    // if school pending make active (a school that can not be activated stays pending: logged, the login goes on)
+    await Public.activatePendingSchools(user, _ctx);
 
     ///
     // a new session (at every login) and its token
@@ -781,7 +780,8 @@ const Public = {
 
   /**
    * make active the pending schools of the user (a school is pending until a user of the school is authenticated)
-   * called at login and when the session is refreshed, to also get the schools that were added after the login
+   * called at login and when the session is refreshed, to also get the schools that were added after the login; a
+   * school that can not be activated is logged and stays pending (the next ones are still done)
    * user: { schools: [ { id, status } ] } the statuses are updated
    * returns { status, value } or { status, error }
    */
@@ -791,8 +791,12 @@ const Public = {
         // only a pending school is activated (decided on the school, not on this copy), the answer has its status
         const rS = await SchoolsRest.activate(school.id, _ctx);
         if (rS.error) {
-          const msg = 'Failed to make school active';
-          return { status: 500, error: { message: msg, error: new Error(msg) } };
+          // the school stays pending and is tried again at the next session refresh; the other schools of the user
+          // and the login go on (one broken school does not lock the user out of the others)
+          console.log(
+            `\n${UsersAuthConstants.ServiceName}: failed to make the school ${school.id} active: ${rS.error.message}`
+          );
+          continue;
         }
 
         // update only after it was saved, so the returned statuses are the saved ones (a disabled school stays disabled)
@@ -1083,6 +1087,24 @@ const Public = {
       patchSchoolInfo[op] = {
         schools: [{ id: _ctx.tenantID, roles }],
       };
+    }
+
+    // the roles of the user in the school: a user who is not a member is not found here (a role is given by an
+    // invite), and a patch that changes no role is refused (no write, no event, no notification for nothing)
+    const rUser = await UsersRest.getOne(userID, { _id: 0, id: 1, schools: 1 }, _ctx);
+    if (rUser.error) {
+      return rUser;
+    }
+    const currentRoles = (rUser.value.schools || []).find((school) => school.id === _ctx.tenantID)?.roles || [];
+    if (!currentRoles.length) {
+      const msg = 'The user is not a member of this school';
+      return { status: 404, error: { message: msg, error: new Error(msg) } };
+    }
+    const addedRoles = (patchInfo.add?.roles || []).filter((role) => !currentRoles.includes(role));
+    const removedRoles = (patchInfo.remove?.roles || []).filter((role) => currentRoles.includes(role));
+    if (!addedRoles.length && !removedRoles.length) {
+      const msg = 'Nothing to change: the user already has these roles, or does not have the ones to remove';
+      return { status: 400, error: { message: msg, error: new Error(msg) } };
     }
 
     // patch user schools

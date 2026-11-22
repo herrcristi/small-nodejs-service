@@ -353,15 +353,13 @@ describe('Users Auth Controller', function () {
     const testToken = _.cloneDeep(TestConstants.UsersToken)[0];
     const schools = [{ id: 'school1', name: 'School 1', status: 'pending', roles: ['admin'] }];
 
-    // stub: a valid session with a pending school; the activation fails
+    // stub: a valid session with a pending school; its activation fails (logged by the service, the school stays
+    // pending)
     sinon.stub(UsersAuthService, 'validate').resolves({
       status: 200,
       value: { userID: testUser.id, username: testUser.email, name: testUser.name, schools },
     });
-    const stubActive = sinon.stub(UsersAuthService, 'activatePendingSchools').resolves({
-      status: 500,
-      error: { message: 'Failed to make school active', error: new Error('Failed to make school active') },
-    });
+    const stubActive = sinon.stub(UsersAuthService, 'activatePendingSchools').resolves({ status: 200, value: true });
 
     // call
     const res = await supertest(TestConstants.WebServer)

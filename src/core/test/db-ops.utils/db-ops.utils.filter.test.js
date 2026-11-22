@@ -8,9 +8,15 @@ describe('DB-Ops Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
   const config = { serviceName: 'service' };
 
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * put with an extra filter: the filter is part of the one database call

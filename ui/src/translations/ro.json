@@ -52,6 +52,8 @@
   "error.status.401": "Sesiunea s-a încheiat. Autentifică-te din nou.",
   "error.status.403": "Nu ai permisiunea pentru această acțiune",
   "error.status.404": "Nu a fost găsit. Poate a fost șters între timp.",
+  "error.status.409": "Există deja sau a fost modificat între timp",
+  "error.status.415": "Cererea are un format care nu este acceptat",
   "error.status.429": "Prea multe cereri. Încearcă din nou mai târziu.",
   "error.status.500": "Serverul nu a putut finaliza cererea. Încearcă din nou mai târziu.",
   "events": "Evenimente",

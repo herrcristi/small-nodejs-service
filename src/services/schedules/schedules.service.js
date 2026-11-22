@@ -64,7 +64,7 @@ const SchemaScheduleLocationRemove = Joi.array().items(
 
 const Schema = {
   Schedule: Joi.object().keys({
-    name: Joi.string().min(1).max(64),
+    name: Joi.string().trim().min(1).max(64), // without the spaces around it (only spaces: refused)
     status: Joi.string()
       .min(1)
       .max(64)
@@ -105,24 +105,26 @@ const Validators = {
     type: Joi.string().valid(SchedulesConstants.Type),
   }),
 
-  Put: Schema.Schedule,
+  Put: Schema.Schedule.min(1), // a change has at least one field
 
-  Patch: Joi.object().keys({
-    // for patch allowed operations are set, add, remove
-    set: Schema.Schedule,
-    add: Joi.object().keys({
-      schedules: SchemaScheduleLocationAdd,
-      professors: SchemaProfessors,
-      groups: SchemaGroups,
-      students: SchemaStudents,
-    }),
-    remove: Joi.object().keys({
-      schedules: SchemaScheduleLocationRemove,
-      professors: SchemaProfessors,
-      groups: SchemaGroups,
-      students: SchemaStudents,
-    }),
-  }),
+  Patch: Joi.object()
+    .keys({
+      // for patch allowed operations are set, add, remove
+      set: Schema.Schedule,
+      add: Joi.object().keys({
+        schedules: SchemaScheduleLocationAdd,
+        professors: SchemaProfessors,
+        groups: SchemaGroups,
+        students: SchemaStudents,
+      }),
+      remove: Joi.object().keys({
+        schedules: SchemaScheduleLocationRemove,
+        professors: SchemaProfessors,
+        groups: SchemaGroups,
+        students: SchemaStudents,
+      }),
+    })
+    .min(1), // a change has at least one operation
 };
 
 const Private = {

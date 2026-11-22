@@ -4,9 +4,15 @@ const chai = require('chai');
 const RequestMiddleware = require('../../web-server/request.middleware.js');
 
 describe('Request Middleware', function () {
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   const run = (headers) => {
     const req = {

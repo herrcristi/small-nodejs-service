@@ -27,7 +27,7 @@ const Schema = {
   Signup: Joi.object().keys({
     email: ValidationUtils.email(),
     school: Joi.object().keys({
-      name: Joi.string().min(1).max(64).required(),
+      name: Joi.string().trim().min(1).max(64).required(), // without the spaces around it (only spaces: refused)
       description: Joi.string().min(0).max(1024).allow(null),
     }),
   }),
@@ -45,7 +45,7 @@ const Schema = {
 };
 
 const Validators = {
-  Signup: Schema.Signup.fork(['email'], (x) => x.required() /*make required */),
+  Signup: Schema.Signup.fork(['email', 'school'], (x) => x.required() /*make required */),
 
   Invite: Schema.Invite.fork(['email', 'school'], (x) => x.required() /*make required */),
 };
@@ -348,11 +348,11 @@ const Public = {
 
     // the email: the setup link (a new token) while the user has not set a password (a new user, a pending user invited
     // again because the first email was lost, a completed invite), otherwise the invitation (at most one each
-    // EmailInterval: inviting again later sends it again)
+    // EmailInterval); an active member that already has the role gets nothing (nothing was done: 204)
     const userInfo = { username: objInfo.email };
     if (needsSetup) {
       await UsersAuth.resetPassword(userInfo, _ctx, UsersAuthConstants.ResetTokenType.Signup);
-    } else {
+    } else if (rUser.status !== 204) {
       await UsersAuth.sendInvite(userInfo, _ctx);
     }
 

@@ -60,20 +60,27 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * activatePendingSchools fail keeps the status that is saved
+   * activatePendingSchools: a school that can not be activated stays pending (tried again at the next session
+   * refresh), the next schools are still activated, and the login goes on (no error)
    */
-  it('should activatePendingSchools fail and keep the school pending', async () => {
-    // stub: a pending school; the activation fails
-    const user = { schools: [{ id: 'school1', status: 'pending' }] };
-    sinon.stub(SchoolsRest, 'activate').resolves({ status: 500, error: { message: 'db down' } });
+  it('should activatePendingSchools keep a school pending when it fails and go on with the others', async () => {
+    // stub: two pending schools; the activation of school1 fails
+    const user = {
+      schools: [
+        { id: 'school1', status: 'pending' },
+        { id: 'school2', status: 'pending' },
+      ],
+    };
+    const stubActivate = sinon.stub(SchoolsRest, 'activate');
+    stubActivate.onFirstCall().resolves({ status: 500, error: { message: 'Database failure' } });
+    stubActivate.onSecondCall().resolves({ status: 200, value: { id: 'school2', status: 'active' } });
 
     // call
     const res = await UsersAuthService.activatePendingSchools(user, _ctx);
 
-    // check: the error, the school stays pending
-    chai.expect(res.status).to.equal(500);
-    chai.expect(res.error.message).to.equal('Failed to make school active');
-    chai.expect(user.schools[0].status).to.equal('pending');
+    // check: no error; school1 stays pending, school2 is active
+    chai.expect(res).to.deep.equal({ status: 200, value: true });
+    chai.expect(user.schools.map((school) => school.status)).to.deep.equal(['pending', 'active']);
   }).timeout(10000);
 
   /**

@@ -5,7 +5,14 @@ import { reactive } from 'vue';
 
 // the statuses of a failed request that have their own text (error.status.<status>); the others use the text of
 // their class (400 or 500)
-const ErrorStatuses = new Set([400, 401, 403, 404, 429, 500]);
+const ErrorStatuses = new Set([400, 401, 403, 404, 409, 415, 429, 500]);
+
+// the letters that a search finds with and without their diacritics (Romanian: a ă â, i î, s ș ş, t ț ţ; ş and ţ are
+// the older forms with a cedilla), by the letter without them
+const DiacriticsLetters = { a: 'aăâ', i: 'iî', s: 'sșş', t: 'tțţ' };
+
+// the characters that have a meaning in a regular expression (and the / around it): a search finds them as they are
+const RegExpCharacters = /[.*+?^${}()|[\]\\/]/g;
 
 const Utils = {
   /**
@@ -318,10 +325,47 @@ const Utils = {
   },
 
   /**
-   * custom filter = search for case insensitive query in each field of item
+   * a letter without its diacritics, in lower case (ă -> a, Ș -> s): its Unicode decomposition without the marks
+   */
+  getBaseLetter: (letter) => {
+    return letter
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase();
+  },
+
+  /**
+   * a text to compare in a search: without its diacritics, in upper case (Știință -> STIINTA)
+   */
+  getSearchText: (text) => {
+    return `${text}`
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLocaleUpperCase();
+  },
+
+  /**
+   * the regular expression of a search, for the lists of the server: the text is found as it is (c++ is not a
+   * pattern), and a letter is found with and without its diacritics (a: a ă â, in both cases)
+   */
+  getSearchPattern: (text) => {
+    let pattern = '';
+    for (const character of `${text}`.normalize('NFC')) {
+      const letters = DiacriticsLetters[Utils.getBaseLetter(character)];
+      if (letters) {
+        pattern += `[${letters}${letters.toUpperCase()}]`;
+        continue;
+      }
+      pattern += character.replace(RegExpCharacters, '\\$&');
+    }
+    return pattern;
+  },
+
+  /**
+   * custom filter = search for a query in each field of item, without case and without diacritics
    */
   findValue: (filterFields, value, query, item) => {
-    let q = query?.toLocaleUpperCase();
+    let q = query == null ? null : Utils.getSearchText(query);
     if (q == null) {
       return false;
     }
@@ -337,7 +381,7 @@ const Utils = {
         value = value[subField];
       }
 
-      value = value?.toString().toLocaleUpperCase();
+      value = value == null ? value : Utils.getSearchText(value);
       if (value && value.indexOf(q) !== -1) {
         return true;
       }

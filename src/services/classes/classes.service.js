@@ -22,7 +22,7 @@ const ClassesDatabase = require('./classes.database.js');
  */
 const Schema = {
   Class: Joi.object().keys({
-    name: Joi.string().min(1).max(64),
+    name: Joi.string().trim().min(1).max(64), // without the spaces around it (only spaces: refused)
     status: Joi.string()
       .min(1)
       .max(64)
@@ -46,13 +46,15 @@ const Validators = {
     type: Joi.string().valid(ClassesConstants.Type),
   }),
 
-  Put: Schema.Class,
+  Put: Schema.Class.min(1), // a change has at least one field
 
-  Patch: Joi.object().keys({
-    // for patch allowed operations are set, unset
-    set: Schema.Class,
-    unset: Joi.array().items(Joi.string().min(1).max(128).valid('description')),
-  }),
+  Patch: Joi.object()
+    .keys({
+      // for patch allowed operations are set, unset
+      set: Schema.Class,
+      unset: Joi.array().items(Joi.string().min(1).max(128).valid('description')),
+    })
+    .min(1), // a change has at least one operation
 };
 
 const Private = {

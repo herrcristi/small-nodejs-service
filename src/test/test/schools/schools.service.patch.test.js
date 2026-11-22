@@ -96,6 +96,26 @@ describe('Schools Service', function () {
   }).timeout(10000);
 
   /**
+   * patch does not rename the portal school, and never sets a school back to pending
+   */
+  it('should not patch the portal school name nor a school back to pending', async () => {
+    // stub: no write is expected
+    const stubPatch = sinon.stub(DbOpsUtils, 'patch');
+
+    // call: a new name for the portal school
+    const resName = await SchoolsService.patch(TestConstants.PortalSchoolID, { set: { name: 'Main Portal' } }, _ctx);
+
+    // check: refused
+    chai.expect(resName.status).to.equal(403);
+    chai.expect(resName.error.message).to.equal('The portal school cannot be renamed');
+
+    // case: a school set back to pending
+    const resPending = await SchoolsService.patch('school1', { set: { status: 'pending' } }, _ctx);
+    chai.expect(resPending.status).to.equal(400);
+    chai.expect(stubPatch.called).to.equal(false);
+  }).timeout(10000);
+
+  /**
    * patch fail validation
    */
   it('should patch fail validation', async () => {

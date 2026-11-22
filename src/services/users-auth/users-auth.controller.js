@@ -153,11 +153,8 @@ const Public = {
       }
 
       // the schools can be added after the login (like a new school or an invitation), make the pending ones active
-      // as at login. Dont fail the request, the schools stay pending and it is tried again at the next refresh
-      const rActive = await UsersAuthService.activatePendingSchools(r.value, _ctx);
-      if (rActive.error) {
-        console.log(`\n${_ctx.serviceName}: Failed to make the schools active: ${rActive.error.message}`);
-      }
+      // as at login; a school that can not be activated stays pending (logged) and is tried again at the next refresh
+      await UsersAuthService.activatePendingSchools(r.value, _ctx);
 
       // return current user data (will be used to restore auth store on bootstrap and when the schools are listed)
       res.status(200).json({

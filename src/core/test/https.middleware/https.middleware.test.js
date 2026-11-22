@@ -4,9 +4,15 @@ const chai = require('chai');
 const HttpsMiddleware = require('../../web-server/https.middleware.js');
 
 describe('Https Middleware', function () {
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   const getReq = (headers) => ({
     url: '/api/v1/schools?limit=20',

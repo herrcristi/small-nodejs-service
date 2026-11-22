@@ -10,9 +10,15 @@ describe('DB-Ops Utils deleteAll', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };
   const config = { serviceName: 'service' };
 
+  before(async function () {});
+
+  beforeEach(async function () {});
+
   afterEach(async function () {
     sinon.restore();
   });
+
+  after(async function () {});
 
   /**
    * the objects of the filter are deleted, the answer is their count

@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const TestConstants = require('../../test-constants.js');
 const ProfessorsConstants = require('../../../services/professors/professors.constants.js');
 const ProfessorsService = require('../../../services/professors/professors.service.js');
@@ -140,11 +139,11 @@ describe('Professors Service', function () {
    * is the same as post - add only the extra cases
    */
   it('should validate put schema', async () => {
-    // nothing is required
+    // an empty change is refused (nothing to do)
     let putReq = {};
     let res = ProfessorsService.Validators.Put.validate(putReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
+    chai.expect(res.error.details[0].message).to.include('"value" must have at least 1 key');
 
     // other params
     putReq = {
@@ -160,11 +159,11 @@ describe('Professors Service', function () {
    * is the same as post - add only the extra cases
    */
   it('should validate patch schema set', async () => {
-    // nothing is required
+    // an empty change is refused (nothing to do)
     let patchReq = {};
     let res = ProfessorsService.Validators.Patch.validate(patchReq);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
-    chai.expect(res.error).to.not.exist;
+    chai.expect(res.error.details[0].message).to.include('"value" must have at least 1 key');
 
     // other params
     patchReq = {

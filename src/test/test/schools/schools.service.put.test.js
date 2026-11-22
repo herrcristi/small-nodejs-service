@@ -94,6 +94,28 @@ describe('Schools Service', function () {
   }).timeout(10000);
 
   /**
+   * put does not rename the portal school, and never sets a school back to pending (a school is pending only from its
+   * signup until the first login of a member)
+   */
+  it('should not rename the portal school nor set a school back to pending', async () => {
+    // stub: no write is expected
+    const stubPut = sinon.stub(DbOpsUtils, 'put');
+
+    // call: a new name for the portal school
+    const resName = await SchoolsService.put(TestConstants.PortalSchoolID, { name: 'Main Portal' }, _ctx);
+
+    // check: refused
+    chai.expect(resName.status).to.equal(403);
+    chai.expect(resName.error.message).to.equal('The portal school cannot be renamed');
+
+    // case: a school set back to pending
+    const resPending = await SchoolsService.put('school1', { status: 'pending' }, _ctx);
+    chai.expect(resPending.status).to.equal(400);
+    chai.expect(resPending.error.message).to.include('"status" must be one of [active, disabled]');
+    chai.expect(stubPut.called).to.equal(false);
+  }).timeout(10000);
+
+  /**
    * put fail validation
    */
   it('should put fail validation', async () => {

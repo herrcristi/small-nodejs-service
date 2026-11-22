@@ -63,18 +63,20 @@ const Validators = {
     userID: Joi.string().min(1).max(64).required(),
   }),
 
-  Put: Schema.Professor,
+  Put: Schema.Professor.min(1), // a change has at least one field
 
-  Patch: Joi.object().keys({
-    // for patch allowed operations are add, remove, set
-    set: Schema.Professor,
-    add: Joi.object().keys({
-      classes: SchemaClasses,
-    }),
-    remove: Joi.object().keys({
-      classes: SchemaClasses,
-    }),
-  }),
+  Patch: Joi.object()
+    .keys({
+      // for patch allowed operations are add, remove, set
+      set: Schema.Professor,
+      add: Joi.object().keys({
+        classes: SchemaClasses,
+      }),
+      remove: Joi.object().keys({
+        classes: SchemaClasses,
+      }),
+    })
+    .min(1), // a change has at least one operation
 };
 
 const Private = {

@@ -101,4 +101,29 @@ describe('DB-Ops Utils', function () {
     chai.expect(res.status).to.equal(500);
     chai.expect(res.error.message.toString()).to.include('Test exception');
   }).timeout(10000);
+
+  /**
+   * a value already used in a unique index: a conflict (409) with the fields of the index, never the text of the driver
+   * (it names the collection and the value)
+   */
+  it('should post answer a conflict for a value already used', async () => {
+    // stub: the database refuses a name that is already used
+    const duplicate = new Error('E11000 duplicate key error collection: test.schools index: name_1 dup key');
+    const collection = {
+      insertOne: sinon.stub().rejects(Object.assign(duplicate, { code: 11000, keyPattern: { name: 1 } })),
+    };
+
+    // call
+    const res = await DbOpsUtils.post({ ...config, collection }, { id: 'id1', name: 'name1' }, _ctx);
+
+    // check: a conflict, with the field
+    chai.expect(res.status).to.equal(409);
+    chai.expect(res.error.message).to.equal('"name" is already used');
+    chai.expect(res.error.error.message).to.not.include('E11000');
+
+    // case: an error without the fields of the index
+    collection.insertOne.rejects(Object.assign(new Error('E11000 duplicate key'), { code: 11000 }));
+    const resNoFields = await DbOpsUtils.post({ ...config, collection }, { id: 'id1', name: 'name1' }, _ctx);
+    chai.expect(resNoFields.error.message).to.equal('"value" is already used');
+  }).timeout(10000);
 });

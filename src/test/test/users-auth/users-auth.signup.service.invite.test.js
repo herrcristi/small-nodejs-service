@@ -535,7 +535,7 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * invite with skip to add role for existing user
+   * invite an active member that has the role already: nothing is done (204), no email is sent
    */
   it('should invite with skip to add role for existing user', async () => {
     const testUsers = _.cloneDeep(TestConstants.UsersInvite);
@@ -627,7 +627,9 @@ describe('Users Auth Service', function () {
 
     chai.expect(stubUsersAuthPost.callCount).to.equal(0);
     chai.expect(stubUsersAuthResetPass.callCount).to.equal(0);
-    chai.expect(stubUsersAuthInvite.callCount).to.equal(1);
+
+    // check: no invitation for a member that has the role already (nothing was done)
+    chai.expect(stubUsersAuthInvite.callCount).to.equal(0);
 
     chai.expect(stubEvents.callCount).to.equal(0);
 

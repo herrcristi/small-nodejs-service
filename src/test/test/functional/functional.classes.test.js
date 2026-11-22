@@ -102,11 +102,50 @@ describe('Classes Functional', function () {
       .send({ ...testClass });
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
-    // check
-    chai.expect(res.status).to.equal(500);
-    chai
-      .expect(res.body.error)
-      .to.include(`E11000 duplicate key error collection: Small-Test.classes_${_ctx.tenantID} index: name_1 dup key`);
+    // check: a conflict, with the field that is already used (not the text of the database)
+    chai.expect(res.status).to.equal(409);
+    chai.expect(res.body.detail).to.equal('"name" is already used');
+    chai.expect(JSON.stringify(res.body)).to.not.include('E11000');
+  }).timeout(10000);
+
+  /**
+   * the list against MongoDB: "All" (limit -1, as the UI sends it) gives every class (a negative limit would give one),
+   * and a search finds a text with the characters of a regular expression (c++) and the letters with or without
+   * their diacritics (the patterns are the ones the UI builds)
+   */
+  it('should list all the classes and search them by a text as it is and without diacritics', async () => {
+    // stub: two more classes (Mathematics and Politics are the test data)
+    for (const name of ['C++ Programming', 'Știința datelor']) {
+      const rPost = await supertest(TestConstants.WebServer)
+        .post(`${ClassesConstants.ApiPath}`)
+        .set('x-tenant-id', _ctx.tenantID)
+        .set('Origin', TestConstants.WebServer)
+        .send({ name, credits: 4, required: 'optional' });
+      chai.expect(rPost.status, name).to.equal(201);
+    }
+    const list = (params) =>
+      supertest(TestConstants.WebServer)
+        .get(`${ClassesConstants.ApiPath}?${new URLSearchParams(params).toString()}`)
+        .set('x-tenant-id', _ctx.tenantID)
+        .set('Origin', TestConstants.WebServer);
+
+    // call: all
+    const resAll = await list({ limit: -1 });
+
+    // check: the four classes
+    chai.expect(resAll.status).to.equal(200);
+    chai.expect(resAll.body.data.length).to.equal(4);
+
+    // case: a negative skip is refused
+    chai.expect((await list({ skip: -5 })).status).to.equal(400);
+
+    // case: c++ as it is
+    const resCpp = await list({ name: '/c\\+\\+/i' });
+    chai.expect(resCpp.body.data.map((item) => item.name)).to.deep.equal(['C++ Programming']);
+
+    // case: stiinta, without its diacritics
+    const resDiacritics = await list({ name: '/[sșşSȘŞ][tțţTȚŢ][iîIÎ][iîIÎ]n[tțţTȚŢ][aăâAĂÂ]/i' });
+    chai.expect(resDiacritics.body.data.map((item) => item.name)).to.deep.equal(['Știința datelor']);
   }).timeout(10000);
 
   /**
