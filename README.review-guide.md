@@ -94,7 +94,7 @@ For scalability, severity is about the capacity and availability question being 
 1. **Authorization.** For every public route: who can call it, with which tenant? Compare each router with `config.roles.json` in both directions (routes missing from the matrix, matrix entries with no route). Look at route order: a specific path (`/users/portal-admins`) must not be handled as a parameter path (`/users/:id`). Look at the rules that grant extra, such as `current-user`, `self` and `deny-not-current-school`. Try every role against every route with the right tenant and with another tenant.
 2. **Escalation.** Can a role give itself or someone else a stronger role (invite, role patches, profile updates)? Can a person change fields they should not (status, roles, schools, email)? Does a disabled user, a deleted account or a disabled school still act?
 3. **Injection.** Find every place where a request value is put into a query string, a database filter, a regular expression, a path, an email, or HTML. Try operators (`$where`, `$ne`), nested keys, `__proto__`, characters that break the surrounding syntax (`&`, `=`, `%`, `(`), and very long values.
-4. **Internal routes.** Can they be reached from outside? How is the service token checked (algorithm, expiry, binding to method and URL, replay)? Can the check that skips internal routes be fooled?
+4. **Internal routes.** Can they be reached from outside? How is the service token checked (algorithm, expiry, binding to method and URL, replay)? Can the check that skips internal routes be fooled? Can anything but a service set the options of a read (the primary) that the token carries? Does every call between services use an internal route (a public route refuses a service token)?
 5. **Tokens and cookies.** What does the token prove, how long does it live, can it be revoked, is it the same token as a password reset? Cookie flags, logout, CSRF, CORS, login limits, user enumeration (messages, status codes, timing), reset and invite tokens (entropy, expiry, single use).
 6. **Secrets, configuration, errors, logs.** What happens with the placeholder values of `src/.env.example`? What is logged? A log line must not carry a password, a token, an emailed link, or what a person typed in a public form (the email address); code scanners also flag a value read from a name with "password" in it. What do error bodies reveal in production and in debug mode?
 7. **Browser.** Rendered HTML, stored data, redirects driven by query parameters, checks that exist only in the UI.
@@ -121,7 +121,7 @@ For scalability, severity is about the capacity and availability question being 
 9. Role removal: yourself, others, non-members, the last role, the last admin; the role given again.
 10. Signup: duplicate names, failure at each step, rollback.
 11. Activation: the pending to active rule, including when the save fails.
-12. Notifications: change a record and check every copy, at every level.
+12. Notifications: change a record and check every object that references it, at every level.
 13. Browser-facing sequences at API level: login, tenant selection, the main pages' calls.
 
 **What to look for besides "forbidden works".** Refusals that still change something; success answers when nothing happened; `500` for input mistakes; messages that leak; behaviour that differs between two routes that should agree.
@@ -151,11 +151,12 @@ For scalability, severity is about the capacity and availability question being 
 **Areas.**
 
 1. **Check, then act.** Every place that reads and then writes on the basis of the read: invites, signups, role removal, activation, bootstrap on several pods. For each, find what makes the second request fail or succeed safely (a unique index, a conditional update) or show that nothing does.
-2. **Read, modify, write and lost updates.** Copies read before a write and stored after it; arrays patched in place; counters; the order in which notifications arrive; handlers that fail halfway; whether retries are safe.
-3. **Several steps without a transaction.** For each multi-step operation, list the steps and, for each point between two steps, the state left if the process stops there, and whether a retry repairs it.
-4. **Shared state in one process.** Module-level caches, anything written at request time, `process.env`, the request context, objects passed by reference.
-5. **The event loop.** Synchronous work in the request path, unbounded fan-out, loops with `await` over many items, missing timeouts and cancellation.
-6. **The browser.** Double submits, answers arriving out of order, stores updated while navigation runs.
+2. **Read, modify, write and lost updates.** Referenced objects read before a write and stored after it; arrays patched in place; counters; the order in which notifications arrive; handlers that fail halfway; whether retries are safe. A guard checked only in the read before a write (a version, a status) and not in the write itself.
+3. **Reads after writes.** The reads go to the secondaries, which may not have a write yet. Every read of an object that the same request has just written: it must be the answer of the write (passed on as a parameter, not in `_ctx`), or a read on the primary (after a write that returns no object, and in the notification handlers, which run inside the request). Every read that decides a write of a rare flow (a login, an invite, a role change, a delete, a setting, a cleanup) asks the primary; a request that changes data is authorized on the primary, a read request on a secondary with its refusals read again on the primary. Run every flow against a secondary that answers the previous version of the data, inside the request and one request behind (a login right after the password is set, an invite right after another one), and list each read whose answer differs from the primary, with its caller. A read that decides a write and misses the change is a finding; a list that shows the previous version for a moment is not.
+4. **Several steps without a transaction.** For each multi-step operation, list the steps and, for each point between two steps, the state left if the process stops there, and whether a retry repairs it.
+5. **Shared state in one process.** Module-level caches, anything written at request time, `process.env`, the request context, objects passed by reference.
+6. **The event loop.** Synchronous work in the request path, unbounded fan-out, loops with `await` over many items, missing timeouts and cancellation. A database call made outside `DbOpsUtils`, or without its time limit (`maxTimeMS`), can hold a connection for ever.
+7. **The browser.** Double submits, answers arriving out of order, stores updated while navigation runs.
 
 **How to discover.** Do not assert a race: **prove it** with a controlled interleaving. In a simulator, start two operations, make each wait at the point between its read and its write, release them in the bad order, and show the final state. For failure between steps, make the second step throw and look at what stays. For the event loop, measure how long the loop is blocked while operations run.
 

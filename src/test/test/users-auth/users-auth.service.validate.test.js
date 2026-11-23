@@ -438,6 +438,57 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
+   * a read request is authorized on a secondary (most requests), and a refusal there is checked again on the primary (a
+   * role given by the request before); a request that changes data is authorized on the primary (a role removed by the
+   * request before changes nothing), and its refusal is not read again
+   */
+  it('should validate a read on a secondary and a change on the primary', async () => {
+    const testAuthUser = _.cloneDeep(TestConstants.UsersAuth[0]);
+    const testInfoUser = _.cloneDeep(TestConstants.Users[0]);
+    for (const school of testInfoUser.schools) {
+      school.name = school.id;
+      school.status = SchoolsRest.Constants.Status.Active;
+    }
+    const withoutSchool = { ...testInfoUser, schools: [testInfoUser.schools[0]] };
+
+    // stub: the token; on the secondary the user is not a member of the school yet, on the primary it is
+    sinon.stub(JwtUtils, 'decrypt').callsFake((data) => ({ status: 200, value: data }));
+    sinon.stub(JwtUtils, 'validateJwt').returns({
+      status: 200,
+      value: { purpose: 'session', username: testAuthUser.id, userID: testInfoUser.id, secret: 'secret1' },
+    });
+    const stubUsersGet = sinon.stub(UsersRest, 'getOneByEmail');
+    stubUsersGet.onFirstCall().returns({ status: 200, value: withoutSchool });
+    stubUsersGet.onSecondCall().returns({ status: 200, value: testInfoUser });
+
+    // call: a read
+    _ctx.tenantID = testInfoUser.schools[1].id; // where is admin
+    _ctx.userID = testInfoUser.id;
+    _ctx.username = testAuthUser.id;
+    _ctx.reqUrl = '/api/v1/classes';
+    const getInfo = { token: 'token', method: 'GET', route: '/api/v1/classes' };
+    const res = await UsersAuthService.validate(getInfo, _ctx);
+
+    // check: accepted; the session and the user on a secondary, the refusal read again on the primary
+    const primary = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    chai.expect(res.status).to.equal(200);
+    chai.expect(UsersAuthSessionsService.check.firstCall.args[2]).to.equal(null);
+    chai.expect(stubUsersGet.args.map((args) => args[3])).to.deep.equal([null, primary]);
+
+    // call: a change, the user is not a member on the primary either
+    stubUsersGet.reset();
+    stubUsersGet.returns({ status: 200, value: withoutSchool });
+    UsersAuthSessionsService.check.resetHistory();
+    const postInfo = { token: 'token', method: 'POST', route: '/api/v1/classes' };
+    const resChange = await UsersAuthService.validate(postInfo, _ctx);
+
+    // check: refused; the session and the user on the primary, not read again
+    chai.expect(resChange.status).to.equal(401);
+    chai.expect(UsersAuthSessionsService.check.firstCall.args[2]).to.deep.equal(primary);
+    chai.expect(stubUsersGet.args.map((args) => args[3])).to.deep.equal([primary]);
+  }).timeout(10000);
+
+  /**
    * validate role route with success
    */
   it('should validate role route with success', async () => {
@@ -675,7 +726,7 @@ describe('Users Auth Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubUsersGet.callCount).to.equal(2); // a refusal of a read is checked again on the primary
     chai.expect(stubDecrypt.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
 
@@ -737,7 +788,7 @@ describe('Users Auth Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubUsersGet.callCount).to.equal(2); // a refusal of a read is checked again on the primary
     chai.expect(stubDecrypt.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
 
@@ -798,15 +849,15 @@ describe('Users Auth Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubUsersGet.callCount).to.equal(2); // a refusal of a read is checked again on the primary
     chai.expect(stubToken.callCount).to.equal(1);
     chai.expect(stubDecrypt.callCount).to.equal(1);
 
     chai.expect(res).to.deep.equal({
       status: 403,
       error: {
-        message: 'Route is not accesible: get /api/v1/users-auth',
-        error: new Error('Route is not accesible: get /api/v1/users-auth'),
+        message: 'Route is not accesible: GET /api/v1/users-auth',
+        error: new Error('Route is not accesible: GET /api/v1/users-auth'),
       },
     });
   }).timeout(10000);
@@ -870,8 +921,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 403,
       error: {
-        message: 'Route is not accesible: delete /api/v1/users-auth/something',
-        error: new Error('Route is not accesible: delete /api/v1/users-auth/something'),
+        message: 'Route is not accesible: DELETE /api/v1/users-auth/something',
+        error: new Error('Route is not accesible: DELETE /api/v1/users-auth/something'),
       },
     });
   }).timeout(10000);
@@ -927,7 +978,7 @@ describe('Users Auth Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubUsersGet.callCount).to.equal(2); // a refusal of a read is checked again on the primary
     chai.expect(stubToken.callCount).to.equal(1);
     chai.expect(stubDecrypt.callCount).to.equal(1);
 
@@ -935,8 +986,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 403,
       error: {
-        message: 'Route is not accesible: get /api/v1/users/:id/something',
-        error: new Error('Route is not accesible: get /api/v1/users/:id/something'),
+        message: 'Route is not accesible: GET /api/v1/users/:id/something',
+        error: new Error('Route is not accesible: GET /api/v1/users/:id/something'),
       },
     });
   }).timeout(10000);
@@ -989,7 +1040,7 @@ describe('Users Auth Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubUsersGet.callCount).to.equal(2); // a refusal of a read is checked again on the primary
     chai.expect(stubDecrypt.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
 
@@ -1053,7 +1104,7 @@ describe('Users Auth Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubUsersGet.callCount).to.equal(2); // a refusal of a read is checked again on the primary
     chai.expect(stubDecrypt.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
 
@@ -1061,8 +1112,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 403,
       error: {
-        message: 'Route is not accesible: get /api/v1/schools/:id/something',
-        error: new Error('Route is not accesible: get /api/v1/schools/:id/something'),
+        message: 'Route is not accesible: GET /api/v1/schools/:id/something',
+        error: new Error('Route is not accesible: GET /api/v1/schools/:id/something'),
       },
     });
   }).timeout(10000);
@@ -1115,7 +1166,7 @@ describe('Users Auth Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubUsersGet.callCount).to.equal(2); // a refusal of a read is checked again on the primary
     chai.expect(stubDecrypt.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
 
@@ -1176,7 +1227,7 @@ describe('Users Auth Service', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check
-    chai.expect(stubUsersGet.callCount).to.equal(1);
+    chai.expect(stubUsersGet.callCount).to.equal(2); // a refusal of a read is checked again on the primary
     chai.expect(stubDecrypt.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
 
@@ -1241,8 +1292,8 @@ describe('Users Auth Service', function () {
     chai.expect(res).to.deep.equal({
       status: 403,
       error: {
-        message: 'Route is not accesible: invalid /api/v1/users/:id',
-        error: new Error('Route is not accesible: invalid /api/v1/users/:id'),
+        message: 'Route is not accesible: INVALID /api/v1/users/:id',
+        error: new Error('Route is not accesible: INVALID /api/v1/users/:id'),
       },
     });
   }).timeout(10000);

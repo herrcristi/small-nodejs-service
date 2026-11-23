@@ -4,6 +4,8 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
+const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
+
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
@@ -56,7 +58,7 @@ describe('Users Auth Service', function () {
   it('should patchUserSchool remove another portal admin and also itself', async () => {
     // stub: both are portal admins; the write
     const portalCtx = { ..._ctx, tenantID: TestConstants.PortalSchoolID, userID: 'portal-admin-1' };
-    sinon.stub(UsersRest, 'getAllByIDs').callsFake(async ([userID]) => ({
+    const stubRoles = sinon.stub(UsersRest, 'getAllByIDs').callsFake(async ([userID]) => ({
       status: 200,
       value: [{ id: userID, schools: [{ id: TestConstants.PortalSchoolID, roles: ['portal-admin'] }] }],
     }));
@@ -65,6 +67,9 @@ describe('Users Auth Service', function () {
     // another portal admin: its role on the portal school is removed
     await UsersAuthService.patchUserSchool('portal-admin-2', { remove: { roles: ['portal-admin'] } }, portalCtx);
     chai.expect(stubPatch.callCount).to.equal(1);
+
+    // check: the roles of the user are read on the primary (a role given or removed just before decides the change)
+    chai.expect(stubRoles.firstCall.args[3]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
     chai.expect(stubPatch.firstCall.args[0]).to.equal('portal-admin-2');
     chai.expect(stubPatch.firstCall.args[1]).to.deep.equal({
       remove: { schools: [{ id: TestConstants.PortalSchoolID, roles: ['portal-admin'] }] },

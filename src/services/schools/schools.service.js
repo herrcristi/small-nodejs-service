@@ -4,6 +4,7 @@
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
+const DatabaseManagerUtils = require('../../core/utils/database-manager.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
@@ -196,12 +197,13 @@ const Private = {
 
   /**
    * config
-   * returns { serviceName, collection, schema, translate, references, fillReferences, events }
+   * returns { serviceName, collection, maxTimeMS, schema, translate, references, fillReferences, events }
    */
   getConfig: async (_ctx) => {
     const config = {
       serviceName: SchoolsConstants.ServiceName,
       collection: await SchoolsDatabase.collection(_ctx),
+      maxTimeMS: DatabaseManagerUtils.getMaxTimeMS(), // the time limit of each database call (DbOpsUtils)
       references: [], // to be populated (like foreign keys)
       notifications: { projection: null /*use default, is for sync+async */ },
     };
@@ -282,12 +284,15 @@ const Public = {
   },
 
   /**
-   * get all by ids
+   * get all by ids: the objects referenced by another service before it writes them (populateReferences) or a read that
+   * decides a write (the roles of a user)
+   * options: the options of the read, built by the caller (populateReferences and the roles of a user ask the primary:
+   *   an object written just before, by an earlier request or by another service, is found)
    * returns { status, value } or { status, error }
    */
-  getAllByIDs: async (ids, projection, _ctx) => {
+  getAllByIDs: async (ids, projection, _ctx, options) => {
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx);
+    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx, options);
   },
 
   /**
@@ -383,9 +388,9 @@ const Public = {
 
   /**
    * activate (internal) called from users-auth when a member is authenticated: a pending school becomes active
-   * the decision is taken on the school (not on the copy in the user): a school that is not pending is not changed,
-   * and the status is changed only if it is still pending when it is written (one conditional write), so a disable
-   * done meanwhile is never overwritten
+   * the decision is taken on the school (not on the school referenced by the user): a school that is not pending is
+   * not changed, and the status is changed only if it is still pending when it is written (one conditional write), so
+   * a disable done meanwhile is never overwritten
    * returns { status, value } with the current status of the school, or { status, error }
    */
   activate: async (objID, _ctx) => {
@@ -397,10 +402,13 @@ const Public = {
       return r;
     }
 
-    // not pending (anymore): the school is not changed, its current status is returned
+    // not pending (anymore): the school is not changed, its current status is returned (the write changed nothing,
+    // there is no object in its answer: read on the primary)
     const config = await Private.getConfig(_ctx);
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
-    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
+    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx, {
+      readPreference: DbOpsUtils.Constants.ReadPrimary,
+    });
     return BaseServiceUtils.getProjectedResponse(rget, null /*default projection */, _ctx);
   },
 
@@ -410,7 +418,9 @@ const Public = {
    */
   getSettings: async (objID, _ctx) => {
     const config = await Private.getConfig(_ctx);
-    const r = await DbOpsUtils.getOne(config, objID, { _id: 0, id: 1, settings: 1 }, _ctx);
+    // read on the primary: the settings decide what happens to a removed member, and the page reads them after a save
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    const r = await DbOpsUtils.getOne(config, objID, { _id: 0, id: 1, settings: 1 }, _ctx, options);
     if (r.error) {
       return r;
     }
@@ -438,7 +448,7 @@ const Public = {
       return r;
     }
 
-    // raise event for the settings (the settings are not copied by other services: no notification)
+    // raise event for the settings (the settings are not referenced by other services: no notification)
     await EventsRest.raiseEventForObject(
       SchoolsConstants.ServiceName,
       Private.Action.Settings,
@@ -466,7 +476,10 @@ const Public = {
       projection: { _id: 0, id: 1, name: 1 },
       limit: Private.PendingCleanupBatch,
     };
-    const rSchools = await DbOpsUtils.getAll(config, filter, _ctx);
+    // read on the primary: a school activated just before is still pending on a secondary, it would be removed
+    const rSchools = await DbOpsUtils.getAll(config, filter, _ctx, {
+      readPreference: DbOpsUtils.Constants.ReadPrimary,
+    });
     if (rSchools.error) {
       return rSchools;
     }
@@ -555,9 +568,9 @@ const Public = {
     }
     notification = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
-    // the schools keep no copies of other services: nothing to do (no subscription)
+    // the schools reference no objects of other services: nothing to do (no subscription)
     console.log(
-      `\n${SchoolsConstants.ServiceName}: notification of ${notification.serviceName} ignored (no copy of it)`
+      `\n${SchoolsConstants.ServiceName}: notification of ${notification.serviceName} ignored (no reference to it)`
     );
     return { status: 200, value: false };
   },

@@ -52,12 +52,14 @@ describe('Schedules Rest', function () {
       return { status: 200, value: 'dummy' };
     });
 
-    // call
-    let res = await SchedulesRest.getAllByIDs(['id1'], { id: 1, name: 1 } /*projection*/, _ctx);
+    // call: with the options of the read
+    const options = { readPreference: 'primary' };
+    let res = await SchedulesRest.getAllByIDs(['id1'], { id: 1, name: 1 } /*projection*/, _ctx, options);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // check: the options go to the call
     chai.expect(res?.value).to.equal('dummy');
+    chai.expect(stub.firstCall.args[4]).to.deep.equal(options);
   }).timeout(10000);
 
   /**

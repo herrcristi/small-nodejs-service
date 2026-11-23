@@ -75,8 +75,8 @@ const Public = {
         )}`
       );
 
-      // get all
-      const r = await UsersService.getAllInternalForReq(req, _ctx);
+      // get all (with the options of the read asked by the calling service: the primary for a login, an invite)
+      const r = await UsersService.getAllInternalForReq(req, _ctx, req.s2sOptions);
       if (r.error) {
         const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
         return res.status(r.status).json(message);

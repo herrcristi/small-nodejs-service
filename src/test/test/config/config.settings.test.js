@@ -12,6 +12,7 @@ describe('Config Settings', function () {
     'SMALL_API_RATE_LIMIT_LOGIN_MAX',
     'SMALL_API_RATE_LIMIT_LOGIN_ACCOUNT_MAX',
     'SMALL_API_RATE_LIMIT_RESET_MAX',
+    'SMALL_API_DATABASE_LIMITS',
   ];
   const saved = {};
 
@@ -53,6 +54,31 @@ describe('Config Settings', function () {
       process.env.SMALL_API_PENDING_EXPIRES_IN = value;
       chai.expect(ConfigSettings.getPendingExpiresIn(), value).to.equal(ConfigSettings.PendingExpiresIn);
     }
+  }).timeout(10000);
+
+  /**
+   * the limits of the database: 'connections=16;connwaitmax=30s;timeout=30s', named, in any order; the times in seconds
+   * with or without the unit; given to the database manager, which checks the values (and uses its defaults for the
+   * missing or wrong ones); an unknown name is ignored
+   */
+  it('should get the limits of the database', async () => {
+    // case: not configured
+    delete process.env.SMALL_API_DATABASE_LIMITS;
+    chai.expect(ConfigSettings.getDatabaseLimits()).to.deep.equal({});
+
+    // case: all of them
+    process.env.SMALL_API_DATABASE_LIMITS = 'connections=16;connwaitmax=30s;timeout=30s';
+    chai
+      .expect(ConfigSettings.getDatabaseLimits())
+      .to.deep.equal({ maxPoolSize: '16', waitQueueTimeout: '30', queryTimeout: '30' });
+
+    // case: another order, with spaces, separated by a comma, a time without the unit
+    process.env.SMALL_API_DATABASE_LIMITS = ' timeout = 10 , connections = 8 ;';
+    chai.expect(ConfigSettings.getDatabaseLimits()).to.deep.equal({ queryTimeout: '10', maxPoolSize: '8' });
+
+    // case: an unknown name (ignored), a name without a value, a wrong value (checked by the database manager)
+    process.env.SMALL_API_DATABASE_LIMITS = 'connwait=5s;timeout;connections=many;constructor=1';
+    chai.expect(ConfigSettings.getDatabaseLimits()).to.deep.equal({ queryTimeout: '', maxPoolSize: 'many' });
   }).timeout(10000);
 
   /**

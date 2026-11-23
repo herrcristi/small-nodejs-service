@@ -19,7 +19,7 @@ describe('Schools Service', function () {
   after(async function () {});
 
   /**
-   * the schools keep no copy of other services: a notification changes nothing
+   * the schools reference no object of other services: a notification changes nothing
    */
   it('should do notification with success', async () => {
     // stub: no change is expected

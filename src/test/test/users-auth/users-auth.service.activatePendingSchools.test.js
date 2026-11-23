@@ -84,7 +84,7 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * a school disabled in the meantime stays disabled: the copy takes the status of the school
+   * a school disabled in the meantime stays disabled: the referenced school takes the status of the school
    */
   it('should activatePendingSchools keep the status of a school that is not pending anymore', async () => {
     // a user with two pending schools
@@ -102,7 +102,7 @@ describe('Users Auth Service', function () {
     // call
     const res = await UsersAuthService.activatePendingSchools(user, _ctx);
 
-    // check: each copy has the status of its school
+    // check: each referenced school has the status of its school
     chai.expect(res.status).to.equal(200);
     chai.expect(user.schools.map((item) => item.status)).to.deep.equal(['disabled', 'active']);
   }).timeout(10000);

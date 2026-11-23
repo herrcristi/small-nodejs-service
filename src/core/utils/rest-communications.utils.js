@@ -74,7 +74,9 @@ const Private = {
 
   /**
    * rest call
-   * config: { serviceName, method, path, query?, body?, headers? }
+   * config: { serviceName, method, path, query?, body?, headers?, options? }
+   * options: the options of a read (like { readPreference }), sent in the service token: only a service can set them,
+   * and the called route gives them to its read (restValidation)
    */
   restCall: async (config, _ctx) => {
     console.log(`\nRest api call: ${JSON.stringify(CommonUtils.protectData(config), null, 2)}`);
@@ -107,6 +109,7 @@ const Private = {
       url: srvUri,
       timestamp: time.toISOString(),
       jti: CommonUtils.uuidc(),
+      options: config.options, // the options of a read, for the called route
     };
     const s2sToken = JwtUtils.encrypt(s2sData, Private.Config.issuer, _ctx, Private.Config.s2sPass);
 
@@ -188,6 +191,8 @@ const Public = {
 
   /**
    * rest call validation for s2s token
+   * returns { status, value: s2sData } or { status, error }; s2sData.options: the options of the read the calling
+   * service asked (restCall)
    */
   restValidation: (s2sToken, _ctx) => {
     // decode
@@ -256,8 +261,10 @@ const Public = {
   /**
    * get all
    * queryParams
+   * options: the options of the read (DbOpsUtils.getAll): passed to a local service, sent in the service token of a
+   * REST call
    */
-  getAll: async (serviceName, queryParams, _ctx) => {
+  getAll: async (serviceName, queryParams, _ctx, options) => {
     const localService = Private.Config.local[serviceName];
     if (localService) {
       // convert query to mongo build filter: { filter, projection, limit, skip, sort }
@@ -267,11 +274,12 @@ const Public = {
       }
       const filter = rf.value;
 
-      return await localService.getAll(filter, _ctx);
+      return await localService.getAll(filter, _ctx, options);
     }
 
     // TODO get in chunks
-    let r = await Private.restCall({ serviceName, method: 'GET', path: '', query: queryParams }, _ctx);
+    const config = { serviceName, method: 'GET', path: '', query: queryParams, options };
+    let r = await Private.restCall(config, _ctx);
     if (r.error) {
       return r;
     }
@@ -281,11 +289,13 @@ const Public = {
   /**
    * get all by ids with projection
    * projection: {id:1, name:1, ...}
+   * options: the options of the read (DbOpsUtils.getAllByIDs): passed to a local service, sent in the service token of
+   * a REST call
    */
-  getAllByIDs: async (serviceName, ids, projection, _ctx) => {
+  getAllByIDs: async (serviceName, ids, projection, _ctx, options) => {
     const localService = Private.Config.local[serviceName];
     if (localService) {
-      return await localService.getAllByIDs(ids, projection, _ctx);
+      return await localService.getAllByIDs(ids, projection, _ctx, options);
     }
 
     let query = ``;
@@ -298,7 +308,8 @@ const Public = {
     const chunks = CommonUtils.getChunks(ids, 50);
     for (const chunkIDs of chunks) {
       const chunkQuery = `${query}id=${chunkIDs.join(',')}`;
-      let r = await Private.restCall({ serviceName, method: 'GET', path: '', query: chunkQuery }, _ctx);
+      const config = { serviceName, method: 'GET', path: '', query: chunkQuery, options };
+      let r = await Private.restCall(config, _ctx);
       if (r.error) {
         return r;
       }

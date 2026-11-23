@@ -5,6 +5,7 @@
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
+const DatabaseManagerUtils = require('../../core/utils/database-manager.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const ValidationUtils = require('../../core/utils/validation.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils');
@@ -95,12 +96,13 @@ const Private = {
 
   /**
    * config
-   * returns { serviceName, collection, schema, references, fillReferences, events }
+   * returns { serviceName, collection, maxTimeMS, schema, references, fillReferences, events }
    */
   getConfig: async (_ctx) => {
     const config = {
       serviceName: StudentsConstants.ServiceName,
       collection: await StudentsDatabase.collection(_ctx),
+      maxTimeMS: DatabaseManagerUtils.getMaxTimeMS(), // the time limit of each database call (DbOpsUtils)
       references: [
         {
           fieldName: 'user',
@@ -151,7 +153,7 @@ const Private = {
   },
 
   /**
-   * a trace: the copy of a user that does not have the role anymore (deleted: the account was deleted, removed: the
+   * a trace: a referenced user that does not have the role anymore (deleted: the account was deleted, removed: the
    * role was removed); it stays in the lists, the groups and the schedules
    */
   isTrace: (user) => {
@@ -159,7 +161,7 @@ const Private = {
   },
 
   /**
-   * keep a student as a trace: the status of its user copy is deleted or removed (the other fields of the copy are kept),
+   * keep a student as a trace: the status of its referenced user is deleted or removed (its other fields are kept),
    * with an event
    * returns { status, value } or { status, error }
    */
@@ -201,7 +203,7 @@ const Private = {
   },
 
   /**
-   * notify the students that changed (modified): the groups and the schedules keep their copies of them
+   * notify the students that changed (modified): the groups and the schedules reference them
    * returns { status, value: [ ids ] } or { status, error }
    */
   notifyChangedStudents: async (config, studentsIDs, _ctx) => {
@@ -210,7 +212,10 @@ const Private = {
     }
 
     const projection = { ...config.notifications.projection, _id: 0 };
-    const rStudents = await DbOpsUtils.getAllByIDs(config, studentsIDs, projection, _ctx);
+    // the students were just written by updateMany (no object in its answer): read on the primary
+    const rStudents = await DbOpsUtils.getAllByIDs(config, studentsIDs, projection, _ctx, {
+      readPreference: DbOpsUtils.Constants.ReadPrimary,
+    });
     if (rStudents.error) {
       return rStudents;
     }
@@ -222,12 +227,12 @@ const Private = {
 
   /**
    * save the students of the users that have the student role in the school (the users notification: added, modified)
-   * - a new student: its record is created, with the copy of its user
-   * - a student: its user copy is updated when it is older (see DbOpsUtils.updateManyReferences)
+   * - a new student: its record is created, with its referenced user
+   * - a student: its referenced user is updated when it is older (see DbOpsUtils.updateManyReferences)
    * - a trace (its role was removed, or its account was deleted): it is a student again (an event) when its user has the
    *   role again and is not pending; a user invited again is pending until its first login: its trace is not changed
    *   until then, and nothing is notified
-   * the students whose user copy changed are notified (the groups and the schedules keep their copies of them)
+   * the students whose referenced user changed are notified (the groups and the schedules reference them)
    * users: [ { id, status, ... } ] (as notified by the users service)
    * a failure is logged and the next users are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
@@ -239,7 +244,10 @@ const Private = {
     // the students that exist already
     const usersIDs = users.map((user) => user.id);
     const existingProjection = { _id: 0, id: 1, type: 1, user: 1 }; // the type: the target of the restore event
-    const rStudents = await DbOpsUtils.getAllByIDs(config, usersIDs, existingProjection, _ctx);
+    // the notification is handled in the request that wrote (a trace relinked by the invite): read the primary
+    const rStudents = await DbOpsUtils.getAllByIDs(config, usersIDs, existingProjection, _ctx, {
+      readPreference: DbOpsUtils.Constants.ReadPrimary,
+    });
     if (rStudents.error) {
       return rStudents;
     }
@@ -256,7 +264,8 @@ const Private = {
       // a new student
       if (!student) {
         console.log(`\n${StudentsConstants.ServiceName}: create the student of the user ${user.id}`);
-        const rPost = await Public.post({ id: user.id, classes: [] }, _ctx);
+        // the user is the answer of the write that notified it: its reference is filled from it, it is not read again
+        const rPost = await Public.post({ id: user.id, classes: [] }, _ctx, user);
         if (rPost.error) {
           console.log(
             `\n${StudentsConstants.ServiceName}: failed to create the student of the user ${user.id}: ${rPost.error.message}`
@@ -273,20 +282,20 @@ const Private = {
         continue;
       }
 
-      // its user copy (only an older one)
-      const userCopy = CommonUtils.getProjectedObj(user, userRef.projection);
-      const rCopy = await DbOpsUtils.updateManyReferences(config, userRef, userCopy, _ctx);
-      if (rCopy.error) {
+      // its referenced user (only an older one)
+      const referencedUser = CommonUtils.getProjectedObj(user, userRef.projection);
+      const rUpdate = await DbOpsUtils.updateManyReferences(config, userRef, referencedUser, _ctx);
+      if (rUpdate.error) {
         console.log(
-          `\n${StudentsConstants.ServiceName}: failed to update the copies of the user ${user.id}: ${rCopy.error.message}`
+          `\n${StudentsConstants.ServiceName}: failed to update the referenced user ${user.id}: ${rUpdate.error.message}`
         );
-        failure ??= rCopy;
+        failure ??= rUpdate;
         continue;
       }
-      rCopy.ids.forEach((id) => changedStudentsIDs.add(id));
+      rUpdate.ids.forEach((id) => changedStudentsIDs.add(id));
 
       // a trace that is a student again
-      if (isTrace && rCopy.ids.includes(student.id)) {
+      if (isTrace && rUpdate.ids.includes(student.id)) {
         console.log(`\n${StudentsConstants.ServiceName}: the trace ${user.id} is a student again`);
         const eventObj = { ...student, name: user.name };
         const eventInfo = { status: user.status };
@@ -308,12 +317,14 @@ const Private = {
   /**
    * the students of the users that are not students of the school anymore (the users notification, removed: the role was
    * removed, or the account was deleted: the notified user is deleted)
-   * - a student that never logged in (its user copy is pending): deleted (an invitation that was not used leaves nothing)
+   * - a student that never logged in (its referenced user is pending): deleted (an unused invitation leaves nothing)
    * - a trace: not changed
    * - otherwise by the setting of the school (removedMembers):
-   *   keep: the student stays as a trace (its user copy is removed or deleted), with an event; it stays in the lists, the groups and the schedules
+   *   keep: the student stays as a trace (its referenced user is removed or deleted), with an event; it stays in the
+   *   lists, the groups and the schedules
    *   delete: the student is deleted (the groups and the schedules remove it)
-   * the students whose user copy changed are notified (the groups and the schedules keep their copies of them)
+   * the students whose referenced user changed are notified with the answers of their writes (the groups and the
+   * schedules reference them)
    * users: [ { id, status, ... } ] (as notified by the users service)
    * a failure is logged and the next users are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
@@ -328,10 +339,13 @@ const Private = {
     }
     const keepTraces = rSettings.value.removedMembers === SchoolsRest.Constants.Settings.RemovedMembers.Keep;
 
-    const changedStudentsIDs = new Set();
+    const changedStudents = []; // the traces, as their writes answered them (never read again)
     let failure = null; // the first failure (the next users are still done)
     for (const user of users) {
-      const rStudent = await DbOpsUtils.getOne(config, user.id, { _id: 0, id: 1, user: 1 }, _ctx);
+      // the notification is handled in the request that wrote (a record created just before): read the primary
+      const rStudent = await DbOpsUtils.getOne(config, user.id, { _id: 0, id: 1, user: 1 }, _ctx, {
+        readPreference: DbOpsUtils.Constants.ReadPrimary,
+      });
       if (rStudent.status === 404) {
         continue;
       }
@@ -375,17 +389,27 @@ const Private = {
         failure ??= rTrace;
         continue;
       }
-      changedStudentsIDs.add(user.id);
+      const rnp = BaseServiceUtils.getProjectedResponse(
+        rTrace,
+        config.notifications.projection /* for sync+async */,
+        _ctx
+      );
+      changedStudents.push(rnp.value);
     }
 
-    // the changed students are notified, also after a failure
-    const rNotify = await Private.notifyChangedStudents(config, [...changedStudentsIDs], _ctx);
-    return failure || rNotify;
+    // the changed students are notified, also after a failure: the answers of their writes (the object of a write is its
+    // result, a read could be answered by a secondary that does not have it yet)
+    const changedIDs = changedStudents.map((item) => item.id);
+    if (changedStudents.length) {
+      console.log(`\n${StudentsConstants.ServiceName}: notify the changed students ${JSON.stringify(changedIDs)}`);
+      await StudentsRest.raiseNotification(Private.Notification.Modified, changedStudents, _ctx);
+    }
+    return failure || { status: 200, value: changedIDs };
   },
 
   /**
    * users notification, split by school (the schools where the user has, or had, the student role):
-   * - added, modified: the students are saved (created when missing, otherwise their status and their user copy)
+   * - added, modified: the students are saved (created when missing, otherwise their status and their referenced user)
    * - removed (the student role was removed, or the account was deleted): the students are kept as traces or
    *   deleted, by the setting of the school
    * a failure is logged and the next schools are still done; the first failure is returned at the end
@@ -431,8 +455,8 @@ const Private = {
   },
 
   /**
-   * classes notification: the copies of the classes in the students
-   * - modified: the copies are updated (only the older ones, modifiedCount)
+   * classes notification: the classes referenced by the students
+   * - modified: the referenced objects are updated (only the older ones, modifiedCount)
    * - removed (the class was deleted): the class is removed from the students
    * (a class is given to a student by the edit of the student, not by a notification)
    * a failure is logged and the next classes are still done; the first failure is returned at the end
@@ -447,15 +471,15 @@ const Private = {
     const [, classesRef] = config.references; // classes[] (the references: user, classes[], groups[], schedules[])
     let failure = null; // the first failure (the next classes are still done)
 
-    // the copies of the modified classes
+    // the modified classes, where they are referenced
     for (const schoolClass of notification[Private.Notification.Modified] || []) {
-      const classCopy = CommonUtils.getProjectedObj(schoolClass, classesRef.projection);
-      const rCopies = await DbOpsUtils.updateManyReferences(config, classesRef, classCopy, _ctx);
-      if (rCopies.error) {
+      const referencedClass = CommonUtils.getProjectedObj(schoolClass, classesRef.projection);
+      const rUpdate = await DbOpsUtils.updateManyReferences(config, classesRef, referencedClass, _ctx);
+      if (rUpdate.error) {
         console.log(
-          `\n${StudentsConstants.ServiceName}: failed to update the copies of the class ${schoolClass.id}: ${rCopies.error.message}`
+          `\n${StudentsConstants.ServiceName}: failed to update the referenced class ${schoolClass.id}: ${rUpdate.error.message}`
         );
-        failure ??= rCopies;
+        failure ??= rUpdate;
       }
     }
 
@@ -477,8 +501,8 @@ const Private = {
   /**
    * groups notification: a group is in the groups of its students (the students it lists)
    * - added, modified: the group is added to its students (the ones that do not have it yet), removed from the
-   *   students that are not in it anymore (a student removed from it keeps its other groups), and its copies are
-   *   updated (only the older ones, modifiedCount)
+   *   students that are not in it anymore (a student removed from it keeps its other groups), and where it is
+   *   referenced it is updated (only the older ones, modifiedCount)
    * - removed (the group was deleted): the group is removed from all the students
    * a failure is logged and the next groups are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
@@ -495,14 +519,14 @@ const Private = {
     const modifiedGroups = notification[Private.Notification.Modified] || [];
     let failure = null; // the first failure (the next groups are still done)
     for (const group of [...addedGroups, ...modifiedGroups]) {
-      const groupCopy = CommonUtils.getProjectedObj(group, groupsRef.projection);
+      const referencedGroup = CommonUtils.getProjectedObj(group, groupsRef.projection);
 
-      // the students of the group (a notification without them changes only the copies)
+      // the students of the group (a notification without them changes only where it is referenced)
       if (Array.isArray(group.students)) {
         const groupStudentsIDs = group.students.map((student) => student.id);
 
         // added to its students
-        const rAdd = await DbOpsUtils.addManyReferences(config, groupStudentsIDs, groupsRef, groupCopy, _ctx);
+        const rAdd = await DbOpsUtils.addManyReferences(config, groupStudentsIDs, groupsRef, referencedGroup, _ctx);
         if (rAdd.error) {
           console.log(`\n${StudentsConstants.ServiceName}: failed to add the group ${group.id}: ${rAdd.error.message}`);
           failure ??= rAdd;
@@ -521,13 +545,13 @@ const Private = {
         }
       }
 
-      // its copies
-      const rCopies = await DbOpsUtils.updateManyReferences(config, groupsRef, groupCopy, _ctx);
-      if (rCopies.error) {
+      // where it is referenced
+      const rUpdate = await DbOpsUtils.updateManyReferences(config, groupsRef, referencedGroup, _ctx);
+      if (rUpdate.error) {
         console.log(
-          `\n${StudentsConstants.ServiceName}: failed to update the copies of the group ${group.id}: ${rCopies.error.message}`
+          `\n${StudentsConstants.ServiceName}: failed to update the referenced group ${group.id}: ${rUpdate.error.message}`
         );
-        failure ??= rCopies;
+        failure ??= rUpdate;
       }
     }
 
@@ -549,8 +573,8 @@ const Private = {
   /**
    * schedules notification: a schedule is in the schedules of its students (the students it lists)
    * - added, modified: the schedule is added to its students (the ones that do not have it yet), removed from the
-   *   students that are not in it anymore (a student removed from it keeps its other schedules), and its copies are
-   *   updated (only the older ones, modifiedCount)
+   *   students that are not in it anymore (a student removed from it keeps its other schedules), and where it is
+   *   referenced it is updated (only the older ones, modifiedCount)
    * - removed (the schedule was deleted): the schedule is removed from all the students
    * a failure is logged and the next schedules are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
@@ -567,14 +591,20 @@ const Private = {
     const modifiedSchedules = notification[Private.Notification.Modified] || [];
     let failure = null; // the first failure (the next schedules are still done)
     for (const schedule of [...addedSchedules, ...modifiedSchedules]) {
-      const scheduleCopy = CommonUtils.getProjectedObj(schedule, schedulesRef.projection);
+      const referencedSchedule = CommonUtils.getProjectedObj(schedule, schedulesRef.projection);
 
-      // the students of the schedule (a notification without them changes only the copies)
+      // the students of the schedule (a notification without them changes only where it is referenced)
       if (Array.isArray(schedule.students)) {
         const scheduleStudentsIDs = schedule.students.map((student) => student.id);
 
         // added to its students
-        const rAdd = await DbOpsUtils.addManyReferences(config, scheduleStudentsIDs, schedulesRef, scheduleCopy, _ctx);
+        const rAdd = await DbOpsUtils.addManyReferences(
+          config,
+          scheduleStudentsIDs,
+          schedulesRef,
+          referencedSchedule,
+          _ctx
+        );
         if (rAdd.error) {
           console.log(
             `\n${StudentsConstants.ServiceName}: failed to add the schedule ${schedule.id}: ${rAdd.error.message}`
@@ -601,13 +631,13 @@ const Private = {
         }
       }
 
-      // its copies
-      const rCopies = await DbOpsUtils.updateManyReferences(config, schedulesRef, scheduleCopy, _ctx);
-      if (rCopies.error) {
+      // where it is referenced
+      const rUpdate = await DbOpsUtils.updateManyReferences(config, schedulesRef, referencedSchedule, _ctx);
+      if (rUpdate.error) {
         console.log(
-          `\n${StudentsConstants.ServiceName}: failed to update the copies of the schedule ${schedule.id}: ${rCopies.error.message}`
+          `\n${StudentsConstants.ServiceName}: failed to update the referenced schedule ${schedule.id}: ${rUpdate.error.message}`
         );
-        failure ??= rCopies;
+        failure ??= rUpdate;
       }
     }
 
@@ -702,16 +732,19 @@ const Public = {
   },
 
   /**
-   * get all by ids
+   * get all by ids: the objects referenced by another service before it writes them (populateReferences) or a read that
+   * decides a write (the roles of a user)
+   * options: the options of the read, built by the caller (populateReferences and the roles of a user ask the primary:
+   *   an object written just before, by an earlier request or by another service, is found)
    * returns { status, value } or { status, error }
    */
-  getAllByIDs: async (ids, projection, _ctx) => {
+  getAllByIDs: async (ids, projection, _ctx, options) => {
     if (!_ctx.tenantID) {
       return Private.errorNoTenant(_ctx);
     }
 
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx);
+    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx, options);
   },
 
   /**
@@ -729,8 +762,10 @@ const Public = {
 
   /**
    * post
+   * notifiedUser: the user of a users notification (the answer of the write that notified it, passed by the handler,
+   * never from a request): the user reference is filled from it, it is not read again
    */
-  post: async (objInfo, _ctx) => {
+  post: async (objInfo, _ctx, notifiedUser) => {
     if (!_ctx.tenantID) {
       return Private.errorNoTenant(_ctx);
     }
@@ -748,8 +783,15 @@ const Public = {
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
 
-    // populate references
-    let rf = await ReferencesUtils.populateReferences({ ...config, fillReferences: true }, objInfo, _ctx);
+    // populate references (the user of a users notification is not read again)
+    const [userRef] = config.references;
+    const writtenTargets = { [userRef.fieldName]: notifiedUser };
+    let rf = await ReferencesUtils.populateReferences(
+      { ...config, fillReferences: true },
+      objInfo,
+      _ctx,
+      writtenTargets
+    );
     if (rf.error) {
       return rf;
     }
@@ -786,9 +828,12 @@ const Public = {
       return Private.errorNoTenant(_ctx);
     }
 
-    // a student of the school
+    // a student of the school: it decides the write (a trace is deleted, a member loses its role), read on the
+    // primary (a trace made by the request before is seen)
     const config = await Private.getConfig(_ctx);
-    const rget = await DbOpsUtils.getOne(config, objID, Private.ResProjection, _ctx);
+    const rget = await DbOpsUtils.getOne(config, objID, Private.ResProjection, _ctx, {
+      readPreference: DbOpsUtils.Constants.ReadPrimary,
+    });
     if (rget.error) {
       return rget;
     }
@@ -826,7 +871,8 @@ const Public = {
   /**
    * link the traces of a deleted account to the user invited again, by its email (called by the invite, before the
    * user gets its role, whatever the role): the students of the school with this email and another id take the id of
-   * the user; their user copy stays deleted until the user has the role again and logs in (see onUsersAddedOrModified); the groups and the schedules follow the new id
+   * the user; their referenced user stays deleted until the user has the role again and logs in
+   * (see onUsersAddedOrModified); the groups and the schedules follow the new id
    * (the modified notification has previousID)
    * objInfo: { email, userID }
    * a failure is logged and the next traces are still done; the first failure is returned at the end
@@ -844,7 +890,8 @@ const Public = {
     }
     objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
-    // the traces of a deleted account with this email
+    // the traces of a deleted account with this email (read on the primary: an account deleted just before has its
+    // traces there)
     const config = await Private.getConfig(_ctx);
     const filter = {
       filter: {
@@ -854,7 +901,7 @@ const Public = {
       },
       projection: { _id: 0, id: 1 },
     };
-    const rTraces = await DbOpsUtils.getAll(config, filter, _ctx);
+    const rTraces = await DbOpsUtils.getAll(config, filter, _ctx, { readPreference: DbOpsUtils.Constants.ReadPrimary });
     if (rTraces.error) {
       return rTraces;
     }
@@ -883,7 +930,7 @@ const Public = {
         _ctx
       );
 
-      // the groups and the schedules follow the new id (previousID), then the copy
+      // the groups and the schedules follow the new id (previousID), then the referenced user
       const rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
       await StudentsRest.raiseNotification(
         Private.Notification.Modified,
@@ -991,10 +1038,10 @@ const Public = {
   },
 
   /**
-   * notification: the copies kept by the students follow the changes of their sources (each source has its own flow)
-   * - users: the students of the users with the student role (created, status, user copy), kept as traces or deleted
-   *   when the role is removed
-   * - classes: the class copies of the students
+   * notification: the objects referenced by the students follow their sources (each source has its own flow)
+   * - users: the students of the users with the student role (created, status, referenced user), kept as traces or
+   *   deleted when the role is removed
+   * - classes: the referenced classes of the students
    * - groups: a group is in the groups of its students
    * - schedules: a schedule is in the schedules of its students
    * notification: { serviceName, added?, modified?, removed? }
@@ -1018,7 +1065,7 @@ const Public = {
         return await Private.onSchedulesNotification(notification, _ctx);
       default:
         console.log(
-          `\n${StudentsConstants.ServiceName}: notification of ${notification.serviceName} ignored (no copy of it)`
+          `\n${StudentsConstants.ServiceName}: notification of ${notification.serviceName} ignored (no reference to it)`
         );
         return { status: 200, value: false };
     }

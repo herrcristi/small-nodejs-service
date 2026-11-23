@@ -5,7 +5,7 @@ import { reactive } from 'vue';
 
 // the statuses of a failed request that have their own text (error.status.<status>); the others use the text of
 // their class (400 or 500)
-const ErrorStatuses = new Set([400, 401, 403, 404, 409, 415, 429, 500]);
+const ErrorStatuses = new Set([400, 401, 403, 404, 409, 415, 429, 500, 503]);
 
 // the letters that a search finds with and without their diacritics (Romanian: a ă â, i î, s ș ş, t ț ţ; ş and ţ are
 // the older forms with a cedilla), by the letter without them
@@ -229,7 +229,7 @@ const Utils = {
   },
 
   /**
-   * a text translated by the server (the _lang_<language> copies of a record), in the language of the UI,
+   * a text translated by the server (the _lang_<language> translations of a record), in the language of the UI,
    * then in English, then the value itself
    * path: the field ('message', 'user.status')
    */

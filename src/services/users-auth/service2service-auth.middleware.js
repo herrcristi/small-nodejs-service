@@ -44,6 +44,9 @@ const Public = {
         res.status(r.status).json(message);
         return res.end();
       }
+
+      // the options of the read asked by the calling service (in its token: only a service sets them), for the route
+      req.s2sOptions = r.value.options;
     } catch (e) {
       console.log(`\nFailed to S2S authenticate request. Error: ${e.stack}`, _ctx);
       const message = await RestMessagesUtils.exception(e, _ctx);

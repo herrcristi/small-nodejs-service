@@ -395,7 +395,8 @@ describe('Groups Functional', function () {
       .send({ add: { students: [] }, remove: { students: [{ id: 'user1' }] } });
     chai.expect(res.status).to.equal(200);
 
-    // check: the group has no student, it is still in schedule1 (its copy without the student) and in its schedules
+    // check: the group has no student, it is still in schedule1 (referenced there without the student) and in its
+    // schedules
     const group = await (await GroupsDatabase.collection(_ctx)).findOne({ id: 'group1' });
     chai.expect(group.students).to.deep.equal([]);
     chai.expect(group.schedules.map((schedule) => schedule.id)).to.deep.equal(['schedule1']);

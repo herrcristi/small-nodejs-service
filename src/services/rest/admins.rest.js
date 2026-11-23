@@ -22,8 +22,12 @@ const Public = {
     return await RestCommsUtils.getAll(AdminsConstants.ServiceName, queryParams, _ctx);
   },
 
-  getAllByIDs: async (ids, projection, _ctx) => {
-    return await RestCommsUtils.getAllByIDs(AdminsConstants.ServiceName, ids, projection, _ctx);
+  /**
+   * get all by ids
+   * options: the options of the read, built by the caller (like { readPreference })
+   */
+  getAllByIDs: async (ids, projection, _ctx, options) => {
+    return await RestCommsUtils.getAllByIDs(AdminsConstants.ServiceName, ids, projection, _ctx, options);
   },
 
   /**

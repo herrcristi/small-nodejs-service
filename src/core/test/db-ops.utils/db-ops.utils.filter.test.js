@@ -118,7 +118,7 @@ describe('DB-Ops Utils', function () {
   }).timeout(10000);
 
   /**
-   * getAllByReference: the objects that have a copy of an object
+   * getAllByReference: the objects that reference an object
    */
   it('should get all the objects that have a reference of an object', async () => {
     // stub: the database (a cursor)

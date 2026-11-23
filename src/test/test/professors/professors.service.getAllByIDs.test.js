@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 
@@ -26,7 +25,7 @@ describe('Professors Service', function () {
   after(async function () {});
 
   /**
-   * getAllByIDs with success
+   * getAllByIDs with success, with the options of the caller
    */
   it('should getAllByIDs with success', async () => {
     const testProfessors = _.cloneDeep(TestConstants.Professors);
@@ -39,11 +38,13 @@ describe('Professors Service', function () {
     });
 
     // call
-    let res = await ProfessorsService.getAllByIDs(testProfessorsIDs, { id: 1 }, _ctx);
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    let res = await ProfessorsService.getAllByIDs(testProfessorsIDs, { id: 1 }, _ctx, options);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // check: the options of the caller go to the read (populateReferences asks the primary)
     chai.expect(stubBase.callCount).to.equal(1);
+    chai.expect(stubBase.firstCall.args[4]).to.deep.equal(options);
     chai.expect(res).to.deep.equal({
       status: 200,
       value: [...testProfessors],

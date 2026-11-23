@@ -140,6 +140,47 @@ describe('Base Service', function () {
   }).timeout(10000);
 
   /**
+   * populate takes the target written by the same request from the answer of its write (writtenTarget, only the fields
+   * of the projection): it is not read again (a secondary may not have it yet); the other targets are read
+   */
+  it('should call populate with the target written by the request without reading it', async () => {
+    const objs = [
+      { id: 'id1', name: 'name1', target: 'targetID1' },
+      { id: 'id2', name: 'name2', target: 'targetID2' },
+    ];
+    const written = { id: 'targetID1', name: 'North School', status: 'pending', settings: { removedMembers: 'keep' } };
+
+    // stub: the other target
+    const stubRead = sinon
+      .stub(config.references[0].service, 'getAllByIDs')
+      .resolves({ status: 200, value: [{ id: 'targetID2', name: 'South School' }] });
+
+    // call
+    const res = await ReferencesUtils.populate(config.references[0], objs, _ctx, written);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check: only the other target was read, on the primary (it may have been written just before)
+    chai.expect(stubRead.callCount).to.equal(1);
+    chai.expect(stubRead.firstCall.args[0]).to.deep.equal(['targetID2']);
+    chai.expect(stubRead.firstCall.args[3]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
+
+    // check: the written target, with the fields of the projection only
+    chai.expect(res.value[0].target).to.deep.equal({ id: 'targetID1', name: 'North School', status: 'pending' });
+    chai.expect(res.value[1].target).to.deep.equal({ id: 'targetID2', name: 'South School' });
+
+    // case: the only target was written by the request: nothing is read
+    const onlyWritten = [{ id: 'id3', name: 'name3', target: 'targetID1' }];
+    await ReferencesUtils.populate(config.references[0], onlyWritten, _ctx, written);
+    chai.expect(stubRead.callCount).to.equal(1);
+
+    // case: a written target that no reference points to: the targets are read
+    const others = [{ id: 'id4', name: 'name4', target: 'targetID2' }];
+    await ReferencesUtils.populate(config.references[0], others, _ctx, written);
+    chai.expect(stubRead.callCount).to.equal(2);
+    chai.expect(stubRead.secondCall.args[0]).to.deep.equal(['targetID2']);
+  }).timeout(10000);
+
+  /**
    * populate with success multi field
    */
   it('should call populate with success multi field', async () => {

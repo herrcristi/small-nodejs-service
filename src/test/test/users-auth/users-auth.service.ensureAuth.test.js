@@ -44,6 +44,9 @@ describe('Users Auth Service ensureAuth', function () {
     chai.expect(stubGet.firstCall.args[1]).to.equal(user.username);
     chai.expect(stubGet.firstCall.args[2]).to.deep.equal({ _id: 0, id: 1, userID: 1 });
     chai.expect(stubPost.callCount).to.equal(0);
+
+    // check: read on the primary (a record created by the request before is found)
+    chai.expect(stubGet.firstCall.args[4]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
   }).timeout(10000);
 
   /**

@@ -6,6 +6,7 @@ const path = require('path');
 const fs = require('fs');
 const Joi = require('joi');
 
+const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const CommonUtils = require('../../core/utils/common.utils.js');
@@ -76,7 +77,7 @@ const Validators = {
 
   Token: Joi.object().keys({
     token: Joi.string().min(1).required(),
-    method: Joi.string().min(1).required(),
+    method: Joi.string().uppercase().min(1).required(), // upper case, as the routes of the roles and ReadMethods
     route: Joi.string().min(1).required(),
   }),
 
@@ -145,6 +146,8 @@ const Private = {
   Notification: NotificationsUtils.Constants.Notification,
 
   Issuer: UsersAuthConstants.ServiceName,
+
+  ReadMethods: ['GET', 'HEAD'], // the requests that do not change data (the others are authorized on the primary)
 
   /**
    * Auth Providers
@@ -303,27 +306,19 @@ const Private = {
    * the users notification: the logins of the removed users are removed (a user removed because its invitation was
    * not used in time; a deleted account was already removed by delete)
    * a removed notification is also sent when only some roles of a user are removed (the user still exists, its login
-   * is kept): the users are read again, so only the ones that do not exist anymore lose their login
+   * is kept): only the users that do not exist anymore lose their login, the ones the users service deleted (their
+   * notification has the status deleted: the answer of the delete, not read again, since a secondary may still have
+   * the user)
    * returns { status, value } or { status, error }
    */
   onUsersNotification: async (notification, _ctx) => {
     const removedUsers = (notification[Private.Notification.Removed] || []).filter((user) => user.email);
-    if (!removedUsers.length) {
-      return { status: 200, value: false };
-    }
-
-    // the users that still exist
-    const removedIDs = removedUsers.map((user) => user.id);
-    const rCurrent = await UsersRest.getAllByIDs(removedIDs, { id: 1 }, _ctx);
-    if (rCurrent.error) {
-      return rCurrent;
-    }
-    const existingIDs = new Set(rCurrent.value.map((user) => user.id));
 
     // the users that do not exist anymore (once each)
     const users = [];
     for (const user of removedUsers) {
-      if (!existingIDs.has(user.id) && !users.some((item) => item.id === user.id)) {
+      const isDeleted = user.status === UsersRest.Constants.Status.Deleted;
+      if (isDeleted && !users.some((item) => item.id === user.id)) {
         users.push(user);
       }
     }
@@ -447,6 +442,36 @@ const Private = {
     const isUsersAuthRoute = new RegExp(`^${UsersAuthRest.Constants.ApiPath}/:id`).test(route);
     const paramID = isUsersAuthRoute ? _ctx.username : _ctx.userID;
     return Private.isValidRouteForParam(route, paramID, _ctx);
+  },
+
+  /**
+   * the user of a session (by email) and its access to the route of the request
+   * objInfo: { method, route }
+   * options: the options of the read of the user (UsersRest.getOneByEmail)
+   * returns { status, value: { user, rr } } or { status, error }; rr: the answer of validateRoute
+   */
+  getSessionUser: async (email, objInfo, _ctx, options) => {
+    const userProjection = { id: 1, status: 1, name: 1, email: 1, schools: 1 };
+    const rUserDetails = await UsersRest.getOneByEmail(email, userProjection, _ctx, options);
+    if (rUserDetails.error) {
+      return { ...rUserDetails, status: 401 };
+    }
+
+    // fail if user is disabled (or its account was deleted)
+    const user = rUserDetails.value;
+    _ctx.userID = user.id;
+    if (Private.isLoginRefused(user.status)) {
+      const msg = 'User is disabled';
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
+
+    // validate routes
+    const rr = Private.validateRoute(user, objInfo.method, objInfo.route, _ctx);
+    if (rr.error) {
+      return rr;
+    }
+
+    return { status: 200, value: { user, rr } };
   },
 
   /**
@@ -591,8 +616,10 @@ const Public = {
     ///
     // get user details (by email)
     ///
+    // read on the primary: a user activated, disabled or given a school by the request before decides the login
     const userProjection = { id: 1, status: 1, name: 1, email: 1, schools: 1 };
-    const rUserDetails = await UsersRest.getOneByEmail(objInfo.username, userProjection, _ctx);
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    const rUserDetails = await UsersRest.getOneByEmail(objInfo.username, userProjection, _ctx, options);
     if (rUserDetails.error) {
       return loginFailed(rUserDetails, 'No user details');
     }
@@ -723,9 +750,17 @@ const Public = {
       return { status: 401, error: { message: msg, error: new Error(msg) } };
     }
 
+    // a request that changes data is authorized on the primary: a session ended, a role removed or a user disabled by
+    // the request before changes nothing; a read request (most requests) is authorized on a secondary, where a change
+    // is seen after the replication lag, and a refusal there is checked again on the primary (a session, a role or a
+    // school given by the request before: a 401 sends the UI to the login)
+    const isRead = Private.ReadMethods.includes(objInfo.method);
+    const primary = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    const options = isRead ? null : primary;
+
     // the session is still open: its record exists (not ended by a logout, a password change, a password reset or an
     // email change) and is not expired
-    const rSession = await UsersAuthSessionsService.check(rT.value, _ctx);
+    const rSession = await UsersAuthSessionsService.check(rT.value, _ctx, options);
     if (rSession.error) {
       return { ...rSession, status: 401 };
     }
@@ -734,30 +769,17 @@ const Public = {
     _ctx.userID = rT.value.userID;
 
     ///
-    // get user details (by email)
+    // get user details (by email) and validate the route
     ///
     const email = rT.value.username;
-    const userProjection = { id: 1, status: 1, name: 1, email: 1, schools: 1 };
-    const rUserDetails = await UsersRest.getOneByEmail(email, userProjection, _ctx);
-    if (rUserDetails.error) {
-      return { ...rUserDetails, status: 401 };
+    let rUser = await Private.getSessionUser(email, objInfo, _ctx, options);
+    if (rUser.error && isRead) {
+      rUser = await Private.getSessionUser(email, objInfo, _ctx, primary);
     }
-
-    // fail if user is disabled (or its account was deleted)
-    const user = rUserDetails.value;
-    _ctx.userID = user.id;
-    if (Private.isLoginRefused(user.status)) {
-      const msg = 'User is disabled';
-      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    if (rUser.error) {
+      return rUser;
     }
-
-    ///
-    // validate routes
-    ///
-    const rr = Private.validateRoute(user, objInfo.method, objInfo.route, _ctx);
-    if (rr.error) {
-      return rr;
-    }
+    const { user, rr } = rUser.value;
 
     ///
     // success
@@ -788,7 +810,8 @@ const Public = {
   activatePendingSchools: async (user, _ctx) => {
     for (const school of user.schools || []) {
       if (school.status === SchoolsRest.Constants.Status.Pending) {
-        // only a pending school is activated (decided on the school, not on this copy), the answer has its status
+        // only a pending school is activated (decided on the school itself, not on the referenced one), the answer has
+        // its status
         const rS = await SchoolsRest.activate(school.id, _ctx);
         if (rS.error) {
           // the school stays pending and is tried again at the next session refresh; the other schools of the user
@@ -1091,8 +1114,10 @@ const Public = {
 
     // the roles of the user in the school: a user who is not a member is not found here (a role is given by an
     // invite), and a patch that changes no role is refused (no write, no event, no notification for nothing)
-    // (an internal read: the memberships of the user, whatever the access of the caller to its profile)
-    const rUsers = await UsersRest.getAllByIDs([userID], { _id: 0, id: 1, schools: 1 }, _ctx);
+    // (an internal read: the memberships of the user, whatever the access of the caller to its profile; on the primary:
+    // a role given or removed just before decides the change)
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    const rUsers = await UsersRest.getAllByIDs([userID], { _id: 0, id: 1, schools: 1 }, _ctx, options);
     if (rUsers.error) {
       return rUsers;
     }
@@ -1128,7 +1153,9 @@ const Public = {
 
     // config: { serviceName }
     const config = await Private.getConfig(_ctx);
-    const rAuth = await UsersAuthServiceLocal.getOne(config, objInfo.username, _ctx);
+    // read on the primary: a record created by the request before is found (it would be created again: 409)
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    const rAuth = await UsersAuthServiceLocal.getOne(config, objInfo.username, _ctx, options);
     if (rAuth.status !== 404) {
       return rAuth;
     }
@@ -1183,7 +1210,7 @@ const Public = {
    * reset password
    * objInfo: { username }
    */
-  resetPassword: async (objInfo, _ctx, resetType = UsersAuthConstants.ResetTokenType.ResetPassword) => {
+  resetPassword: async (objInfo, _ctx, resetType = UsersAuthConstants.ResetTokenType.ResetPassword, account = null) => {
     // validate
     const v = Validators.ResetPassword.validate(objInfo);
     if (v.error) {
@@ -1209,7 +1236,7 @@ const Public = {
       firebase: UsersAuthServiceFirebase.resetPassword,
       local: UsersAuthServiceLocal.resetPassword,
     };
-    let r = await Providers[Private.UsersAuthProviderType](config, username, resetType, _ctx);
+    let r = await Providers[Private.UsersAuthProviderType](config, username, resetType, _ctx, account);
     if (r.error) {
       return r;
     }
@@ -1346,7 +1373,7 @@ const Public = {
         return await Private.onUsersNotification(notification, _ctx);
       default:
         console.log(
-          `\n${UsersAuthConstants.ServiceName}: notification of ${notification.serviceName} ignored (no copy of it)`
+          `\n${UsersAuthConstants.ServiceName}: notification of ${notification.serviceName} ignored (no reference to it)`
         );
         return { status: 200, value: false };
     }

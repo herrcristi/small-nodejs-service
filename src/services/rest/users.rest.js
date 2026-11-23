@@ -18,13 +18,18 @@ const Public = {
   /**
    * get all (internal) called from signup / invite by email
    * queryParams
+   * options: the options of the read (DbOpsUtils.getAll)
    */
-  getAll: async (queryParams, _ctx) => {
-    return await RestCommsUtils.getAll(UsersConstants.ServiceNameInternal, queryParams, _ctx);
+  getAll: async (queryParams, _ctx, options) => {
+    return await RestCommsUtils.getAll(UsersConstants.ServiceNameInternal, queryParams, _ctx, options);
   },
 
-  getAllByIDs: async (ids, projection, _ctx) => {
-    return await RestCommsUtils.getAllByIDs(UsersConstants.ServiceNameInternal, ids, projection, _ctx);
+  /**
+   * get all by ids
+   * options: the options of the read, built by the caller (like { readPreference })
+   */
+  getAllByIDs: async (ids, projection, _ctx, options) => {
+    return await RestCommsUtils.getAllByIDs(UsersConstants.ServiceNameInternal, ids, projection, _ctx, options);
   },
 
   /**
@@ -53,8 +58,9 @@ const Public = {
 
   /**
    * get one (internal) called from users-auth
+   * options: the options of the read (DbOpsUtils.getAll), like { readPreference }
    */
-  getOneByEmail: async (email, projection, _ctx) => {
+  getOneByEmail: async (email, projection, _ctx, options) => {
     // the emails are stored normalized (lower case): look up the normalized value (a token, a setting, an old link)
     email = ValidationUtils.normalizeEmail(email);
 
@@ -66,7 +72,7 @@ const Public = {
       query.set('projection', projectionFields);
     }
     const queryParams = query.toString();
-    const r = await Public.getAll(queryParams, _ctx);
+    const r = await Public.getAll(queryParams, _ctx, options);
     if (r.error) {
       return r;
     }

@@ -24,12 +24,12 @@ describe('Schedules Service', function () {
   after(async function () {});
 
   /**
-   * classes notification: the copies of a modified class are updated, a deleted class leaves its schedules; the
+   * classes notification: where a modified class is referenced it is updated, a deleted class leaves its schedules; the
    * schedules that changed are notified (the students, professors and groups keep the class of their schedules)
    */
   it('should follow the classes of the schedules and notify the changed schedules', async () => {
-    // stub: schedule1 had an older copy of class1, schedule2 has class2
-    const stubCopies = sinon
+    // stub: schedule1 references an older class1, schedule2 references class2
+    const stubUpdateReferences = sinon
       .stub(DbOpsUtils, 'updateManyReferences')
       .resolves({ status: 200, value: 1, ids: ['schedule1'] });
     const stubHaving = sinon
@@ -45,9 +45,9 @@ describe('Schedules Service', function () {
     const notification = { serviceName: 'classes', modified: [mathematics], removed: [physics] };
     const res = await SchedulesService.notification(notification, _ctx);
 
-    // check: the copy (only its fields), the removed class
-    chai.expect(stubCopies.firstCall.args[1].fieldName).to.equal('class');
-    chai.expect(stubCopies.firstCall.args[2]).to.not.have.property('extra');
+    // check: the referenced class (only its fields), the removed class
+    chai.expect(stubUpdateReferences.firstCall.args[1].fieldName).to.equal('class');
+    chai.expect(stubUpdateReferences.firstCall.args[2]).to.not.have.property('extra');
     chai.expect(stubHaving.firstCall.args[2]).to.equal('class2');
     chai.expect(stubRemove.firstCall.args[2].id).to.equal('class2');
 
@@ -55,6 +55,10 @@ describe('Schedules Service', function () {
     chai.expect(res).to.deep.equal({ status: 200, value: ['schedule1', 'schedule2'] });
     chai.expect(stubRead.firstCall.args[1]).to.deep.equal(['schedule1', 'schedule2']);
     chai.expect(SchedulesRest.raiseNotification.firstCall.args[0]).to.equal('modified');
+
+    // check: the reads ask the primary (inside the request that wrote the class, after the updates of the schedules)
+    chai.expect(stubHaving.firstCall.args[5]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
+    chai.expect(stubRead.firstCall.args[4]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
 
     // case: only a deleted class, that no schedule has: nothing is notified
     stubHaving.resolves({ status: 200, value: [] });
@@ -74,7 +78,7 @@ describe('Schedules Service', function () {
     chai.expect(await SchedulesService.notification(notification, _ctx)).to.deep.equal(fail);
     stubHaving.resolves(fail);
     chai.expect(await SchedulesService.notification(notification, _ctx)).to.deep.equal(fail);
-    stubCopies.resolves(fail);
+    stubUpdateReferences.resolves(fail);
     chai.expect(await SchedulesService.notification(notification, _ctx)).to.deep.equal(fail);
   }).timeout(10000);
 
@@ -83,10 +87,10 @@ describe('Schedules Service', function () {
    * changed schedules are still notified, and the first failure is returned at the end
    */
   it('should do the next classes after a failure of the classes notification', async () => {
-    // stub: the copies of class1 can not be updated; schedule2 has an older copy of class2, schedule3 has class3
-    const stubCopies = sinon.stub(DbOpsUtils, 'updateManyReferences');
-    stubCopies.onFirstCall().resolves(fail);
-    stubCopies.onSecondCall().resolves({ status: 200, value: 1, ids: ['schedule2'] });
+    // stub: the referenced class1 can not be updated; schedule2 references an older class2, schedule3 class3
+    const stubUpdateReferences = sinon.stub(DbOpsUtils, 'updateManyReferences');
+    stubUpdateReferences.onFirstCall().resolves(fail);
+    stubUpdateReferences.onSecondCall().resolves({ status: 200, value: 1, ids: ['schedule2'] });
     sinon.stub(DbOpsUtils, 'getAllByReference').resolves({ status: 200, value: [{ id: 'schedule3' }] });
     const stubRemove = sinon.stub(DbOpsUtils, 'deleteManyReferences').resolves({ status: 200, value: 1 });
     const stubRead = sinon
@@ -104,13 +108,14 @@ describe('Schedules Service', function () {
     chai.expect(res).to.deep.equal(fail);
 
     // check: class2 and class3 are still done, the changed schedules are notified
-    chai.expect(stubCopies.secondCall.args[2].id).to.equal('class2');
+    chai.expect(stubUpdateReferences.secondCall.args[2].id).to.equal('class2');
     chai.expect(stubRemove.firstCall.args[2].id).to.equal('class3');
     chai.expect(stubRead.firstCall.args[1]).to.deep.equal(['schedule2', 'schedule3']);
   }).timeout(10000);
 
   /**
-   * locations, professors, groups and students notifications: the copies of a modified one are updated, a deleted one
+   * locations, professors, groups and students notifications: where a modified one is referenced it is updated, a
+   * deleted one
    * is removed from the schedules; nothing is notified (nobody keeps them from the schedules)
    */
   it('should follow the locations, professors, groups and students of the schedules', async () => {
@@ -123,7 +128,7 @@ describe('Schedules Service', function () {
 
     for (const serviceName in sources) {
       // stub
-      const stubCopies = sinon
+      const stubUpdateReferences = sinon
         .stub(DbOpsUtils, 'updateManyReferences')
         .resolves({ status: 200, value: 1, ids: ['schedule1'] });
       const stubRemove = sinon.stub(DbOpsUtils, 'deleteManyReferences').resolves({ status: 200, value: 1 });
@@ -134,10 +139,10 @@ describe('Schedules Service', function () {
       const notification = { serviceName, modified: [modified], removed: [removed] };
       const res = await SchedulesService.notification(notification, _ctx);
 
-      // check: the copy (only its fields), the removed one; nothing notified
+      // check: the referenced object (only its fields), the removed one; nothing notified
       chai.expect(res, serviceName).to.deep.equal({ status: 200, value: ['schedule1'] });
-      chai.expect(stubCopies.firstCall.args[1].fieldName, serviceName).to.equal(sources[serviceName]);
-      chai.expect(stubCopies.firstCall.args[2], serviceName).to.not.have.property('extra');
+      chai.expect(stubUpdateReferences.firstCall.args[1].fieldName, serviceName).to.equal(sources[serviceName]);
+      chai.expect(stubUpdateReferences.firstCall.args[2], serviceName).to.not.have.property('extra');
       chai.expect(stubRemove.firstCall.args[2].id, serviceName).to.equal(`${serviceName}2`);
       chai.expect(SchedulesRest.raiseNotification.callCount, serviceName).to.equal(0);
 
@@ -150,27 +155,27 @@ describe('Schedules Service', function () {
       // case: failures
       stubRemove.resolves(fail);
       chai.expect(await SchedulesService.notification(notification, _ctx), serviceName).to.deep.equal(fail);
-      stubCopies.resolves(fail);
+      stubUpdateReferences.resolves(fail);
       chai.expect(await SchedulesService.notification(notification, _ctx), serviceName).to.deep.equal(fail);
 
-      stubCopies.restore();
+      stubUpdateReferences.restore();
       stubRemove.restore();
     }
   }).timeout(10000);
 
   /**
-   * professors and students notifications of a trace linked to the user invited again (previousID): the copies take its
-   * new id first, then the copy is updated
+   * professors and students notifications of a trace linked to the user invited again (previousID): its references take
+   * its new id first, then the referenced object is updated
    */
   it('should follow the new id of a linked professor or student in the schedules', async () => {
     const sources = { professors: 'professors[]', students: 'students[]' };
 
     for (const serviceName in sources) {
-      // stub: schedule1 has the copy with the previous id
+      // stub: schedule1 references the previous id
       const stubID = sinon
         .stub(DbOpsUtils, 'updateManyReferencesID')
         .resolves({ status: 200, value: 1, ids: ['schedule1'] });
-      const stubCopies = sinon
+      const stubUpdateReferences = sinon
         .stub(DbOpsUtils, 'updateManyReferences')
         .resolves({ status: 200, value: 1, ids: ['schedule1'] });
 
@@ -179,18 +184,18 @@ describe('Schedules Service', function () {
       const notification = { serviceName, modified: [linked] };
       const res = await SchedulesService.notification(notification, _ctx);
 
-      // check: the new id first, then the copy
+      // check: the new id first, then the referenced object
       chai.expect(res, serviceName).to.deep.equal({ status: 200, value: ['schedule1'] });
       chai.expect(stubID.firstCall.args[1].fieldName, serviceName).to.equal(sources[serviceName]);
       chai.expect(stubID.firstCall.args.slice(2, 4), serviceName).to.deep.equal(['old1', 'user1']);
-      chai.expect(stubID.calledBefore(stubCopies), serviceName).to.equal(true);
+      chai.expect(stubID.calledBefore(stubUpdateReferences), serviceName).to.equal(true);
 
       // case: the new id can not be written
       stubID.resolves(fail);
       chai.expect(await SchedulesService.notification(notification, _ctx), serviceName).to.deep.equal(fail);
 
       stubID.restore();
-      stubCopies.restore();
+      stubUpdateReferences.restore();
     }
   }).timeout(10000);
 
@@ -210,7 +215,7 @@ describe('Schedules Service', function () {
   }).timeout(10000);
 
   /**
-   * the notifications of the other services are ignored (no copy of them), an invalid one is refused
+   * the notifications of the other services are ignored (no reference to them), an invalid one is refused
    */
   it('should ignore other services and refuse an invalid notification', async () => {
     // call: another service

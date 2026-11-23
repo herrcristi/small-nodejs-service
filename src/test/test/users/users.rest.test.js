@@ -4,6 +4,7 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
+const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const RestCommsUtils = require('../../../core/utils/rest-communications.utils.js');
 const NotificationsUtils = require('../../../core/utils/base-service.notifications.utils.js');
 
@@ -51,12 +52,14 @@ describe('Users Rest', function () {
       return { status: 200, value: 'dummy' };
     });
 
-    // call
-    let res = await UsersRest.getAllByIDs(['id1'], { id: 1, name: 1 } /*projection*/, _ctx);
+    // call: with the options of the read
+    const options = { readPreference: 'primary' };
+    let res = await UsersRest.getAllByIDs(['id1'], { id: 1, name: 1 } /*projection*/, _ctx, options);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // check: the options go to the call
     chai.expect(res?.value).to.equal('dummy');
+    chai.expect(stub.firstCall.args[4]).to.deep.equal(options);
   }).timeout(10000);
 
   /**
@@ -90,12 +93,14 @@ describe('Users Rest', function () {
       return { status: 200, value: ['dummy'] };
     });
 
-    // call
-    let res = await UsersRest.getOneByEmail('email', { id: 1 }, _ctx);
+    // call: with the options of the read (the primary)
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    let res = await UsersRest.getOneByEmail('email', { id: 1 }, _ctx, options);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // check: the options go to the read
     chai.expect(stub.callCount).to.equal(1);
+    chai.expect(stub.firstCall.args[3]).to.deep.equal(options);
     chai.expect(res?.value).to.equal('dummy');
   }).timeout(10000);
 

@@ -35,12 +35,12 @@ describe('Groups Service', function () {
   after(async function () {});
 
   /**
-   * students notification: the copies of a modified student are updated, a deleted student is removed from its
+   * students notification: where a modified student is referenced it is updated, a deleted student is removed from its
    * groups; the groups that changed are notified (the schedules keep the students of their groups)
    */
   it('should follow the students in the groups and notify the changed groups', async () => {
-    // stub: group1 had an older copy of user1, group2 has user2
-    const stubCopies = sinon
+    // stub: group1 references an older user1, group2 references user2
+    const stubUpdateReferences = sinon
       .stub(DbOpsUtils, 'updateManyReferences')
       .resolves({ status: 200, value: 1, ids: ['group1'] });
     const stubHaving = sinon.stub(DbOpsUtils, 'getAllByReference').resolves({ status: 200, value: [{ id: 'group2' }] });
@@ -52,10 +52,10 @@ describe('Groups Service', function () {
     const notification = { serviceName: 'students', modified: [janeSmith], removed: [johnBrown] };
     const res = await GroupsService.notification(notification, _ctx);
 
-    // check: the copy (only its fields, with its status), the removed student
-    chai.expect(stubCopies.firstCall.args[1].fieldName).to.equal('students[]');
-    chai.expect(stubCopies.firstCall.args[2]).to.include({ id: 'user1', status: 'disabled' });
-    chai.expect(stubCopies.firstCall.args[2]).to.not.have.property('extra');
+    // check: the referenced student (only its fields, with its status), the removed student
+    chai.expect(stubUpdateReferences.firstCall.args[1].fieldName).to.equal('students[]');
+    chai.expect(stubUpdateReferences.firstCall.args[2]).to.include({ id: 'user1', status: 'disabled' });
+    chai.expect(stubUpdateReferences.firstCall.args[2]).to.not.have.property('extra');
     chai.expect(stubHaving.firstCall.args[2]).to.equal('user2');
     chai.expect(stubRemove.firstCall.args[2].id).to.equal('user2');
 
@@ -63,6 +63,10 @@ describe('Groups Service', function () {
     chai.expect(res).to.deep.equal({ status: 200, value: ['group1', 'group2'] });
     chai.expect(stubRead.firstCall.args[1]).to.deep.equal(['group1', 'group2']);
     chai.expect(GroupsRest.raiseNotification.firstCall.args[0]).to.equal('modified');
+
+    // check: the reads ask the primary (inside the request that wrote the students, after the updates of the groups)
+    chai.expect(stubHaving.firstCall.args[5]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
+    chai.expect(stubRead.firstCall.args[4]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
 
     // case: only a deleted student
     const resRemoved = await GroupsService.notification({ serviceName: 'students', removed: [johnBrown] }, _ctx);
@@ -75,11 +79,11 @@ describe('Groups Service', function () {
     chai.expect(await GroupsService.notification(notification, _ctx)).to.deep.equal(fail);
     stubHaving.resolves(fail);
     chai.expect(await GroupsService.notification(notification, _ctx)).to.deep.equal(fail);
-    stubCopies.resolves(fail);
+    stubUpdateReferences.resolves(fail);
     chai.expect(await GroupsService.notification(notification, _ctx)).to.deep.equal(fail);
 
     // case: no changed group: nothing is notified
-    stubCopies.resolves({ status: 200, value: 0, ids: [] });
+    stubUpdateReferences.resolves({ status: 200, value: 0, ids: [] });
     GroupsRest.raiseNotification.resetHistory();
     const resNone = await GroupsService.notification({ serviceName: 'students', modified: [janeSmith] }, _ctx);
     chai.expect(resNone).to.deep.equal({ status: 200, value: [] });
@@ -91,10 +95,10 @@ describe('Groups Service', function () {
    * the changed groups are still notified, and the first failure is returned at the end
    */
   it('should do the next students after a failure of the students notification', async () => {
-    // stub: the copies of user1 can not be updated; group2 has an older copy of user2, group3 has the deleted user3
-    const stubCopies = sinon.stub(DbOpsUtils, 'updateManyReferences');
-    stubCopies.onFirstCall().resolves(fail);
-    stubCopies.onSecondCall().resolves({ status: 200, value: 1, ids: ['group2'] });
+    // stub: the referenced user1 can not be updated; group2 references an older user2, group3 the deleted user3
+    const stubUpdateReferences = sinon.stub(DbOpsUtils, 'updateManyReferences');
+    stubUpdateReferences.onFirstCall().resolves(fail);
+    stubUpdateReferences.onSecondCall().resolves({ status: 200, value: 1, ids: ['group2'] });
     sinon.stub(DbOpsUtils, 'getAllByReference').resolves({ status: 200, value: [{ id: 'group3' }] });
     const stubRemove = sinon.stub(DbOpsUtils, 'deleteManyReferences').resolves({ status: 200, value: 1 });
     const stubRead = sinon
@@ -110,22 +114,22 @@ describe('Groups Service', function () {
     chai.expect(res).to.deep.equal(fail);
 
     // check: user2 and user3 are still done, the changed groups are notified
-    chai.expect(stubCopies.secondCall.args[2].id).to.equal('user2');
+    chai.expect(stubUpdateReferences.secondCall.args[2].id).to.equal('user2');
     chai.expect(stubRemove.firstCall.args[2].id).to.equal('user3');
     chai.expect(stubRead.firstCall.args[1]).to.deep.equal(['group2', 'group3']);
     chai.expect(GroupsRest.raiseNotification.firstCall.args[0]).to.equal('modified');
   }).timeout(10000);
 
   /**
-   * students notification of a trace linked to the user invited again (previousID): the copies take its new id first,
-   * then the copy is updated
+   * students notification of a trace linked to the user invited again (previousID): its references take its new id
+   * first, then the referenced object is updated
    */
   it('should follow the new id of a linked student in the groups', async () => {
-    // stub: group1 has the copy with the previous id
+    // stub: group1 references the previous id
     const stubID = sinon
       .stub(DbOpsUtils, 'updateManyReferencesID')
       .resolves({ status: 200, value: 1, ids: ['group1'] });
-    const stubCopies = sinon
+    const stubUpdateReferences = sinon
       .stub(DbOpsUtils, 'updateManyReferences')
       .resolves({ status: 200, value: 1, ids: ['group1'] });
     sinon.stub(DbOpsUtils, 'getAllByIDs').resolves({ status: 200, value: [{ id: 'group1' }] });
@@ -135,12 +139,12 @@ describe('Groups Service', function () {
     const notification = { serviceName: 'students', modified: [linked] };
     const res = await GroupsService.notification(notification, _ctx);
 
-    // check: the new id first, then the copy (without previousID)
+    // check: the new id first, then the referenced object (without previousID)
     chai.expect(res).to.deep.equal({ status: 200, value: ['group1'] });
     chai.expect(stubID.firstCall.args.slice(2, 4)).to.deep.equal(['old1', 'user1']);
     chai.expect(stubID.firstCall.args[1].fieldName).to.equal('students[]');
-    chai.expect(stubID.calledBefore(stubCopies)).to.equal(true);
-    chai.expect(stubCopies.firstCall.args[2]).to.not.have.property('previousID');
+    chai.expect(stubID.calledBefore(stubUpdateReferences)).to.equal(true);
+    chai.expect(stubUpdateReferences.firstCall.args[2]).to.not.have.property('previousID');
 
     // case: the new id can not be written
     stubID.resolves(fail);
@@ -148,28 +152,30 @@ describe('Groups Service', function () {
   }).timeout(10000);
 
   /**
-   * schedules notification: a schedule is added to the groups it lists, removed from the others, and its copies are
-   * updated; a deleted schedule is removed from all the groups
+   * schedules notification: a schedule is added to the groups it lists, removed from the others, and where it is
+   * referenced it is updated; a deleted schedule is removed from all the groups
    */
   it('should follow the schedules of the groups', async () => {
     // stub
     const stubAdd = sinon.stub(DbOpsUtils, 'addManyReferences').resolves({ status: 200, value: 1 });
     const stubRemove = sinon.stub(DbOpsUtils, 'deleteManyReferences').resolves({ status: 200, value: 1 });
-    const stubCopies = sinon.stub(DbOpsUtils, 'updateManyReferences').resolves({ status: 200, value: 1, ids: [] });
+    const stubUpdateReferences = sinon
+      .stub(DbOpsUtils, 'updateManyReferences')
+      .resolves({ status: 200, value: 1, ids: [] });
 
-    // call: the first one lists its groups, the second one is only a copy, the third one was deleted
+    // call: the first one lists its groups, the second one is only referenced, the third one was deleted
     const listed = { id: 'schedule1', name: 'Mathematics Monday', groups: [{ id: 'group1' }, { id: 'group2' }] };
-    const copyOnly = { id: 'schedule2', name: 'Physics Tuesday', modifiedCount: 4 };
+    const referencedOnly = { id: 'schedule2', name: 'Physics Tuesday', modifiedCount: 4 };
     const deleted = { id: 'schedule3', name: 'Chemistry Friday' };
-    const notification = { serviceName: 'schedules', added: [listed], modified: [copyOnly], removed: [deleted] };
+    const notification = { serviceName: 'schedules', added: [listed], modified: [referencedOnly], removed: [deleted] };
     const res = await GroupsService.notification(notification, _ctx);
 
-    // check: added to its groups, removed from the others, its copies, the deleted one from all
+    // check: added to its groups, removed from the others, where it is referenced, the deleted one from all
     chai.expect(res).to.deep.equal({ status: 200, value: true });
     chai.expect(stubAdd.firstCall.args[1]).to.deep.equal(['group1', 'group2']);
     chai.expect(stubAdd.firstCall.args[3]).to.not.have.property('groups');
     chai.expect(stubRemove.firstCall.args[4]).to.deep.equal({ filter: { id: { $nin: ['group1', 'group2'] } } });
-    chai.expect(stubCopies.callCount).to.equal(2);
+    chai.expect(stubUpdateReferences.callCount).to.equal(2);
     chai.expect(stubRemove.secondCall.args[2]).to.deep.equal({ id: 'schedule3' });
 
     // case: only one kind of change
@@ -183,9 +189,9 @@ describe('Groups Service', function () {
     chai
       .expect(await GroupsService.notification({ serviceName: 'schedules', removed: [deleted] }, _ctx))
       .to.deep.equal(fail);
-    stubCopies.resolves(fail);
+    stubUpdateReferences.resolves(fail);
     chai
-      .expect(await GroupsService.notification({ serviceName: 'schedules', modified: [copyOnly] }, _ctx))
+      .expect(await GroupsService.notification({ serviceName: 'schedules', modified: [referencedOnly] }, _ctx))
       .to.deep.equal(fail);
     stubRemove.resolves(fail);
     chai
@@ -215,7 +221,7 @@ describe('Groups Service', function () {
   }).timeout(10000);
 
   /**
-   * the notifications of the other services are ignored (no copy of them), an invalid one is refused
+   * the notifications of the other services are ignored (no reference to them), an invalid one is refused
    */
   it('should ignore other services and refuse an invalid notification', async () => {
     // call: another service

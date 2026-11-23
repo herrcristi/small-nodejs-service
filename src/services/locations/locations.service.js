@@ -5,6 +5,7 @@
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
+const DatabaseManagerUtils = require('../../core/utils/database-manager.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
@@ -58,12 +59,13 @@ const Private = {
 
   /**
    * config
-   * returns { serviceName, collection, schema, references, fillReferences, events }
+   * returns { serviceName, collection, maxTimeMS, schema, references, fillReferences, events }
    */
   getConfig: async (_ctx) => {
     const config = {
       serviceName: LocationsConstants.ServiceName,
       collection: await LocationsDatabase.collection(_ctx),
+      maxTimeMS: DatabaseManagerUtils.getMaxTimeMS(), // the time limit of each database call (DbOpsUtils)
       references: [], // to be populated (like foreign keys)
       notifications: {
         projection: { ...BaseServiceUtils.Constants.DefaultProjection, address: 1 },
@@ -160,16 +162,19 @@ const Public = {
   },
 
   /**
-   * get all by ids
+   * get all by ids: the objects referenced by another service before it writes them (populateReferences) or a read that
+   * decides a write (the roles of a user)
+   * options: the options of the read, built by the caller (populateReferences and the roles of a user ask the primary:
+   *   an object written just before, by an earlier request or by another service, is found)
    * returns { status, value } or { status, error }
    */
-  getAllByIDs: async (ids, projection, _ctx) => {
+  getAllByIDs: async (ids, projection, _ctx, options) => {
     if (!_ctx.tenantID) {
       return Private.errorNoTenant(_ctx);
     }
 
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx);
+    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx, options);
   },
 
   /**
@@ -374,9 +379,9 @@ const Public = {
     }
     notification = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
-    // the locations keep no copies of other services: nothing to do (no subscription)
+    // the locations reference no objects of other services: nothing to do (no subscription)
     console.log(
-      `\n${LocationsConstants.ServiceName}: notification of ${notification.serviceName} ignored (no copy of it)`
+      `\n${LocationsConstants.ServiceName}: notification of ${notification.serviceName} ignored (no reference to it)`
     );
     return { status: 200, value: false };
   },

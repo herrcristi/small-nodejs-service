@@ -56,6 +56,7 @@
   "error.status.415": "The request has a format that is not supported",
   "error.status.429": "Too many requests. Try again later.",
   "error.status.500": "The server could not complete the request. Try again later.",
+  "error.status.503": "The server is busy. Try again in a moment.",
   "events": "Events",
   "events.global": "Global Events",
   "fetch.details.error": "Error loading the details",

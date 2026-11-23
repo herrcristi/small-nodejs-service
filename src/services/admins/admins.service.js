@@ -5,6 +5,7 @@
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
+const DatabaseManagerUtils = require('../../core/utils/database-manager.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
@@ -67,12 +68,13 @@ const Private = {
 
   /**
    * config
-   * returns { serviceName, collection, schema, references, fillReferences, events }
+   * returns { serviceName, collection, maxTimeMS, schema, references, fillReferences, events }
    */
   getConfig: async (_ctx) => {
     const config = {
       serviceName: AdminsConstants.ServiceName,
       collection: await AdminsDatabase.collection(_ctx),
+      maxTimeMS: DatabaseManagerUtils.getMaxTimeMS(), // the time limit of each database call (DbOpsUtils)
       references: [
         {
           fieldName: 'user',
@@ -98,7 +100,7 @@ const Private = {
   },
 
   /**
-   * a trace: the copy of a user that does not have the role anymore (deleted: the account was deleted, removed: the
+   * a trace: a referenced user that does not have the role anymore (deleted: the account was deleted, removed: the
    * role was removed); it stays in the lists
    */
   isTrace: (user) => {
@@ -106,7 +108,7 @@ const Private = {
   },
 
   /**
-   * keep an admin as a trace: the status of its user copy is deleted or removed (the other fields of the copy are kept),
+   * keep an admin as a trace: the status of its referenced user is deleted or removed (its other fields are kept),
    * with an event
    * returns { status, value } or { status, error }
    */
@@ -149,24 +151,27 @@ const Private = {
 
   /**
    * save the admins of the users that have the admin role in the school (the users notification: added, modified)
-   * - a new admin: its record is created, with the copy of its user
-   * - an admin: its user copy is updated when it is older (see DbOpsUtils.updateManyReferences)
+   * - a new admin: its record is created, with its referenced user
+   * - an admin: its referenced user is updated when it is older (see DbOpsUtils.updateManyReferences)
    * - a trace (its role was removed, or its account was deleted): it is an admin again (an event) when its user has the
    *   role again and is not pending; a user invited again is pending until its first login: its trace is not changed
    *   until then, and nothing is notified
-   * nothing is notified (no other service keeps copies of the admins)
+   * nothing is notified (no other service references the admins)
    * users: [ { id, status, ... } ] (as notified by the users service)
    * a failure is logged and the next users are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
   onUsersAddedOrModified: async (users, _ctx) => {
     const config = await Private.getConfig(_ctx);
-    const [userRef] = config.references; // the copy of the user (user): the only reference of the admins
+    const [userRef] = config.references; // the referenced user (user): the only reference of the admins
 
     // the admins that exist already
     const usersIDs = users.map((user) => user.id);
     const existingProjection = { _id: 0, id: 1, type: 1, user: 1 }; // the type: the target of the restore event
-    const rAdmins = await DbOpsUtils.getAllByIDs(config, usersIDs, existingProjection, _ctx);
+    // the notification is handled in the request that wrote (a trace relinked by the invite): read the primary
+    const rAdmins = await DbOpsUtils.getAllByIDs(config, usersIDs, existingProjection, _ctx, {
+      readPreference: DbOpsUtils.Constants.ReadPrimary,
+    });
     if (rAdmins.error) {
       return rAdmins;
     }
@@ -183,7 +188,8 @@ const Private = {
       // a new admin
       if (!admin) {
         console.log(`\n${AdminsConstants.ServiceName}: create the admin of the user ${user.id}`);
-        const rPost = await Public.post({ id: user.id }, _ctx);
+        // the user is the answer of the write that notified it: its reference is filled from it, it is not read again
+        const rPost = await Public.post({ id: user.id }, _ctx, user);
         if (rPost.error) {
           console.log(
             `\n${AdminsConstants.ServiceName}: failed to create the admin of the user ${user.id}: ${rPost.error.message}`
@@ -200,20 +206,20 @@ const Private = {
         continue;
       }
 
-      // its user copy (only an older one)
-      const userCopy = CommonUtils.getProjectedObj(user, userRef.projection);
-      const rCopy = await DbOpsUtils.updateManyReferences(config, userRef, userCopy, _ctx);
-      if (rCopy.error) {
+      // its referenced user (only an older one)
+      const referencedUser = CommonUtils.getProjectedObj(user, userRef.projection);
+      const rUpdate = await DbOpsUtils.updateManyReferences(config, userRef, referencedUser, _ctx);
+      if (rUpdate.error) {
         console.log(
-          `\n${AdminsConstants.ServiceName}: failed to update the copies of the user ${user.id}: ${rCopy.error.message}`
+          `\n${AdminsConstants.ServiceName}: failed to update the referenced user ${user.id}: ${rUpdate.error.message}`
         );
-        failure ??= rCopy;
+        failure ??= rUpdate;
         continue;
       }
-      rCopy.ids.forEach((id) => changedAdminsIDs.add(id));
+      rUpdate.ids.forEach((id) => changedAdminsIDs.add(id));
 
       // a trace that is an admin again
-      if (isTrace && rCopy.ids.includes(admin.id)) {
+      if (isTrace && rUpdate.ids.includes(admin.id)) {
         console.log(`\n${AdminsConstants.ServiceName}: the trace ${user.id} is an admin again`);
         const eventObj = { ...admin, name: user.name };
         const eventInfo = { status: user.status };
@@ -233,12 +239,13 @@ const Private = {
   /**
    * the admins of the users that are not admins of the school anymore (the users notification, removed: the role was
    * removed, or the account was deleted: the notified user is deleted)
-   * - an admin that never logged in (its user copy is pending): deleted (an invitation that was not used leaves nothing)
+   * - an admin that never logged in (its referenced user is pending): deleted (an unused invitation leaves nothing)
    * - a trace: not changed
    * - otherwise by the setting of the school (removedMembers):
-   *   keep: the admin stays as a trace (its user copy is removed or deleted), with an event; it stays in the lists
+   *   keep: the admin stays as a trace (its referenced user is removed or deleted), with an event; it stays in the
+   *   lists
    *   delete: the admin is deleted (no other service keeps it)
-   * nothing is notified (no other service keeps copies of the admins)
+   * nothing is notified (no other service references the admins)
    * users: [ { id, status, ... } ] (as notified by the users service)
    * a failure is logged and the next users are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
@@ -256,7 +263,10 @@ const Private = {
     const changedAdminsIDs = new Set();
     let failure = null; // the first failure (the next users are still done)
     for (const user of users) {
-      const rAdmin = await DbOpsUtils.getOne(config, user.id, { _id: 0, id: 1, user: 1 }, _ctx);
+      // the notification is handled in the request that wrote (a record created just before): read the primary
+      const rAdmin = await DbOpsUtils.getOne(config, user.id, { _id: 0, id: 1, user: 1 }, _ctx, {
+        readPreference: DbOpsUtils.Constants.ReadPrimary,
+      });
       if (rAdmin.status === 404) {
         continue;
       }
@@ -308,7 +318,7 @@ const Private = {
 
   /**
    * users notification, split by school (the schools where the user has, or had, the admin role):
-   * - added, modified: the admins are saved (created when missing, otherwise their status and their user copy)
+   * - added, modified: the admins are saved (created when missing, otherwise their status and their referenced user)
    * - removed (the admin role was removed, or the account was deleted): the admins are kept as traces or
    *   deleted, by the setting of the school
    * a failure is logged and the next schools are still done; the first failure is returned at the end
@@ -429,16 +439,19 @@ const Public = {
   },
 
   /**
-   * get all by ids
+   * get all by ids: the objects referenced by another service before it writes them (populateReferences) or a read that
+   * decides a write (the roles of a user)
+   * options: the options of the read, built by the caller (populateReferences and the roles of a user ask the primary:
+   *   an object written just before, by an earlier request or by another service, is found)
    * returns { status, value } or { status, error }
    */
-  getAllByIDs: async (ids, projection, _ctx) => {
+  getAllByIDs: async (ids, projection, _ctx, options) => {
     if (!_ctx.tenantID) {
       return Private.errorNoTenant(_ctx);
     }
 
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx);
+    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx, options);
   },
 
   /**
@@ -456,8 +469,10 @@ const Public = {
 
   /**
    * post
+   * notifiedUser: the user of a users notification (the answer of the write that notified it, passed by the handler,
+   * never from a request): the user reference is filled from it, it is not read again
    */
-  post: async (objInfo, _ctx) => {
+  post: async (objInfo, _ctx, notifiedUser) => {
     if (!_ctx.tenantID) {
       return Private.errorNoTenant(_ctx);
     }
@@ -475,8 +490,15 @@ const Public = {
     // { serviceName, collection, references, notifications.projection }
     const config = await Private.getConfig(_ctx);
 
-    // populate references
-    let rf = await ReferencesUtils.populateReferences({ ...config, fillReferences: true }, objInfo, _ctx);
+    // populate references (the user of a users notification is not read again)
+    const [userRef] = config.references;
+    const writtenTargets = { [userRef.fieldName]: notifiedUser };
+    let rf = await ReferencesUtils.populateReferences(
+      { ...config, fillReferences: true },
+      objInfo,
+      _ctx,
+      writtenTargets
+    );
     if (rf.error) {
       return rf;
     }
@@ -520,9 +542,12 @@ const Public = {
       return { status: 400, error: { message: msg, error: new Error(msg) } };
     }
 
-    // an admin of the school
+    // an admin of the school: it decides the write (a trace is deleted, a member loses its role), read on the
+    // primary (a trace made by the request before is seen)
     const config = await Private.getConfig(_ctx);
-    const rget = await DbOpsUtils.getOne(config, objID, Private.ResProjection, _ctx);
+    const rget = await DbOpsUtils.getOne(config, objID, Private.ResProjection, _ctx, {
+      readPreference: DbOpsUtils.Constants.ReadPrimary,
+    });
     if (rget.error) {
       return rget;
     }
@@ -560,7 +585,8 @@ const Public = {
   /**
    * link the traces of a deleted account to the user invited again, by its email (called by the invite, before the
    * user gets its role, whatever the role): the admins of the school with this email and another id take the id of
-   * the user; their user copy stays deleted until the user has the role again and logs in (see onUsersAddedOrModified)
+   * the user; their referenced user stays deleted until the user has the role again and logs in
+   * (see onUsersAddedOrModified)
    * objInfo: { email, userID }
    * a failure is logged and the next traces are still done; the first failure is returned at the end
    * returns { status, value: [ the previous ids ] } or { status, error }
@@ -577,7 +603,8 @@ const Public = {
     }
     objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
-    // the traces of a deleted account with this email
+    // the traces of a deleted account with this email (read on the primary: an account deleted just before has its
+    // traces there)
     const config = await Private.getConfig(_ctx);
     const filter = {
       filter: {
@@ -587,7 +614,7 @@ const Public = {
       },
       projection: { _id: 0, id: 1 },
     };
-    const rTraces = await DbOpsUtils.getAll(config, filter, _ctx);
+    const rTraces = await DbOpsUtils.getAll(config, filter, _ctx, { readPreference: DbOpsUtils.Constants.ReadPrimary });
     if (rTraces.error) {
       return rTraces;
     }
@@ -716,8 +743,8 @@ const Public = {
   },
 
   /**
-   * notification: the copies kept by the admins follow the changes of their sources (each source has its own flow)
-   * - users: the admins of the users with the admin role (created, status, user copy), kept as traces or deleted
+   * notification: the objects referenced by the admins follow their sources (each source has its own flow)
+   * - users: the admins of the users with the admin role (created, status, referenced user), kept as traces or deleted
    *   when the role is removed
    * notification: { serviceName, added?, modified?, removed? }
    */
@@ -734,7 +761,7 @@ const Public = {
         return await Private.onUsersNotification(notification, _ctx);
       default:
         console.log(
-          `\n${AdminsConstants.ServiceName}: notification of ${notification.serviceName} ignored (no copy of it)`
+          `\n${AdminsConstants.ServiceName}: notification of ${notification.serviceName} ignored (no reference to it)`
         );
         return { status: 200, value: false };
     }

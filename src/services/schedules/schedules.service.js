@@ -5,6 +5,7 @@
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
+const DatabaseManagerUtils = require('../../core/utils/database-manager.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
@@ -134,12 +135,13 @@ const Private = {
 
   /**
    * config
-   * returns { serviceName, collection, schema, references, fillReferences, events }
+   * returns { serviceName, collection, maxTimeMS, schema, references, fillReferences, events }
    */
   getConfig: async (_ctx) => {
     const config = {
       serviceName: SchedulesConstants.ServiceName,
       collection: await SchedulesDatabase.collection(_ctx),
+      maxTimeMS: DatabaseManagerUtils.getMaxTimeMS(), // the time limit of each database call (DbOpsUtils)
       references: [
         {
           fieldName: 'class',
@@ -233,7 +235,10 @@ const Private = {
     }
 
     const projection = { ...config.notifications.projection, _id: 0 };
-    const rSchedules = await DbOpsUtils.getAllByIDs(config, schedulesIDs, projection, _ctx);
+    // the schedules were just written by updateMany (no object in its answer): read on the primary
+    const rSchedules = await DbOpsUtils.getAllByIDs(config, schedulesIDs, projection, _ctx, {
+      readPreference: DbOpsUtils.Constants.ReadPrimary,
+    });
     if (rSchedules.error) {
       return rSchedules;
     }
@@ -244,9 +249,9 @@ const Private = {
   },
 
   /**
-   * classes notification: the copies of the classes in the schedules (class)
-   * - modified: the copies are updated (only the older ones, modifiedCount)
-   * - removed (the class was deleted): its copy keeps only its id (the schedules are notified)
+   * classes notification: the classes referenced by the schedules (class)
+   * - modified: the referenced objects are updated (only the older ones, modifiedCount)
+   * - removed (the class was deleted): its reference keeps only its id (the schedules are notified)
    * (a class is given to a schedule by the edit of the schedule, not by a notification)
    * the schedules whose class changed are notified (the students, professors and groups keep the class of their schedules)
    * a failure is logged and the next classes are still done; the first failure is returned at the end
@@ -262,25 +267,32 @@ const Private = {
     const changedSchedulesIDs = new Set();
     let failure = null; // the first failure (the next classes are still done)
 
-    // the copies of the modified classes
+    // the modified classes, where they are referenced
     for (const schoolClass of notification[Private.Notification.Modified] || []) {
-      const classCopy = CommonUtils.getProjectedObj(schoolClass, classRef.projection);
-      const rCopies = await DbOpsUtils.updateManyReferences(config, classRef, classCopy, _ctx);
-      if (rCopies.error) {
+      const referencedClass = CommonUtils.getProjectedObj(schoolClass, classRef.projection);
+      const rUpdate = await DbOpsUtils.updateManyReferences(config, classRef, referencedClass, _ctx);
+      if (rUpdate.error) {
         console.log(
-          `\n${SchedulesConstants.ServiceName}: failed to update the copies of the class ${schoolClass.id}: ${rCopies.error.message}`
+          `\n${SchedulesConstants.ServiceName}: failed to update the referenced class ${schoolClass.id}: ${rUpdate.error.message}`
         );
-        failure ??= rCopies;
+        failure ??= rUpdate;
         continue;
       }
-      rCopies.ids.forEach((id) => changedSchedulesIDs.add(id));
+      rUpdate.ids.forEach((id) => changedSchedulesIDs.add(id));
     }
 
     // the deleted classes
     for (const schoolClass of notification[Private.Notification.Removed] || []) {
       console.log(`\n${SchedulesConstants.ServiceName}: remove the deleted class ${schoolClass.id} from the schedules`);
       // the schedules that have it (they are notified)
-      const rSchedules = await DbOpsUtils.getAllByReference(config, classRef, schoolClass.id, { _id: 0, id: 1 }, _ctx);
+      const rSchedules = await DbOpsUtils.getAllByReference(
+        config,
+        classRef,
+        schoolClass.id,
+        { _id: 0, id: 1 },
+        _ctx,
+        { readPreference: DbOpsUtils.Constants.ReadPrimary } // the notification is handled in the request that wrote: read the primary
+      );
       if (rSchedules.error) {
         console.log(
           `\n${SchedulesConstants.ServiceName}: failed to remove the class ${schoolClass.id}: ${rSchedules.error.message}`
@@ -290,8 +302,8 @@ const Private = {
       }
       rSchedules.value.forEach((item) => changedSchedulesIDs.add(item.id));
 
-      const classCopy = CommonUtils.getProjectedObj(schoolClass, classRef.projection);
-      const rRemove = await DbOpsUtils.deleteManyReferences(config, classRef, classCopy, _ctx);
+      const referencedClass = CommonUtils.getProjectedObj(schoolClass, classRef.projection);
+      const rRemove = await DbOpsUtils.deleteManyReferences(config, classRef, referencedClass, _ctx);
       if (rRemove.error) {
         console.log(
           `\n${SchedulesConstants.ServiceName}: failed to remove the class ${schoolClass.id}: ${rRemove.error.message}`
@@ -306,9 +318,9 @@ const Private = {
   },
 
   /**
-   * locations notification: the copies of the locations in the schedules (schedules[].location)
-   * - modified: the copies are updated (only the older ones, modifiedCount)
-   * - removed (the location was deleted): its copies keep only its id
+   * locations notification: the locations referenced by the schedules (schedules[].location)
+   * - modified: the referenced objects are updated (only the older ones, modifiedCount)
+   * - removed (the location was deleted): its references keep only its id
    * (a location is given by the edit of the schedule)
    * nothing is notified (the other services do not keep the locations of the schedules)
    * a failure is logged and the next locations are still done; the first failure is returned at the end
@@ -324,26 +336,26 @@ const Private = {
     const changedSchedulesIDs = new Set();
     let failure = null; // the first failure (the next locations are still done)
 
-    // the copies of the modified locations
+    // the modified locations, where they are referenced
     for (const location of notification[Private.Notification.Modified] || []) {
-      const locationCopy = CommonUtils.getProjectedObj(location, locationsRef.projection);
-      const rCopies = await DbOpsUtils.updateManyReferences(config, locationsRef, locationCopy, _ctx);
-      if (rCopies.error) {
+      const referencedLocation = CommonUtils.getProjectedObj(location, locationsRef.projection);
+      const rUpdate = await DbOpsUtils.updateManyReferences(config, locationsRef, referencedLocation, _ctx);
+      if (rUpdate.error) {
         console.log(
-          `\n${SchedulesConstants.ServiceName}: failed to update the copies of the location ${location.id}: ${rCopies.error.message}`
+          `\n${SchedulesConstants.ServiceName}: failed to update the referenced location ${location.id}: ${rUpdate.error.message}`
         );
-        failure ??= rCopies;
+        failure ??= rUpdate;
         continue;
       }
-      rCopies.ids.forEach((id) => changedSchedulesIDs.add(id));
+      rUpdate.ids.forEach((id) => changedSchedulesIDs.add(id));
     }
 
     // the deleted locations
     for (const location of notification[Private.Notification.Removed] || []) {
       console.log(`\n${SchedulesConstants.ServiceName}: remove the deleted location ${location.id} from the schedules`);
 
-      const locationCopy = CommonUtils.getProjectedObj(location, locationsRef.projection);
-      const rRemove = await DbOpsUtils.deleteManyReferences(config, locationsRef, locationCopy, _ctx);
+      const referencedLocation = CommonUtils.getProjectedObj(location, locationsRef.projection);
+      const rRemove = await DbOpsUtils.deleteManyReferences(config, locationsRef, referencedLocation, _ctx);
       if (rRemove.error) {
         console.log(
           `\n${SchedulesConstants.ServiceName}: failed to remove the location ${location.id}: ${rRemove.error.message}`
@@ -356,8 +368,8 @@ const Private = {
   },
 
   /**
-   * professors notification: the copies of the professors in the schedules (professors[])
-   * - modified: the copies are updated (only the older ones, modifiedCount)
+   * professors notification: the professors referenced by the schedules (professors[])
+   * - modified: the referenced objects are updated (only the older ones, modifiedCount)
    * - removed (the professor was deleted): it is removed from the schedules
    * (a professor is put in a schedule by the edit of the schedule, not by a notification)
    * nothing is notified (the other services do not keep the professors of the schedules)
@@ -374,9 +386,9 @@ const Private = {
     const changedSchedulesIDs = new Set();
     let failure = null; // the first failure (the next professors are still done)
 
-    // the copies of the modified professors
+    // the modified professors, where they are referenced
     for (const professor of notification[Private.Notification.Modified] || []) {
-      // a trace linked to the user invited again: its copies take its new id first
+      // a trace linked to the user invited again: its references take its new id first
       if (professor.previousID) {
         const rID = await DbOpsUtils.updateManyReferencesID(
           config,
@@ -387,7 +399,7 @@ const Private = {
         );
         if (rID.error) {
           console.log(
-            `\n${SchedulesConstants.ServiceName}: failed to link the copies of the professor ${professor.id}: ${rID.error.message}`
+            `\n${SchedulesConstants.ServiceName}: failed to link the referenced professor ${professor.id}: ${rID.error.message}`
           );
           failure ??= rID;
           continue;
@@ -395,16 +407,16 @@ const Private = {
         rID.ids.forEach((id) => changedSchedulesIDs.add(id));
       }
 
-      const professorCopy = CommonUtils.getProjectedObj(professor, professorsRef.projection);
-      const rCopies = await DbOpsUtils.updateManyReferences(config, professorsRef, professorCopy, _ctx);
-      if (rCopies.error) {
+      const referencedProfessor = CommonUtils.getProjectedObj(professor, professorsRef.projection);
+      const rUpdate = await DbOpsUtils.updateManyReferences(config, professorsRef, referencedProfessor, _ctx);
+      if (rUpdate.error) {
         console.log(
-          `\n${SchedulesConstants.ServiceName}: failed to update the copies of the professor ${professor.id}: ${rCopies.error.message}`
+          `\n${SchedulesConstants.ServiceName}: failed to update the referenced professor ${professor.id}: ${rUpdate.error.message}`
         );
-        failure ??= rCopies;
+        failure ??= rUpdate;
         continue;
       }
-      rCopies.ids.forEach((id) => changedSchedulesIDs.add(id));
+      rUpdate.ids.forEach((id) => changedSchedulesIDs.add(id));
     }
 
     // the deleted professors
@@ -413,8 +425,8 @@ const Private = {
         `\n${SchedulesConstants.ServiceName}: remove the deleted professor ${professor.id} from the schedules`
       );
 
-      const professorCopy = CommonUtils.getProjectedObj(professor, professorsRef.projection);
-      const rRemove = await DbOpsUtils.deleteManyReferences(config, professorsRef, professorCopy, _ctx);
+      const referencedProfessor = CommonUtils.getProjectedObj(professor, professorsRef.projection);
+      const rRemove = await DbOpsUtils.deleteManyReferences(config, professorsRef, referencedProfessor, _ctx);
       if (rRemove.error) {
         console.log(
           `\n${SchedulesConstants.ServiceName}: failed to remove the professor ${professor.id}: ${rRemove.error.message}`
@@ -427,8 +439,8 @@ const Private = {
   },
 
   /**
-   * groups notification: the copies of the groups in the schedules (groups[])
-   * - modified: the copies are updated (only the older ones, modifiedCount)
+   * groups notification: the groups referenced by the schedules (groups[])
+   * - modified: the referenced objects are updated (only the older ones, modifiedCount)
    * - removed (the group was deleted): it is removed from the schedules
    * (a group is put in a schedule by the edit of the schedule, not by a notification)
    * nothing is notified (the other services do not keep the groups of the schedules)
@@ -445,26 +457,26 @@ const Private = {
     const changedSchedulesIDs = new Set();
     let failure = null; // the first failure (the next groups are still done)
 
-    // the copies of the modified groups
+    // the modified groups, where they are referenced
     for (const group of notification[Private.Notification.Modified] || []) {
-      const groupCopy = CommonUtils.getProjectedObj(group, groupsRef.projection);
-      const rCopies = await DbOpsUtils.updateManyReferences(config, groupsRef, groupCopy, _ctx);
-      if (rCopies.error) {
+      const referencedGroup = CommonUtils.getProjectedObj(group, groupsRef.projection);
+      const rUpdate = await DbOpsUtils.updateManyReferences(config, groupsRef, referencedGroup, _ctx);
+      if (rUpdate.error) {
         console.log(
-          `\n${SchedulesConstants.ServiceName}: failed to update the copies of the group ${group.id}: ${rCopies.error.message}`
+          `\n${SchedulesConstants.ServiceName}: failed to update the referenced group ${group.id}: ${rUpdate.error.message}`
         );
-        failure ??= rCopies;
+        failure ??= rUpdate;
         continue;
       }
-      rCopies.ids.forEach((id) => changedSchedulesIDs.add(id));
+      rUpdate.ids.forEach((id) => changedSchedulesIDs.add(id));
     }
 
     // the deleted groups
     for (const group of notification[Private.Notification.Removed] || []) {
       console.log(`\n${SchedulesConstants.ServiceName}: remove the deleted group ${group.id} from the schedules`);
 
-      const groupCopy = CommonUtils.getProjectedObj(group, groupsRef.projection);
-      const rRemove = await DbOpsUtils.deleteManyReferences(config, groupsRef, groupCopy, _ctx);
+      const referencedGroup = CommonUtils.getProjectedObj(group, groupsRef.projection);
+      const rRemove = await DbOpsUtils.deleteManyReferences(config, groupsRef, referencedGroup, _ctx);
       if (rRemove.error) {
         console.log(
           `\n${SchedulesConstants.ServiceName}: failed to remove the group ${group.id}: ${rRemove.error.message}`
@@ -477,8 +489,8 @@ const Private = {
   },
 
   /**
-   * students notification: the copies of the students in the schedules (students[])
-   * - modified: the copies are updated (only the older ones, modifiedCount)
+   * students notification: the students referenced by the schedules (students[])
+   * - modified: the referenced objects are updated (only the older ones, modifiedCount)
    * - removed (the student was deleted): it is removed from the schedules
    * (a student is put in a schedule by the edit of the schedule, not by a notification)
    * nothing is notified (the other services do not keep the students of the schedules)
@@ -495,14 +507,14 @@ const Private = {
     const changedSchedulesIDs = new Set();
     let failure = null; // the first failure (the next students are still done)
 
-    // the copies of the modified students
+    // the modified students, where they are referenced
     for (const student of notification[Private.Notification.Modified] || []) {
-      // a trace linked to the user invited again: its copies take its new id first
+      // a trace linked to the user invited again: its references take its new id first
       if (student.previousID) {
         const rID = await DbOpsUtils.updateManyReferencesID(config, studentsRef, student.previousID, student.id, _ctx);
         if (rID.error) {
           console.log(
-            `\n${SchedulesConstants.ServiceName}: failed to link the copies of the student ${student.id}: ${rID.error.message}`
+            `\n${SchedulesConstants.ServiceName}: failed to link the referenced student ${student.id}: ${rID.error.message}`
           );
           failure ??= rID;
           continue;
@@ -510,24 +522,24 @@ const Private = {
         rID.ids.forEach((id) => changedSchedulesIDs.add(id));
       }
 
-      const studentCopy = CommonUtils.getProjectedObj(student, studentsRef.projection);
-      const rCopies = await DbOpsUtils.updateManyReferences(config, studentsRef, studentCopy, _ctx);
-      if (rCopies.error) {
+      const referencedStudent = CommonUtils.getProjectedObj(student, studentsRef.projection);
+      const rUpdate = await DbOpsUtils.updateManyReferences(config, studentsRef, referencedStudent, _ctx);
+      if (rUpdate.error) {
         console.log(
-          `\n${SchedulesConstants.ServiceName}: failed to update the copies of the student ${student.id}: ${rCopies.error.message}`
+          `\n${SchedulesConstants.ServiceName}: failed to update the referenced student ${student.id}: ${rUpdate.error.message}`
         );
-        failure ??= rCopies;
+        failure ??= rUpdate;
         continue;
       }
-      rCopies.ids.forEach((id) => changedSchedulesIDs.add(id));
+      rUpdate.ids.forEach((id) => changedSchedulesIDs.add(id));
     }
 
     // the deleted students
     for (const student of notification[Private.Notification.Removed] || []) {
       console.log(`\n${SchedulesConstants.ServiceName}: remove the deleted student ${student.id} from the schedules`);
 
-      const studentCopy = CommonUtils.getProjectedObj(student, studentsRef.projection);
-      const rRemove = await DbOpsUtils.deleteManyReferences(config, studentsRef, studentCopy, _ctx);
+      const referencedStudent = CommonUtils.getProjectedObj(student, studentsRef.projection);
+      const rRemove = await DbOpsUtils.deleteManyReferences(config, studentsRef, referencedStudent, _ctx);
       if (rRemove.error) {
         console.log(
           `\n${SchedulesConstants.ServiceName}: failed to remove the student ${student.id}: ${rRemove.error.message}`
@@ -615,16 +627,19 @@ const Public = {
   },
 
   /**
-   * get all by ids
+   * get all by ids: the objects referenced by another service before it writes them (populateReferences) or a read that
+   * decides a write (the roles of a user)
+   * options: the options of the read, built by the caller (populateReferences and the roles of a user ask the primary:
+   *   an object written just before, by an earlier request or by another service, is found)
    * returns { status, value } or { status, error }
    */
-  getAllByIDs: async (ids, projection, _ctx) => {
+  getAllByIDs: async (ids, projection, _ctx, options) => {
     if (!_ctx.tenantID) {
       return Private.errorNoTenant(_ctx);
     }
 
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx);
+    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx, options);
   },
 
   /**
@@ -825,10 +840,10 @@ const Public = {
   },
 
   /**
-   * notification: the copies kept by the schedules follow the changes of their sources (each source has its own flow)
-   * - classes: the class copies (the schedules whose class changed are notified)
-   * - locations: the location copies of the inner schedules
-   * - professors, groups, students: their copies (a deleted one is removed)
+   * notification: the objects referenced by the schedules follow their sources (each source has its own flow)
+   * - classes: the referenced classes (the schedules whose class changed are notified)
+   * - locations: the referenced locations of the inner schedules
+   * - professors, groups, students: where they are referenced (a deleted one is removed)
    * notification: { serviceName, added?, modified?, removed? }
    */
   notification: async (notification, _ctx) => {
@@ -852,7 +867,7 @@ const Public = {
         return await Private.onStudentsNotification(notification, _ctx);
       default:
         console.log(
-          `\n${SchedulesConstants.ServiceName}: notification of ${notification.serviceName} ignored (no copy of it)`
+          `\n${SchedulesConstants.ServiceName}: notification of ${notification.serviceName} ignored (no reference to it)`
         );
         return { status: 200, value: false };
     }

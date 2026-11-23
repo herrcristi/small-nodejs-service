@@ -82,6 +82,21 @@ const Public = {
   },
 
   /**
+   * the service can not take the request now (503): the database has no free connection in time; the cause is not
+   * shown (like a 500), the request can be sent again later
+   */
+  unavailable: async (error, _ctx) => {
+    let msg = {
+      message: 'The service is busy, try again later',
+    };
+    if (CommonUtils.isDebug()) {
+      msg.error = CommonUtils.getLogError(error);
+    }
+    console.log(`\nStatus message: ${JSON.stringify(msg, null, 2)}. Request: ${JSON.stringify(_ctx)}`);
+    return msg;
+  },
+
+  /**
    * request is not authorized
    */
   notAuthorized: async (error, _ctx) => {
@@ -178,6 +193,9 @@ const Public = {
 
       case 500:
         return await Public.exception(error, _ctx);
+
+      case 503:
+        return await Public.unavailable(error, _ctx);
 
       default:
         return await Public.exception(error || 'Error', _ctx);

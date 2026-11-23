@@ -903,11 +903,12 @@ describe('Database Functional', function () {
   }).timeout(10000);
 
   /**
-   * updateManyReferences of a single copy with a modifiedCount and a createdTimestamp: only the older copies are
-   * updated (the same object with a smaller or missing modifiedCount, or an object with the same id created again)
+   * updateManyReferences of a single referenced object with a modifiedCount and a createdTimestamp: only the older
+   * referenced objects are updated (the same object with a smaller or missing modifiedCount, or an object with the same
+   * id created again)
    */
-  it('should updateManyReferences only the older copies of a single copy', async () => {
-    // the objects with copies of the user U1 (created on 2026-11-01, now at its 5th change)
+  it('should updateManyReferences only the older objects of a single reference', async () => {
+    // the objects that reference the user U1 (created on 2026-11-01, now at its 5th change)
     const config = { serviceName: 'ServiceTest', collection: database.collection('dbtests') };
     const created = '2026-11-01T10:00:00.000Z';
     await database.collection('dbtests').insertMany([
@@ -922,17 +923,17 @@ describe('Database Functional', function () {
       { id: 'O6', user: { id: 'U2', name: 'Other User', createdTimestamp: created, modifiedCount: 1 } },
     ]);
 
-    // update the copies of U1
+    // update the referenced U1
     const objInfo = { id: 'U1', name: 'John Smith', createdTimestamp: created, modifiedCount: 5 };
     const res = await DBOpsUtils.updateManyReferences(config, { fieldName: 'user' }, objInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check: the older copy, the copy of the earlier account and the copy without a count
+    // check: the older referenced user, the one of the earlier account and the one without a count
     chai.expect(res.status).to.equal(200);
     chai.expect(res.value).to.equal(3);
     chai.expect(res.ids.sort()).to.deep.equal(['O1', 'O4', 'O5']);
 
-    // check the stored copies
+    // check the stored referenced objects
     const objects = await database
       .collection('dbtests')
       .find({})
@@ -950,11 +951,11 @@ describe('Database Functional', function () {
   }).timeout(10000);
 
   /**
-   * updateManyReferences of copies in an array with a modifiedCount: only the older copies are updated, the other
-   * copies of the same array are not changed
+   * updateManyReferences of the referenced objects in an array with a modifiedCount: only the older ones are updated,
+   * the other referenced objects of the same array are not changed
    */
-  it('should updateManyReferences only the older copies in an array', async () => {
-    // the objects with copies of the school S1 (at its 4th change) next to the copies of S2
+  it('should updateManyReferences only the older objects in an array', async () => {
+    // the objects that reference the school S1 (at its 4th change) next to S2
     const config = { serviceName: 'ServiceTest', collection: database.collection('dbtests') };
     const created = '2026-11-01T10:00:00.000Z';
     await database.collection('dbtests').insertMany([
@@ -968,16 +969,16 @@ describe('Database Functional', function () {
       { id: 'O2', schools: [{ id: 'S1', name: 'Newer School', createdTimestamp: created, modifiedCount: 6 }] },
     ]);
 
-    // update the copies of S1
+    // update the referenced S1
     const objInfo = { id: 'S1', name: 'Central School', createdTimestamp: created, modifiedCount: 4 };
     const res = await DBOpsUtils.updateManyReferences(config, { fieldName: 'schools[]' }, objInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check: only O1 has an older copy
+    // check: only O1 references an older S1
     chai.expect(res.status).to.equal(200);
     chai.expect(res.ids).to.deep.equal(['O1']);
 
-    // check the stored copies
+    // check the stored referenced objects
     const objects = await database
       .collection('dbtests')
       .find({})
@@ -997,11 +998,11 @@ describe('Database Functional', function () {
   }).timeout(10000);
 
   /**
-   * updateManyReferences of copies inside the elements of an array (schedules[].location) with a modifiedCount: only
-   * the older copies are updated, also when an element of the same array has a newer copy
+   * updateManyReferences of the referenced objects inside the elements of an array (schedules[].location) with a
+   * modifiedCount: only the older ones are updated, also when an element of the same array references a newer one
    */
-  it('should updateManyReferences only the older copies inside an array', async () => {
-    // an object with two schedules: the first one has an older copy of the location L1, the second one a newer copy
+  it('should updateManyReferences only the older objects inside an array', async () => {
+    // an object with two schedules: the first one references an older location L1, the second one a newer L1
     const config = { serviceName: 'ServiceTest', collection: database.collection('dbtests') };
     const created = '2026-11-01T10:00:00.000Z';
     await database.collection('dbtests').insertOne({
@@ -1012,7 +1013,7 @@ describe('Database Functional', function () {
       ],
     });
 
-    // update the copies of L1
+    // update the referenced L1
     const objInfo = { id: 'L1', name: 'Main Room', createdTimestamp: created, modifiedCount: 3 };
     const res = await DBOpsUtils.updateManyReferences(config, { fieldName: 'schedules[].location' }, objInfo, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
@@ -1021,7 +1022,7 @@ describe('Database Functional', function () {
     chai.expect(res.status).to.equal(200);
     chai.expect(res.ids).to.deep.equal(['O1']);
 
-    // check the stored copies: only the older one changed
+    // check the stored referenced objects: only the older one changed
     const object = await database.collection('dbtests').findOne({ id: 'O1' }, { projection: { _id: 0, schedules: 1 } });
     chai.expect(object).to.deep.equal({
       schedules: [
@@ -1032,11 +1033,11 @@ describe('Database Functional', function () {
   }).timeout(10000);
 
   /**
-   * updateManyReferences when no copy is older (a change that comes back through a cycle of notifications): nothing is
-   * updated
+   * updateManyReferences when no referenced object is older (a change that comes back through a cycle of
+   * notifications): nothing is updated
    */
-  it('should updateManyReferences nothing when no copy is older', async () => {
-    // an object with the same version of the copy
+  it('should updateManyReferences nothing when no referenced object is older', async () => {
+    // an object that references the same version
     const config = { serviceName: 'ServiceTest', collection: database.collection('dbtests') };
     const created = '2026-11-01T10:00:00.000Z';
     await database.collection('dbtests').insertOne({
@@ -1062,11 +1063,243 @@ describe('Database Functional', function () {
   }).timeout(10000);
 
   /**
-   * updateManyReferencesID: the copies of an object that got another id take its new id (in an array and inside the
-   * elements of an array); the other copies and the other fields are not changed
+   * updateManyReferences checks the version again in its write: a newer referenced object written by another request
+   * after the objects to update were read is not overwritten (the older notification changes only the referenced
+   * objects still older)
    */
-  it('should updateManyReferencesID the copies with the previous id', async () => {
-    // a group with the copy of the student old1 next to another one, a schedule with old1 in a schedule of a class
+  it('should updateManyReferences not overwrite a newer object written after the read', async () => {
+    // two objects that reference an older user U1
+    const collection = database.collection('dbtests');
+    const created = '2026-11-01T10:00:00.000Z';
+    await collection.insertMany([
+      { id: 'O1', user: { id: 'U1', name: 'Old Name', createdTimestamp: created, modifiedCount: 3 } },
+      { id: 'O2', user: { id: 'U1', name: 'Old Name', createdTimestamp: created, modifiedCount: 3 } },
+    ]);
+
+    // the collection: another request writes a newer U1 in O1 between the read of the objects and the write
+    const findOptions = [];
+    const concurrentCollection = new Proxy(collection, {
+      get: (target, prop) => {
+        if (prop === 'find') {
+          return (filter, options) => {
+            findOptions.push(options);
+            return target.find(filter, options);
+          };
+        }
+        if (prop === 'updateMany') {
+          return async (...args) => {
+            await target.updateOne({ id: 'O1' }, { $set: { 'user.name': 'Newer Name', 'user.modifiedCount': 7 } });
+            return target.updateMany(...args);
+          };
+        }
+        const value = target[prop];
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+    const config = { serviceName: 'ServiceTest', collection: concurrentCollection, maxTimeMS: 30000 };
+
+    // call: the notification of the 5th change of U1
+    const objInfo = { id: 'U1', name: 'John Smith', createdTimestamp: created, modifiedCount: 5 };
+    const res = await DBOpsUtils.updateManyReferences(config, { fieldName: 'user' }, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check: the objects were read on the primary (the objects written just before in the same request are seen)
+    chai.expect(findOptions).to.deep.equal([{ readPreference: 'primary', maxTimeMS: 30000 }]);
+
+    // check: only O2 was written, the newer U1 of O1 is kept
+    chai.expect(res.value).to.equal(1);
+    const objects = await collection.find({}).project({ _id: 0, id: 1, user: 1 }).sort({ id: 1 }).toArray();
+    chai.expect(objects).to.deep.equal([
+      { id: 'O1', user: { id: 'U1', name: 'Newer Name', createdTimestamp: created, modifiedCount: 7 } },
+      { id: 'O2', user: { id: 'U1', name: 'John Smith', createdTimestamp: created, modifiedCount: 5 } },
+    ]);
+  }).timeout(10000);
+
+  /**
+   * the reads that must see the writes just done ask the primary (the options { readPreference:
+   * Constants.ReadPrimary }); the others give no options, the read preference of the client (a secondary may answer);
+   * the answer of a conditional write that matched nothing is read on the primary too
+   */
+  it('should read on the primary the objects just written', async () => {
+    // an object that references the user U1
+    const collection = database.collection('dbtests');
+    await collection.insertOne({ id: 'O1', name: 'Jane Smith', status: 'active', user: { id: 'U1' } });
+
+    // the collection: the options of the reads are kept
+    const readOptions = [];
+    const recordingCollection = new Proxy(collection, {
+      get: (target, prop) => {
+        if (['find', 'findOne', 'countDocuments'].includes(prop)) {
+          return (filter, options) => {
+            readOptions.push({ [prop]: options });
+            return target[prop](filter, options);
+          };
+        }
+        const value = target[prop];
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+    const maxTimeMS = 30000; // the time limit of each call
+    const config = { serviceName: 'ServiceTest', collection: recordingCollection, maxTimeMS };
+    const projection = { _id: 0, id: 1, name: 1 };
+    const readPrimary = { readPreference: DBOpsUtils.Constants.ReadPrimary };
+
+    // call: the reads with and without the primary
+    const resOne = await DBOpsUtils.getOne(config, 'O1', projection, _ctx, readPrimary);
+    const resIDs = await DBOpsUtils.getAllByIDs(config, ['O1'], projection, _ctx, readPrimary);
+    const resRef = await DBOpsUtils.getAllByReference(
+      config,
+      { fieldName: 'user' },
+      'U1',
+      projection,
+      _ctx,
+      readPrimary
+    );
+    const resCount = await DBOpsUtils.getAllCount(config, { filter: { id: 'O1' } }, _ctx, readPrimary);
+    const resAny = await DBOpsUtils.getOne(config, 'O1', projection, _ctx);
+
+    // check: the same object, read where asked
+    for (const res of [resOne, resAny]) {
+      chai.expect(res.value).to.deep.equal({ id: 'O1', name: 'Jane Smith' });
+    }
+    for (const res of [resIDs, resRef]) {
+      chai.expect(res.value).to.deep.equal([{ id: 'O1', name: 'Jane Smith' }]);
+    }
+    chai.expect(resCount.value).to.equal(1);
+    chai
+      .expect(readOptions)
+      .to.deep.equal([
+        { findOne: { projection, readPreference: 'primary', maxTimeMS } },
+        { find: { readPreference: 'primary', maxTimeMS } },
+        { find: { readPreference: 'primary', maxTimeMS } },
+        { countDocuments: { readPreference: 'primary', maxTimeMS } },
+        { findOne: { projection, maxTimeMS } },
+      ]);
+
+    // call: a conditional write that matches nothing
+    readOptions.length = 0;
+    const resPut = await DBOpsUtils.put(config, 'O1', { status: 'active' }, projection, _ctx, {
+      filter: { status: 'pending' },
+    });
+
+    // check: 409, decided on the primary
+    chai.expect(resPut.status).to.equal(409);
+    chai.expect(readOptions).to.deep.equal([{ countDocuments: { limit: 1, readPreference: 'primary', maxTimeMS } }]);
+  }).timeout(10000);
+
+  /**
+   * every database call carries the time limit of its config (maxTimeMS, the timeout of SMALL_API_DATABASE_LIMITS):
+   * the reads, the writes and the updates of the referenced objects
+   */
+  it('should give every database call its time limit', async () => {
+    // an object that references the user U1 and a list of schools
+    const collection = database.collection('dbtests');
+    await collection.insertOne({ id: 'O1', name: 'Jane Smith', user: { id: 'U1', name: 'John Smith' }, schools: [] });
+
+    // the collection: the options of each call are kept
+    const callOptions = [];
+    const calls = [
+      'find',
+      'findOne',
+      'countDocuments',
+      'insertOne',
+      'findOneAndUpdate',
+      'findOneAndDelete',
+      'updateMany',
+      'deleteMany',
+      'bulkWrite',
+    ];
+    const recordingCollection = new Proxy(collection, {
+      get: (target, prop) => {
+        if (calls.includes(prop)) {
+          return (first, ...rest) => {
+            const options = rest.at(-1);
+            callOptions.push({ call: prop, maxTimeMS: options?.maxTimeMS });
+            return target[prop](first, ...rest);
+          };
+        }
+        const value = target[prop];
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+    const config = { serviceName: 'ServiceTest', collection: recordingCollection, maxTimeMS: 10000 };
+    const projection = { _id: 0 };
+    const school = { id: 'S1', name: 'North School' };
+
+    // call: a time limit of 10 seconds
+    await DBOpsUtils.getAll(config, { filter: {}, projection }, _ctx);
+    await DBOpsUtils.getAllCount(config, { filter: {} }, _ctx);
+    await DBOpsUtils.getOne(config, 'O1', projection, _ctx);
+    await DBOpsUtils.post(config, { id: 'O2', name: 'Mary Jones' }, _ctx);
+    await DBOpsUtils.put(config, 'O2', { name: 'Mary Brown' }, projection, _ctx, { filter: { name: 'Mary Jones' } });
+    await DBOpsUtils.put(config, 'O2', { name: 'Mary Green' }, projection, _ctx, { filter: { name: 'Mary Jones' } });
+    await DBOpsUtils.patch(config, 'O1', { set: { name: 'Jane Brown' } }, projection, _ctx);
+    await DBOpsUtils.addManyReferences(config, ['O1'], { fieldName: 'schools[]' }, school, _ctx);
+    await DBOpsUtils.addManyReferences(config, ['O1'], { fieldName: 'user' }, { id: 'U1', name: 'John Brown' }, _ctx);
+    await DBOpsUtils.updateManyReferences(config, { fieldName: 'user' }, { id: 'U1', name: 'John Green' }, _ctx);
+    await DBOpsUtils.updateManyReferencesID(config, { fieldName: 'user' }, 'U1', 'U2', _ctx);
+    await DBOpsUtils.deleteManyReferences(config, { fieldName: 'schools[]' }, school, _ctx);
+    await DBOpsUtils.deleteManyReferences(config, { fieldName: 'user' }, { id: 'U2', name: 'John Green' }, _ctx);
+    await DBOpsUtils.delete(config, 'O2', projection, _ctx);
+    await DBOpsUtils.deleteAll(config, { filter: { id: 'O1' } }, _ctx);
+
+    // check: every call, with the time limit
+    chai.expect(callOptions.map((item) => item.call)).to.deep.equal([
+      'find', // getAll
+      'countDocuments', // getAllCount
+      'findOne', // getOne
+      'insertOne', // post
+      'findOneAndUpdate', // put
+      'findOneAndUpdate', // put that matches nothing
+      'countDocuments', // its answer: 409
+      'bulkWrite', // patch
+      'findOneAndUpdate',
+      'updateMany', // addManyReferences, array
+      'updateMany', // addManyReferences, single reference
+      'find', // updateManyReferences
+      'updateMany',
+      'find', // updateManyReferencesID
+      'updateMany',
+      'updateMany', // deleteManyReferences, array
+      'updateMany', // deleteManyReferences, single reference
+      'findOneAndDelete', // delete
+      'deleteMany', // deleteAll
+    ]);
+    for (const item of callOptions) {
+      chai.expect(item.maxTimeMS, item.call).to.equal(10000);
+    }
+  }).timeout(10000);
+
+  /**
+   * a database call that runs longer than its time limit is stopped by the database: 503 (the request can be sent
+   * again later), without the text of the database
+   */
+  it('should answer 503 when a database call runs longer than its time limit', async () => {
+    // an object, read by a slow query (1.2 seconds for each object)
+    const collection = database.collection('dbtests');
+    await collection.insertOne({ id: 'O1', name: 'Jane Smith' });
+    const config = { serviceName: 'ServiceTest', collection, maxTimeMS: 1000 };
+    const slowFilter = { $where: 'sleep(1200) || true' };
+
+    // call: a time limit of 1 second
+    const resRead = await DBOpsUtils.getAll(config, { filter: slowFilter, projection: { _id: 0 } }, _ctx);
+    const resWrite = await DBOpsUtils.deleteAll(config, { filter: slowFilter }, _ctx);
+
+    // check: stopped, 503, the object is kept
+    for (const res of [resRead, resWrite]) {
+      chai.expect(res.status).to.equal(503);
+      chai.expect(res.error.message).to.equal('The database call ran longer than its time limit');
+    }
+    const count = await collection.countDocuments({ id: 'O1' });
+    chai.expect(count).to.equal(1);
+  }).timeout(10000);
+
+  /**
+   * updateManyReferencesID: where an object that got another id is referenced, it takes its new id (in an array and
+   * inside the elements of an array); the other referenced objects and the other fields are not changed
+   */
+  it('should updateManyReferencesID the references with the previous id', async () => {
+    // a group that references the student old1 next to another one, a schedule with old1 in a schedule of a class
     const config = { serviceName: 'ServiceTest', collection: database.collection('dbtests') };
     await database.collection('dbtests').insertMany([
       {
@@ -1083,7 +1316,7 @@ describe('Database Functional', function () {
     const res = await DBOpsUtils.updateManyReferencesID(config, { fieldName: 'students[]' }, 'old1', 'user1', _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check: only the copy of old1
+    // check: only the referenced old1
     chai.expect(res.status).to.equal(200);
     chai.expect(res.ids).to.deep.equal(['G1']);
     const objects = await database
@@ -1103,7 +1336,7 @@ describe('Database Functional', function () {
       { id: 'G2', students: [{ id: 'user2', name: 'John Brown' }] },
     ]);
 
-    // case: no copy with the previous id: nothing changed
+    // case: no reference with the previous id: nothing changed
     const resNone = await DBOpsUtils.updateManyReferencesID(config, { fieldName: 'students[]' }, 'old1', 'user1', _ctx);
     chai.expect(resNone.value).to.equal(0);
     chai.expect(resNone.ids).to.deep.equal([]);

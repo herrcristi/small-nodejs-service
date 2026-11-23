@@ -6,6 +6,7 @@ const sinon = require('sinon');
 const axios = require('axios');
 const MockAdapter = require('axios-mock-adapter');
 
+const DbOpsUtils = require('../../utils/db-ops.utils.js');
 const RestCommsUtils = require('../../utils/rest-communications.utils.js');
 const JwtUtils = require('../../utils/jwt.utils.js');
 
@@ -53,13 +54,15 @@ describe('Rest Communications Utils', function () {
       },
     };
 
-    // call
+    // call: with the options of the read
     await RestCommsUtils.init(localConfig);
-    let res = await RestCommsUtils.getAllByIDs(serviceName, ['id1'], { id: 1 }, _ctx);
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    let res = await RestCommsUtils.getAllByIDs(serviceName, ['id1'], { id: 1 }, _ctx, options);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // check: the options go to the local service
     chai.expect(localConfig.local[serviceName].getAllByIDs.callCount).to.equal(1);
+    chai.expect(localConfig.local[serviceName].getAllByIDs.firstCall.args[3]).to.deep.equal(options);
 
     chai.expect(res).to.deep.equal({
       status: 200,
@@ -129,8 +132,12 @@ describe('Rest Communications Utils', function () {
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.getAllByIDs(serviceName, ['id1'], { id: 1, name: 1 }, _ctx);
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    let res = await RestCommsUtils.getAllByIDs(serviceName, ['id1'], { id: 1, name: 1 }, _ctx, options);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check: the options of the read are in the service token (only a service sets them)
+    chai.expect(JwtUtils.encrypt.firstCall.args[0].options).to.deep.equal(options);
 
     chai.expect(res).to.deep.equal({
       status: 200,

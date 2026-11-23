@@ -83,11 +83,11 @@ describe('Users Functional', function () {
 
   /**
    * check schools after for events/admins/students/professors
-   * options: { copyStatus: the status of the user copy of the records (the status of the user by default),
+   * options: { referencedStatus: the status of the referenced user of the records (the status of the user by default),
    * eventsPerRecord: 1 (its post) by default }
    */
   checkSchoolsAfter = async (testUserID, testUser, testUserStatus, _ctx, options = {}) => {
-    const copyStatus = options.copyStatus || testUserStatus;
+    const referencedStatus = options.referencedStatus || testUserStatus;
     const eventsPerRecord = options.eventsPerRecord || 1;
     const testAdminSchoolsIDs = testUser.schools.filter((item) => item.roles.includes('admin')).map((item) => item.id);
     const testStudentSchoolsIDs = testUser.schools
@@ -112,7 +112,7 @@ describe('Users Functional', function () {
           if (admin.id === testUserID) {
             chai.expect(admin.user.name).to.equal(testUser.name);
             chai.expect(admin.user.email).to.equal(testUser.email);
-            chai.expect(admin.user.status).to.equal(copyStatus);
+            chai.expect(admin.user.status).to.equal(referencedStatus);
           }
         }
       } else {
@@ -135,7 +135,7 @@ describe('Users Functional', function () {
           if (student.id === testUserID) {
             chai.expect(student.user.name).to.equal(testUser.name);
             chai.expect(student.user.email).to.equal(testUser.email);
-            chai.expect(student.user.status).to.equal(copyStatus);
+            chai.expect(student.user.status).to.equal(referencedStatus);
           }
         }
       } else {
@@ -158,7 +158,7 @@ describe('Users Functional', function () {
           if (professor.id === testUserID) {
             chai.expect(professor.user.name).to.equal(testUser.name);
             chai.expect(professor.user.email).to.equal(testUser.email);
-            chai.expect(professor.user.status).to.equal(copyStatus);
+            chai.expect(professor.user.status).to.equal(referencedStatus);
           }
         }
       } else {
@@ -408,8 +408,8 @@ describe('Users Functional', function () {
     chai.expect(eventsCountAfter).to.equal(eventsCountBefore + 1);
 
     // check events/admins/students/professors after: the records stay as traces (the schools keep them by default),
-    // their copy of the user is deleted, each with its event
-    const traces = { copyStatus: UsersRest.Constants.Status.Deleted, eventsPerRecord: 2 };
+    // their referenced user is deleted, each with its event
+    const traces = { referencedStatus: UsersRest.Constants.Status.Deleted, eventsPerRecord: 2 };
     await checkSchoolsAfter(testUserID, { name, email, schools }, status, _ctx, traces);
 
     // do a get

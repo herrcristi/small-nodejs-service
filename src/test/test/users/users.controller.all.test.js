@@ -67,7 +67,7 @@ describe('Users Controller', function () {
   }).timeout(10000);
 
   /**
-   * getAll internal with success
+   * getAll internal with success, with the options of the read of the calling service
    */
   it('should getAll internal with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
@@ -84,15 +84,20 @@ describe('Users Controller', function () {
       };
     });
 
+    // stub: the calling service asks the primary (the options of the read, in its token)
+    const options = { readPreference: 'primary' };
+    RestCommunicationsUtils.restValidation.returns({ status: 200, value: { options } });
+
     // call
     let res = await supertest(TestConstants.WebServer)
       .get(`${UsersConstants.ApiPathInternal}`)
       .set('Origin', TestConstants.WebServer);
     console.log(`\nTest returned: ${JSON.stringify(res?.body, null, 2)}\n`);
 
-    // check
+    // check: the options of the calling service go to the read
     chai.expect(res.status).to.equal(200);
     chai.expect(stubService.callCount).to.equal(1);
+    chai.expect(stubService.firstCall.args[2]).to.deep.equal(options);
     chai.expect(res.body).to.deep.equal({
       data: [...testUsers],
       meta: {

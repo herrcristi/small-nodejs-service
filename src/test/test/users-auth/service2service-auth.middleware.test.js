@@ -57,7 +57,8 @@ describe('Service 2 Service Auth Middleware', function () {
   });
 
   /**
-   * a service call: the identity comes from the signed service token, not from the headers next to it
+   * a service call: the identity comes from the signed service token, not from the headers next to it, and so do the
+   * options of its read
    */
   it('should take the identity and the tenant from the service token and not from the headers', async () => {
     // stub: the validation fills the context from the token; the headers name other values
@@ -67,7 +68,7 @@ describe('Service 2 Service Auth Middleware', function () {
       ctx.userID = 'user-1';
       ctx.username = 'user.one@testdomain.test';
       ctx.tenantName = 'School A';
-      return { status: 200, value: {} };
+      return { status: 200, value: { options: { readPreference: 'primary' } } };
     });
     const req = getReq('/api/internal_v1/users', {
       'x-s2s-token': 'token',
@@ -88,6 +89,9 @@ describe('Service 2 Service Auth Middleware', function () {
     chai.expect(req._ctx.userID).to.equal('user-1');
     chai.expect(req._ctx.username).to.equal('user.one@testdomain.test');
     chai.expect(req._ctx.tenantName).to.equal('School A');
+
+    // check: the options of the read asked by the calling service (in its token), for the route
+    chai.expect(req.s2sOptions).to.deep.equal({ readPreference: 'primary' });
   });
 
   /**

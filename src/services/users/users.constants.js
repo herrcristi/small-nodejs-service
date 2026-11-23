@@ -17,7 +17,7 @@ const Public = {
 
   // status
   // pending: invited, never logged in (removed when the invitation is not used in time, see PendingExpiresDays)
-  // the copies of a user kept by the schools (students, professors, admins) as traces have also:
+  // the users referenced by the schools (students, professors, admins) as traces have also:
   // deleted: the user deleted its account (the user does not exist anymore), removed: its role was removed
   Status: {
     Pending: 'pending',

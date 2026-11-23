@@ -4,6 +4,7 @@
 
 const Joi = require('joi');
 
+const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const CommonUtils = require('../../core/utils/common.utils.js');
@@ -259,6 +260,8 @@ const Public = {
       school: { role: UsersRest.Constants.Roles.Admin },
     };
 
+    // the membership of the admin reads the school in the users service (another service: a parameter does not reach
+    // it), on the primary, where the school just written is found
     const rInvite = await Public.invite(inviteInfo, { ..._ctx, tenantID: schoolID, tenantName: schoolName });
     if (rInvite.error) {
       // delete school
@@ -319,12 +322,11 @@ const Public = {
       type: UsersAuthConstants.Type,
     };
 
-    // check if user exists and has school role
-    let rUser = await UsersRest.getOneByEmail(
-      objInfo.email,
-      { ...BaseServiceUtils.Constants.DefaultProjection, email: 1, schools: 1 },
-      _ctx
-    );
+    // check if user exists and has school role (read on the primary: a user invited or removed by the request before
+    // decides between a new user and a role)
+    const userProjection = { ...BaseServiceUtils.Constants.DefaultProjection, email: 1, schools: 1 };
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    let rUser = await UsersRest.getOneByEmail(objInfo.email, userProjection, _ctx, options);
 
     const isNewUser = rUser.status === 404;
     let needsSetup = isNewUser;
@@ -351,7 +353,9 @@ const Public = {
     // EmailInterval); an active member that already has the role gets nothing (nothing was done: 204)
     const userInfo = { username: objInfo.email };
     if (needsSetup) {
-      await UsersAuth.resetPassword(userInfo, _ctx, UsersAuthConstants.ResetTokenType.Signup);
+      // the auth record was written (or found) by this invite: the link is made from the answer, it is not read again
+      const account = { username: rUser.value.username, userID: rUser.value.userID };
+      await UsersAuth.resetPassword(userInfo, _ctx, UsersAuthConstants.ResetTokenType.Signup, account);
     } else if (rUser.status !== 204) {
       await UsersAuth.sendInvite(userInfo, _ctx);
     }

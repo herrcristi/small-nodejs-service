@@ -23,8 +23,12 @@ const Public = {
     return await RestCommsUtils.getAll(SchoolsConstants.ServiceName, queryParams, _ctx);
   },
 
-  getAllByIDs: async (ids, projection, _ctx) => {
-    return await RestCommsUtils.getAllByIDs(SchoolsConstants.ServiceName, ids, projection, _ctx);
+  /**
+   * get all by ids
+   * options: the options of the read, built by the caller (like { readPreference })
+   */
+  getAllByIDs: async (ids, projection, _ctx, options) => {
+    return await RestCommsUtils.getAllByIDs(SchoolsConstants.ServiceName, ids, projection, _ctx, options);
   },
 
   /**
@@ -79,15 +83,17 @@ const Public = {
 
   /**
    * the settings of a school, with the default of the ones that are not set (the services of the members read
-   * removedMembers when a role is removed)
+   * removedMembers when a role is removed); the schools service reads them on the primary
    * returns { status, value: settings } or { status, error }
    */
   getSettings: async (schoolID, _ctx) => {
-    const r = await Public.getOne(schoolID, { id: 1, settings: 1 }, _ctx);
-    if (r.error) {
-      return r;
-    }
-    return { status: 200, value: { ...SchoolsConstants.DefaultSettings, ...r.value.settings } };
+    const config = {
+      serviceName: SchoolsConstants.ServiceName,
+      method: 'GET',
+      path: `/${schoolID}/settings`,
+      localCall: { fn: 'getSettings', params: { objID: schoolID } },
+    };
+    return await RestCommsUtils.call(config, _ctx);
   },
 
   /**

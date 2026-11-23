@@ -132,8 +132,8 @@ const write = app?.rolesPermissions?.professors?.write;
  * fields
  */
 const apiFields = {
-  // the status of the user copy: the user status while it has the role, removed (the role was removed) or deleted (the
-  // account was deleted): a removed member stays in the list (by the setting of the school), to know what happened
+  // the status of the referenced user: the user status while it has the role, removed (the role was removed) or deleted
+  // (the account was deleted): a removed member stays in the list (by the setting of the school), to know what happened
   fields: ['user.name', 'user.status', 'user.email'],
   projectionFields: ['user.name', 'user.status', 'user.email'],
   sortFields: ['user.name', 'user.status', 'user.email'],

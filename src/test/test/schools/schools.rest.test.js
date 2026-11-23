@@ -51,12 +51,14 @@ describe('Schools Rest', function () {
       return { status: 200, value: 'dummy' };
     });
 
-    // call
-    let res = await SchoolsRest.getAllByIDs(['id1'], { id: 1, name: 1 } /*projection*/, _ctx);
+    // call: with the options of the read
+    const options = { readPreference: 'primary' };
+    let res = await SchoolsRest.getAllByIDs(['id1'], { id: 1, name: 1 } /*projection*/, _ctx, options);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // check: the options go to the call
     chai.expect(res?.value).to.equal('dummy');
+    chai.expect(stub.firstCall.args[4]).to.deep.equal(options);
   }).timeout(10000);
 
   /**
@@ -245,27 +247,20 @@ describe('Schools Rest', function () {
   }).timeout(10000);
 
   /**
-   * the settings of a school: read with the defaults of the ones that are not set
+   * the settings of a school: read by the schools service (with the defaults of the ones that are not set, on the
+   * primary)
    */
-  it('should get the settings with the defaults', async () => {
-    // stub: the school has no settings yet
-    const stub = sinon.stub(RestCommsUtils, 'getOne').resolves({ status: 200, value: { id: 'school1' } });
+  it('should get the settings from the schools service', async () => {
+    // stub
+    const settings = { removedMembers: 'keep' };
+    const stub = sinon.stub(RestCommsUtils, 'call').resolves({ status: 200, value: settings });
 
     // call
     const res = await SchoolsRest.getSettings('school1', _ctx);
 
-    // check: the defaults, from the school
-    chai.expect(stub.firstCall.args[1]).to.equal('school1');
-    chai.expect(res).to.deep.equal({ status: 200, value: SchoolsRest.Constants.DefaultSettings });
-
-    // case: a setting is set
-    stub.resolves({ status: 200, value: { id: 'school1', settings: { removedMembers: 'delete' } } });
-    const resSet = await SchoolsRest.getSettings('school1', _ctx);
-    chai.expect(resSet.value).to.deep.equal({ removedMembers: 'delete' });
-
-    // case: the school can not be read: the error
-    stub.resolves({ status: 404, error: { message: 'Not found' } });
-    const resFailed = await SchoolsRest.getSettings('school1', _ctx);
-    chai.expect(resFailed.status).to.equal(404);
+    // check: the settings route of the school, its local function
+    chai.expect(stub.firstCall.args[0]).to.include({ method: 'GET', path: '/school1/settings' });
+    chai.expect(stub.firstCall.args[0].localCall).to.deep.equal({ fn: 'getSettings', params: { objID: 'school1' } });
+    chai.expect(res).to.deep.equal({ status: 200, value: settings });
   }).timeout(10000);
 });

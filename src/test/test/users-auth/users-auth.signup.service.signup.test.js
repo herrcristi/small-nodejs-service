@@ -168,6 +168,13 @@ describe('Users Auth Service', function () {
     chai.expect(stubUsersPost.callCount).to.equal(1);
     chai.expect(stubUsersDelete.callCount).to.equal(0);
 
+    // check: the user is created in the new school (the users service reads the school for the membership, on the
+    // primary); the user is looked up on the primary
+    const userCtx = stubUsersPost.firstCall.args[1];
+    chai.expect(userCtx.tenantID).to.equal(testSchoolID);
+    const primary = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    chai.expect(stubUsersGetByEmail.firstCall.args[3]).to.deep.equal(primary);
+
     chai.expect(stubUsersAuthPost.callCount).to.equal(1);
     chai.expect(stubUsersAuthResetPass.callCount).to.equal(1);
 

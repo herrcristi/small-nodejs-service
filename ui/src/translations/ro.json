@@ -56,6 +56,7 @@
   "error.status.415": "Cererea are un format care nu este acceptat",
   "error.status.429": "Prea multe cereri. Încearcă din nou mai târziu.",
   "error.status.500": "Serverul nu a putut finaliza cererea. Încearcă din nou mai târziu.",
+  "error.status.503": "Serverul este ocupat. Încearcă din nou peste câteva momente.",
   "events": "Evenimente",
   "events.global": "Evenimente globale",
   "fetch.details.error": "Eroare la încărcarea detaliilor",

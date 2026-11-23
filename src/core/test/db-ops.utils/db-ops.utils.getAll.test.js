@@ -95,6 +95,49 @@ describe('DB-Ops Utils', function () {
   }).timeout(10000);
 
   /**
+   * no connection of the pool is free in time (the database is busy): 503, the request can be sent again later (it
+   * does not wait for ever), without the text of the driver
+   */
+  it('should getAll answer 503 when no database connection is free in time', async () => {
+    // stub: the database fails, as the driver does when the wait for a connection of the pool ends
+    const waitError = new Error('Timed out while checking out a connection from connection pool: localhost:27017');
+    Object.defineProperty(waitError, 'name', { value: 'MongoWaitQueueTimeoutError' });
+    const collection = {};
+    collection.find = sinon.stub().throws(waitError);
+
+    // call
+    const res = await DbOpsUtils.getAll({ ...config, collection }, { filter: {}, projection: { _id: 0 } }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(503);
+    chai.expect(res.error.message).to.equal('No free database connection in time');
+  }).timeout(10000);
+
+  /**
+   * a call stopped by the database after its time limit (maxTimeMS, MaxTimeMSExpired): 503, the request can be sent
+   * again later, without the text of the database; the call carried the time limit of the config (no other option:
+   * the read preference of the client)
+   */
+  it('should getAll answer 503 when the database call runs longer than its time limit', async () => {
+    // stub: the database stops the call, as it does after its maxTimeMS
+    const timeError = new Error('Executor error during find command :: caused by :: operation exceeded time limit');
+    timeError.code = 50;
+    const collection = {};
+    collection.find = sinon.stub().throws(timeError);
+
+    // call
+    const timeConfig = { ...config, collection, maxTimeMS: 30000 };
+    const res = await DbOpsUtils.getAll(timeConfig, { filter: {}, projection: { _id: 0 } }, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check
+    chai.expect(res.status).to.equal(503);
+    chai.expect(res.error.message).to.equal('The database call ran longer than its time limit');
+    chai.expect(collection.find.firstCall.args[1]).to.deep.equal({ maxTimeMS: 30000 });
+  }).timeout(10000);
+
+  /**
    * getAll exception string
    */
   it('should getAll exception string', async () => {
