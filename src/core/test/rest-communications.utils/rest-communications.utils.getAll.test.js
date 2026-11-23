@@ -140,8 +140,12 @@ describe('Rest Communications Utils', function () {
     // call
     await RestCommsUtils.init(restConfig);
 
-    let res = await RestCommsUtils.getAll(serviceName, `?id=id1&sort=id&limit=10`, _ctx);
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    let res = await RestCommsUtils.getAll(serviceName, `?id=id1&sort=id&limit=10`, _ctx, options);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check: the options of the read are in the service token (only a service sets them)
+    chai.expect(JwtUtils.encrypt.firstCall.args[0].options).to.deep.equal(options);
 
     chai.expect(res).to.deep.equal({
       status: 200,

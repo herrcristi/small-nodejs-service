@@ -248,12 +248,19 @@ const Public = {
     }
   },
 
-  getAllCount: async (config, filter, _ctx) => {
+  /**
+   * count the objects of a filter
+   * config: { serviceName, collection, maxTimeMS }
+   * filter: { filter }
+   * options: the options of the read, built by the caller (see getAll), otherwise null
+   * return: { status, value } or { status, error: { message, error } }
+   */
+  getAllCount: async (config, filter, _ctx, options = null) => {
     const time = new Date();
     const logFilter = JSON.stringify(filter, CommonUtils.stringifyFilter, 2);
 
     try {
-      const count = await config.collection.countDocuments(filter.filter, { maxTimeMS: config.maxTimeMS });
+      const count = await config.collection.countDocuments(filter.filter, { ...options, maxTimeMS: config.maxTimeMS });
 
       console.log(
         `\nDB Calling: ${

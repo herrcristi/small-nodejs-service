@@ -239,9 +239,11 @@ const Private = {
   /**
    * get all for a request with a schema of the allowed filters and an optional restriction set by the caller
    * req: { query }
+   * restrictFilter: (filter) => {} the restriction of the caller, optional
+   * options: the options of the read (an internal request: the ones asked by the calling service), optional
    * returns: { status, value: {data, meta} } or { status, error }
    */
-  getAllForReq: async (req, schema, _ctx, restrictFilter = null) => {
+  getAllForReq: async (req, schema, _ctx, restrictFilter, options) => {
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
     const rf = await RestApiUtils.buildFilterFromReq(req, schema, _ctx);
     if (rf.error) {
@@ -253,13 +255,13 @@ const Private = {
     restrictFilter?.(filter);
 
     // get all (and expanded too)
-    let r = await Public.getAll(filter, _ctx);
+    let r = await Public.getAll(filter, _ctx, options);
     if (r.error) {
       return r;
     }
 
     // get corresponding count
-    let rCount = await Public.getAllCount(filter, _ctx);
+    let rCount = await Public.getAllCount(filter, _ctx, options);
     if (rCount.error) {
       return rCount;
     }
@@ -496,10 +498,11 @@ const Public = {
   /**
    * get all for an internal request (called from signup / invite by email)
    * req: { query }
+   * options: the options of the read asked by the calling service (the service token), like { readPreference }
    * returns: { status, value: {data, meta} } or { status, error }
    */
-  getAllInternalForReq: async (req, _ctx) => {
-    return await Private.getAllForReq(req, Validators.Get, _ctx);
+  getAllInternalForReq: async (req, _ctx, options) => {
+    return await Private.getAllForReq(req, Validators.Get, _ctx, null, options);
   },
 
   /**
@@ -590,22 +593,23 @@ const Public = {
   /**
    * get all count
    * filter: { filter? }
+   * options: the options of the read (DbOpsUtils.getAllCount), like { readPreference }
    * returns { status, value } or { status, error }
    */
-  getAllCount: async (filter, _ctx) => {
+  getAllCount: async (filter, _ctx, options) => {
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    return await DbOpsUtils.getAllCount(config, filter, _ctx);
+    return await DbOpsUtils.getAllCount(config, filter, _ctx, options);
   },
 
   /**
    * get all by ids: the objects referenced by another service before it writes them (populateReferences) or a read that
-   * decides a write (the roles of a user): read on the primary, so an object written just before (by an earlier request,
-   * or by another service in the same request: the school of a signup) is found, a reference to it would be dropped
+   * decides a write (the roles of a user)
+   * options: the options of the read, built by the caller (populateReferences and the roles of a user ask the primary:
+   *   an object written just before, by an earlier request or by another service, is found)
    * returns { status, value } or { status, error }
    */
-  getAllByIDs: async (ids, projection, _ctx) => {
+  getAllByIDs: async (ids, projection, _ctx, options) => {
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
     return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx, options);
   },
 

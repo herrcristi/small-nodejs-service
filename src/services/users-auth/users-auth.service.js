@@ -1114,8 +1114,10 @@ const Public = {
 
     // the roles of the user in the school: a user who is not a member is not found here (a role is given by an
     // invite), and a patch that changes no role is refused (no write, no event, no notification for nothing)
-    // (an internal read: the memberships of the user, whatever the access of the caller to its profile)
-    const rUsers = await UsersRest.getAllByIDs([userID], { _id: 0, id: 1, schools: 1 }, _ctx);
+    // (an internal read: the memberships of the user, whatever the access of the caller to its profile; on the primary:
+    // a role given or removed just before decides the change)
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    const rUsers = await UsersRest.getAllByIDs([userID], { _id: 0, id: 1, schools: 1 }, _ctx, options);
     if (rUsers.error) {
       return rUsers;
     }

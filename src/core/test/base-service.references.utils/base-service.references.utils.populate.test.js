@@ -159,9 +159,10 @@ describe('Base Service', function () {
     const res = await ReferencesUtils.populate(config.references[0], objs, _ctx, written);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check: only the other target was read
+    // check: only the other target was read, on the primary (it may have been written just before)
     chai.expect(stubRead.callCount).to.equal(1);
     chai.expect(stubRead.firstCall.args[0]).to.deep.equal(['targetID2']);
+    chai.expect(stubRead.firstCall.args[3]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
 
     // check: the written target, with the fields of the projection only
     chai.expect(res.value[0].target).to.deep.equal({ id: 'targetID1', name: 'North School', status: 'pending' });

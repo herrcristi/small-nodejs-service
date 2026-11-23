@@ -25,7 +25,7 @@ describe('Users Service', function () {
   after(async function () {});
 
   /**
-   * getAllInternalForReq with success
+   * getAllInternalForReq with success, with the options of the read of the calling service
    */
   it('should getAllInternalForReq with success', async () => {
     const testUsers = _.cloneDeep(TestConstants.Users);
@@ -52,14 +52,17 @@ describe('Users Service', function () {
       };
     });
 
-    // call
-    let res = await UsersService.getAllInternalForReq({ query: {} }, _ctx);
+    // call: with the options of the read of the calling service
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    let res = await UsersService.getAllInternalForReq({ query: {} }, _ctx, options);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // check: the list and its count are read with the options
     chai.expect(stubBuild.callCount).to.equal(1);
     chai.expect(stubBaseGetAll.callCount).to.equal(1);
     chai.expect(stubBaseGetAllCount.callCount).to.equal(1);
+    chai.expect(stubBaseGetAll.firstCall.args[3]).to.deep.equal(options);
+    chai.expect(stubBaseGetAllCount.firstCall.args[3]).to.deep.equal(options);
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {

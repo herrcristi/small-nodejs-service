@@ -3,6 +3,7 @@
  */
 
 const CommonUtils = require('./common.utils.js');
+const DbOpsUtils = require('./db-ops.utils.js');
 
 const Utils = {
   /**
@@ -155,10 +156,12 @@ const Public = {
         targetsMap[writtenID] = CommonUtils.getProjectedObj(writtenTarget, projection);
       }
 
-      // get the other targets
+      // get the other targets, on the primary: a target written just before (by an earlier request, or by another
+      // service in the same request: the school of a signup) is found, a reference to it would be dropped
       const readIDs = targetsIDs.filter((id) => id !== writtenID);
       if (readIDs.length) {
-        let rs = await configRef.service.getAllByIDs(readIDs, { ...projection, _id: 0 }, _ctx);
+        const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+        let rs = await configRef.service.getAllByIDs(readIDs, { ...projection, _id: 0 }, _ctx, options);
         if (rs.error) {
           return rs;
         }

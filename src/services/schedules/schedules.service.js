@@ -628,17 +628,17 @@ const Public = {
 
   /**
    * get all by ids: the objects referenced by another service before it writes them (populateReferences) or a read that
-   * decides a write (the roles of a user): read on the primary, so an object written just before (by an earlier request,
-   * or by another service in the same request: the school of a signup) is found, a reference to it would be dropped
+   * decides a write (the roles of a user)
+   * options: the options of the read, built by the caller (populateReferences and the roles of a user ask the primary:
+   *   an object written just before, by an earlier request or by another service, is found)
    * returns { status, value } or { status, error }
    */
-  getAllByIDs: async (ids, projection, _ctx) => {
+  getAllByIDs: async (ids, projection, _ctx, options) => {
     if (!_ctx.tenantID) {
       return Private.errorNoTenant(_ctx);
     }
 
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
     return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx, options);
   },
 

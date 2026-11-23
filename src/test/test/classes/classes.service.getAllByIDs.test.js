@@ -25,7 +25,7 @@ describe('Classes Service', function () {
   after(async function () {});
 
   /**
-   * getAllByIDs with success
+   * getAllByIDs with success, with the options of the caller
    */
   it('should getAllByIDs with success', async () => {
     const testClasses = _.cloneDeep(TestConstants.Classes);
@@ -38,12 +38,13 @@ describe('Classes Service', function () {
     });
 
     // call
-    let res = await ClassesService.getAllByIDs(testClassesIDs, { id: 1 }, _ctx);
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    let res = await ClassesService.getAllByIDs(testClassesIDs, { id: 1 }, _ctx, options);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check: read on the primary (the objects referenced by a write, maybe created just before by another request)
+    // check: the options of the caller go to the read (populateReferences asks the primary)
     chai.expect(stubBase.callCount).to.equal(1);
-    chai.expect(stubBase.firstCall.args[4]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
+    chai.expect(stubBase.firstCall.args[4]).to.deep.equal(options);
     chai.expect(res).to.deep.equal({
       status: 200,
       value: [...testClasses],

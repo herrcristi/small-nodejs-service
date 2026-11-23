@@ -1155,6 +1155,7 @@ describe('Database Functional', function () {
       _ctx,
       readPrimary
     );
+    const resCount = await DBOpsUtils.getAllCount(config, { filter: { id: 'O1' } }, _ctx, readPrimary);
     const resAny = await DBOpsUtils.getOne(config, 'O1', projection, _ctx);
 
     // check: the same object, read where asked
@@ -1164,12 +1165,14 @@ describe('Database Functional', function () {
     for (const res of [resIDs, resRef]) {
       chai.expect(res.value).to.deep.equal([{ id: 'O1', name: 'Jane Smith' }]);
     }
+    chai.expect(resCount.value).to.equal(1);
     chai
       .expect(readOptions)
       .to.deep.equal([
         { findOne: { projection, readPreference: 'primary', maxTimeMS } },
         { find: { readPreference: 'primary', maxTimeMS } },
         { find: { readPreference: 'primary', maxTimeMS } },
+        { countDocuments: { readPreference: 'primary', maxTimeMS } },
         { findOne: { projection, maxTimeMS } },
       ]);
 

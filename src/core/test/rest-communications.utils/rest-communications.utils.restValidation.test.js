@@ -137,6 +137,47 @@ describe('Rest Communications Utils', function () {
   }).timeout(10000);
 
   /**
+   * the options of a read go in the service token: the called route gets them from its validation (only a service can
+   * set them)
+   */
+  it('should restValidation give the options of the read of the calling service', async () => {
+    // config
+    const serviceName = 'Service';
+    const restConfig = {
+      issuer: 'test-issuer',
+      s2sPass: process.env.SMALL_API_S2SPASS,
+      rest: {
+        [serviceName]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: process.env.SMALL_API_PORT, // see test/test-setup.utils.js
+          path: '/api/v1/service',
+        },
+      },
+    };
+
+    // stub: the token of the call
+    let s2sToken;
+    mockAxios.onGet().reply((config) => {
+      s2sToken = config.headers['x-s2s-token'];
+      return [200, { data: [], meta: { count: 0 } }];
+    });
+
+    // call: a read on the primary
+    await RestCommsUtils.init(restConfig);
+    const options = { readPreference: 'primary' };
+    const callCtx = { ..._ctx, reqMethod: 'GET', reqUrl: '/api/v1/users-auth/login' };
+    const res = await RestCommsUtils.restCall({ serviceName, method: 'GET', path: '', options }, callCtx);
+    chai.expect(res.status).to.equal(200);
+
+    // check: the called route gets the options
+    const ctx = { ..._ctx, reqMethod: 'GET', reqPath: '/api/v1/service' };
+    const rv = RestCommsUtils.restValidation(s2sToken, ctx);
+    chai.expect(rv.status).to.equal(200);
+    chai.expect(rv.value.options).to.deep.equal(options);
+  }).timeout(10000);
+
+  /**
    * restValidation with failure
    */
   it('should restValidation with failure', async () => {
