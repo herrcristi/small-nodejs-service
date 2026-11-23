@@ -185,7 +185,8 @@ const Private = {
   getCurrentStatus: async (objID, _ctx) => {
     const config = await Private.getConfig(_ctx);
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
-    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
+    // after a conditional write that changed nothing (no object in its answer): read on the primary
+    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx, DbOpsUtils.Constants.ReadPrimary);
     return BaseServiceUtils.getProjectedResponse(rget, null /*default projection */, _ctx);
   },
 

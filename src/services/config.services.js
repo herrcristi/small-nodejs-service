@@ -3,6 +3,9 @@
  */
 const RestCommsUtils = require('../core/utils/rest-communications.utils.js');
 const BaseServiceUtils = require('../core/utils/base-service.utils.js');
+const DatabaseManagerUtils = require('../core/utils/database-manager.utils.js');
+
+const ConfigSettings = require('./config.settings.js');
 
 const WebConstants = require('../web-server/web-server.constants.js');
 
@@ -83,6 +86,10 @@ const Public = {
    * init all services
    */
   init: async (port) => {
+    // the limits of the database (before the first connection): the connections, the wait for one, the time of a call
+    const databaseLimits = ConfigSettings.getDatabaseLimits();
+    DatabaseManagerUtils.init(databaseLimits);
+
     // init databases
     for (const database of [
       SchoolsDatabase,

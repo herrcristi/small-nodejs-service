@@ -303,27 +303,19 @@ const Private = {
    * the users notification: the logins of the removed users are removed (a user removed because its invitation was
    * not used in time; a deleted account was already removed by delete)
    * a removed notification is also sent when only some roles of a user are removed (the user still exists, its login
-   * is kept): the users are read again, so only the ones that do not exist anymore lose their login
+   * is kept): only the users that do not exist anymore lose their login, the ones the users service deleted (their
+   * notification has the status deleted: the answer of the delete, not read again, since a secondary may still have
+   * the user)
    * returns { status, value } or { status, error }
    */
   onUsersNotification: async (notification, _ctx) => {
     const removedUsers = (notification[Private.Notification.Removed] || []).filter((user) => user.email);
-    if (!removedUsers.length) {
-      return { status: 200, value: false };
-    }
-
-    // the users that still exist
-    const removedIDs = removedUsers.map((user) => user.id);
-    const rCurrent = await UsersRest.getAllByIDs(removedIDs, { id: 1 }, _ctx);
-    if (rCurrent.error) {
-      return rCurrent;
-    }
-    const existingIDs = new Set(rCurrent.value.map((user) => user.id));
 
     // the users that do not exist anymore (once each)
     const users = [];
     for (const user of removedUsers) {
-      if (!existingIDs.has(user.id) && !users.some((item) => item.id === user.id)) {
+      const isDeleted = user.status === UsersRest.Constants.Status.Deleted;
+      if (isDeleted && !users.some((item) => item.id === user.id)) {
         users.push(user);
       }
     }

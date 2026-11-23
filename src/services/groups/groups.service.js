@@ -130,7 +130,8 @@ const Private = {
     }
 
     const projection = { ...config.notifications.projection, _id: 0 };
-    const rGroups = await DbOpsUtils.getAllByIDs(config, groupsIDs, projection, _ctx);
+    // the groups were just written by updateMany (no object in its answer): read on the primary
+    const rGroups = await DbOpsUtils.getAllByIDs(config, groupsIDs, projection, _ctx, DbOpsUtils.Constants.ReadPrimary);
     if (rGroups.error) {
       return rGroups;
     }
@@ -190,7 +191,14 @@ const Private = {
     for (const student of notification[Private.Notification.Removed] || []) {
       console.log(`\n${GroupsConstants.ServiceName}: remove the deleted student ${student.id} from the groups`);
       // the groups that have it (they are notified)
-      const rGroups = await DbOpsUtils.getAllByReference(config, studentsRef, student.id, { _id: 0, id: 1 }, _ctx);
+      const rGroups = await DbOpsUtils.getAllByReference(
+        config,
+        studentsRef,
+        student.id,
+        { _id: 0, id: 1 },
+        _ctx,
+        DbOpsUtils.Constants.ReadPrimary // the notification is handled in the request that wrote: read the primary
+      );
       if (rGroups.error) {
         console.log(
           `\n${GroupsConstants.ServiceName}: failed to remove the student ${student.id}: ${rGroups.error.message}`

@@ -61,6 +61,7 @@ describe('DB-Ops Utils', function () {
 
       chai.expect(options).to.deep.equal({
         arrayFilters: [],
+        maxTimeMS: 30000, // the time limit of the call (30 s by default)
       });
 
       return {
@@ -115,6 +116,7 @@ describe('DB-Ops Utils', function () {
 
       chai.expect(options).to.deep.equal({
         arrayFilters: [],
+        maxTimeMS: 30000, // the time limit of the call (30 s by default)
       });
 
       return {

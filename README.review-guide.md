@@ -151,11 +151,12 @@ For scalability, severity is about the capacity and availability question being 
 **Areas.**
 
 1. **Check, then act.** Every place that reads and then writes on the basis of the read: invites, signups, role removal, activation, bootstrap on several pods. For each, find what makes the second request fail or succeed safely (a unique index, a conditional update) or show that nothing does.
-2. **Read, modify, write and lost updates.** Copies read before a write and stored after it; arrays patched in place; counters; the order in which notifications arrive; handlers that fail halfway; whether retries are safe.
-3. **Several steps without a transaction.** For each multi-step operation, list the steps and, for each point between two steps, the state left if the process stops there, and whether a retry repairs it.
-4. **Shared state in one process.** Module-level caches, anything written at request time, `process.env`, the request context, objects passed by reference.
-5. **The event loop.** Synchronous work in the request path, unbounded fan-out, loops with `await` over many items, missing timeouts and cancellation.
-6. **The browser.** Double submits, answers arriving out of order, stores updated while navigation runs.
+2. **Read, modify, write and lost updates.** Copies read before a write and stored after it; arrays patched in place; counters; the order in which notifications arrive; handlers that fail halfway; whether retries are safe. A guard checked only in the read before a write (a version, a status) and not in the write itself.
+3. **Reads after writes.** The reads go to the secondaries, which may not have a write yet. Every read of an object that the same request has just written: it must be the answer of the write, or a read on the primary (after a write that returns no object, and in the notification handlers, which run inside the request).
+4. **Several steps without a transaction.** For each multi-step operation, list the steps and, for each point between two steps, the state left if the process stops there, and whether a retry repairs it.
+5. **Shared state in one process.** Module-level caches, anything written at request time, `process.env`, the request context, objects passed by reference.
+6. **The event loop.** Synchronous work in the request path, unbounded fan-out, loops with `await` over many items, missing timeouts and cancellation. A database call made outside `DbOpsUtils`, or without its time limit (`maxTimeMS`), can hold a connection for ever.
+7. **The browser.** Double submits, answers arriving out of order, stores updated while navigation runs.
 
 **How to discover.** Do not assert a race: **prove it** with a controlled interleaving. In a simulator, start two operations, make each wait at the point between its read and its write, release them in the bad order, and show the final state. For failure between steps, make the second step throw and look at what stays. For the event loop, measure how long the loop is blocked while operations run.
 

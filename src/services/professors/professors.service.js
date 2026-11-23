@@ -208,7 +208,14 @@ const Private = {
     }
 
     const projection = { ...config.notifications.projection, _id: 0 };
-    const rProfessors = await DbOpsUtils.getAllByIDs(config, professorsIDs, projection, _ctx);
+    // the professors were just written by updateMany (no object in its answer): read on the primary
+    const rProfessors = await DbOpsUtils.getAllByIDs(
+      config,
+      professorsIDs,
+      projection,
+      _ctx,
+      DbOpsUtils.Constants.ReadPrimary
+    );
     if (rProfessors.error) {
       return rProfessors;
     }
@@ -237,7 +244,14 @@ const Private = {
     // the professors that exist already
     const usersIDs = users.map((user) => user.id);
     const existingProjection = { _id: 0, id: 1, type: 1, user: 1 }; // the type: the target of the restore event
-    const rProfessors = await DbOpsUtils.getAllByIDs(config, usersIDs, existingProjection, _ctx);
+    // the notification is handled in the request that wrote (a trace relinked by the invite): read the primary
+    const rProfessors = await DbOpsUtils.getAllByIDs(
+      config,
+      usersIDs,
+      existingProjection,
+      _ctx,
+      DbOpsUtils.Constants.ReadPrimary
+    );
     if (rProfessors.error) {
       return rProfessors;
     }
@@ -329,7 +343,14 @@ const Private = {
     const changedProfessorsIDs = new Set();
     let failure = null; // the first failure (the next users are still done)
     for (const user of users) {
-      const rProfessor = await DbOpsUtils.getOne(config, user.id, { _id: 0, id: 1, user: 1 }, _ctx);
+      // the notification is handled in the request that wrote (a record created just before): read the primary
+      const rProfessor = await DbOpsUtils.getOne(
+        config,
+        user.id,
+        { _id: 0, id: 1, user: 1 },
+        _ctx,
+        DbOpsUtils.Constants.ReadPrimary
+      );
       if (rProfessor.status === 404) {
         continue;
       }

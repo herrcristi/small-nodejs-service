@@ -233,7 +233,14 @@ const Private = {
     }
 
     const projection = { ...config.notifications.projection, _id: 0 };
-    const rSchedules = await DbOpsUtils.getAllByIDs(config, schedulesIDs, projection, _ctx);
+    // the schedules were just written by updateMany (no object in its answer): read on the primary
+    const rSchedules = await DbOpsUtils.getAllByIDs(
+      config,
+      schedulesIDs,
+      projection,
+      _ctx,
+      DbOpsUtils.Constants.ReadPrimary
+    );
     if (rSchedules.error) {
       return rSchedules;
     }
@@ -280,7 +287,14 @@ const Private = {
     for (const schoolClass of notification[Private.Notification.Removed] || []) {
       console.log(`\n${SchedulesConstants.ServiceName}: remove the deleted class ${schoolClass.id} from the schedules`);
       // the schedules that have it (they are notified)
-      const rSchedules = await DbOpsUtils.getAllByReference(config, classRef, schoolClass.id, { _id: 0, id: 1 }, _ctx);
+      const rSchedules = await DbOpsUtils.getAllByReference(
+        config,
+        classRef,
+        schoolClass.id,
+        { _id: 0, id: 1 },
+        _ctx,
+        DbOpsUtils.Constants.ReadPrimary // the notification is handled in the request that wrote: read the primary
+      );
       if (rSchedules.error) {
         console.log(
           `\n${SchedulesConstants.ServiceName}: failed to remove the class ${schoolClass.id}: ${rSchedules.error.message}`

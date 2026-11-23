@@ -6,6 +6,7 @@ const chai = require('chai');
 const DBMgr = require('../../../core/utils/database-manager.utils.js');
 const DBOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const DBOpsArrayUtils = require('../../../core/utils/db-ops.array.utils.js');
+const ConfigSettings = require('../../../services/config.settings.js');
 
 const TestConstants = require('../../test-constants.js');
 
@@ -26,6 +27,10 @@ describe('Database Functional', function () {
   afterEach(async function () {
     sinon.restore();
     await database.collection('dbtests').deleteMany();
+
+    // the limits of the application (a test may change the time limit of a database call)
+    const databaseLimits = ConfigSettings.getDatabaseLimits();
+    DBMgr.init(databaseLimits);
   });
 
   after(async function () {});
@@ -1059,6 +1064,236 @@ describe('Database Functional', function () {
       modifiedCount: 1,
       user: { id: 'U1', name: 'John Smith', createdTimestamp: created, modifiedCount: 5 },
     });
+  }).timeout(10000);
+
+  /**
+   * updateManyReferences checks the version again in its write: a newer copy written by another request after the
+   * objects to update were read is not overwritten (the older notification changes only the copies still older)
+   */
+  it('should updateManyReferences not overwrite a newer copy written after the read', async () => {
+    // two objects with an older copy of the user U1
+    const collection = database.collection('dbtests');
+    const created = '2026-11-01T10:00:00.000Z';
+    await collection.insertMany([
+      { id: 'O1', user: { id: 'U1', name: 'Old Name', createdTimestamp: created, modifiedCount: 3 } },
+      { id: 'O2', user: { id: 'U1', name: 'Old Name', createdTimestamp: created, modifiedCount: 3 } },
+    ]);
+
+    // the collection: another request writes a newer copy in O1 between the read of the objects and the write
+    const findOptions = [];
+    const concurrentCollection = new Proxy(collection, {
+      get: (target, prop) => {
+        if (prop === 'find') {
+          return (filter, options) => {
+            findOptions.push(options);
+            return target.find(filter, options);
+          };
+        }
+        if (prop === 'updateMany') {
+          return async (...args) => {
+            await target.updateOne({ id: 'O1' }, { $set: { 'user.name': 'Newer Name', 'user.modifiedCount': 7 } });
+            return target.updateMany(...args);
+          };
+        }
+        const value = target[prop];
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+    const config = { serviceName: 'ServiceTest', collection: concurrentCollection };
+
+    // call: the notification of the 5th change of U1
+    const objInfo = { id: 'U1', name: 'John Smith', createdTimestamp: created, modifiedCount: 5 };
+    const res = await DBOpsUtils.updateManyReferences(config, { fieldName: 'user' }, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check: the objects were read on the primary (the copies written just before in the same request are seen)
+    chai.expect(findOptions).to.deep.equal([{ readPreference: 'primary', maxTimeMS: 30000 }]);
+
+    // check: only O2 was written, the newer copy of O1 is kept
+    chai.expect(res.value).to.equal(1);
+    const objects = await collection.find({}).project({ _id: 0, id: 1, user: 1 }).sort({ id: 1 }).toArray();
+    chai.expect(objects).to.deep.equal([
+      { id: 'O1', user: { id: 'U1', name: 'Newer Name', createdTimestamp: created, modifiedCount: 7 } },
+      { id: 'O2', user: { id: 'U1', name: 'John Smith', createdTimestamp: created, modifiedCount: 5 } },
+    ]);
+  }).timeout(10000);
+
+  /**
+   * the reads that must see the writes just done ask the primary (Constants.ReadPrimary); the others leave the
+   * choice to the client (a secondary may answer); the answer of a conditional write that matched nothing is read on
+   * the primary too
+   */
+  it('should read on the primary the objects just written', async () => {
+    // an object with the copy of the user U1
+    const collection = database.collection('dbtests');
+    await collection.insertOne({ id: 'O1', name: 'Jane Smith', status: 'active', user: { id: 'U1' } });
+
+    // the collection: the options of the reads are kept
+    const readOptions = [];
+    const recordingCollection = new Proxy(collection, {
+      get: (target, prop) => {
+        if (['find', 'findOne', 'countDocuments'].includes(prop)) {
+          return (filter, options) => {
+            readOptions.push({ [prop]: options });
+            return target[prop](filter, options);
+          };
+        }
+        const value = target[prop];
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+    const config = { serviceName: 'ServiceTest', collection: recordingCollection };
+    const projection = { _id: 0, id: 1, name: 1 };
+    const readPrimary = DBOpsUtils.Constants.ReadPrimary;
+
+    // call: the reads with and without the primary
+    const resOne = await DBOpsUtils.getOne(config, 'O1', projection, _ctx, readPrimary);
+    const resIDs = await DBOpsUtils.getAllByIDs(config, ['O1'], projection, _ctx, readPrimary);
+    const resRef = await DBOpsUtils.getAllByReference(
+      config,
+      { fieldName: 'user' },
+      'U1',
+      projection,
+      _ctx,
+      readPrimary
+    );
+    const resAny = await DBOpsUtils.getOne(config, 'O1', projection, _ctx);
+
+    // check: the same object, read where asked
+    for (const res of [resOne, resAny]) {
+      chai.expect(res.value).to.deep.equal({ id: 'O1', name: 'Jane Smith' });
+    }
+    for (const res of [resIDs, resRef]) {
+      chai.expect(res.value).to.deep.equal([{ id: 'O1', name: 'Jane Smith' }]);
+    }
+    const maxTimeMS = 30000; // the time limit of each call (30 s by default)
+    chai
+      .expect(readOptions)
+      .to.deep.equal([
+        { findOne: { projection, readPreference: 'primary', maxTimeMS } },
+        { find: { readPreference: 'primary', maxTimeMS } },
+        { find: { readPreference: 'primary', maxTimeMS } },
+        { findOne: { projection, maxTimeMS } },
+      ]);
+
+    // call: a conditional write that matches nothing
+    readOptions.length = 0;
+    const resPut = await DBOpsUtils.put(config, 'O1', { status: 'active' }, projection, _ctx, {
+      filter: { status: 'pending' },
+    });
+
+    // check: 409, decided on the primary
+    chai.expect(resPut.status).to.equal(409);
+    chai.expect(readOptions).to.deep.equal([{ countDocuments: { limit: 1, readPreference: 'primary', maxTimeMS } }]);
+  }).timeout(10000);
+
+  /**
+   * every database call carries the time limit of the application (maxTimeMS, the queryTimeout of the limits): the
+   * reads, the writes and the writes of the copies
+   */
+  it('should give every database call its time limit', async () => {
+    // an object with a copy of the user U1 and a list of copies of schools
+    const collection = database.collection('dbtests');
+    await collection.insertOne({ id: 'O1', name: 'Jane Smith', user: { id: 'U1', name: 'John Smith' }, schools: [] });
+
+    // the collection: the options of each call are kept
+    const callOptions = [];
+    const calls = [
+      'find',
+      'findOne',
+      'countDocuments',
+      'insertOne',
+      'findOneAndUpdate',
+      'findOneAndDelete',
+      'updateMany',
+      'deleteMany',
+      'bulkWrite',
+    ];
+    const recordingCollection = new Proxy(collection, {
+      get: (target, prop) => {
+        if (calls.includes(prop)) {
+          return (first, ...rest) => {
+            const options = rest.at(-1);
+            callOptions.push({ call: prop, maxTimeMS: options?.maxTimeMS });
+            return target[prop](first, ...rest);
+          };
+        }
+        const value = target[prop];
+        return typeof value === 'function' ? value.bind(target) : value;
+      },
+    });
+    const config = { serviceName: 'ServiceTest', collection: recordingCollection };
+    const projection = { _id: 0 };
+    const school = { id: 'S1', name: 'North School' };
+
+    // call: a time limit of 10 seconds
+    DBMgr.init({ queryTimeout: '10' });
+    await DBOpsUtils.getAll(config, { filter: {}, projection }, _ctx);
+    await DBOpsUtils.getAllCount(config, { filter: {} }, _ctx);
+    await DBOpsUtils.getOne(config, 'O1', projection, _ctx);
+    await DBOpsUtils.post(config, { id: 'O2', name: 'Mary Jones' }, _ctx);
+    await DBOpsUtils.put(config, 'O2', { name: 'Mary Brown' }, projection, _ctx, { filter: { name: 'Mary Jones' } });
+    await DBOpsUtils.put(config, 'O2', { name: 'Mary Green' }, projection, _ctx, { filter: { name: 'Mary Jones' } });
+    await DBOpsUtils.patch(config, 'O1', { set: { name: 'Jane Brown' } }, projection, _ctx);
+    await DBOpsUtils.addManyReferences(config, ['O1'], { fieldName: 'schools[]' }, school, _ctx);
+    await DBOpsUtils.addManyReferences(config, ['O1'], { fieldName: 'user' }, { id: 'U1', name: 'John Brown' }, _ctx);
+    await DBOpsUtils.updateManyReferences(config, { fieldName: 'user' }, { id: 'U1', name: 'John Green' }, _ctx);
+    await DBOpsUtils.updateManyReferencesID(config, { fieldName: 'user' }, 'U1', 'U2', _ctx);
+    await DBOpsUtils.deleteManyReferences(config, { fieldName: 'schools[]' }, school, _ctx);
+    await DBOpsUtils.deleteManyReferences(config, { fieldName: 'user' }, { id: 'U2', name: 'John Green' }, _ctx);
+    await DBOpsUtils.delete(config, 'O2', projection, _ctx);
+    await DBOpsUtils.deleteAll(config, { filter: { id: 'O1' } }, _ctx);
+
+    // check: every call, with the time limit
+    chai.expect(callOptions.map((item) => item.call)).to.deep.equal([
+      'find', // getAll
+      'countDocuments', // getAllCount
+      'findOne', // getOne
+      'insertOne', // post
+      'findOneAndUpdate', // put
+      'findOneAndUpdate', // put that matches nothing
+      'countDocuments', // its answer: 409
+      'bulkWrite', // patch
+      'findOneAndUpdate',
+      'updateMany', // addManyReferences, array
+      'updateMany', // addManyReferences, single copy
+      'find', // updateManyReferences
+      'updateMany',
+      'find', // updateManyReferencesID
+      'updateMany',
+      'updateMany', // deleteManyReferences, array
+      'updateMany', // deleteManyReferences, single copy
+      'findOneAndDelete', // delete
+      'deleteMany', // deleteAll
+    ]);
+    for (const item of callOptions) {
+      chai.expect(item.maxTimeMS, item.call).to.equal(10000);
+    }
+  }).timeout(10000);
+
+  /**
+   * a database call that runs longer than its time limit is stopped by the database: 503 (the request can be sent
+   * again later), without the text of the database
+   */
+  it('should answer 503 when a database call runs longer than its time limit', async () => {
+    // an object, read by a slow query (1.2 seconds for each object)
+    const collection = database.collection('dbtests');
+    await collection.insertOne({ id: 'O1', name: 'Jane Smith' });
+    const config = { serviceName: 'ServiceTest', collection };
+    const slowFilter = { $where: 'sleep(1200) || true' };
+
+    // call: a time limit of 1 second
+    DBMgr.init({ queryTimeout: '1' });
+    const resRead = await DBOpsUtils.getAll(config, { filter: slowFilter, projection: { _id: 0 } }, _ctx);
+    const resWrite = await DBOpsUtils.deleteAll(config, { filter: slowFilter }, _ctx);
+
+    // check: stopped, 503, the object is kept
+    for (const res of [resRead, resWrite]) {
+      chai.expect(res.status).to.equal(503);
+      chai.expect(res.error.message).to.equal('The database call ran longer than its time limit');
+    }
+    const count = await collection.countDocuments({ id: 'O1' });
+    chai.expect(count).to.equal(1);
   }).timeout(10000);
 
   /**

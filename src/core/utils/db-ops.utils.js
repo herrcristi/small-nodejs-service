@@ -1,8 +1,21 @@
 /**
  * Database operation utils
+ *
+ * every database call carries the time limit of the application (DatabaseManagerUtils.getTimeLimit: { maxTimeMS }):
+ * the server stops a call that runs longer and the request answers 503
  */
 const CommonUtils = require('./common.utils.js');
+const DatabaseManagerUtils = require('./database-manager.utils.js');
 const DbOpsArrayUtils = require('./db-ops.array.utils.js');
+
+const Constants = {
+  // the options of a read that must see the writes just done: the reads go to the secondaries (the readPreference of
+  // the client), which may not have a write yet; the primary has every acknowledged write
+  // used by a read after a write that returned no object (updateMany, a conditional write that matched nothing) and by
+  // the notifications, which are handled inside the request that wrote the change
+  // (the object of a write that returns it, put / patch / delete, is its result: it is never read again)
+  ReadPrimary: { readPreference: 'primary' },
+};
 
 const Utils = {
   /**
@@ -19,6 +32,13 @@ const Utils = {
   // the error code of MongoDB for a value that is already used in a unique index
   DuplicateKeyCode: 11000,
 
+  // the error of the driver when no connection of the pool is free in time (the waitQueueTimeoutMS of the pool)
+  WaitQueueTimeoutName: 'MongoWaitQueueTimeoutError',
+
+  // the error code of MongoDB for a call stopped by its time limit (maxTimeMS), also when a write waited too long for
+  // the replicas (then the write may be done on the primary)
+  MaxTimeExpiredCode: 50,
+
   exception: (e, time, _ctx) => {
     // a value that must be unique is already used (a unique index): a conflict the user can fix, with the fields of
     // the index (not the text of the driver, which names the collection and the value)
@@ -27,6 +47,19 @@ const Utils = {
       const msg = `"${fields}" is already used`;
       console.log(`\nDB Calling: duplicate key: ${e.message}`);
       return { status: 409, error: { message: msg, error: new Error(msg) }, time: new Date() - time };
+    }
+
+    // the database is busy (every connection of the pool is used): the request can be sent again later (503), it does
+    // not wait for ever
+    if (e?.name === Utils.WaitQueueTimeoutName) {
+      console.log(`\nDB Calling: no free connection: ${e.message}`);
+      return Utils.error(503, 'No free database connection in time', time, _ctx);
+    }
+
+    // the database call ran longer than its time limit: the server stopped it (503, as above)
+    if (e?.code === Utils.MaxTimeExpiredCode) {
+      console.log(`\nDB Calling: time limit: ${e.message}`);
+      return Utils.error(503, 'The database call ran longer than its time limit', time, _ctx);
     }
 
     return {
@@ -45,7 +78,12 @@ const Utils = {
       return Utils.error(404, `Not found ${objID}`, time, _ctx);
     }
 
-    const count = await config.collection.countDocuments({ id: objID }, { limit: 1 });
+    // the write was done on the primary: its answer is read there too
+    const timeLimit = DatabaseManagerUtils.getTimeLimit();
+    const count = await config.collection.countDocuments(
+      { id: objID },
+      { limit: 1, ...Constants.ReadPrimary, ...timeLimit }
+    );
     if (!count) {
       return Utils.error(404, `Not found ${objID}`, time, _ctx);
     }
@@ -164,20 +202,24 @@ const Utils = {
 };
 
 const Public = {
+  Constants,
+
   /**
    * get all
    * config: { serviceName, collection }
    * filter: { filter, projection, limit, skip, sort }
+   * options: Constants.ReadPrimary to see the writes just done, otherwise null (a secondary may answer)
    * return: { status, value } or { status, error: { message, error } }
    */
-  getAll: async (config, filter, _ctx) => {
+  getAll: async (config, filter, _ctx, options = null) => {
     const time = new Date();
     const logFilter = JSON.stringify(filter, CommonUtils.stringifyFilter, 2);
 
     try {
       const { filter: findFilter, projection, limit, skip, sort } = filter;
+      const timeLimit = DatabaseManagerUtils.getTimeLimit();
       const values = await config.collection
-        .find(findFilter)
+        .find(findFilter, { ...options, ...timeLimit })
         .project(projection)
         .sort(sort)
         .skip(skip || 0)
@@ -210,7 +252,8 @@ const Public = {
     const logFilter = JSON.stringify(filter, CommonUtils.stringifyFilter, 2);
 
     try {
-      const count = await config.collection.countDocuments(filter.filter);
+      const timeLimit = DatabaseManagerUtils.getTimeLimit();
+      const count = await config.collection.countDocuments(filter.filter, { ...timeLimit });
 
       console.log(
         `\nDB Calling: ${
@@ -231,31 +274,38 @@ const Public = {
     }
   },
 
-  getAllByIDs: async (config, ids, projection, _ctx) => {
-    return Public.getAll(config, { filter: { id: { $in: ids } }, projection }, _ctx);
+  /**
+   * get the objects with these ids
+   * options: Constants.ReadPrimary to see the writes just done, otherwise null
+   */
+  getAllByIDs: async (config, ids, projection, _ctx, options = null) => {
+    return Public.getAll(config, { filter: { id: { $in: ids } }, projection }, _ctx, options);
   },
 
   /**
    * get all the objects that have a reference (a copy) of an object
    * ref: { fieldName } (user, students[], schedules[].location)
+   * options: Constants.ReadPrimary to see the writes just done, otherwise null
    * return: { status, value } or { status, error: { message, error } }
    */
-  getAllByReference: async (config, ref, refID, projection, _ctx) => {
+  getAllByReference: async (config, ref, refID, projection, _ctx, options = null) => {
     const fieldName = ref.fieldName.replaceAll('[]', '');
-    return Public.getAll(config, { filter: { [`${fieldName}.id`]: refID }, projection }, _ctx);
+    return Public.getAll(config, { filter: { [`${fieldName}.id`]: refID }, projection }, _ctx, options);
   },
 
   /**
    * get one
    * config: { serviceName, collection }
+   * options: Constants.ReadPrimary to see the writes just done, otherwise null (a secondary may answer)
    * return: { status, value } or { status, error: { message, error } }
    */
-  getOne: async (config, objID, projection, _ctx) => {
+  getOne: async (config, objID, projection, _ctx, options = null) => {
     const time = new Date();
 
     try {
       const filter = { id: objID };
-      const value = await config.collection.findOne(filter, { projection });
+      const timeLimit = DatabaseManagerUtils.getTimeLimit();
+      const value = await config.collection.findOne(filter, { projection, ...options, ...timeLimit });
 
       console.log(
         `\nDB Calling: ${config.serviceName} getOne for ${objID} returned: ${JSON.stringify(
@@ -295,7 +345,8 @@ const Public = {
     objInfo.modifiedCount = 1;
 
     try {
-      const value = await config.collection.insertOne(objInfo);
+      const timeLimit = DatabaseManagerUtils.getTimeLimit();
+      const value = await config.collection.insertOne(objInfo, { ...timeLimit });
 
       console.log(
         `\nDB Calling: ${config.serviceName} post for ${JSON.stringify(
@@ -333,7 +384,12 @@ const Public = {
 
     try {
       const filter = { id: objID };
-      const r = await config.collection.findOneAndDelete(filter, { projection, includeResultMetadata: true });
+      const timeLimit = DatabaseManagerUtils.getTimeLimit();
+      const r = await config.collection.findOneAndDelete(filter, {
+        projection,
+        includeResultMetadata: true,
+        ...timeLimit,
+      });
 
       console.log(
         `\nDB Calling: ${config.serviceName} delete for ${objID} returned ${JSON.stringify(
@@ -375,7 +431,8 @@ const Public = {
     }
 
     try {
-      const r = await config.collection.deleteMany(findFilter);
+      const timeLimit = DatabaseManagerUtils.getTimeLimit();
+      const r = await config.collection.deleteMany(findFilter, { ...timeLimit });
 
       console.log(
         `\nDB Calling: ${config.serviceName} deleteAll with filter ${logFilter} deleted ${
@@ -407,6 +464,7 @@ const Public = {
 
     try {
       const returnDocument = config.returnDocument || 'after';
+      const timeLimit = DatabaseManagerUtils.getTimeLimit();
 
       const r = await config.collection.findOneAndUpdate(
         { ...extraFilter, id: objID },
@@ -414,7 +472,7 @@ const Public = {
           $set: { ...objInfo, lastModifiedTimestamp: new Date().toISOString() },
           $inc: { modifiedCount: 1 },
         },
-        { returnDocument, includeResultMetadata: true, projection }
+        { returnDocument, includeResultMetadata: true, projection, ...timeLimit }
       );
 
       console.log(
@@ -459,6 +517,7 @@ const Public = {
 
     try {
       const filter = { id: objID };
+      const timeLimit = DatabaseManagerUtils.getTimeLimit();
 
       // order is set, add, remove, removeWhere, unset
 
@@ -501,7 +560,7 @@ const Public = {
 
       if (bulkOperations.length) {
         // do a bulk write operation followed by a get
-        let r = await config.collection.bulkWrite(bulkOperations, { ordered: true });
+        let r = await config.collection.bulkWrite(bulkOperations, { ordered: true, ...timeLimit });
         console.log(
           `\nDB Calling: ${config.serviceName} patch for ${objID} with ops: ${JSON.stringify(
             bulkOperations
@@ -522,6 +581,7 @@ const Public = {
         returnDocument: 'after',
         includeResultMetadata: true,
         projection,
+        ...timeLimit,
       });
 
       console.log(
@@ -572,6 +632,7 @@ const Public = {
 
       const filters = { id: { $in: targetsIDs } };
       const arrayFilters = [];
+      const timeLimit = DatabaseManagerUtils.getTimeLimit();
 
       let setObj = {};
       for (const key in objInfo) {
@@ -600,6 +661,7 @@ const Public = {
           },
           {
             arrayFilters,
+            ...timeLimit,
           }
         );
       } else {
@@ -618,6 +680,7 @@ const Public = {
           },
           {
             arrayFilters,
+            ...timeLimit,
           }
         );
       }
@@ -674,8 +737,12 @@ const Public = {
         ? Utils.getArrayFiltersForObjectsToUpdate(arrayFilters, objInfo)
         : arrayFilters;
 
-      // the objects to update
-      const objects = await config.collection.find(filter).project({ _id: 0, id: 1 }).toArray();
+      // the objects to update (on the primary: the copies written just before in the same request are seen)
+      const timeLimit = DatabaseManagerUtils.getTimeLimit();
+      const objects = await config.collection
+        .find(filter, { ...Constants.ReadPrimary, ...timeLimit })
+        .project({ _id: 0, id: 1 })
+        .toArray();
       const ids = objects.map((item) => item.id);
       if (!ids.length) {
         console.log(
@@ -686,9 +753,10 @@ const Public = {
         return { status: 200, value: 0, ids: [], time: new Date() - time };
       }
 
-      // update obj
+      // update obj: the filter is checked again by the write itself, so a newer copy written meanwhile (another request)
+      // is not overwritten
       const r = await config.collection.updateMany(
-        { id: { $in: ids } },
+        { ...filter, id: { $in: ids } },
         {
           $set: {
             ...setObj,
@@ -700,6 +768,7 @@ const Public = {
         },
         {
           arrayFilters: updateArrayFilters, // [{ schedules.location.id: '...', $or: [ schedules.location.modifiedCount... ] }]
+          ...timeLimit,
           //explain: 'executionStats'
         }
       );
@@ -741,8 +810,9 @@ const Public = {
         { id: previousID },
         _ctx
       );
+      const timeLimit = DatabaseManagerUtils.getTimeLimit();
       const objects = await config.collection
-        .find({ [filterField]: previousID })
+        .find({ [filterField]: previousID }, { ...Constants.ReadPrimary, ...timeLimit })
         .project({ _id: 0, id: 1 })
         .toArray();
       const ids = objects.map((item) => item.id);
@@ -750,14 +820,14 @@ const Public = {
         return { status: 200, value: 0, ids: [], time: new Date() - time };
       }
 
-      // their new id
+      // their new id (the write checks the previous id again: a copy changed meanwhile is not overwritten)
       const r = await config.collection.updateMany(
-        { id: { $in: ids } },
+        { [filterField]: previousID, id: { $in: ids } },
         {
           $set: { [`${updateField}.id`]: objID, lastModifiedTimestamp: new Date().toISOString() },
           $inc: { modifiedCount: 1 },
         },
-        { arrayFilters } // [{ students.id: previousID }]
+        { arrayFilters, ...timeLimit } // [{ students.id: previousID }]
       );
 
       console.log(
@@ -798,6 +868,7 @@ const Public = {
       const refFieldName = lastFieldIsArray ? ref.fieldName.slice(0, -2) : ref.fieldName;
       const { filterField, updateField, arrayFilters } = Utils.getReferencesUpdateMany(refFieldName, objInfo, _ctx);
 
+      const timeLimit = DatabaseManagerUtils.getTimeLimit();
       let setObj = {};
       let setProps = {};
       for (const key in objInfo) {
@@ -828,6 +899,7 @@ const Public = {
           },
           {
             arrayFilters, // [{ schedules.location.id: '...' }]
+            ...timeLimit,
           }
         );
       } else {
@@ -844,6 +916,7 @@ const Public = {
           },
           {
             arrayFilters, // [{ schedules.location.id: '...' }]
+            ...timeLimit,
           }
         );
       }

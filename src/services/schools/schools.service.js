@@ -397,10 +397,11 @@ const Public = {
       return r;
     }
 
-    // not pending (anymore): the school is not changed, its current status is returned
+    // not pending (anymore): the school is not changed, its current status is returned (the write changed nothing,
+    // there is no object in its answer: read on the primary)
     const config = await Private.getConfig(_ctx);
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
-    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
+    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx, DbOpsUtils.Constants.ReadPrimary);
     return BaseServiceUtils.getProjectedResponse(rget, null /*default projection */, _ctx);
   },
 

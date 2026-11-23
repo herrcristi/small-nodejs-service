@@ -189,4 +189,26 @@ describe('Rest Messages Utils', function () {
       message: 'Request has a content type that is not supported',
     });
   }).timeout(10000);
+
+  /**
+   * the service is busy (503): a generic text, the cause is not shown (only in debug mode)
+   */
+  it('should tell that the service is busy without its cause', async () => {
+    // stub: production (no debug details)
+    const stubDebug = sinon.stub(CommonUtils, 'isDebug').returns(false);
+
+    // call
+    const res = await RestMessagesUtils.statusError(503, { message: 'No free database connection in time' }, _ctx);
+
+    // check: the generic text only
+    chai.expect(res).to.deep.equal({ message: 'The service is busy, try again later' });
+
+    // case: debug mode, the cause is shown
+    stubDebug.returns(true);
+    const resDebug = await RestMessagesUtils.statusError(503, 'No free database connection in time', _ctx);
+    chai.expect(resDebug).to.deep.equal({
+      message: 'The service is busy, try again later',
+      error: 'No free database connection in time',
+    });
+  }).timeout(10000);
 });
