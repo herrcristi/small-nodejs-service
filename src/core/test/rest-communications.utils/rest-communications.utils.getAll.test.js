@@ -6,6 +6,7 @@ const sinon = require('sinon');
 const axios = require('axios');
 const MockAdapter = require('axios-mock-adapter');
 
+const DbOpsUtils = require('../../utils/db-ops.utils.js');
 const RestCommsUtils = require('../../utils/rest-communications.utils.js');
 const RestApiUtils = require('../../utils/rest-api.utils.js');
 const JwtUtils = require('../../utils/jwt.utils.js');
@@ -66,6 +67,11 @@ describe('Rest Communications Utils', function () {
         },
       ],
     });
+
+    // case: the options of the read go to the local service
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    await RestCommsUtils.getAll(serviceName, { filter: {} }, _ctx, options);
+    chai.expect(localConfig.local[serviceName].getAll.secondCall.args[2]).to.deep.equal(options);
   }).timeout(10000);
 
   /**

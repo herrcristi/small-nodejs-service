@@ -41,8 +41,9 @@ describe('Admins Service', function () {
     let res = await AdminsService.getAllByIDs(testAdminsIDs, { id: 1 }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // check: read on the primary (the objects referenced by a write, maybe created just before by another request)
     chai.expect(stubBase.callCount).to.equal(1);
+    chai.expect(stubBase.firstCall.args[4]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
     chai.expect(res).to.deep.equal({
       status: 200,
       value: [...testAdmins],

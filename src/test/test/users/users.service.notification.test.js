@@ -24,12 +24,12 @@ describe('Users Service', function () {
   after(async function () {});
 
   /**
-   * schools notification: the copies of a modified school in the memberships are updated, a deleted school is removed
-   * from the memberships; nothing is notified
+   * schools notification: where a modified school is referenced in the memberships it is updated, a deleted school
+   * is removed from the memberships; nothing is notified
    */
   it('should do notification with success', async () => {
-    // stub: user1 had an older copy of school1
-    const stubCopies = sinon
+    // stub: user1 references an older school1
+    const stubUpdateReferences = sinon
       .stub(DbOpsUtils, 'updateManyReferences')
       .resolves({ status: 200, value: 1, ids: ['user1'] });
     const stubRemove = sinon.stub(DbOpsUtils, 'deleteManyReferences').resolves({ status: 200, value: 1 });
@@ -40,11 +40,13 @@ describe('Users Service', function () {
     const notification = { serviceName: 'schools', modified: [northSchool], removed: [southSchool] };
     const res = await UsersService.notification(notification, _ctx);
 
-    // check: the copy (only its fields), the removed school, nothing notified
+    // check: the referenced school (only its fields), the removed school, nothing notified
     chai.expect(res).to.deep.equal({ status: 200, value: ['user1'] });
-    chai.expect(stubCopies.firstCall.args[1].fieldName).to.equal('schools[]');
-    chai.expect(stubCopies.firstCall.args[2]).to.include({ id: 'school1', status: 'disabled', modifiedCount: 3 });
-    chai.expect(stubCopies.firstCall.args[2]).to.not.have.property('extra');
+    chai.expect(stubUpdateReferences.firstCall.args[1].fieldName).to.equal('schools[]');
+    chai
+      .expect(stubUpdateReferences.firstCall.args[2])
+      .to.include({ id: 'school1', status: 'disabled', modifiedCount: 3 });
+    chai.expect(stubUpdateReferences.firstCall.args[2]).to.not.have.property('extra');
     chai.expect(stubRemove.firstCall.args[2].id).to.equal('school2');
     chai.expect(UsersRest.raiseNotification.callCount).to.equal(0);
 
@@ -57,7 +59,7 @@ describe('Users Service', function () {
     // case: failures
     stubRemove.resolves(fail);
     chai.expect(await UsersService.notification(notification, _ctx)).to.deep.equal(fail);
-    stubCopies.resolves(fail);
+    stubUpdateReferences.resolves(fail);
     chai.expect(await UsersService.notification(notification, _ctx)).to.deep.equal(fail);
   }).timeout(10000);
 
@@ -66,10 +68,10 @@ describe('Users Service', function () {
    * the first failure is returned at the end
    */
   it('should do the next schools after a failure of the schools notification', async () => {
-    // stub: the copies of school1 can not be updated
-    const stubCopies = sinon.stub(DbOpsUtils, 'updateManyReferences');
-    stubCopies.onFirstCall().resolves(fail);
-    stubCopies.onSecondCall().resolves({ status: 200, value: 1, ids: ['user1'] });
+    // stub: the referenced school1 can not be updated
+    const stubUpdateReferences = sinon.stub(DbOpsUtils, 'updateManyReferences');
+    stubUpdateReferences.onFirstCall().resolves(fail);
+    stubUpdateReferences.onSecondCall().resolves({ status: 200, value: 1, ids: ['user1'] });
     const stubRemove = sinon.stub(DbOpsUtils, 'deleteManyReferences').resolves({ status: 200, value: 1 });
 
     // call: school1 and school2 changed, school3 was deleted
@@ -81,12 +83,12 @@ describe('Users Service', function () {
 
     // check: the first failure is returned, school2 and school3 are still done
     chai.expect(res).to.deep.equal(fail);
-    chai.expect(stubCopies.secondCall.args[2].id).to.equal('school2');
+    chai.expect(stubUpdateReferences.secondCall.args[2].id).to.equal('school2');
     chai.expect(stubRemove.firstCall.args[2].id).to.equal('school3');
   }).timeout(10000);
 
   /**
-   * the notifications of the other services are ignored (no copy of them), an invalid one is refused
+   * the notifications of the other services are ignored (no reference to them), an invalid one is refused
    */
   it('should notification fail validation', async () => {
     // call: another service

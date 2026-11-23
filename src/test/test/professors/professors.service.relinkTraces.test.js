@@ -26,7 +26,7 @@ describe('Professors Service relink traces', function () {
   after(async function () {});
 
   /**
-   * the traces of a deleted account with the email of the invited user take its id (their user copy stays deleted)
+   * the traces of a deleted account with the invited user's email take its id (their referenced user stays deleted)
    */
   it('should relink the traces of a deleted account to the invited user', async () => {
     // stub: one trace of the deleted account old1; its new id
@@ -46,13 +46,16 @@ describe('Professors Service relink traces', function () {
       id: { $ne: 'user1' },
     });
 
-    // check: the id of the record and of its user copy, with the event
+    // check: read on the primary (an account deleted by the request before has its traces there)
+    chai.expect(stubGetAll.firstCall.args[3]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
+
+    // check: the id of the record and of its referenced user, with the event
     chai.expect(stubPut.firstCall.args[1]).to.equal('old1');
     chai.expect(stubPut.firstCall.args[2]).to.deep.equal({ id: 'user1', 'user.id': 'user1' });
     chai.expect(EventsRest.raiseEventForObject.firstCall.args[1]).to.equal('relink');
     chai.expect(EventsRest.raiseEventForObject.firstCall.args[3]).to.deep.equal({ previousID: 'old1' });
 
-    // check: the groups and the schedules follow the new id (previousID), then the copy
+    // check: the groups and the schedules follow the new id (previousID), then the referenced user
     chai.expect(ProfessorsRest.raiseNotification.firstCall.args[0]).to.equal('modified');
     chai.expect(ProfessorsRest.raiseNotification.firstCall.args[1]).to.deep.equal([{ ...linked, previousID: 'old1' }]);
   }).timeout(10000);

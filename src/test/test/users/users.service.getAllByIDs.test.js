@@ -4,7 +4,6 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 
@@ -41,8 +40,9 @@ describe('Users Service', function () {
     let res = await UsersService.getAllByIDs(testUsersIDs, { id: 1 }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
-    // check
+    // check: read on the primary (the objects referenced by a write, maybe created just before by another request)
     chai.expect(stubBase.callCount).to.equal(1);
+    chai.expect(stubBase.firstCall.args[4]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
     chai.expect(res).to.deep.equal({
       status: 200,
       value: [...testUsers],

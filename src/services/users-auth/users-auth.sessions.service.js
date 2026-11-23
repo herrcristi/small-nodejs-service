@@ -15,6 +15,7 @@
  */
 const crypto = require('crypto');
 
+const DatabaseManagerUtils = require('../../core/utils/database-manager.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const CommonUtils = require('../../core/utils/common.utils.js');
 
@@ -24,12 +25,13 @@ const UsersAuthSessionsDatabase = require('./users-auth.sessions.database.js');
 const Private = {
   /**
    * config
-   * returns { serviceName, collection }
+   * returns { serviceName, collection, maxTimeMS }
    */
   getConfig: async (_ctx) => {
     const config = {
       serviceName: UsersAuthConstants.SessionsServiceName,
       collection: await UsersAuthSessionsDatabase.collection(_ctx),
+      maxTimeMS: DatabaseManagerUtils.getMaxTimeMS(), // the time limit of each database call (DbOpsUtils)
     };
     return config;
   },
@@ -52,15 +54,17 @@ const Private = {
 
   /**
    * keep only the newest open sessions of a user (SessionLimits.MaxPerUser): end the older ones
+   * newSessionID: the session just written by the same request (known from its write, not read again): it is kept and
+   * takes one of the places, the earlier sessions are read
    * returns { status, value: ended count } or { status, error }
    */
-  limitSessions: async (config, userID, _ctx) => {
-    // the sessions after the newest ones
+  limitSessions: async (config, userID, newSessionID, _ctx) => {
+    // the earlier sessions after the newest ones (the new session is one of the sessions kept)
     const filter = {
-      filter: { userID, purpose: UsersAuthConstants.TokenPurpose.Session },
+      filter: { userID, purpose: UsersAuthConstants.TokenPurpose.Session, id: { $ne: newSessionID } },
       projection: { _id: 0, id: 1 },
       sort: { createdTimestamp: -1 },
-      skip: UsersAuthConstants.SessionLimits.MaxPerUser,
+      skip: UsersAuthConstants.SessionLimits.MaxPerUser - 1,
     };
     const rOld = await DbOpsUtils.getAll(config, filter, _ctx);
     if (rOld.error) {
@@ -158,7 +162,7 @@ const Public = {
 
     // the oldest sessions of the user over the limit
     if (purpose === UsersAuthConstants.TokenPurpose.Session) {
-      const rLimit = await Private.limitSessions(config, user.userID, _ctx);
+      const rLimit = await Private.limitSessions(config, user.userID, r.value.id, _ctx);
       if (rLimit.error) {
         return rLimit;
       }
@@ -172,9 +176,10 @@ const Public = {
    * database removes the expired records only from time to time); a session is also not idle for too long, and its
    * use is saved
    * tokenData: { purpose, username, secret }
+   * options: the options of the read of the record (DbOpsUtils.getOne), like { readPreference }
    * returns { status, value: { id, purpose, userID, username, expiresAt, lastUsedAt } } or { status, error }
    */
-  check: async (tokenData, _ctx) => {
+  check: async (tokenData, _ctx, options) => {
     const purpose = tokenData?.purpose;
     if (!tokenData?.secret) {
       return Private.ended(purpose);
@@ -182,9 +187,19 @@ const Public = {
 
     const config = await Private.getConfig(_ctx);
 
+    // a record not found on a secondary is read again on the primary: a session or a link created by the request
+    // before may not be there yet (the first request after a login would answer 401: the UI goes to the login); an
+    // ended session is still seen on a secondary for the replication lag. A refused token costs at most one read on
+    // the primary, as a check on the primary does, and an open one none (the token is signed by the server: a forged
+    // one is refused before any read)
     const id = Private.getID(tokenData.secret);
     const projection = { _id: 0, id: 1, purpose: 1, userID: 1, username: 1, expiresAt: 1, lastUsedAt: 1 };
-    const r = await DbOpsUtils.getOne(config, id, projection, _ctx);
+    let r = await DbOpsUtils.getOne(config, id, projection, _ctx, options);
+    const isPrimary = options?.readPreference === DbOpsUtils.Constants.ReadPrimary;
+    if (r.status === 404 && !isPrimary) {
+      const primary = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+      r = await DbOpsUtils.getOne(config, id, projection, _ctx, primary);
+    }
     if (r.status === 404) {
       return Private.ended(purpose);
     }

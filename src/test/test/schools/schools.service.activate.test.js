@@ -66,6 +66,10 @@ describe('Schools Service activate', function () {
 
     // check: nothing was changed (no notification)
     chai.expect(stubNotify.callCount).to.equal(0);
+
+    // check: the current status was read on the primary (the conditional write returned no object)
+    const readPrimary = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    chai.expect(stubGet.args.map((args) => args[4])).to.deep.equal([readPrimary, readPrimary]);
   });
 
   /**

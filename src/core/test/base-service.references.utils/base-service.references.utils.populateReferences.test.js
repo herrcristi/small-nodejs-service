@@ -84,6 +84,25 @@ describe('Base Service', function () {
   }).timeout(10000);
 
   /**
+   * populateReferences with the targets written by the request (writtenTargets, by the fieldName of the reference): the
+   * reference is filled from the answer of the write, it is not read
+   */
+  it('should call populateReferences with the targets written by the request', async () => {
+    const objs = [{ id: 'id4', name: 'name4', target: [{ id: 'targetID4' }] }];
+    const stubRead = sinon.stub(config.references[0].service, 'getAllByIDs');
+
+    // call
+    const writtenTargets = { target: { id: 'targetID4', name: 't4', settings: { removedMembers: 'keep' } } };
+    const res = await ReferencesUtils.populateReferences(config, objs, _ctx, writtenTargets);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check: filled from the written target (the fields of the projection), nothing read
+    chai.expect(res).to.deep.equal({ status: 200, value: true });
+    chai.expect(stubRead.callCount).to.equal(0);
+    chai.expect(objs[0].target).to.deep.equal([{ id: 'targetID4', name: 't4' }]);
+  }).timeout(10000);
+
+  /**
    * populateReferences with skipping
    */
   it('should call populateReferences with skipping', async () => {

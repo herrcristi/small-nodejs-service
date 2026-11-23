@@ -229,7 +229,7 @@ const Utils = {
   },
 
   /**
-   * a text translated by the server (the _lang_<language> copies of a record), in the language of the UI,
+   * a text translated by the server (the _lang_<language> translations of a record), in the language of the UI,
    * then in English, then the value itself
    * path: the field ('message', 'user.status')
    */

@@ -5,6 +5,7 @@
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
+const DatabaseManagerUtils = require('../../core/utils/database-manager.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
@@ -186,7 +187,9 @@ const Private = {
     const config = await Private.getConfig(_ctx);
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
     // after a conditional write that changed nothing (no object in its answer): read on the primary
-    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx, DbOpsUtils.Constants.ReadPrimary);
+    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx, {
+      readPreference: DbOpsUtils.Constants.ReadPrimary,
+    });
     return BaseServiceUtils.getProjectedResponse(rget, null /*default projection */, _ctx);
   },
 
@@ -274,17 +277,18 @@ const Private = {
 
   /**
    * config
-   * returns { serviceName, collection, schema, references, fillReferences, events }
+   * returns { serviceName, collection, maxTimeMS, schema, references, fillReferences, events }
    */
   getConfig: async (_ctx) => {
     const config = {
       serviceName: UsersConstants.ServiceName,
       collection: await UsersDatabase.collection(_ctx),
+      maxTimeMS: DatabaseManagerUtils.getMaxTimeMS(), // the time limit of each database call (DbOpsUtils)
       references: [
         {
           fieldName: 'schools[]',
           service: SchoolsRest,
-          projection: { id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 }, // the createdTimestamp and modifiedCount of the copy
+          projection: { id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 }, // the createdTimestamp and modifiedCount of the referenced school
         },
       ],
       notifications: {
@@ -418,40 +422,40 @@ const Private = {
   },
 
   /**
-   * schools notification: the copies of the schools in the users (schools[])
-   * - modified: the copies are updated (only the older ones, modifiedCount)
+   * schools notification: the schools referenced by the users (schools[])
+   * - modified: the referenced objects are updated (only the older ones, modifiedCount)
    * - removed (the school was deleted): the memberships of the school are removed from the users
    * (a membership is added by an invite or a role, not by a notification)
-   * nothing is notified (the memberships are not copied by other services)
+   * nothing is notified (the memberships are not referenced by other services)
    * a failure is logged and the next schools are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
   onSchoolsNotification: async (notification, _ctx) => {
     const config = await Private.getConfig(_ctx);
-    const [schoolsRef] = config.references; // the copies of the schools (schools[]): the only references of the users
+    const [schoolsRef] = config.references; // the referenced schools (schools[]): the only references of the users
     const changedUsersIDs = new Set();
     let failure = null; // the first failure (the next schools are still done)
 
-    // the copies of the modified schools
+    // the modified schools, where they are referenced
     for (const school of notification[Private.Notification.Modified] || []) {
-      const schoolCopy = CommonUtils.getProjectedObj(school, schoolsRef.projection);
-      const rCopies = await DbOpsUtils.updateManyReferences(config, schoolsRef, schoolCopy, _ctx);
-      if (rCopies.error) {
+      const referencedSchool = CommonUtils.getProjectedObj(school, schoolsRef.projection);
+      const rUpdate = await DbOpsUtils.updateManyReferences(config, schoolsRef, referencedSchool, _ctx);
+      if (rUpdate.error) {
         console.log(
-          `\n${UsersConstants.ServiceName}: failed to update the copies of the school ${school.id}: ${rCopies.error.message}`
+          `\n${UsersConstants.ServiceName}: failed to update the referenced school ${school.id}: ${rUpdate.error.message}`
         );
-        failure ??= rCopies;
+        failure ??= rUpdate;
         continue;
       }
-      rCopies.ids.forEach((id) => changedUsersIDs.add(id));
+      rUpdate.ids.forEach((id) => changedUsersIDs.add(id));
     }
 
     // the deleted schools
     for (const school of notification[Private.Notification.Removed] || []) {
       console.log(`\n${UsersConstants.ServiceName}: remove the deleted school ${school.id} from the users`);
 
-      const schoolCopy = CommonUtils.getProjectedObj(school, schoolsRef.projection);
-      const rRemove = await DbOpsUtils.deleteManyReferences(config, schoolsRef, schoolCopy, _ctx);
+      const referencedSchool = CommonUtils.getProjectedObj(school, schoolsRef.projection);
+      const rRemove = await DbOpsUtils.deleteManyReferences(config, schoolsRef, referencedSchool, _ctx);
       if (rRemove.error) {
         console.log(
           `\n${UsersConstants.ServiceName}: failed to remove the school ${school.id}: ${rRemove.error.message}`
@@ -554,8 +558,10 @@ const Public = {
     const config = await Private.getConfig(_ctx);
     const adminRole = UsersConstants.Roles.Admin;
 
-    // the user must be an admin of the school
-    const rUser = await DbOpsUtils.getOne(config, objID, { id: 1, schools: 1 }, _ctx);
+    // the user must be an admin of the school (read on the primary: an admin given by the request before is found)
+    const rUser = await DbOpsUtils.getOne(config, objID, { id: 1, schools: 1 }, _ctx, {
+      readPreference: DbOpsUtils.Constants.ReadPrimary,
+    });
     if (rUser.error) {
       return rUser;
     }
@@ -573,11 +579,12 @@ const Public = {
   /**
    * get all
    * filter: { filter?, projection?, limit?, skip?, sort? }
+   * options: the options of the read (DbOpsUtils.getAll), like { readPreference } (the user of a login, of an invite)
    * returns { status, value } or { status, error }
    */
-  getAll: async (filter, _ctx) => {
+  getAll: async (filter, _ctx, options) => {
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    return await DbOpsUtils.getAll(config, filter, _ctx);
+    return await DbOpsUtils.getAll(config, filter, _ctx, options);
   },
 
   /**
@@ -591,12 +598,15 @@ const Public = {
   },
 
   /**
-   * get all by ids
+   * get all by ids: the objects referenced by another service before it writes them (populateReferences) or a read that
+   * decides a write (the roles of a user): read on the primary, so an object written just before (by an earlier request,
+   * or by another service in the same request: the school of a signup) is found, a reference to it would be dropped
    * returns { status, value } or { status, error }
    */
   getAllByIDs: async (ids, projection, _ctx) => {
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx);
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx, options);
   },
 
   /**
@@ -679,8 +689,8 @@ const Public = {
     // raise event for delete
     await EventsRest.raiseEventForObject(UsersConstants.ServiceName, Private.Action.Delete, r.value, r.value, _ctx);
 
-    // raise a notification for removed obj: the user does not exist anymore, its copies kept by the schools as traces
-    // are deleted (see the setting of each school)
+    // raise a notification for removed obj: the user does not exist anymore, the users referenced by the schools as
+    // traces are deleted (see the setting of each school)
     let rnp = BaseServiceUtils.getProjectedResponse(r, config.notifications.projection /* for sync+async */, _ctx);
     const removedUser = { ...rnp.value, status: UsersConstants.Status.Deleted };
     let rn = await UsersRest.raiseNotification(Private.Notification.Removed, [removedUser], _ctx);
@@ -813,7 +823,8 @@ const Public = {
       projection: { _id: 0, id: 1, email: 1 },
       limit: Private.PendingCleanupBatch,
     };
-    const rUsers = await DbOpsUtils.getAll(config, filter, _ctx);
+    // read on the primary: a user that logged in just before is still pending on a secondary, it would be removed
+    const rUsers = await DbOpsUtils.getAll(config, filter, _ctx, { readPreference: DbOpsUtils.Constants.ReadPrimary });
     if (rUsers.error) {
       return rUsers;
     }
@@ -856,8 +867,11 @@ const Public = {
     const config = await Private.getConfig(_ctx);
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
-    // need to take diff before and after for users and trigger notification for deleted schools roles changes
-    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx);
+    // need to take diff before and after for users and trigger notification for deleted schools roles changes (read on
+    // the primary: the diff decides the notification, a change made by the request before must be in it)
+    const rget = await DbOpsUtils.getOne(config, objID, projection, _ctx, {
+      readPreference: DbOpsUtils.Constants.ReadPrimary,
+    });
     if (rget.error) {
       return rget;
     }
@@ -943,8 +957,8 @@ const Public = {
   },
 
   /**
-   * notification: the copies kept by the users follow the changes of their sources (each source has its own flow)
-   * - schools: the copies of the schools in the memberships of the users (a deleted school: its memberships are removed)
+   * notification: the objects referenced by the users follow their sources (each source has its own flow)
+   * - schools: the schools referenced by the memberships of the users (a deleted school: its memberships are removed)
    * notification: { serviceName, added?, modified?, removed? }
    */
   notification: async (notification, _ctx) => {
@@ -960,7 +974,7 @@ const Public = {
         return await Private.onSchoolsNotification(notification, _ctx);
       default:
         console.log(
-          `\n${UsersConstants.ServiceName}: notification of ${notification.serviceName} ignored (no copy of it)`
+          `\n${UsersConstants.ServiceName}: notification of ${notification.serviceName} ignored (no reference to it)`
         );
         return { status: 200, value: false };
     }

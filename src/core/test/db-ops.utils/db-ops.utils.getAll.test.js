@@ -116,7 +116,8 @@ describe('DB-Ops Utils', function () {
 
   /**
    * a call stopped by the database after its time limit (maxTimeMS, MaxTimeMSExpired): 503, the request can be sent
-   * again later, without the text of the database; the call carried the time limit (30 s by default)
+   * again later, without the text of the database; the call carried the time limit of the config (no other option:
+   * the read preference of the client)
    */
   it('should getAll answer 503 when the database call runs longer than its time limit', async () => {
     // stub: the database stops the call, as it does after its maxTimeMS
@@ -126,7 +127,8 @@ describe('DB-Ops Utils', function () {
     collection.find = sinon.stub().throws(timeError);
 
     // call
-    const res = await DbOpsUtils.getAll({ ...config, collection }, { filter: {}, projection: { _id: 0 } }, _ctx);
+    const timeConfig = { ...config, collection, maxTimeMS: 30000 };
+    const res = await DbOpsUtils.getAll(timeConfig, { filter: {}, projection: { _id: 0 } }, _ctx);
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
 
     // check

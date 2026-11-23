@@ -123,6 +123,12 @@ describe('Users Auth Service', function () {
     chai.expect(stubEvents.callCount).to.equal(1);
     chai.expect(stubToken.callCount).to.equal(1);
     chai.expect(stubEncrypt.callCount).to.equal(1);
+
+    // check: the login reads the password and the user on the primary (a change of the request before decides it)
+    const primary = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    chai.expect(stubBase.firstCall.args[4]).to.deep.equal(primary);
+    chai.expect(stubUsersGet.firstCall.args[3]).to.deep.equal(primary);
+
     chai.expect(res).to.deep.equal({
       status: 200,
       value: {

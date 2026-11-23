@@ -4,8 +4,8 @@ const sinon = require('sinon');
 const DbOpsUtils = require('../../utils/db-ops.utils.js');
 
 /**
- * the copies updated by updateManyReferences and updateManyReferencesID are tested with the database (npm run testdb,
- * functional.database.test.js); here only a database that fails
+ * the referenced objects updated by updateManyReferences and updateManyReferencesID are tested with the database (npm
+ * run testdb, functional.database.test.js); here only a database that fails
  */
 describe('DB-Ops Utils', function () {
   const _ctx = { reqID: 'testReq', lang: 'en', service: 'Service' };

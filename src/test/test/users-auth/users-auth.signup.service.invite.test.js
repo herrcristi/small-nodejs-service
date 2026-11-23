@@ -158,6 +158,10 @@ describe('Users Auth Service', function () {
     chai.expect(stubUsersAuthResetPass.callCount).to.equal(1);
     chai.expect(stubUsersAuthInvite.callCount).to.equal(0);
 
+    // check: the link is made from the answer of the write of the login record (it is not read again)
+    const account = { username: testUser.email, userID: testUserID };
+    chai.expect(stubUsersAuthResetPass.firstCall.args[3]).to.deep.equal(account);
+
     chai.expect(stubEvents.callCount).to.equal(0);
 
     // the real result (the controller answers the same for all of them)
@@ -855,9 +859,10 @@ describe('Users Auth Service', function () {
       // call
       const res = await UsersAuthSignupService.invite({ email, school: { role: 'student' } }, _ctx);
 
-      // check: the setup link (a signup link with a new token)
+      // check: the setup link (a signup link with a new token), made from the user found by the invite (not read again)
       chai.expect(res.status).to.equal(204);
       chai.expect(stubReset.firstCall.args[2]).to.equal(UsersAuthConstants.ResetTokenType.Signup);
+      chai.expect(stubReset.firstCall.args[3]).to.deep.equal({ username: email, userID: 'user1' });
       chai.expect(stubInvite.callCount).to.equal(0);
     }).timeout(10000);
 

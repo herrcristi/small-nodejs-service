@@ -145,7 +145,7 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * the notifications of the other services are ignored (no copy of them), an invalid one is refused
+   * the notifications of the other services are ignored (no reference to them), an invalid one is refused
    */
   it('should ignore other services and refuse an invalid notification', async () => {
     // call: another service

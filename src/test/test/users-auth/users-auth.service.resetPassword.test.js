@@ -77,6 +77,10 @@ describe('Users Auth Service', function () {
     // check: sent (the answer does not wait for the delivery)
     chai.expect(stubGet.callCount).to.equal(1);
     chai.expect(stubEmail.callCount).to.equal(1);
+
+    // check: the public form has no record in hand: it is read (no options: the read preference of the client)
+    chai.expect(stubGet.firstCall.args[1]).to.equal(testUser.id);
+    chai.expect(stubGet.firstCall.args[4]).to.equal(undefined);
     chai.expect(stubEvent.callCount).to.equal(1);
     chai.expect(res).to.deep.equal({
       status: 200,

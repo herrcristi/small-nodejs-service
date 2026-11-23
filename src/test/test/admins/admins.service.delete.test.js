@@ -70,12 +70,15 @@ describe('Admins Service', function () {
    */
   it('should delete a trace for good', async () => {
     // stub: a trace, its delete
-    sinon.stub(DbOpsUtils, 'getOne').resolves({ status: 200, value: adminTrace });
+    const stubGet = sinon.stub(DbOpsUtils, 'getOne').resolves({ status: 200, value: adminTrace });
     const stubRole = sinon.stub(UsersRest, 'patchSchool');
     const stubDelete = sinon.stub(DbOpsUtils, 'delete').resolves({ status: 200, value: adminTrace });
 
     // call
     const res = await AdminsService.delete('user1', _ctx);
+
+    // check: the trace is read on the primary (a trace made by the request before is seen)
+    chai.expect(stubGet.firstCall.args[4]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
 
     // check: deleted, with the event and the removed notification
     chai.expect(res.status).to.equal(200);

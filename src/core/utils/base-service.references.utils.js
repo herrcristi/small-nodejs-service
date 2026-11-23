@@ -117,8 +117,11 @@ const Public = {
   /**
    * populate the field by getting the detail info via rest
    * config: {fieldName, service, projection}
+   * writtenTarget: the target of this reference written by the same request, as its write answered it (passed by the
+   * caller that has it, never from a request): the reference to it is filled from it, it is not read again (a
+   * secondary may not have it yet); the other targets are read
    */
-  populate: async (configRef, objs, _ctx) => {
+  populate: async (configRef, objs, _ctx, writtenTarget) => {
     const fieldsPath = configRef.fieldName.replaceAll('[]', '').split('.');
     // convert to object first
     for (const i in objs) {
@@ -137,19 +140,36 @@ const Public = {
     if (!targetsIDs.length) {
       console.log(`\nSkipping calling targets to populate info for field '${configRef.fieldName}'`);
     } else {
-      // get all targets
-      const projection = configRef.projection || { id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 };
-      let rs = await configRef.service.getAllByIDs(targetsIDs, { ...projection, _id: 0 }, _ctx);
-      if (rs.error) {
-        return rs;
+      const projection = configRef.projection || {
+        id: 1,
+        name: 1,
+        type: 1,
+        status: 1,
+        createdTimestamp: 1,
+        modifiedCount: 1,
+      };
+
+      // the target written by the same request: the answer of its write
+      const writtenID = writtenTarget?.id;
+      if (targetsIDs.includes(writtenID)) {
+        targetsMap[writtenID] = CommonUtils.getProjectedObj(writtenTarget, projection);
       }
 
-      if (targetsIDs.length != rs.value.length) {
-        console.log(`\nNot all targets were found for field '${configRef.fieldName}'`);
-      }
+      // get the other targets
+      const readIDs = targetsIDs.filter((id) => id !== writtenID);
+      if (readIDs.length) {
+        let rs = await configRef.service.getAllByIDs(readIDs, { ...projection, _id: 0 }, _ctx);
+        if (rs.error) {
+          return rs;
+        }
 
-      for (const obj of rs.value) {
-        targetsMap[obj.id] = obj;
+        if (readIDs.length != rs.value.length) {
+          console.log(`\nNot all targets were found for field '${configRef.fieldName}'`);
+        }
+
+        for (const obj of rs.value) {
+          targetsMap[obj.id] = obj;
+        }
       }
     }
 
@@ -166,8 +186,10 @@ const Public = {
   /**
    * populate references
    * config: { ..., fillReferences, references: [ {fieldName, service, projection} ] }
+   * writtenTargets: { [fieldName]: target } the targets written by the same request, by the reference that points to
+   * them (see populate)
    */
-  populateReferences: async (config, obj_objs, _ctx) => {
+  populateReferences: async (config, obj_objs, _ctx, writtenTargets) => {
     if (!config.fillReferences || !Array.isArray(config.references)) {
       return { status: 200, value: null }; // skipped
     }
@@ -179,7 +201,8 @@ const Public = {
     }
 
     for (const configRef of config.references) {
-      let r = await Public.populate(configRef, objs, _ctx);
+      const writtenTarget = writtenTargets?.[configRef.fieldName];
+      let r = await Public.populate(configRef, objs, _ctx, writtenTarget);
       if (r.error) {
         console.log(
           `\n${config.serviceName}: Failed to populate references for: ${JSON.stringify(

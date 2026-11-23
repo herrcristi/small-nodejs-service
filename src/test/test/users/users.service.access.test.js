@@ -426,7 +426,7 @@ describe('Users Service access', function () {
      */
     it('should remove only the admin role of that school', async () => {
       // stub: an admin and professor of school A
-      sinon.stub(DbOpsUtils, 'getOne').callsFake(() => ({ status: 200, value: _.cloneDeep(admin) }));
+      const stubGet = sinon.stub(DbOpsUtils, 'getOne').callsFake(() => ({ status: 200, value: _.cloneDeep(admin) }));
       const stubPatch = sinon.stub(DbOpsUtils, 'patch').callsFake(() => ({
         status: 200,
         value: { ...admin, schools: [{ id: 'schoolA', roles: ['professor'] }] },
@@ -435,6 +435,11 @@ describe('Users Service access', function () {
 
       // call as a portal admin
       const res = await UsersService.deleteSchoolAdmin('schoolA', 'admin2', _ctxPortal);
+
+      // check: the admin and the user before the patch are read on the primary (a change of the request before is in
+      // them: an admin just given is found, the diff of the patch has it)
+      const primary = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+      chai.expect(stubGet.args.map((args) => args[4])).to.deep.equal([primary, primary]);
 
       // check: the patch removes the admin role only
       chai.expect(res.status).to.equal(200);
@@ -537,6 +542,10 @@ describe('Users Service access', function () {
 
       // check: nothing was changed (no event)
       chai.expect(stubEvent.callCount).to.equal(0);
+
+      // check: the current status was read on the primary (the conditional write returned no object)
+      const readPrimary = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+      chai.expect(stubGet.args.map((args) => args[4])).to.deep.equal([readPrimary, readPrimary]);
     });
 
     /**

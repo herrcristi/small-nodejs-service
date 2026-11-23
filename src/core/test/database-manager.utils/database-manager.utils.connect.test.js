@@ -78,7 +78,7 @@ describe('Database Manager Utils', function () {
     const options = mongoStub.firstCall.args[1];
     chai.expect(options.maxPoolSize).to.equal(16);
     chai.expect(options.waitQueueTimeoutMS).to.equal(30000);
-    chai.expect(DatabaseManagerUtils.getTimeLimit()).to.deep.equal({ maxTimeMS: 30000 });
+    chai.expect(DatabaseManagerUtils.getMaxTimeMS()).to.equal(30000);
 
     // call again, served from cache
     res = await DatabaseManagerUtils.connect(mongoUrl, dbName, _ctx);
@@ -118,7 +118,7 @@ describe('Database Manager Utils', function () {
     chai.expect(options.maxPoolSize).to.equal(8);
     chai.expect(options.waitQueueTimeoutMS).to.equal(60000);
     chai.expect(options.readPreference).to.equal('secondaryPreferred');
-    chai.expect(DatabaseManagerUtils.getTimeLimit()).to.deep.equal({ maxTimeMS: 10000 });
+    chai.expect(DatabaseManagerUtils.getMaxTimeMS()).to.equal(10000);
 
     // case: wrong values, the defaults
     DatabaseManagerUtils.init({ maxPoolSize: '0', waitQueueTimeout: 'thirty', queryTimeout: '-5' });
@@ -126,7 +126,7 @@ describe('Database Manager Utils', function () {
     options = mongoStub.secondCall.args[1];
     chai.expect(options.maxPoolSize).to.equal(DatabaseManagerUtils.Constants.MaxPoolSize);
     chai.expect(options.waitQueueTimeoutMS).to.equal(DatabaseManagerUtils.Constants.WaitQueueTimeout * 1000);
-    chai.expect(DatabaseManagerUtils.getTimeLimit()).to.deep.equal({ maxTimeMS: 30000 });
+    chai.expect(DatabaseManagerUtils.getMaxTimeMS()).to.equal(30000);
 
     // case: some of them (1.5 is not a whole number: the default)
     DatabaseManagerUtils.init({ maxPoolSize: '1.5', waitQueueTimeout: '45' });
@@ -134,11 +134,11 @@ describe('Database Manager Utils', function () {
     options = mongoStub.thirdCall.args[1];
     chai.expect(options.maxPoolSize).to.equal(16);
     chai.expect(options.waitQueueTimeoutMS).to.equal(45000);
-    chai.expect(DatabaseManagerUtils.getTimeLimit()).to.deep.equal({ maxTimeMS: 30000 });
+    chai.expect(DatabaseManagerUtils.getMaxTimeMS()).to.equal(30000);
 
     // case: none given (the defaults)
     DatabaseManagerUtils.init();
-    chai.expect(DatabaseManagerUtils.getTimeLimit()).to.deep.equal({ maxTimeMS: 30000 });
+    chai.expect(DatabaseManagerUtils.getMaxTimeMS()).to.equal(30000);
   }).timeout(10000);
 
   /**

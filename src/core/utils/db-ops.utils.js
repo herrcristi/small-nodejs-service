@@ -1,11 +1,11 @@
 /**
  * Database operation utils
  *
- * every database call carries the time limit of the application (DatabaseManagerUtils.getTimeLimit: { maxTimeMS }):
- * the server stops a call that runs longer and the request answers 503
+ * config: { serviceName, collection, maxTimeMS }; every database call carries the time limit of its config
+ * (maxTimeMS, in milliseconds, given by the application): the server stops a call that runs longer and the request
+ * answers 503
  */
 const CommonUtils = require('./common.utils.js');
-const DatabaseManagerUtils = require('./database-manager.utils.js');
 const DbOpsArrayUtils = require('./db-ops.array.utils.js');
 
 const Constants = {
@@ -14,17 +14,23 @@ const Constants = {
   // used by a read after a write that returned no object (updateMany, a conditional write that matched nothing) and by
   // the notifications, which are handled inside the request that wrote the change
   // (the object of a write that returns it, put / patch / delete, is its result: it is never read again)
-  ReadPrimary: { readPreference: 'primary' },
+  // the readPreference of such a read, in the options built by the caller ({ readPreference: ReadPrimary }); the other
+  // reads give none (the one of the client)
+  ReadPrimary: 'primary',
 };
 
 const Utils = {
   /**
-   * error
+   * error: every failed answer of a database call
+   * msgOrException: a message (a string), or the exception that was caught (its message, and the exception itself)
    */
-  error: (status, msg, time, _ctx) => {
+  error: (status, msgOrException, time, _ctx) => {
+    const isMessage = typeof msgOrException === 'string';
+    const message = isMessage ? msgOrException : msgOrException.message;
+    const error = isMessage ? new Error(msgOrException) : msgOrException;
     return {
       status,
-      error: { message: msg, error: new Error(msg) },
+      error: { message, error },
       time: new Date() - time /*milliseconds*/,
     };
   },
@@ -44,9 +50,8 @@ const Utils = {
     // the index (not the text of the driver, which names the collection and the value)
     if (e?.code === Utils.DuplicateKeyCode) {
       const fields = Object.keys(e.keyPattern || {}).join(', ') || 'value';
-      const msg = `"${fields}" is already used`;
       console.log(`\nDB Calling: duplicate key: ${e.message}`);
-      return { status: 409, error: { message: msg, error: new Error(msg) }, time: new Date() - time };
+      return Utils.error(409, `"${fields}" is already used`, time, _ctx);
     }
 
     // the database is busy (every connection of the pool is used): the request can be sent again later (503), it does
@@ -62,11 +67,7 @@ const Utils = {
       return Utils.error(503, 'The database call ran longer than its time limit', time, _ctx);
     }
 
-    return {
-      status: 500,
-      error: { message: e.message || e, error: e },
-      time: new Date() - time /*milliseconds*/,
-    };
+    return Utils.error(500, e, time, _ctx);
   },
 
   /**
@@ -79,10 +80,9 @@ const Utils = {
     }
 
     // the write was done on the primary: its answer is read there too
-    const timeLimit = DatabaseManagerUtils.getTimeLimit();
     const count = await config.collection.countDocuments(
       { id: objID },
-      { limit: 1, ...Constants.ReadPrimary, ...timeLimit }
+      { limit: 1, readPreference: Constants.ReadPrimary, maxTimeMS: config.maxTimeMS }
     );
     if (!count) {
       return Utils.error(404, `Not found ${objID}`, time, _ctx);
@@ -206,9 +206,11 @@ const Public = {
 
   /**
    * get all
-   * config: { serviceName, collection }
+   * config: { serviceName, collection, maxTimeMS }
    * filter: { filter, projection, limit, skip, sort }
-   * options: Constants.ReadPrimary to see the writes just done, otherwise null (a secondary may answer)
+   * options: the options of the read, built by the caller ({ readPreference: Constants.ReadPrimary } to see the writes
+   *   just done), otherwise null (the read preference of the client: a secondary may answer); the time limit of the
+   *   config is added
    * return: { status, value } or { status, error: { message, error } }
    */
   getAll: async (config, filter, _ctx, options = null) => {
@@ -217,9 +219,8 @@ const Public = {
 
     try {
       const { filter: findFilter, projection, limit, skip, sort } = filter;
-      const timeLimit = DatabaseManagerUtils.getTimeLimit();
       const values = await config.collection
-        .find(findFilter, { ...options, ...timeLimit })
+        .find(findFilter, { ...options, maxTimeMS: config.maxTimeMS })
         .project(projection)
         .sort(sort)
         .skip(skip || 0)
@@ -252,8 +253,7 @@ const Public = {
     const logFilter = JSON.stringify(filter, CommonUtils.stringifyFilter, 2);
 
     try {
-      const timeLimit = DatabaseManagerUtils.getTimeLimit();
-      const count = await config.collection.countDocuments(filter.filter, { ...timeLimit });
+      const count = await config.collection.countDocuments(filter.filter, { maxTimeMS: config.maxTimeMS });
 
       console.log(
         `\nDB Calling: ${
@@ -276,16 +276,16 @@ const Public = {
 
   /**
    * get the objects with these ids
-   * options: Constants.ReadPrimary to see the writes just done, otherwise null
+   * options: the options of the read, built by the caller (see getAll), otherwise null
    */
   getAllByIDs: async (config, ids, projection, _ctx, options = null) => {
     return Public.getAll(config, { filter: { id: { $in: ids } }, projection }, _ctx, options);
   },
 
   /**
-   * get all the objects that have a reference (a copy) of an object
+   * get all the objects that reference an object
    * ref: { fieldName } (user, students[], schedules[].location)
-   * options: Constants.ReadPrimary to see the writes just done, otherwise null
+   * options: the options of the read, built by the caller (see getAll), otherwise null
    * return: { status, value } or { status, error: { message, error } }
    */
   getAllByReference: async (config, ref, refID, projection, _ctx, options = null) => {
@@ -295,8 +295,8 @@ const Public = {
 
   /**
    * get one
-   * config: { serviceName, collection }
-   * options: Constants.ReadPrimary to see the writes just done, otherwise null (a secondary may answer)
+   * config: { serviceName, collection, maxTimeMS }
+   * options: the options of the read, built by the caller (see getAll), otherwise null
    * return: { status, value } or { status, error: { message, error } }
    */
   getOne: async (config, objID, projection, _ctx, options = null) => {
@@ -304,8 +304,7 @@ const Public = {
 
     try {
       const filter = { id: objID };
-      const timeLimit = DatabaseManagerUtils.getTimeLimit();
-      const value = await config.collection.findOne(filter, { projection, ...options, ...timeLimit });
+      const value = await config.collection.findOne(filter, { projection, ...options, maxTimeMS: config.maxTimeMS });
 
       console.log(
         `\nDB Calling: ${config.serviceName} getOne for ${objID} returned: ${JSON.stringify(
@@ -333,7 +332,7 @@ const Public = {
 
   /**
    * post
-   * config: { serviceName, collection }
+   * config: { serviceName, collection, maxTimeMS }
    * return: { status, value } or { status, error: { message, error } }
    */
   post: async (config, objInfo, _ctx) => {
@@ -345,8 +344,7 @@ const Public = {
     objInfo.modifiedCount = 1;
 
     try {
-      const timeLimit = DatabaseManagerUtils.getTimeLimit();
-      const value = await config.collection.insertOne(objInfo, { ...timeLimit });
+      const value = await config.collection.insertOne(objInfo, { maxTimeMS: config.maxTimeMS });
 
       console.log(
         `\nDB Calling: ${config.serviceName} post for ${JSON.stringify(
@@ -376,7 +374,7 @@ const Public = {
 
   /**
    * delete
-   * config: { serviceName, collection }
+   * config: { serviceName, collection, maxTimeMS }
    * return: { status, value } or { status, error: { message, error } }
    */
   delete: async (config, objID, projection, _ctx) => {
@@ -384,11 +382,10 @@ const Public = {
 
     try {
       const filter = { id: objID };
-      const timeLimit = DatabaseManagerUtils.getTimeLimit();
       const r = await config.collection.findOneAndDelete(filter, {
         projection,
         includeResultMetadata: true,
-        ...timeLimit,
+        maxTimeMS: config.maxTimeMS,
       });
 
       console.log(
@@ -417,7 +414,7 @@ const Public = {
 
   /**
    * delete all the objects of a filter (never without a filter: that would empty the collection)
-   * config: { serviceName, collection }
+   * config: { serviceName, collection, maxTimeMS }
    * filter: { filter }
    * return: { status, value: deleted count } or { status, error: { message, error } }
    */
@@ -431,8 +428,7 @@ const Public = {
     }
 
     try {
-      const timeLimit = DatabaseManagerUtils.getTimeLimit();
-      const r = await config.collection.deleteMany(findFilter, { ...timeLimit });
+      const r = await config.collection.deleteMany(findFilter, { maxTimeMS: config.maxTimeMS });
 
       console.log(
         `\nDB Calling: ${config.serviceName} deleteAll with filter ${logFilter} deleted ${
@@ -453,7 +449,7 @@ const Public = {
 
   /**
    * put
-   * config: { serviceName, collection, returnDocument? }
+   * config: { serviceName, collection, maxTimeMS, returnDocument? }
    * options: { filter? } the object is changed only when it also matches this filter (a conditional update, done in
    *   one database call: { status: 'pending' }); otherwise nothing is changed and the answer is 409 (or 404)
    * return: { status, value } or { status, error: { message, error } }
@@ -464,7 +460,6 @@ const Public = {
 
     try {
       const returnDocument = config.returnDocument || 'after';
-      const timeLimit = DatabaseManagerUtils.getTimeLimit();
 
       const r = await config.collection.findOneAndUpdate(
         { ...extraFilter, id: objID },
@@ -472,7 +467,7 @@ const Public = {
           $set: { ...objInfo, lastModifiedTimestamp: new Date().toISOString() },
           $inc: { modifiedCount: 1 },
         },
-        { returnDocument, includeResultMetadata: true, projection, ...timeLimit }
+        { returnDocument, includeResultMetadata: true, projection, maxTimeMS: config.maxTimeMS }
       );
 
       console.log(
@@ -503,7 +498,7 @@ const Public = {
 
   /**
    * patch
-   * config: { serviceName, collection }
+   * config: { serviceName, collection, maxTimeMS }
    * patchInfo: { set, unset, add, remove, removeWhere }
    *   removeWhere: { <array field>: <condition> } removes the elements of an array that match a condition (internal
    *   only, never from a request: { schools: { roles: { $size: 0 } } } removes the memberships without roles)
@@ -517,7 +512,6 @@ const Public = {
 
     try {
       const filter = { id: objID };
-      const timeLimit = DatabaseManagerUtils.getTimeLimit();
 
       // order is set, add, remove, removeWhere, unset
 
@@ -560,7 +554,7 @@ const Public = {
 
       if (bulkOperations.length) {
         // do a bulk write operation followed by a get
-        let r = await config.collection.bulkWrite(bulkOperations, { ordered: true, ...timeLimit });
+        let r = await config.collection.bulkWrite(bulkOperations, { ordered: true, maxTimeMS: config.maxTimeMS });
         console.log(
           `\nDB Calling: ${config.serviceName} patch for ${objID} with ops: ${JSON.stringify(
             bulkOperations
@@ -581,7 +575,7 @@ const Public = {
         returnDocument: 'after',
         includeResultMetadata: true,
         projection,
-        ...timeLimit,
+        maxTimeMS: config.maxTimeMS,
       });
 
       console.log(
@@ -612,7 +606,7 @@ const Public = {
 
   /**
    * references add many
-   * config: { serviceName, collection }
+   * config: { serviceName, collection, maxTimeMS }
    * ref: { fieldName }
    * return: { status, value } or { status, error: { message, error } }
    */
@@ -632,7 +626,6 @@ const Public = {
 
       const filters = { id: { $in: targetsIDs } };
       const arrayFilters = [];
-      const timeLimit = DatabaseManagerUtils.getTimeLimit();
 
       let setObj = {};
       for (const key in objInfo) {
@@ -661,7 +654,7 @@ const Public = {
           },
           {
             arrayFilters,
-            ...timeLimit,
+            maxTimeMS: config.maxTimeMS,
           }
         );
       } else {
@@ -680,7 +673,7 @@ const Public = {
           },
           {
             arrayFilters,
-            ...timeLimit,
+            maxTimeMS: config.maxTimeMS,
           }
         );
       }
@@ -707,10 +700,10 @@ const Public = {
   },
 
   /**
-   * references update many: the copies of an object are updated, only the copies that are older than it (their
-   * modifiedCount is missing or smaller than the one of the object): a change that comes back through a cycle of
-   * notifications, or a late notification of an older change, changes nothing
-   * config: { serviceName, collection }
+   * references update many: where an object is referenced, the referenced object is updated, only when it is older
+   * than the object (its modifiedCount is missing or smaller than the one of the object): a change that comes back
+   * through a cycle of notifications, or a late notification of an older change, changes nothing
+   * config: { serviceName, collection, maxTimeMS }
    * ref: { fieldName }
    * objInfo: the object (projected), with its modifiedCount
    * return: { status, value: updated count, ids: [ the ids of the updated objects ] } or { status, error }
@@ -728,7 +721,7 @@ const Public = {
         setObj[`${updateField}.${key}`] = objInfo[key]; // schedules.$[schedules].location.id: ...
       }
 
-      // only the older copies: an object with a modifiedCount (without it: all its copies)
+      // only the older referenced objects: an object with a modifiedCount (without it: everywhere it is referenced)
       const hasModifiedCount = typeof objInfo.modifiedCount === 'number';
       const filter = hasModifiedCount
         ? Utils.getFilterForObjectsToUpdate(ref.fieldName, objInfo)
@@ -737,10 +730,9 @@ const Public = {
         ? Utils.getArrayFiltersForObjectsToUpdate(arrayFilters, objInfo)
         : arrayFilters;
 
-      // the objects to update (on the primary: the copies written just before in the same request are seen)
-      const timeLimit = DatabaseManagerUtils.getTimeLimit();
+      // the objects to update (on the primary: the referenced objects written just before in the same request are seen)
       const objects = await config.collection
-        .find(filter, { ...Constants.ReadPrimary, ...timeLimit })
+        .find(filter, { readPreference: Constants.ReadPrimary, maxTimeMS: config.maxTimeMS })
         .project({ _id: 0, id: 1 })
         .toArray();
       const ids = objects.map((item) => item.id);
@@ -748,13 +740,13 @@ const Public = {
         console.log(
           `\nDB Calling: ${config.serviceName} updateManyReferences for '${ref.fieldName}' with info ${JSON.stringify(
             objInfo
-          )}: no older copy. Finished in ${new Date() - time} ms`
+          )}: no older referenced object. Finished in ${new Date() - time} ms`
         );
         return { status: 200, value: 0, ids: [], time: new Date() - time };
       }
 
-      // update obj: the filter is checked again by the write itself, so a newer copy written meanwhile (another request)
-      // is not overwritten
+      // update obj: the filter is checked again by the write itself, so a newer referenced object written meanwhile (by
+      // another request) is not overwritten
       const r = await config.collection.updateMany(
         { ...filter, id: { $in: ids } },
         {
@@ -768,7 +760,7 @@ const Public = {
         },
         {
           arrayFilters: updateArrayFilters, // [{ schedules.location.id: '...', $or: [ schedules.location.modifiedCount... ] }]
-          ...timeLimit,
+          maxTimeMS: config.maxTimeMS,
           //explain: 'executionStats'
         }
       );
@@ -793,26 +785,25 @@ const Public = {
   },
 
   /**
-   * references id update many: the copies of an object that got another id take its new id (the other fields of the
-   * copies follow with updateManyReferences)
-   * config: { serviceName, collection }
+   * references id update many: where an object that got another id is referenced, the referenced object takes its new
+   * id (its other fields follow with updateManyReferences)
+   * config: { serviceName, collection, maxTimeMS }
    * ref: { fieldName }
-   * previousID: the id of the copies, objID: the new id
+   * previousID: the id of the referenced object, objID: the new id
    * return: { status, value: updated count, ids: [ the ids of the updated objects ] } or { status, error }
    */
   updateManyReferencesID: async (config, ref, previousID, objID, _ctx) => {
     const time = new Date();
 
     try {
-      // the copies with the previous id
+      // the objects that reference the previous id
       const { filterField, updateField, arrayFilters } = Utils.getReferencesUpdateMany(
         ref.fieldName,
         { id: previousID },
         _ctx
       );
-      const timeLimit = DatabaseManagerUtils.getTimeLimit();
       const objects = await config.collection
-        .find({ [filterField]: previousID }, { ...Constants.ReadPrimary, ...timeLimit })
+        .find({ [filterField]: previousID }, { readPreference: Constants.ReadPrimary, maxTimeMS: config.maxTimeMS })
         .project({ _id: 0, id: 1 })
         .toArray();
       const ids = objects.map((item) => item.id);
@@ -820,14 +811,14 @@ const Public = {
         return { status: 200, value: 0, ids: [], time: new Date() - time };
       }
 
-      // their new id (the write checks the previous id again: a copy changed meanwhile is not overwritten)
+      // their new id (the write checks the previous id again: an object changed meanwhile is not overwritten)
       const r = await config.collection.updateMany(
         { [filterField]: previousID, id: { $in: ids } },
         {
           $set: { [`${updateField}.id`]: objID, lastModifiedTimestamp: new Date().toISOString() },
           $inc: { modifiedCount: 1 },
         },
-        { arrayFilters, ...timeLimit } // [{ students.id: previousID }]
+        { arrayFilters, maxTimeMS: config.maxTimeMS } // [{ students.id: previousID }]
       );
 
       console.log(
@@ -849,7 +840,7 @@ const Public = {
 
   /**
    * references delete many
-   * config: { serviceName, collection }
+   * config: { serviceName, collection, maxTimeMS }
    * ref: { fieldName }
    * options: { filter? } only the objects that also match this filter ({ id: { $nin: ids } }: all but these)
    * return: { status, value } or { status, error: { message, error } }
@@ -868,7 +859,6 @@ const Public = {
       const refFieldName = lastFieldIsArray ? ref.fieldName.slice(0, -2) : ref.fieldName;
       const { filterField, updateField, arrayFilters } = Utils.getReferencesUpdateMany(refFieldName, objInfo, _ctx);
 
-      const timeLimit = DatabaseManagerUtils.getTimeLimit();
       let setObj = {};
       let setProps = {};
       for (const key in objInfo) {
@@ -899,7 +889,7 @@ const Public = {
           },
           {
             arrayFilters, // [{ schedules.location.id: '...' }]
-            ...timeLimit,
+            maxTimeMS: config.maxTimeMS,
           }
         );
       } else {
@@ -916,7 +906,7 @@ const Public = {
           },
           {
             arrayFilters, // [{ schedules.location.id: '...' }]
-            ...timeLimit,
+            maxTimeMS: config.maxTimeMS,
           }
         );
       }

@@ -34,8 +34,10 @@ describe('Schools Service settings and expiry', function () {
     // call
     const res = await SchoolsService.getSettings('school1', _ctx);
 
-    // check: the defaults (the removed members are kept)
+    // check: the defaults (the removed members are kept), read on the primary (they decide what happens to a removed
+    // member, and the page reads them after a save)
     chai.expect(stubGet.firstCall.args[1]).to.equal('school1');
+    chai.expect(stubGet.firstCall.args[4]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
     chai.expect(res).to.deep.equal({ status: 200, value: { removedMembers: 'keep' } });
 
     // case: set
@@ -100,9 +102,10 @@ describe('Schools Service settings and expiry', function () {
     const before = Date.now();
     const res = await SchoolsService.deleteExpiredPending(_ctx);
 
-    // check: only the pending ones created before the expiry
+    // check: only the pending ones created before the expiry, read on the primary (a school activated just before)
     const filter = stubGetAll.firstCall.args[1].filter;
     chai.expect(filter.status).to.equal('pending');
+    chai.expect(stubGetAll.firstCall.args[3]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
     const expiredBefore = new Date(filter.createdTimestamp.$lt).getTime();
     const expiresIn = ConfigSettings.getPendingExpiresIn() * 1000;
     chai.expect(expiredBefore).to.be.at.most(before - expiresIn + 1000);

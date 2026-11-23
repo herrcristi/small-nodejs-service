@@ -5,6 +5,7 @@
 const Joi = require('joi');
 
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
+const DatabaseManagerUtils = require('../../core/utils/database-manager.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const RestApiUtils = require('../../core/utils/rest-api.utils.js');
 const TranslationsUtils = require('../../core/utils/translations.utils.js');
@@ -83,12 +84,13 @@ const Private = {
 
   /**
    * config
-   * returns { serviceName, collection, schema, references, fillReferences, events }
+   * returns { serviceName, collection, maxTimeMS, schema, references, fillReferences, events }
    */
   getConfig: async (_ctx) => {
     const config = {
       serviceName: GroupsConstants.ServiceName,
       collection: await GroupsDatabase.collection(_ctx),
+      maxTimeMS: DatabaseManagerUtils.getMaxTimeMS(), // the time limit of each database call (DbOpsUtils)
       references: [
         {
           fieldName: 'students[]',
@@ -131,7 +133,9 @@ const Private = {
 
     const projection = { ...config.notifications.projection, _id: 0 };
     // the groups were just written by updateMany (no object in its answer): read on the primary
-    const rGroups = await DbOpsUtils.getAllByIDs(config, groupsIDs, projection, _ctx, DbOpsUtils.Constants.ReadPrimary);
+    const rGroups = await DbOpsUtils.getAllByIDs(config, groupsIDs, projection, _ctx, {
+      readPreference: DbOpsUtils.Constants.ReadPrimary,
+    });
     if (rGroups.error) {
       return rGroups;
     }
@@ -142,11 +146,11 @@ const Private = {
   },
 
   /**
-   * students notification: the copies of the students in the groups (students[])
-   * - modified: the copies are updated (only the older ones, modifiedCount)
+   * students notification: the students referenced by the groups (students[])
+   * - modified: the referenced objects are updated (only the older ones, modifiedCount)
    * - removed (the student was deleted): it is removed from the groups (and these groups are notified)
    * (a student is put in a group by the edit of the group, not by a notification)
-   * the groups whose copies changed are notified (the schedules keep the students of their groups)
+   * the groups whose referenced students changed are notified (the schedules keep the students of their groups)
    * a failure is logged and the next students are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
    */
@@ -160,14 +164,14 @@ const Private = {
     const changedGroupsIDs = new Set();
     let failure = null; // the first failure (the next students are still done)
 
-    // the copies of the modified students
+    // the modified students, where they are referenced
     for (const student of notification[Private.Notification.Modified] || []) {
-      // a trace linked to the user invited again: its copies take its new id first
+      // a trace linked to the user invited again: its references take its new id first
       if (student.previousID) {
         const rID = await DbOpsUtils.updateManyReferencesID(config, studentsRef, student.previousID, student.id, _ctx);
         if (rID.error) {
           console.log(
-            `\n${GroupsConstants.ServiceName}: failed to link the copies of the student ${student.id}: ${rID.error.message}`
+            `\n${GroupsConstants.ServiceName}: failed to link the referenced student ${student.id}: ${rID.error.message}`
           );
           failure ??= rID;
           continue;
@@ -175,16 +179,16 @@ const Private = {
         rID.ids.forEach((id) => changedGroupsIDs.add(id));
       }
 
-      const studentCopy = CommonUtils.getProjectedObj(student, studentsRef.projection);
-      const rCopies = await DbOpsUtils.updateManyReferences(config, studentsRef, studentCopy, _ctx);
-      if (rCopies.error) {
+      const referencedStudent = CommonUtils.getProjectedObj(student, studentsRef.projection);
+      const rUpdate = await DbOpsUtils.updateManyReferences(config, studentsRef, referencedStudent, _ctx);
+      if (rUpdate.error) {
         console.log(
-          `\n${GroupsConstants.ServiceName}: failed to update the copies of the student ${student.id}: ${rCopies.error.message}`
+          `\n${GroupsConstants.ServiceName}: failed to update the referenced student ${student.id}: ${rUpdate.error.message}`
         );
-        failure ??= rCopies;
+        failure ??= rUpdate;
         continue;
       }
-      rCopies.ids.forEach((id) => changedGroupsIDs.add(id));
+      rUpdate.ids.forEach((id) => changedGroupsIDs.add(id));
     }
 
     // the deleted students
@@ -197,7 +201,7 @@ const Private = {
         student.id,
         { _id: 0, id: 1 },
         _ctx,
-        DbOpsUtils.Constants.ReadPrimary // the notification is handled in the request that wrote: read the primary
+        { readPreference: DbOpsUtils.Constants.ReadPrimary } // the notification is handled in the request that wrote: read the primary
       );
       if (rGroups.error) {
         console.log(
@@ -208,8 +212,8 @@ const Private = {
       }
       rGroups.value.forEach((item) => changedGroupsIDs.add(item.id));
 
-      const studentCopy = CommonUtils.getProjectedObj(student, studentsRef.projection);
-      const rRemove = await DbOpsUtils.deleteManyReferences(config, studentsRef, studentCopy, _ctx);
+      const referencedStudent = CommonUtils.getProjectedObj(student, studentsRef.projection);
+      const rRemove = await DbOpsUtils.deleteManyReferences(config, studentsRef, referencedStudent, _ctx);
       if (rRemove.error) {
         console.log(
           `\n${GroupsConstants.ServiceName}: failed to remove the student ${student.id}: ${rRemove.error.message}`
@@ -226,8 +230,8 @@ const Private = {
   /**
    * schedules notification: a schedule is in the schedules of its groups (the groups it lists)
    * - added, modified: the schedule is added to its groups (the ones that do not have it yet), removed from the
-   *   groups that are not in it anymore (a group removed from it keeps its other schedules), and its copies are
-   *   updated (only the older ones, modifiedCount)
+   *   groups that are not in it anymore (a group removed from it keeps its other schedules), and where it is
+   *   referenced it is updated (only the older ones, modifiedCount)
    * - removed (the schedule was deleted): the schedule is removed from all the groups
    * a failure is logged and the next schedules are still done; the first failure is returned at the end
    * returns { status, value } or { status, error }
@@ -244,14 +248,20 @@ const Private = {
     const modifiedSchedules = notification[Private.Notification.Modified] || [];
     let failure = null; // the first failure (the next schedules are still done)
     for (const schedule of [...addedSchedules, ...modifiedSchedules]) {
-      const scheduleCopy = CommonUtils.getProjectedObj(schedule, schedulesRef.projection);
+      const referencedSchedule = CommonUtils.getProjectedObj(schedule, schedulesRef.projection);
 
-      // the groups of the schedule (a notification without them changes only the copies)
+      // the groups of the schedule (a notification without them changes only where it is referenced)
       if (Array.isArray(schedule.groups)) {
         const scheduleGroupsIDs = schedule.groups.map((group) => group.id);
 
         // added to its groups
-        const rAdd = await DbOpsUtils.addManyReferences(config, scheduleGroupsIDs, schedulesRef, scheduleCopy, _ctx);
+        const rAdd = await DbOpsUtils.addManyReferences(
+          config,
+          scheduleGroupsIDs,
+          schedulesRef,
+          referencedSchedule,
+          _ctx
+        );
         if (rAdd.error) {
           console.log(
             `\n${GroupsConstants.ServiceName}: failed to add the schedule ${schedule.id}: ${rAdd.error.message}`
@@ -278,13 +288,13 @@ const Private = {
         }
       }
 
-      // its copies
-      const rCopies = await DbOpsUtils.updateManyReferences(config, schedulesRef, scheduleCopy, _ctx);
-      if (rCopies.error) {
+      // where it is referenced
+      const rUpdate = await DbOpsUtils.updateManyReferences(config, schedulesRef, referencedSchedule, _ctx);
+      if (rUpdate.error) {
         console.log(
-          `\n${GroupsConstants.ServiceName}: failed to update the copies of the schedule ${schedule.id}: ${rCopies.error.message}`
+          `\n${GroupsConstants.ServiceName}: failed to update the referenced schedule ${schedule.id}: ${rUpdate.error.message}`
         );
-        failure ??= rCopies;
+        failure ??= rUpdate;
       }
     }
 
@@ -379,7 +389,9 @@ const Public = {
   },
 
   /**
-   * get all by ids
+   * get all by ids: the objects referenced by another service before it writes them (populateReferences) or a read that
+   * decides a write (the roles of a user): read on the primary, so an object written just before (by an earlier request,
+   * or by another service in the same request: the school of a signup) is found, a reference to it would be dropped
    * returns { status, value } or { status, error }
    */
   getAllByIDs: async (ids, projection, _ctx) => {
@@ -388,7 +400,8 @@ const Public = {
     }
 
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx);
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx, options);
   },
 
   /**
@@ -574,8 +587,8 @@ const Public = {
   },
 
   /**
-   * notification: the copies kept by the groups follow the changes of their sources (each source has its own flow)
-   * - students: the copies of the students in the groups (the groups whose copies changed are notified)
+   * notification: the objects referenced by the groups follow their sources (each source has its own flow)
+   * - students: the students referenced by the groups (the groups whose referenced students changed are notified)
    * - schedules: a schedule is in the schedules of its groups
    * notification: { serviceName, added?, modified?, removed? }
    */
@@ -594,7 +607,7 @@ const Public = {
         return await Private.onSchedulesNotification(notification, _ctx);
       default:
         console.log(
-          `\n${GroupsConstants.ServiceName}: notification of ${notification.serviceName} ignored (no copy of it)`
+          `\n${GroupsConstants.ServiceName}: notification of ${notification.serviceName} ignored (no reference to it)`
         );
         return { status: 200, value: false };
     }

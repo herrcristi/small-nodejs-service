@@ -209,7 +209,7 @@ Records that can be switched on and off carry a `status`: `pending`, `active`, `
 | School                           | `pending` until its first admin logs in, then `active`; `disabled` hides it from the tenant selector and blocks access |
 | User                             | `pending` until the first login, then `active`; `disabled` blocks login (a deleted account is deleted)                 |
 | Class, location, group, schedule | `pending`, `active`, `disabled` (default `pending` on creation)                                                        |
-| Admin, professor, student record | its copy of the user (`user.status`): the user's status while it has the role; `removed` or `deleted` for a trace      |
+| Admin, professor, student record | its referenced user (`user.status`): the user's status while it has the role; `removed` or `deleted` for a trace       |
 
 **Pending records expire.** A pending user (an invitation that was not used) and a pending school (a signup that was not followed by a login) are removed `SMALL_API_PENDING_EXPIRES_IN` seconds after they were created (72 hours by default, as long as the invitation link). The users and schools services check every hour, or as often as the expiry when it is shorter (with `600`, every 10 minutes), starting one interval after the start; the start logs the expiry and the interval in use; a MongoDB TTL index is not used, because it would delete without the events and the notifications that clean the other services. The removals are in the events of the Portal School, done by the user `cleanup pending` (the events of the start are done by `setup`, and those of a public form, like a password reset, by `anonymous`: an event always names who did it). A pending portal admin expires too: while no portal admin is active, every start invites the configured one again.
 
@@ -223,13 +223,13 @@ Every document in the database has:
 | `lastModifiedTimestamp` | when it was last changed                                    |
 | `modifiedCount`         | a counter, starts at `1` and is incremented on every change |
 
-The counter is how a consumer can tell **which version of a record it has seen**. It is the basis for ordering asynchronous updates: services update each other's copies through notifications, and the order in which two changes arrive is not guaranteed, so a copy that carries a counter can be compared with the change that arrives.
+The counter is how a consumer can tell **which version of a record it has seen**. It is the basis for ordering asynchronous updates: services update each other's referenced objects through notifications, and the order in which two changes arrive is not guaranteed, so a referenced object that carries a counter can be compared with the change that arrives.
 
 ### Deleting a user keeps the traces
 
 A user can delete their own account (the profile page, `DELETE /users-auth`). The account is deleted: the user record, its login, its sessions and its links. Each school decides what happens to the records the person leaves.
 
-The person's **traces stay in the schools** (by default): the admin, professor, and student records, with their entries in groups and schedules, and the events that name them, remain; their copy of the user is marked `deleted` (`user.status`). History such as who taught a class or attended a schedule is not rewritten. An admin removes a person from their school by removing the role, which does not delete the account; the record stays, its copy of the user marked `removed`. A person who never logged in (pending) leaves nothing.
+The person's **traces stay in the schools** (by default): the admin, professor, and student records, with their entries in groups and schedules, and the events that name them, remain; their referenced user is marked `deleted` (`user.status`). History such as who taught a class or attended a schedule is not rewritten. An admin removes a person from their school by removing the role, which does not delete the account; the record stays, its referenced user marked `removed`. A person who never logged in (pending) leaves nothing.
 
 Two kinds of schools show why this is a setting:
 
@@ -240,10 +240,10 @@ Each school chooses on its **Settings** page (`GET|PUT /schools/:id/settings`, i
 
 | Setting `removedMembers` | What happens to the admin, professor, or student record                                                                                                                      |
 | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `keep` (default)         | kept, its copy of the user marked `removed` (role removed) or `deleted` (account deleted); it stays in the lists, groups and schedules. Deleting it from its list removes it |
+| `keep` (default)         | kept, its referenced user marked `removed` (role removed) or `deleted` (account deleted); it stays in the lists, groups and schedules. Deleting it from its list removes it  |
 | `delete`                 | deleted, and removed from its groups and schedules (the notifications follow). Nothing is kept; it can not be undone                                                         |
 
-**Rejoining.** A deleted user invited again is a new user, with a new id, like any other. The invite is the only way into a school, so it links the person to its traces there, once: before the user gets its role, the school's admin, professor, and student records of a deleted account with the same email take the id of the user (their copies in the groups and the schedules follow), whatever the role of the invite. A trace stays `deleted` until its user has that role again and is active: the role given again makes its record active again at the first login (or at once, when the user is already active in another school), and the others stay traces (for example the professor record stays `deleted`). An invitation that is not used in time removes the user again, and the traces stay `deleted`.
+**Rejoining.** A deleted user invited again is a new user, with a new id, like any other. The invite is the only way into a school, so it links the person to its traces there, once: before the user gets its role, the school's admin, professor, and student records of a deleted account with the same email take the id of the user (where they are referenced, in the groups and the schedules, the id follows), whatever the role of the invite. A trace stays `deleted` until its user has that role again and is active: the role given again makes its record active again at the first login (or at once, when the user is already active in another school), and the others stay traces (for example the professor record stays `deleted`). An invitation that is not used in time removes the user again, and the traces stay `deleted`.
 
 **Emails.** An email of the same kind (an invitation, a setup link, a reset link) is sent to a person at most once a minute: a repeated click or a flood of the public form sends nothing more, and the link sent first stays the valid one. The emails are sent without waiting for the mail server; a failed delivery is logged, and inviting again later sends it again.
 
@@ -295,11 +295,11 @@ Independent security, adversarial, flow, concurrency, and scalability reviews we
 | Authorization in the API | `config.roles.json` maps routes to roles. The UI hides and guards for convenience only                                                                                                                                                                                         |
 | Layers                   | Router (routes) → controller (HTTP) → service (validation and rules) → database module (collections and indexes). Other services are reached through `src/services/rest/` wrappers                                                                                             |
 | Shared helpers           | Joi schemas for input, `RestApiUtils` for list filters, `DbOpsUtils` for MongoDB, reference utilities for related records                                                                                                                                                      |
-| Events and notifications | A successful change made through a public route raises an event, which names who did it, and a notification. Subscribers update their copies. Notification routes are internal. See [Data modes](#data-modes-joins-or-notifications)                                           |
+| Events and notifications | A successful change made through a public route raises an event, which names who did it, and a notification. Subscribers update their referenced objects. Notification routes are internal. See [Data modes](#data-modes-joins-or-notifications)                               |
 | Internal calls           | Services call each other through `RestCommsUtils`: a direct call when they run in the same process, or the internal REST route with service-to-service authentication                                                                                                          |
 | Status lifecycle         | `pending`, `active`, `disabled`. The first login activates a pending user and school, also a refresh of the session (`GET /users-auth/me`) for a school added after the login; neither goes back to `pending`. The tenant selector offers only active schools                  |
 | Translations and email   | Response fields are translated by the translation utilities. Strings and email templates are in `src/translations/`                                                                                                                                                            |
-| Cookie authentication    | The browser sends the HttpOnly cookie. Never copy the token into a JavaScript `Authorization` header                                                                                                                                                                           |
+| Cookie authentication    | The browser sends the HttpOnly cookie. Never put the token into a JavaScript `Authorization` header                                                                                                                                                                            |
 | Transport and abuse      | CORS allow-list with credentials, security headers, HTTPS redirect in production, and a login limit of three attempts per IP per 15 minutes (outside debug mode)                                                                                                               |
 | Password policy          | At least eight characters with uppercase, lowercase, a digit, and a special character. Changing the password or the email needs the current password                                                                                                                           |
 | Tests                    | Mocha with Sinon stubs, one suite per service in `src/test/test/`. Database-backed tests are separate (`npm run testdb`)                                                                                                                                                       |
@@ -310,9 +310,9 @@ Independent security, adversarial, flow, concurrency, and scalability reviews we
 | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | **Every school is a tenant, including the Portal School**                       | One access model for everything: the portal admin is just a membership with a special role, not a separate login system                     | Two small invariants to enforce (`portal-admin` only on the Portal School, nothing else there) |
 | **Users are global; roles live on the school membership**                       | One person can be a professor in one school and a student in another                                                                        | The user record carries a list of memberships that must be kept current                        |
-| **References are embedded in the document** (a copy of the fields a list shows) | List requests are one read of one collection. The copies can be filtered and sorted in the database, for example by `user.name`             | Writes do more work, and copies must be kept current (notifications)                           |
-| **Two data modes, chosen per reference**                                        | Read-heavy data is copied; data that changes as often as it is read is joined                                                               | Two code paths to understand; see [Data modes](#data-modes-joins-or-notifications)             |
-| **Synchronous, in-process notifications**                                       | Simple, ordered by the call, no extra infrastructure. `broadcast` and `consume` are in place for durable, asynchronous delivery             | A failed object is logged and not retried, so copies are eventually consistent                 |
+| **References are embedded in the document** (the fields a list shows)           | List requests are one read of one collection. The referenced objects can be filtered and sorted in the database, for example by `user.name` | Writes do more work, and referenced objects must be kept current                               |
+| **Two data modes, chosen per reference**                                        | Read-heavy data is embedded; data that changes as often as it is read is joined                                                             | Two code paths to understand; see [Data modes](#data-modes-joins-or-notifications)             |
+| **Synchronous, in-process notifications**                                       | Simple, ordered by the call, no extra infrastructure. `broadcast` and `consume` are in place for durable, asynchronous delivery             | A failed object is logged and not retried, so referenced objects are eventually consistent     |
 | **Services run in one process or many**                                         | The same code uses direct local calls in one process and REST between processes. Start simple, split later                                  | The REST wrappers are the only allowed way to cross a service boundary                         |
 | **Per-school collections**                                                      | Isolation by construction, and a school's data is easy to find and remove                                                                   | About 8 collections and 35 indexes per school; it cannot be sharded by tenant as is            |
 | **Statuses instead of deleting**                                                | Yearly archiving, history, and reversible changes                                                                                           | Lists must filter by status                                                                    |
@@ -342,9 +342,9 @@ What the design promises and what has been checked to hold, by attacking it and 
 | Internal calls    | Internal routes need a valid service token; a missing, wrong, session, or old token is refused                                                                                                                                                                                                                                                                                                                        |
 | Input             | Bodies are validated against a schema, unknown fields are rejected, list filters accept only declared fields, query operators are refused, and the page size is capped                                                                                                                                                                                                                                                |
 | Change tracking   | Every record has `createdTimestamp`, `lastModifiedTimestamp`, and a `modifiedCount` incremented on every change                                                                                                                                                                                                                                                                                                       |
-| Copies            | When a record changes, the copies of it that other services keep are updated, and the copies of those copies follow. A copy is updated only when it is older than the change (`modifiedCount`, and `createdTimestamp` for a record created again with the same id; the write checks it too), so a late, repeated, or racing notification, or one that comes back through a cycle, changes nothing                     |
-| Reads             | A request sees its own writes. The object of a write is its answer and is never read again; a read after a write that returns no object, and the reads of the notifications (they run inside the request), ask the primary, not a secondary that may not have the write yet                                                                                                                                           |
-| People            | Removing a role touches only that school's record. Deleting a user keeps the school records and events, their copy of the user marked deleted, unless the school chose to delete them. Only the user changes its email                                                                                                                                                                                                |
+| References        | When a record changes, it is updated where other services reference it, and where those objects are referenced in turn. A referenced object is updated only when it is older than the change (`modifiedCount`, and `createdTimestamp` for a record created again with the same id; the write checks it too), so a late, repeated, or racing notification, or one that comes back through a cycle, changes nothing     |
+| Reads             | A request sees its own writes: the object of a write is its answer, never read again. The reads that decide a write (after a write that returns no object, in a notification, of a reference, a login, an invite, a role change) ask the primary. A request that changes data is authorized on the primary; a read request on a secondary, and a refusal there is checked on the primary                              |
+| People            | Removing a role touches only that school's record. Deleting a user keeps the school records and events, their referenced user marked deleted, unless the school chose to delete them. Only the user changes its email                                                                                                                                                                                                 |
 | Concurrency       | Two concurrent requests do not create two users, two auth records, or two Portal Schools, and two concurrent role grants do not create two memberships or a duplicate role (the unique indexes must exist)                                                                                                                                                                                                            |
 | Startup           | The Portal School is created once; a restart changes nothing. A bad configuration (a Portal School id that is not a UUID, an invalid first-admin email, a Portal School that is not active) stops the start with a clear message                                                                                                                                                                                      |
 | Cost              | Nothing in the request path fans out without a bound. Notification delivery is one update per changed record and reference                                                                                                                                                                                                                                                                                            |
@@ -357,7 +357,7 @@ Limits that are part of the design. They are written here so that nobody is surp
 
 | Caveat                                                                                                                                                                                           | Why                                                                                                                                             |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Copies are eventually consistent** (data mode 2). A read right after a change can show the old value until the notification is processed                                                       | Embedding trades a cheap read for a slightly late copy. Ordering the updates narrows the gap but cannot remove it                               |
+| **Referenced objects are eventually consistent** (data mode 2). A read right after a change can show the old value until the notification is processed                                           | Embedding trades a cheap read for a slightly late referenced object. Ordering the updates narrows the gap but cannot remove it                  |
 | **A password login costs tens of milliseconds of CPU, on purpose.** A very large login wave needs a lot of cores in any design                                                                   | Slow hashing is the protection if the hashes are ever stolen. Refresh tokens, a waiting room, and sizing reduce the cost; they do not remove it |
 | **Each school has its own collections and indexes** (about 43 tables per school). One database can only grow so far, and it cannot be sharded by tenant                                          | Isolation by construction is a design decision. Another storage model would be needed to change it                                              |
 | **No job queue for every call.** Only background work (notification fan-out, email, audit events, bulk work) is meant to be queued                                                               | Login and reads are latency-sensitive. A job per call adds writes, polling, and a hot collection                                                |
@@ -391,22 +391,22 @@ flowchart LR
   subgraph m2 [Mode 2 - notifications]
     direction LR
     g2["GET /schedules"] --> s2["Schedules service"]
-    s2 --> db2[("schedules: ids and copied names")]
-    o2["Classes and Professors services"] -.->|"update the copies when a name changes"| db2
+    s2 --> db2[("schedules: ids and embedded names")]
+    o2["Classes and Professors services"] -.->|"update the referenced objects when a name changes"| db2
   end
 ```
 
 |                        | Mode 1: joins on read (classical)                      | Mode 2: notifications (read-optimized)                                                |
 | ---------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------- |
-| Stored in the document | only the ids of the referenced records                 | the ids **plus a small copy** of the referenced record (for example `name`, `status`) |
+| Stored in the document | only the ids of the referenced records                 | the ids **plus a few fields** of the referenced record (for example `name`, `status`) |
 | Work done by a `GET`   | extra lookups to fill in the references, on every read | none: one read of one collection                                                      |
-| Work done by a change  | none: only the changed record is written               | the owner raises a notification and the subscribers update their copies               |
+| Work done by a change  | none: only the changed record is written               | the owner raises a notification and the subscribers update their referenced objects   |
 | Freshness              | always current                                         | current once the notification has been processed (see the caveats)                    |
 | Duplicated data        | none                                                   | yes, limited to the declared projection                                               |
 | Filter and sort on it  | not in the database                                    | yes, it is a stored field                                                             |
 | Best when              | the data changes often, or reads are rare              | the data changes rarely and the system is optimized for `GET`                         |
 
-**Rule of thumb:** mode 2 pays on the write so that every read is cheap. A class name is read thousands of times for each rename, so copy it. Something that changes about as often as it is read should be joined.
+**Rule of thumb:** mode 2 pays on the write so that every read is cheap. A class name is read thousands of times for each rename, so embed it. Something that changes about as often as it is read should be joined.
 
 > **Illustrative numbers.** A school shows its schedule list 2,000 times a day, each list needs a class and a professor name, and one class is renamed per day. Mode 1 makes about 4,000 extra lookups a day. Mode 2 makes a few `updateMany` writes when the class is renamed, and no extra lookups.
 
@@ -449,7 +449,7 @@ sequenceDiagram
 **What it costs:**
 
 - Every `GET /schedules` also queries the classes, professors, groups, students, and locations services, so its speed depends on all of them.
-- The database cannot filter or sort on a field it does not store. Today `GET /students` can be sorted by `user.name` and filtered by `classes.name` because those copies are stored in the student document. In mode 1 such a query would have to be resolved in the service, or dropped.
+- The database cannot filter or sort on a field it does not store. Today `GET /students` can be sorted by `user.name` and filtered by `classes.name` because those referenced objects are stored in the student document. In mode 1 such a query would have to be resolved in the service, or dropped.
 
 > **Current state.** The shipped services are wired for mode 2. Mode 1 uses the same building blocks (the `references` configuration and `ReferencesUtils.populateReferences`), but the call has to move from the write path to the read path of a service. There is no global switch yet. For a service that should use mode 1:
 >
@@ -461,11 +461,11 @@ sequenceDiagram
 >    await ReferencesUtils.populateReferences({ ...config, fillReferences: true }, r.value, _ctx);
 >    ```
 >
-> 3. Do not register the service as a subscriber in `src/services/config.services.js`, because there are no copies to maintain.
+> 3. Do not register the service as a subscriber in `src/services/config.services.js`, because there are no referenced objects to maintain.
 
 ### Mode 2: notifications
 
-The referenced data is **copied into the referring document when it is written**, and kept current by notifications. A `GET` does no joins at all.
+The referenced data is **embedded in the referring document when it is written**, and kept current by notifications. A `GET` does no joins at all.
 
 This is what happens when a class is renamed:
 
@@ -481,7 +481,7 @@ sequenceDiagram
   C->>C: raise a modified notification (id, name, status, credits...)
   C->>S: notification to every subscriber
   S->>SDB: updateMany, every schedule whose class id is class-1
-  SDB-->>S: copies updated
+  SDB-->>S: referenced objects updated
   C-->>UI: 200 OK
 ```
 
@@ -501,7 +501,7 @@ sequenceDiagram
 What is stored is the **projection** declared for the reference. Here the schedule keeps `id`, `name`, `type`, `status`, `description`, `credits`, and `required` of its class:
 
 ```jsonc
-// stored in the schedules collection: ids plus the copy. GET returns it as it is.
+// stored in the schedules collection: ids plus the referenced fields. GET returns it as it is.
 {
   "id": "sch-1",
   "name": "Mathematics 1A - Monday",
@@ -521,7 +521,7 @@ What is stored is the **projection** declared for the reference. Here the schedu
 
 There are three places, and each answers one question.
 
-**1. What is copied?** The `references` in the `getConfig` of the service that stores the copy. `fieldName` is the field that holds the reference (`class`, `professors[]`, `schedules[].location`), and `projection` selects the copied fields.
+**1. What is embedded?** The `references` in the `getConfig` of the service that stores the referenced object. `fieldName` is the field that holds the reference (`class`, `professors[]`, `schedules[].location`), and `projection` selects the embedded fields.
 
 ```js
 // src/services/schedules/schedules.service.js
@@ -541,11 +541,11 @@ for (const rest of [StudentsRest, ProfessorsRest, SchedulesRest]) {
 }
 ```
 
-**3. What happens on receipt?** The subscriber's `notification` handler calls the handler of that source (`onClassesNotification`, `onUsersNotification`, ...), which says what it does: for example the schedules update the copy of a modified class and remove a deleted one; the students take a group that lists them and leave a group that does not list them anymore. A copy is updated only when it is older than the change: a copy of the same record (the same `createdTimestamp`) with a smaller or missing `modifiedCount`, or a copy of a record created again with the same id (another `createdTimestamp`, for example an account created again by an invitation); one `updateMany` for each changed record and reference (`DbOpsUtils.updateManyReferences`, and the matching add and delete helpers). The service then notifies the records whose copies changed, so the copies of the copies follow: a user changes its students, a student changes its groups, a group changes its schedules. A change that comes back to a service through a cycle finds its copies up to date, so nothing is updated and the chain stops.
+**3. What happens on receipt?** The subscriber's `notification` handler calls the handler of that source (`onClassesNotification`, `onUsersNotification`, ...), which says what it does: for example the schedules update a modified class where they reference it and remove a deleted one; the students take a group that lists them and leave a group that does not list them anymore. A referenced object is updated only when it is older than the change: the same record (the same `createdTimestamp`) with a smaller or missing `modifiedCount`, or a record created again with the same id (another `createdTimestamp`, for example an account created again by an invitation); one `updateMany` for each changed record and reference (`DbOpsUtils.updateManyReferences`, and the matching add and delete helpers). The service then notifies the records whose referenced objects changed, so the objects that reference them follow: a user changes its students, a student changes its groups, a group changes its schedules. A change that comes back to a service through a cycle finds its referenced objects up to date, so nothing is updated and the chain stops.
 
 #### Who notifies whom
 
-An arrow means: "the source raises notifications, and the target uses them to update its copies". The exact lists are in `src/services/config.services.js`.
+An arrow means: "the source raises notifications, and the target uses them to update its referenced objects". The exact lists are in `src/services/config.services.js`.
 
 ```mermaid
 flowchart LR
@@ -570,29 +570,29 @@ flowchart LR
 
 Examples from this project:
 
-- A class rename updates the copies in schedules, students, and professors.
-- A change of a student (for example its classes, or its status when it leaves the school) updates the copies in groups and schedules.
+- A class rename updates the class where it is referenced: in schedules, students, and professors.
+- A change of a student (for example its classes, or its status when it leaves the school) updates it where it is referenced: in groups and schedules.
 - A rename of a user updates its students, professors and admins, then the groups and the schedules that keep those students.
 - A school rename or status change updates the school memberships stored in every user. That is why the login response and the tenant selector need no school lookup.
 
 #### Caveats
 
-- **Write amplification:** one change fans out to every collection that copies it, and one change can touch several levels of copies (user, student, group, schedule). Keep the projections small. The notification projection of the owner limits what is sent.
-- **Consistency:** notifications are delivered synchronously, in the same process, right after the write. A failing subscriber does not stop the request and is not rolled back: its handler logs the failed object and still does the next ones, and the failed update leaves a stale copy until the next change (it is not retried). The queue-based asynchronous delivery (`broadcast` and `consume` in `base-service.notifications.utils.js`) is a placeholder and is not implemented yet.
-- **Copy only what lists need:** fields that are shown in `GET` and rarely change (names, statuses, addresses). Fields that change often should be joined (mode 1) or fetched with the detail request.
+- **Write amplification:** one change fans out to every collection that references it, and one change can touch several levels of referenced objects (user, student, group, schedule). Keep the projections small. The notification projection of the owner limits what is sent.
+- **Consistency:** notifications are delivered synchronously, in the same process, right after the write. A failing subscriber does not stop the request and is not rolled back: its handler logs the failed object and still does the next ones, and the failed update leaves a stale referenced object until the next change (it is not retried). The queue-based asynchronous delivery (`broadcast` and `consume` in `base-service.notifications.utils.js`) is a placeholder and is not implemented yet.
+- **Embed only what lists need:** fields that are shown in `GET` and rarely change (names, statuses, addresses). Fields that change often should be joined (mode 1) or fetched with the detail request.
 
 ### Choosing a mode
 
-The choice is made **per reference**, not per project. A service can copy the class (small, rarely changes, shown in every row) and join the students (large, changes often).
+The choice is made **per reference**, not per project. A service can embed the class (small, rarely changes, shown in every row) and join the students (large, changes often).
 
 ```mermaid
 flowchart TD
   q0["A list shows data that another service owns"] --> q1{"Is it read much more often than it changes?"}
   q1 -->|"no"| join["Mode 1: join on read"]
   q1 -->|"yes"| q2{"Do you need to filter or sort by it?"}
-  q2 -->|"yes"| copy["Mode 2: copy it and notify"]
-  q2 -->|"no"| q3{"Is the copy small, like a name or a status?"}
-  q3 -->|"yes"| copy
+  q2 -->|"yes"| embed["Mode 2: embed it and notify"]
+  q2 -->|"no"| q3{"Are the embedded fields small, like a name or a status?"}
+  q3 -->|"yes"| embed
   q3 -->|"no"| join
 ```
 
@@ -607,7 +607,7 @@ How the design behaves under load, and what to do about it. Numbers are of three
 | Authenticated request, validation only | about 0.2 ms CPU (measured); 2 database reads (the session, the user), and at most one write per session every 5 minutes (its last use) |
 | List request (`GET /students`)         | about 1.0 to 1.2 ms CPU (measured); 4 database reads (session, user, `find`, `count`)                                                   |
 | `GET /users-auth/me`                   | about 0.5 ms CPU (measured); 2 reads                                                                                                    |
-| Write with copies (`PUT /classes/:id`) | about 1.0 to 1.1 ms CPU (measured); 2 reads and 5 writes                                                                                |
+| `PUT /classes/:id` (with references)   | about 1.0 to 1.1 ms CPU (measured); 2 reads and 5 writes                                                                                |
 | Login                                  | about 59 ms CPU for the two `scrypt` hashes (measured), 3 reads, 2 writes (and a delete when the user has too many sessions)            |
 
 The API processes hold no session state (the sessions are records in the database), so they scale by adding processes. Requests are cheap; **login is the expensive operation**, because password hashing is deliberately slow.

@@ -10,6 +10,7 @@ describe('DB-Ops Utils', function () {
 
   const config = {
     serviceName: 'service',
+    maxTimeMS: 30000, // the time limit of each database call
   };
 
   before(async function () {});
@@ -61,7 +62,7 @@ describe('DB-Ops Utils', function () {
 
       chai.expect(options).to.deep.equal({
         arrayFilters: [],
-        maxTimeMS: 30000, // the time limit of the call (30 s by default)
+        maxTimeMS: 30000, // the time limit of the config
       });
 
       return {
@@ -116,7 +117,7 @@ describe('DB-Ops Utils', function () {
 
       chai.expect(options).to.deep.equal({
         arrayFilters: [],
-        maxTimeMS: 30000, // the time limit of the call (30 s by default)
+        maxTimeMS: 30000, // the time limit of the config
       });
 
       return {

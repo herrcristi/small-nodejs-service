@@ -33,7 +33,7 @@ It is deliberately small, and it goes deep where small examples stop: real multi
 | **Status instead of deletion** | `pending`, `active`, `disabled` on schools, users, and school records, so a school year can be closed without losing history      |
 | **Traceable changes**          | Every record has a creation time, a last-modified time, and a change counter                                                      |
 | **Fast reads by design**       | Related data is embedded in the records that display it, and kept current by notifications                                        |
-| **Two data modes**             | Join on read, or copy on write with notifications, chosen per relationship                                                        |
+| **Two data modes**             | Join on read, or embed on write with notifications, chosen per relationship                                                       |
 | **Zero-trust security**        | Every request is authenticated and authorized, every service call is authenticated, the cookie is HttpOnly                        |
 | **Events and audit**           | Changes raise events that school admins can read                                                                                  |
 | **Bilingual UI**               | English and Romanian                                                                                                              |
@@ -111,7 +111,7 @@ erDiagram
 
 ### References are embedded
 
-When a list shows a schedule it shows the **names** of its class, professors, and groups, not just their ids. So the referenced data is **embedded** in the record that displays it (a small copy: id, name, status, and what the list needs). A list is then one read of one collection, and the copies can be filtered and sorted in the database. When the source changes, a notification updates the copies.
+When a list shows a schedule it shows the **names** of its class, professors, and groups, not just their ids. So the referenced data is **embedded** in the record that displays it (a few fields: id, name, status, and what the list needs). A list is then one read of one collection, and the referenced objects can be filtered and sorted in the database. When the source changes, a notification updates the referenced objects.
 
 There are **two modes**, chosen per relationship:
 
@@ -126,19 +126,19 @@ flowchart LR
   subgraph notif [Mode 2 - notifications]
     direction LR
     g2["GET /schedules"] --> s2["Schedules service"]
-    s2 --> db2[("ids and copied names")]
-    o2["Classes and Professors"] -.->|"update the copies when a name changes"| db2
+    s2 --> db2[("ids and embedded names")]
+    o2["Classes and Professors"] -.->|"update the referenced objects when a name changes"| db2
   end
 ```
 
-|                | Join on read                | Notifications                                       |
-| -------------- | --------------------------- | --------------------------------------------------- |
-| Reads          | extra lookups on every read | one read                                            |
-| Changes        | only the changed record     | the owner notifies, subscribers update their copies |
-| Always current | yes                         | once the notification is processed                  |
-| Best when      | data changes often          | data rarely changes and reads dominate              |
+|                | Join on read                | Notifications                                                   |
+| -------------- | --------------------------- | --------------------------------------------------------------- |
+| Reads          | extra lookups on every read | one read                                                        |
+| Changes        | only the changed record     | the owner notifies, subscribers update their referenced objects |
+| Always current | yes                         | once the notification is processed                              |
+| Best when      | data changes often          | data rarely changes and reads dominate                          |
 
-Copy a class name (read thousands of times for each rename). Join something that changes as often as it is read. The system ships wired for notifications; [Data modes](README.details.md#data-modes-joins-or-notifications) explains both and how to configure them.
+Embed a class name (read thousands of times for each rename). Join something that changes as often as it is read. The system ships wired for notifications; [Data modes](README.details.md#data-modes-joins-or-notifications) explains both and how to configure them.
 
 ### Status controls what is current
 
@@ -155,7 +155,7 @@ Lists and selectors of the new year show only what is active, and nothing from t
 
 ### Every record tracks its changes
 
-Every document has `createdTimestamp`, `lastModifiedTimestamp`, and `modifiedCount`, a counter incremented on every change. Because services update each other's copies **asynchronously**, two changes can arrive in either order. The counter lets a consumer tell which version of a record it has seen, which is the basis for ordering updates and for not overriding a newer value with an older one.
+Every document has `createdTimestamp`, `lastModifiedTimestamp`, and `modifiedCount`, a counter incremented on every change. Because services update each other's referenced objects **asynchronously**, two changes can arrive in either order. The counter lets a consumer tell which version of a record it has seen, which is the basis for ordering updates and for not overriding a newer value with an older one.
 
 ### Users can be deleted, their traces stay
 
@@ -241,7 +241,7 @@ The [walkthrough](README.details.md#walkthrough-from-a-new-school-to-a-schedule)
 | Every school is a tenant, **including the Portal School** | One access model for everything; a portal admin is just a membership with a special role                      |
 | Roles live on the **membership**, not on the user         | The same person can be professor here and student there                                                       |
 | References are **embedded**                               | List reads are one read of one collection and can filter and sort on referenced fields                        |
-| **Two data modes**, chosen per relationship               | Copy what is read often and changes rarely; join the rest                                                     |
+| **Two data modes**, chosen per relationship               | Embed what is read often and changes rarely; join the rest                                                    |
 | **Status instead of deletion**                            | Close a school year without losing history                                                                    |
 | **Only admins invite**                                    | A closed system for schools: nobody joins unless a responsible person adds them                               |
 | **Zero trust, service to service included**               | A compromised or mistaken caller cannot reach more than it should                                             |

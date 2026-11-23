@@ -96,8 +96,9 @@ describe('Users Service account', function () {
     const before = Date.now();
     const res = await UsersService.deleteExpiredPending(_ctx);
 
-    // check: only the pending ones created before the expiry
+    // check: only the pending ones created before the expiry, read on the primary (a user that logged in just before)
     const filter = stubGetAll.firstCall.args[1].filter;
+    chai.expect(stubGetAll.firstCall.args[3]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
     chai.expect(filter.status).to.equal('pending');
     const expiredBefore = new Date(filter.createdTimestamp.$lt).getTime();
     chai.expect(expiredBefore).to.be.at.most(before - ConfigSettings.getPendingExpiresIn() * 1000 + 1000);

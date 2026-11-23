@@ -256,8 +256,9 @@ const Public = {
   /**
    * get all
    * queryParams
+   * options: the options of the read (DbOpsUtils.getAll), passed to a local service; a REST call does not send them
    */
-  getAll: async (serviceName, queryParams, _ctx) => {
+  getAll: async (serviceName, queryParams, _ctx, options) => {
     const localService = Private.Config.local[serviceName];
     if (localService) {
       // convert query to mongo build filter: { filter, projection, limit, skip, sort }
@@ -267,7 +268,7 @@ const Public = {
       }
       const filter = rf.value;
 
-      return await localService.getAll(filter, _ctx);
+      return await localService.getAll(filter, _ctx, options);
     }
 
     // TODO get in chunks

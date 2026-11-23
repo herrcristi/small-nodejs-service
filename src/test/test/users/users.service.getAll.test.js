@@ -46,5 +46,10 @@ describe('Users Service', function () {
       status: 200,
       value: testUsers,
     });
+
+    // case: the options of the read (the user of a login, of an invite: the primary)
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    await UsersService.getAll({}, _ctx, options);
+    chai.expect(stubBase.secondCall.args[3]).to.deep.equal(options);
   }).timeout(10000);
 });

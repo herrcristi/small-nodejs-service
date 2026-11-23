@@ -121,7 +121,7 @@ For scalability, severity is about the capacity and availability question being 
 9. Role removal: yourself, others, non-members, the last role, the last admin; the role given again.
 10. Signup: duplicate names, failure at each step, rollback.
 11. Activation: the pending to active rule, including when the save fails.
-12. Notifications: change a record and check every copy, at every level.
+12. Notifications: change a record and check every object that references it, at every level.
 13. Browser-facing sequences at API level: login, tenant selection, the main pages' calls.
 
 **What to look for besides "forbidden works".** Refusals that still change something; success answers when nothing happened; `500` for input mistakes; messages that leak; behaviour that differs between two routes that should agree.
@@ -151,8 +151,8 @@ For scalability, severity is about the capacity and availability question being 
 **Areas.**
 
 1. **Check, then act.** Every place that reads and then writes on the basis of the read: invites, signups, role removal, activation, bootstrap on several pods. For each, find what makes the second request fail or succeed safely (a unique index, a conditional update) or show that nothing does.
-2. **Read, modify, write and lost updates.** Copies read before a write and stored after it; arrays patched in place; counters; the order in which notifications arrive; handlers that fail halfway; whether retries are safe. A guard checked only in the read before a write (a version, a status) and not in the write itself.
-3. **Reads after writes.** The reads go to the secondaries, which may not have a write yet. Every read of an object that the same request has just written: it must be the answer of the write, or a read on the primary (after a write that returns no object, and in the notification handlers, which run inside the request).
+2. **Read, modify, write and lost updates.** Referenced objects read before a write and stored after it; arrays patched in place; counters; the order in which notifications arrive; handlers that fail halfway; whether retries are safe. A guard checked only in the read before a write (a version, a status) and not in the write itself.
+3. **Reads after writes.** The reads go to the secondaries, which may not have a write yet. Every read of an object that the same request has just written: it must be the answer of the write (passed on as a parameter, not in `_ctx`), or a read on the primary (after a write that returns no object, and in the notification handlers, which run inside the request). Every read that decides a write of a rare flow (a login, an invite, a role change, a delete, a setting, a cleanup) asks the primary; a request that changes data is authorized on the primary, a read request on a secondary with its refusals read again on the primary. Run every flow against a secondary that answers the previous version of the data, inside the request and one request behind (a login right after the password is set, an invite right after another one), and list each read whose answer differs from the primary, with its caller. A read that decides a write and misses the change is a finding; a list that shows the previous version for a moment is not.
 4. **Several steps without a transaction.** For each multi-step operation, list the steps and, for each point between two steps, the state left if the process stops there, and whether a retry repairs it.
 5. **Shared state in one process.** Module-level caches, anything written at request time, `process.env`, the request context, objects passed by reference.
 6. **The event loop.** Synchronous work in the request path, unbounded fan-out, loops with `await` over many items, missing timeouts and cancellation. A database call made outside `DbOpsUtils`, or without its time limit (`maxTimeMS`), can hold a connection for ever.

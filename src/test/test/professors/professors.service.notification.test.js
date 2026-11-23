@@ -88,7 +88,8 @@ describe('Professors Service', function () {
   after(async function () {});
 
   /**
-   * the users with the professor role: a new professor is created; the user copy of an existing one is updated (only an older
+   * the users with the professor role: a new professor is created; the referenced user of an existing one is updated
+   * (only an older
    * one): a trace is a professor again (with an event); the trace of a user invited again is kept while the user
    * is pending (nothing is changed or notified until its first login)
    */
@@ -104,28 +105,34 @@ describe('Professors Service', function () {
       return { status: 200, value: true };
     });
     const stubPost = sinon.stub(DbOpsUtils, 'post').callsFake((config, objInfo) => ({ status: 201, value: objInfo }));
-    const stubCopies = sinon.stub(DbOpsUtils, 'updateManyReferences').callsFake((config, ref, userCopy) => {
-      return { status: 200, value: 1, ids: [userCopy.id] };
-    });
+    const stubUpdateReferences = sinon
+      .stub(DbOpsUtils, 'updateManyReferences')
+      .callsFake((config, ref, referencedUser) => {
+        return { status: 200, value: 1, ids: [referencedUser.id] };
+      });
 
     // call: user1 got the role, user2 logged in, user3 got the role again, user4 was invited again (pending)
     const notification = { serviceName: 'users', added: [janeSmith, michaelDavis], modified: [johnBrown, emilyClark] };
     const res = await ProfessorsService.notification(notification, _ctx);
 
-    // check: the new professor, with the copy of its user
+    // check: the new professor, with its referenced user
     chai.expect(res).to.deep.equal({ status: 200, value: true });
     chai.expect(stubPost.callCount).to.equal(1);
     chai.expect(stubPost.firstCall.args[1]).to.include({ id: 'user1' });
 
-    // check: the user copies of user2 and user3 (only the fields of the copy), not of the pending user4
-    chai.expect(stubCopies.args.map((args) => args[2].id)).to.deep.equal(['user2', 'user3']);
-    chai.expect(stubCopies.firstCall.args[1].fieldName).to.equal('user');
-    chai.expect(stubCopies.firstCall.args[2]).to.not.have.property('schools');
+    // check: its user is filled from the notified user (the answer of the write that notified it), not read again
+    const writtenTargets = ReferencesUtils.populateReferences.firstCall.args[3];
+    chai.expect(writtenTargets).to.deep.equal({ user: janeSmith });
+
+    // check: the referenced users user2 and user3 (only their referenced fields), not the pending user4
+    chai.expect(stubUpdateReferences.args.map((args) => args[2].id)).to.deep.equal(['user2', 'user3']);
+    chai.expect(stubUpdateReferences.firstCall.args[1].fieldName).to.equal('user');
+    chai.expect(stubUpdateReferences.firstCall.args[2]).to.not.have.property('schools');
 
     // check: the trace of user3 is a professor again (an event)
     chai.expect(getEventsActions()).to.deep.equal(['post', 'restore']);
 
-    // check: the changed professors are notified (the copies of user2 and user3)
+    // check: the changed professors are notified (their referenced users user2 and user3 changed)
     const modified = ProfessorsRest.raiseNotification.args.filter((args) => args[0] === 'modified');
     const modifiedIDs = modified.map((args) => args[1][0].id);
     chai.expect(modifiedIDs).to.deep.equal(['user2', 'user3']);
@@ -167,13 +174,13 @@ describe('Professors Service', function () {
     chai.expect(stubDelete.callCount).to.equal(1);
     chai.expect(stubDelete.firstCall.args[1]).to.equal('user4');
 
-    // check: the traces, only the status of the user copy (the one that was already a trace is not changed)
+    // check: the traces, only the status of the referenced user (the one that was already a trace is not changed)
     chai.expect(stubPut.args.map((args) => args[1])).to.deep.equal(['user1', 'user2']);
     chai.expect(stubPut.firstCall.args[2]).to.deep.equal({ 'user.status': 'removed' });
     chai.expect(stubPut.secondCall.args[2]).to.deep.equal({ 'user.status': 'deleted' });
     chai.expect(getEventsActions()).to.have.members(['delete', 'remove', 'accountDeleted']);
 
-    // check: the traces are notified (the groups and the schedules keep their copies)
+    // check: the traces are notified (the groups and the schedules reference them)
     const modified = ProfessorsRest.raiseNotification.args.filter((args) => args[0] === 'modified');
     chai.expect(modified.map((args) => args[1][0].id)).to.deep.equal(['user1', 'user2']);
   }).timeout(10000);
@@ -201,6 +208,41 @@ describe('Professors Service', function () {
   }).timeout(10000);
 
   /**
+   * the reads of the users notification run inside the request that wrote the users: they ask the primary, which has
+   * every acknowledged write (a secondary may not have it yet), also the read of the changed professors before they are notified
+   */
+  it('should read on the primary the professors of the users notification', async () => {
+    // stub: user2 is a professor, user1 loses the role (kept as a trace)
+    sinon.stub(SchoolsRest, 'getSettings').resolves({ status: 200, value: { removedMembers: 'keep' } });
+    stubProfessorsRecords({
+      user1: { id: 'user1', user: { id: 'user1', status: 'active' } },
+      user2: { id: 'user2', user: { id: 'user2', status: 'active' } },
+    });
+    sinon.stub(DbOpsUtils, 'put').callsFake((config, id, changes) => ({
+      status: 200,
+      value: { id, user: { id, name: 'Jane Smith', status: changes['user.status'] } },
+    }));
+    sinon.stub(DbOpsUtils, 'updateManyReferences').callsFake((config, ref, referencedUser) => {
+      return { status: 200, value: 1, ids: [referencedUser.id] };
+    });
+
+    // call: user2 changed, user1 lost the role
+    const resModified = await ProfessorsService.notification({ serviceName: 'users', modified: [johnBrown] }, _ctx);
+    const resRemoved = await ProfessorsService.notification({ serviceName: 'users', removed: [janeSmith] }, _ctx);
+
+    // check: done
+    chai.expect(resModified).to.deep.equal({ status: 200, value: true });
+    chai.expect(resRemoved).to.deep.equal({ status: 200, value: true });
+
+    // check: every read asked the primary (the professors of the users, by ids and by id)
+    const readPrimary = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    const byIDs = DbOpsUtils.getAllByIDs.args.map((args) => args[4]);
+    const byID = DbOpsUtils.getOne.args.map((args) => args[4]);
+    chai.expect(byIDs).to.deep.equal([readPrimary, readPrimary]);
+    chai.expect(byID).to.deep.equal([readPrimary]);
+  }).timeout(10000);
+
+  /**
    * the failures of the users notification are returned (the notification can be processed again)
    */
   it('should return the failures of the users notification', async () => {
@@ -210,7 +252,7 @@ describe('Professors Service', function () {
     sinon.stub(ReferencesUtils, 'populateReferences').resolves({ status: 200, value: true });
     const stubPost = sinon.stub(DbOpsUtils, 'post').resolves(fail);
     const stubPut = sinon.stub(DbOpsUtils, 'put').resolves(fail);
-    const stubCopies = sinon.stub(DbOpsUtils, 'updateManyReferences').resolves(fail);
+    const stubUpdateReferences = sinon.stub(DbOpsUtils, 'updateManyReferences').resolves(fail);
     const stubDelete = sinon.stub(DbOpsUtils, 'delete').resolves(fail);
     const stubSettings = sinon.stub(SchoolsRest, 'getSettings').resolves(fail);
     const modified = { serviceName: 'users', modified: [janeSmith] };
@@ -225,12 +267,12 @@ describe('Professors Service', function () {
     chai.expect(await notify(modified)).to.deep.equal(fail);
     chai.expect(stubPost.callCount).to.equal(1);
 
-    // case: the user copy can not be changed
+    // case: the referenced user can not be changed
     stubAll.resolves({ status: 200, value: [{ id: 'user1', user: { id: 'user1', status: 'pending' } }] });
     chai.expect(await notify(modified)).to.deep.equal(fail);
 
     // case: the changed professors can not be read to notify them
-    stubCopies.resolves({ status: 200, value: 1, ids: ['user1'] });
+    stubUpdateReferences.resolves({ status: 200, value: 1, ids: ['user1'] });
     stubAll.onCall(stubAll.callCount + 1).resolves(fail);
     chai.expect(await notify(modified)).to.deep.equal(fail);
 
@@ -283,11 +325,11 @@ describe('Professors Service', function () {
   }).timeout(10000);
 
   /**
-   * classes notification: the copies of a modified class are updated, a deleted class is removed from the professors
+   * classes notification: a modified class is updated where it is referenced, a deleted class leaves the professors
    */
   it('should follow the classes in the professors', async () => {
     // stub
-    const stubCopies = sinon
+    const stubUpdateReferences = sinon
       .stub(DbOpsUtils, 'updateManyReferences')
       .resolves({ status: 200, value: 1, ids: ['user1'] });
     const stubRemove = sinon.stub(DbOpsUtils, 'deleteManyReferences').resolves({ status: 200, value: 1 });
@@ -305,10 +347,10 @@ describe('Professors Service', function () {
     const notification = { serviceName: 'classes', modified: [mathematics], removed: [physics] };
     const res = await ProfessorsService.notification(notification, _ctx);
 
-    // check: the copy (only its fields), the removed class
+    // check: the referenced class (only its fields), the removed class
     chai.expect(res).to.deep.equal({ status: 200, value: true });
-    chai.expect(stubCopies.firstCall.args[1].fieldName).to.equal('classes[]');
-    chai.expect(stubCopies.firstCall.args[2]).to.not.have.property('extra');
+    chai.expect(stubUpdateReferences.firstCall.args[1].fieldName).to.equal('classes[]');
+    chai.expect(stubUpdateReferences.firstCall.args[2]).to.not.have.property('extra');
     chai.expect(stubRemove.firstCall.args[1].fieldName).to.equal('classes[]');
     chai.expect(stubRemove.firstCall.args[2]).to.deep.equal({ id: 'class2' });
 
@@ -321,7 +363,7 @@ describe('Professors Service', function () {
     // case: failures
     stubRemove.resolves(fail);
     chai.expect(await ProfessorsService.notification(notification, _ctx)).to.deep.equal(fail);
-    stubCopies.resolves(fail);
+    stubUpdateReferences.resolves(fail);
     chai.expect(await ProfessorsService.notification(notification, _ctx)).to.deep.equal(fail);
 
     // case: no school
@@ -330,18 +372,18 @@ describe('Professors Service', function () {
   }).timeout(10000);
 
   /**
-   * schedules notification: a schedule is added to the professors it lists, removed from the others, and its copies
-   * are updated; a deleted schedule is removed from all the professors
+   * schedules notification: a schedule is added to the professors it lists, removed from the others, and where it is
+   * referenced it is updated; a deleted schedule is removed from all the professors
    */
   it('should follow the schedules of the professors', async () => {
     // stub
     const stubAdd = sinon.stub(DbOpsUtils, 'addManyReferences').resolves({ status: 200, value: 1 });
     const stubRemove = sinon.stub(DbOpsUtils, 'deleteManyReferences').resolves({ status: 200, value: 1 });
-    const stubCopies = sinon
+    const stubUpdateReferences = sinon
       .stub(DbOpsUtils, 'updateManyReferences')
       .resolves({ status: 200, value: 1, ids: ['user1'] });
 
-    // call: the first one lists its professors, the second one is only a copy, the third one was deleted
+    // call: the first one lists its professors, the second one is only referenced, the third one was deleted
     const listed = {
       id: 'schedule1',
       name: 'Mathematics Monday',
@@ -349,12 +391,12 @@ describe('Professors Service', function () {
       modifiedCount: 2,
       professors: [{ id: 'user1' }, { id: 'user2' }],
     };
-    const copyOnly = { id: 'schedule2', name: 'Mathematics Monday B', status: 'active', modifiedCount: 5 };
+    const referencedOnly = { id: 'schedule2', name: 'Mathematics Monday B', status: 'active', modifiedCount: 5 };
     const deleted = { id: 'schedule3', name: 'Mathematics Monday C' };
-    const notification = { serviceName: 'schedules', added: [listed], modified: [copyOnly], removed: [deleted] };
+    const notification = { serviceName: 'schedules', added: [listed], modified: [referencedOnly], removed: [deleted] };
     const res = await ProfessorsService.notification(notification, _ctx);
 
-    // check: added to its professors, removed from the others, its copies (only the fields of the copy)
+    // check: added to its professors, removed from the others, where it is referenced (only its referenced fields)
     chai.expect(res).to.deep.equal({ status: 200, value: true });
     chai.expect(stubAdd.callCount).to.equal(1);
     chai.expect(stubAdd.firstCall.args[1]).to.deep.equal(['user1', 'user2']);
@@ -362,7 +404,7 @@ describe('Professors Service', function () {
     chai.expect(stubAdd.firstCall.args[3]).to.not.have.property('professors');
     chai.expect(stubRemove.firstCall.args[2]).to.deep.equal({ id: 'schedule1' });
     chai.expect(stubRemove.firstCall.args[4]).to.deep.equal({ filter: { id: { $nin: ['user1', 'user2'] } } });
-    chai.expect(stubCopies.callCount).to.equal(2);
+    chai.expect(stubUpdateReferences.callCount).to.equal(2);
 
     // check: the deleted one, from all
     chai.expect(stubRemove.secondCall.args[2]).to.deep.equal({ id: 'schedule3' });
@@ -379,9 +421,9 @@ describe('Professors Service', function () {
     chai
       .expect(await ProfessorsService.notification({ serviceName: 'schedules', removed: [deleted] }, _ctx))
       .to.deep.equal(fail);
-    stubCopies.resolves(fail);
+    stubUpdateReferences.resolves(fail);
     chai
-      .expect(await ProfessorsService.notification({ serviceName: 'schedules', modified: [copyOnly] }, _ctx))
+      .expect(await ProfessorsService.notification({ serviceName: 'schedules', modified: [referencedOnly] }, _ctx))
       .to.deep.equal(fail);
     stubRemove.resolves(fail);
     chai
@@ -398,7 +440,7 @@ describe('Professors Service', function () {
   }).timeout(10000);
 
   /**
-   * the notifications of the other services are ignored (no copy of them), an invalid one is refused
+   * the notifications of the other services are ignored (no reference to them), an invalid one is refused
    */
   it('should ignore other services and refuse an invalid notification', async () => {
     // call: another service

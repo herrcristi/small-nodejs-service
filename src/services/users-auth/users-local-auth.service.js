@@ -2,6 +2,7 @@
  * Users service
  */
 const BaseServiceUtils = require('../../core/utils/base-service.utils.js');
+const DatabaseManagerUtils = require('../../core/utils/database-manager.utils.js');
 const DbOpsUtils = require('../../core/utils/db-ops.utils.js');
 const crypto = require('crypto');
 
@@ -22,10 +23,11 @@ const Private = {
 
   /**
    * set config for local auth
-   * returns { serviceName, collection, notifications.projection }
+   * returns { serviceName, collection, maxTimeMS, notifications.projection }
    */
   setupConfig: async (config, _ctx) => {
     config.collection = await UsersAuthDatabase.collection(_ctx);
+    config.maxTimeMS = DatabaseManagerUtils.getMaxTimeMS(); // the time limit of each database call (DbOpsUtils)
     config.notifications = {
       projection: { id: 1, type: 1, userID: 1 } /* for sync+async */,
     };
@@ -98,9 +100,10 @@ const Public = {
 
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
 
-    // get one
+    // get one (read on the primary: a password set or changed by the request before decides the login)
     const passProjection = { ...projection, password: 1, salt: 1 };
-    const r = await DbOpsUtils.getOne(config, objInfo.username /*id*/, passProjection, _ctx);
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    const r = await DbOpsUtils.getOne(config, objInfo.username /*id*/, passProjection, _ctx, options);
     if (r.error) {
       // the same work as for an existing account (the time of the answer does not tell if the account exists)
       Private.hashPassword(objInfo.password, Private.DummySalt, _ctx);
@@ -164,12 +167,13 @@ const Public = {
   /**
    * get the auth record of a user (without the password): it exists, or 404
    * config: { serviceName }
+   * options: the options of the read (DbOpsUtils.getOne)
    */
-  getOne: async (config, username, _ctx) => {
+  getOne: async (config, username, _ctx, options) => {
     // { serviceName, collection, notifications.projection }
     await Private.setupConfig(config, _ctx);
 
-    return await DbOpsUtils.getOne(config, username /*id*/, { _id: 0, id: 1, userID: 1 }, _ctx);
+    return await DbOpsUtils.getOne(config, username /*id*/, { _id: 0, id: 1, userID: 1 }, _ctx, options);
   },
 
   /**
@@ -292,23 +296,27 @@ const Public = {
   },
 
   /**
-   * reset password
+   * reset password: a link (a token) to set the password
    * config: { serviceName }
+   * account: { username, userID } of the auth record when the caller has just written or found it (the invite): it is
+   *   not read again; never from a request
    */
-  resetPassword: async (config, username, resetType, _ctx) => {
+  resetPassword: async (config, username, resetType, _ctx, account) => {
     // { serviceName, collection, notifications.projection }
     await Private.setupConfig(config, _ctx);
 
-    const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
-
-    // check user exists
-    const r = await DbOpsUtils.getOne(config, username /*id*/, { ...projection, userID: 1 }, _ctx);
-    if (r.error) {
-      return r;
+    // the user of the link: the account of the caller (written or found by the invite in the same request: it is not
+    // read again), otherwise its auth record is read (the public form: check user exists)
+    let user = account;
+    if (!user) {
+      const r = await Public.getOne(config, username, _ctx);
+      if (r.error) {
+        return r;
+      }
+      user = { userID: r.value.userID, username: r.value.id };
     }
 
     // the record of the link: used once, replaced by a newer link, ended by a password change
-    const user = { userID: r.value.userID, username: r.value.id };
     const rLink = await UsersAuthSessionsService.create(resetType, user, _ctx);
     if (rLink.error) {
       return rLink;
@@ -317,8 +325,8 @@ const Public = {
     // create the reset token: for this purpose only, short lived, with the secret of its record
     const data = {
       purpose: resetType,
-      username: r.value.id,
-      userID: r.value.userID,
+      username: user.username,
+      userID: user.userID,
       secret: rLink.value.secret,
     };
     const expiresIn = UsersAuthConstants.TokenExpiresIn[resetType];

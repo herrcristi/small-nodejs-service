@@ -88,11 +88,11 @@ const Public = {
   },
 
   /**
-   * the time limit of a database call, for its options (DbOpsUtils): { maxTimeMS }; the server stops a call that runs
-   * longer (MaxTimeMSExpired)
+   * the time limit of a database call, in milliseconds: the maxTimeMS of the config of the services (DbOpsUtils); the
+   * server stops a call that runs longer (MaxTimeMSExpired)
    */
-  getTimeLimit: () => {
-    return { maxTimeMS: Private.Limits.queryTimeout * 1000 };
+  getMaxTimeMS: () => {
+    return Private.Limits.queryTimeout * 1000;
   },
 
   /**
@@ -105,7 +105,7 @@ const Public = {
         return Private.DBClients[cacheKey].db(dbName);
       }
       // the limits: the connections to each member, how long a request waits for one and how long a call may run
-      // (its maxTimeMS is given by each call, DbOpsUtils)
+      // (its maxTimeMS is in the config of the services, given by DbOpsUtils to each call)
       const { maxPoolSize, waitQueueTimeout, queryTimeout } = Private.Limits;
       console.log(
         `\nDatabase limits for ${dbName}: ${maxPoolSize} connections per member, a request waits ${waitQueueTimeout} s for a connection, a database call runs ${queryTimeout} s at most`

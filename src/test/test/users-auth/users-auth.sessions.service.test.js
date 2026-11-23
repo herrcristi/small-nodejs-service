@@ -72,7 +72,7 @@ describe('Users Auth Sessions Service', function () {
    */
   it('should create a session and end the oldest sessions over the limit', async () => {
     // stub: the write; two sessions after the newest ones
-    sinon.stub(DbOpsUtils, 'post').callsFake((config, record) => ({ status: 201, value: record }));
+    const stubPost = sinon.stub(DbOpsUtils, 'post').callsFake((config, record) => ({ status: 201, value: record }));
     const stubGetAll = sinon
       .stub(DbOpsUtils, 'getAll')
       .resolves({ status: 200, value: [{ id: 'old1' }, { id: 'old2' }] });
@@ -81,15 +81,20 @@ describe('Users Auth Sessions Service', function () {
     // call
     let res = await UsersAuthSessionsService.create('session', user, _ctx);
 
-    // check: the sessions of the user, newest first, after the limit, are ended
+    // check: the earlier sessions of the user, newest first, after the limit, are ended; the new session is known from
+    // its write (it is not read again) and takes one of the places
     chai.expect(res.status).to.equal(201);
+    const newSessionID = stubPost.firstCall.args[1].id;
     chai.expect(stubGetAll.firstCall.args[1]).to.deep.equal({
-      filter: { userID: 'user1', purpose: 'session' },
+      filter: { userID: 'user1', purpose: 'session', id: { $ne: newSessionID } },
       projection: { _id: 0, id: 1 },
       sort: { createdTimestamp: -1 },
-      skip: UsersAuthConstants.SessionLimits.MaxPerUser,
+      skip: UsersAuthConstants.SessionLimits.MaxPerUser - 1,
     });
     chai.expect(stubDeleteAll.firstCall.args[1]).to.deep.equal({ filter: { id: { $in: ['old1', 'old2'] } } });
+
+    // check: only the sessions of earlier requests are read (no options: the read preference of the client)
+    chai.expect(stubGetAll.firstCall.args[3]).to.equal(undefined);
 
     // the sessions can not be ended, or not read: the real error
     stubDeleteAll.resolves({ status: 500, error: { message: 'Test error message' } });
@@ -167,6 +172,40 @@ describe('Users Auth Sessions Service', function () {
     chai.expect(res.value).to.include(record);
     chai.expect(stubGet.firstCall.args[1]).to.equal(hash('secret1'));
     chai.expect(stubPut.callCount).to.equal(0);
+  }).timeout(10000);
+
+  /**
+   * a record not found on a secondary is read again on the primary (a session or a link created by the request before
+   * may not be there yet); a check on the primary (a request that changes data) reads once
+   */
+  it('should check read a record not found on a secondary again on the primary', async () => {
+    // stub: not on the secondary yet, on the primary
+    const record = { id: hash('secret1'), purpose: 'session', userID: 'user1', username: user.username };
+    const stubGet = sinon.stub(DbOpsUtils, 'getOne');
+    stubGet.onFirstCall().resolves({ status: 404, error: { message: 'Not found' } });
+    stubGet.onSecondCall().resolves({ status: 200, value: { ...record, expiresAt: later(), lastUsedAt: new Date() } });
+
+    // call
+    const tokenData = { purpose: 'session', username: user.username, secret: 'secret1' };
+    const res = await UsersAuthSessionsService.check(tokenData, _ctx);
+
+    // check: open; read on a secondary (the default), then on the primary
+    const primary = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubGet.args.map((args) => args[4])).to.deep.equal([undefined, primary]);
+
+    // case: found on the secondary: read once
+    stubGet.reset();
+    stubGet.resolves({ status: 200, value: { ...record, expiresAt: later(), lastUsedAt: new Date() } });
+    chai.expect((await UsersAuthSessionsService.check(tokenData, _ctx)).status).to.equal(200);
+    chai.expect(stubGet.callCount).to.equal(1);
+
+    // case: a check on the primary that does not find the record: read once, ended
+    stubGet.reset();
+    stubGet.resolves({ status: 404, error: { message: 'Not found' } });
+    const resPrimary = await UsersAuthSessionsService.check(tokenData, _ctx, primary);
+    chai.expect(resPrimary.status).to.equal(401);
+    chai.expect(stubGet.args.map((args) => args[4])).to.deep.equal([primary]);
   }).timeout(10000);
 
   /**
