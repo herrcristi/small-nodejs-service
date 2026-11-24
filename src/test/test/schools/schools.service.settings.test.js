@@ -34,16 +34,16 @@ describe('Schools Service settings and expiry', function () {
     // call
     const res = await SchoolsService.getSettings('school1', _ctx);
 
-    // check: the defaults (the removed members are kept), read on the primary (they decide what happens to a removed
+    // check: the defaults (the removed members are kept, a student sees its classmates), read on the primary (they decide what happens to a removed
     // member, and the page reads them after a save)
     chai.expect(stubGet.firstCall.args[1]).to.equal('school1');
     chai.expect(stubGet.firstCall.args[4]).to.deep.equal({ readPreference: DbOpsUtils.Constants.ReadPrimary });
-    chai.expect(res).to.deep.equal({ status: 200, value: { removedMembers: 'keep' } });
+    chai.expect(res).to.deep.equal({ status: 200, value: { removedMembers: 'keep', classmates: 'show' } });
 
     // case: set
     stubGet.resolves({ status: 200, value: { id: 'school1', settings: { removedMembers: 'delete' } } });
     const resSet = await SchoolsService.getSettings('school1', _ctx);
-    chai.expect(resSet.value).to.deep.equal({ removedMembers: 'delete' });
+    chai.expect(resSet.value).to.deep.equal({ removedMembers: 'delete', classmates: 'show' });
 
     // case: the school can not be read
     stubGet.resolves({ status: 404, error: { message: 'Not found' } });
@@ -56,22 +56,25 @@ describe('Schools Service settings and expiry', function () {
    */
   it('should put the settings with an event', async () => {
     // stub: the write and the event
-    const saved = { id: 'school1', name: 'North High School', settings: { removedMembers: 'delete' } };
+    const settings = { removedMembers: 'delete', classmates: 'hide' };
+    const saved = { id: 'school1', name: 'North High School', settings };
     const stubPut = sinon.stub(DbOpsUtils, 'put').resolves({ status: 200, value: saved });
     const stubEvent = sinon.stub(EventsRest, 'raiseEventForObject');
 
     // call
-    const res = await SchoolsService.putSettings('school1', { removedMembers: 'delete' }, _ctx);
+    const res = await SchoolsService.putSettings('school1', settings, _ctx);
 
     // check: only the settings are written, the event names the action
-    chai.expect(res).to.deep.equal({ status: 200, value: { removedMembers: 'delete' } });
+    chai.expect(res).to.deep.equal({ status: 200, value: settings });
     chai.expect(stubPut.firstCall.args[1]).to.equal('school1');
-    chai.expect(stubPut.firstCall.args[2]).to.deep.equal({ settings: { removedMembers: 'delete' } });
+    chai.expect(stubPut.firstCall.args[2]).to.deep.equal({ settings });
     chai.expect(stubEvent.firstCall.args[1]).to.equal('settings');
 
     // case: an unknown value: refused, nothing written
-    const resInvalid = await SchoolsService.putSettings('school1', { removedMembers: 'archive' }, _ctx);
-    chai.expect(resInvalid.status).to.equal(400);
+    for (const invalid of [{ removedMembers: 'archive' }, { removedMembers: 'keep', classmates: 'some' }]) {
+      const resInvalid = await SchoolsService.putSettings('school1', invalid, _ctx);
+      chai.expect(resInvalid.status).to.equal(400);
+    }
     chai.expect(stubPut.callCount).to.equal(1);
 
     // case: the write fails: the error, no event

@@ -22,6 +22,7 @@ const GroupsRest = require('../rest/groups.rest.js');
 const SchedulesRest = require('../rest/schedules.rest.js');
 
 const SchedulesConstants = require('./schedules.constants.js');
+const RolesPermissions = require('../roles.permissions.js');
 const SchedulesDatabase = require('./schedules.database.js');
 
 /**
@@ -577,10 +578,24 @@ const Public = {
     }
     const filter = rf.value;
 
+    // what the caller sees (a student its schedules and the ones of its groups, a professor its schedules); a school admin and a call of a service: all
+    const rScope = await RolesPermissions.getScope(_ctx);
+    if (rScope.error) {
+      return rScope;
+    }
+    const scope = rScope.value;
+    RolesPermissions.restrict(filter, scope, SchedulesConstants.ServiceName);
+
     // get all (and expanded too)
     let r = await Public.getAll(filter, _ctx, options);
     if (r.error) {
       return r;
+    }
+
+    // the students seen by a student: all, or only itself (the setting of the school)
+    const rClassmates = await RolesPermissions.filterClassmates(r.value, scope, _ctx);
+    if (rClassmates.error) {
+      return rClassmates;
     }
 
     // get corresponding count
@@ -645,6 +660,35 @@ const Public = {
 
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
     return await DbOpsUtils.getAllByIDs(config, ids, projection, _ctx, options);
+  },
+
+  /**
+   * get one for a request (GET /schedules/:id): only one that the caller sees (another one: 404, as one that does not exist),
+   * its students by the setting of the school for a student (classmates)
+   * returns { status, value } or { status, error }
+   */
+  getOneForReq: async (objID, projection, _ctx) => {
+    const rScope = await RolesPermissions.getScope(_ctx);
+    if (rScope.error) {
+      return rScope;
+    }
+    const scope = rScope.value;
+    if (!RolesPermissions.canSee(scope, SchedulesConstants.ServiceName, objID)) {
+      const msg = 'Not found';
+      return { status: 404, error: { message: msg, error: new Error(msg) } };
+    }
+
+    const r = await Public.getOne(objID, projection, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // the students seen by a student: all, or only itself (the setting of the school)
+    const rClassmates = await RolesPermissions.filterClassmates([r.value], scope, _ctx);
+    if (rClassmates.error) {
+      return rClassmates;
+    }
+    return r;
   },
 
   /**

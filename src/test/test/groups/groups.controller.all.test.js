@@ -162,7 +162,7 @@ describe('Groups Controller', function () {
     const testGroup = testGroups[0];
 
     // stub
-    let stubService = sinon.stub(GroupsService, 'getOne').callsFake((objID, projection) => {
+    let stubService = sinon.stub(GroupsService, 'getOneForReq').callsFake((objID, projection) => {
       console.log(`\nGroupsService.getOne called ${JSON.stringify({ objID, projection }, null, 2)}\n`);
       chai.expect(objID).to.equal(testGroup.id);
       chai.expect(projection).to.deep.equal({ _id: 0 });
@@ -195,7 +195,7 @@ describe('Groups Controller', function () {
     const testGroup = testGroups[0];
 
     // stub
-    let stubService = sinon.stub(GroupsService, 'getOne').callsFake((objID, projection) => {
+    let stubService = sinon.stub(GroupsService, 'getOneForReq').callsFake((objID, projection) => {
       console.log(`\nGroupsService.getOne called ${JSON.stringify({ objID, projection }, null, 2)}\n`);
       chai.expect(objID).to.equal(testGroup.id);
       chai.expect(projection).to.deep.equal({ id: 1, name: 1, _id: 0 });
@@ -254,7 +254,7 @@ describe('Groups Controller', function () {
     const testGroup = testGroups[0];
 
     // stub
-    let stubService = sinon.stub(GroupsService, 'getOne').callsFake(() => {
+    let stubService = sinon.stub(GroupsService, 'getOneForReq').callsFake(() => {
       console.log(`\nGroupsService.getOne called\n`);
       return { status: 400, error: { message: 'Test error message', error: new Error('Test error').toString() } };
     });
@@ -280,7 +280,7 @@ describe('Groups Controller', function () {
     const testGroup = testGroups[0];
 
     // stub
-    let stubService = sinon.stub(GroupsService, 'getOne').callsFake(() => {
+    let stubService = sinon.stub(GroupsService, 'getOneForReq').callsFake(() => {
       console.log(`\nGroupsService.getOne called\n`);
       throw new Error('Test error message');
     });

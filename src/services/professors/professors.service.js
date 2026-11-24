@@ -21,6 +21,7 @@ const ClassesRest = require('../rest/classes.rest.js');
 const SchedulesRest = require('../rest/schedules.rest.js');
 const ProfessorsRest = require('../rest/professors.rest.js');
 const ProfessorsConstants = require('./professors.constants.js');
+const RolesPermissions = require('../roles.permissions.js');
 const ProfessorsDatabase = require('./professors.database.js');
 
 /**
@@ -617,6 +618,13 @@ const Public = {
       return rf;
     }
     const filter = rf.value;
+
+    // what the caller sees (a professor only itself, a student the professors of its schedules); a school admin and a call of a service: all
+    const rScope = await RolesPermissions.getScope(_ctx);
+    if (rScope.error) {
+      return rScope;
+    }
+    RolesPermissions.restrict(filter, rScope.value, ProfessorsConstants.ServiceName);
 
     // get all (and expanded too)
     let r = await Public.getAll(filter, _ctx, options);

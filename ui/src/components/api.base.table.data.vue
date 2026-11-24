@@ -411,12 +411,14 @@ const headers = computed(() => {
 /**
  * custom filter
  * a translated field (_lang.status) is searched in the text shown: the translation of the UI, otherwise the one of the
- * server, in the language of the UI
+ * server, in the language of the UI; a new filter for each language, so the table searches again when the language
+ * changes (the flag at the top)
  */
-function customFilter(value, query, item) {
-  const getShownText = (raw, path) => ComponentUtils.getStatusText(raw, path, t, te, locale.value);
-  return ComponentUtils.findValue(props.filterFields, value, query, item, getShownText);
-}
+const customFilter = computed(() => {
+  const language = locale.value;
+  const getShownText = (raw, path) => ComponentUtils.getStatusText(raw, path, t, te, language);
+  return (value, query, item) => ComponentUtils.findValue(props.filterFields, value, query, item, getShownText);
+});
 
 /**
  * the call of the parent (an add, an edit): in progress, the add and edit buttons are disabled (one call at a time);

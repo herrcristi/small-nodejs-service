@@ -65,7 +65,7 @@ const Public = {
       }
 
       // get
-      const r = await SchedulesService.getOne(objID, rf.value.projection, _ctx);
+      const r = await SchedulesService.getOneForReq(objID, rf.value.projection, _ctx); // only one the caller sees
       if (r.error) {
         const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
         return res.status(r.status).json(message);

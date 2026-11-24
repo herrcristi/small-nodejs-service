@@ -16,3 +16,4 @@ require('./schedules.service.put.test.js');
 require('./schedules.service.patch.test.js');
 require('./schedules.service.notification.test.js');
 require('./schedules.service.translate.test.js');
+require('./schedules.service.roles.permissions.test.js');

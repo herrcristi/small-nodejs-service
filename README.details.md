@@ -126,6 +126,16 @@ After login the UI shows the active schools. The school the user picks becomes `
 | `student`      | a school          | The same read-only access as a professor                                                                                                          |
 | `portal-admin` | the Portal School | Runs the portal: creates schools and manages the other portal admins (next section)                                                               |
 
+**What a member sees of its school** (the roles permissions, `src/services/roles.permissions.js`). The role matrix allows a route; the lists and the details then show only what concerns the caller, by its roles in the school of the request (an admin sees everything; a member that is both a professor and a student sees what each role sees):
+
+| Caller    | Students                                                   | Professors                      | Groups                      | Schedules                                          |
+| --------- | ---------------------------------------------------------- | ------------------------------- | --------------------------- | -------------------------------------------------- |
+| Admin     | all                                                        | all                             | all                         | all                                                |
+| Professor | the students of its schedules (listed, or in their groups) | only itself                     | the groups of its schedules | the ones where it is listed                        |
+| Student   | only itself                                                | the professors of its schedules | its groups                  | the ones where it, or one of its groups, is listed |
+
+A group or a schedule that the caller does not see answers `404` (as one that does not exist). In a group or a schedule, a student sees the other students only when the school setting `classmates` is `show` (the default); with `hide` it sees only itself. A call of another service is not restricted.
+
 On top of the role, some routes use the special rule **current user**: any member can work with **their own** user record (and their own student or professor record), because the id in the path must match the logged-in user. This is how a student edits their own profile without being an admin. The current user routes also work **without a school**: a user whose roles were all removed logs in to the school selection, which says that it is not a member of any school, and can still change its profile, its email and its password, or delete its account. Such a route uses the selected school only if the user is a member of it; otherwise the school of the request is ignored.
 
 Admins add and remove people **by their roles**: a school admin adds a role with an invitation and removes it with `PATCH /users-auth/school/user/:uid` (or the delete of the person on its page), and a portal admin does the same for the admins of a school and for the portal admins. This changes only the roles of the user in that school; the account and the other schools are not touched. Only the user changes its own email.
@@ -878,7 +888,7 @@ curl --cookie cookies.txt -H "x-tenant-id: $TENANT_ID" \
 
 School status can be edited so disabled schools are unavailable in tenant selection. The Portal School cannot be deleted or disabled. School deletion is not granted to portal admins.
 
-The admins of a school read and change its settings (the Settings page): `removedMembers` is `keep` (the removed people stay, marked `removed` or `deleted`) or `delete` (their records are deleted, with their places in groups and schedules).
+The admins of a school read and change its settings (the Settings page): `removedMembers` is `keep` (the removed people stay, marked `removed` or `deleted`) or `delete` (their records are deleted, with their places in groups and schedules); `classmates` is `show` (the default: a student sees the other students of its groups and schedules) or `hide` (only itself). A `PUT` sends all the settings.
 
 ```js
 await Api.getSchoolSettings('school-id');

@@ -16,3 +16,4 @@ require('./groups.service.put.test.js');
 require('./groups.service.patch.test.js');
 require('./groups.service.notification.test.js');
 require('./groups.service.translate.test.js');
+require('./groups.service.roles.permissions.test.js');

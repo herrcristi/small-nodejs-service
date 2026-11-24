@@ -65,6 +65,7 @@ const Validators = {
     removedMembers: Joi.string()
       .valid(...Object.values(SchoolsConstants.Settings.RemovedMembers))
       .required(),
+    classmates: Joi.string().valid(...Object.values(SchoolsConstants.Settings.Classmates)), // none: show
   }),
 
   // the internal change of the activation (never from a request)
@@ -435,7 +436,8 @@ const Public = {
 
   /**
    * put the settings of a school (its admins); removedMembers: what happens to the records of a member whose role is
-   * removed or whose account is deleted (keep them as traces, or delete them)
+   * removed or whose account is deleted (keep them as traces, or delete them); classmates: a student sees the other
+   * students of its groups and schedules (show) or only itself (hide)
    * returns { status, value: settings } or { status, error }
    */
   putSettings: async (objID, settings, _ctx) => {

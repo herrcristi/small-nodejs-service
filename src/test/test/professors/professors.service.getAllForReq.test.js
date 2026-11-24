@@ -4,13 +4,13 @@ const sinon = require('sinon');
 const chai = require('chai');
 const supertest = require('supertest');
 
-
 const DbOpsUtils = require('../../../core/utils/db-ops.utils.js');
 const RestApiUtils = require('../../../core/utils/rest-api.utils.js');
 const ReferencesUtils = require('../../../core/utils/base-service.references.utils.js');
 
 const TestConstants = require('../../test-constants.js');
 const ProfessorsService = require('../../../services/professors/professors.service.js');
+const RolesPermissions = require('../../../services/roles.permissions.js');
 
 describe('Professors Service', function () {
   const tenantID = _.cloneDeep(TestConstants.Schools[0].id);
@@ -182,5 +182,34 @@ describe('Professors Service', function () {
         error: 'Error: Test error',
       },
     });
+  }).timeout(10000);
+
+  /**
+   * the list of a professor is restricted to what concerns it (RolesPermissions: a professor sees only itself here), with
+   * its count; a failure to read what it sees is returned
+   */
+  it('should getAllForReq only what the professor sees', async () => {
+    // stub: the scope of the professor, the reads
+    const part = { groupIDs: [], scheduleIDs: [] };
+    const scope = { id: 'user1', professor: part, student: null, groupIDs: [], scheduleIDs: [] };
+    const stubScope = sinon.stub(RolesPermissions, 'getScope').resolves({ status: 200, value: scope });
+    const stubGetAll = sinon.stub(DbOpsUtils, 'getAll').resolves({ status: 200, value: [{ id: 'user1' }] });
+    const stubCount = sinon.stub(DbOpsUtils, 'getAllCount').resolves({ status: 200, value: 1 });
+    sinon.stub(ReferencesUtils, 'populateReferences').resolves({ status: 200, value: true });
+
+    // call
+    const ctx = { ..._ctx, roles: ['professor'] };
+    const res = await ProfessorsService.getAllForReq({ query: {} }, ctx);
+
+    // check: the list and its count with the filter of the scope
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubScope.firstCall.args[0]).to.equal(ctx);
+    chai.expect(stubGetAll.firstCall.args[1].filter.$and[1]).to.deep.equal({ id: 'user1' });
+    chai.expect(stubCount.firstCall.args[1].filter.$and[1]).to.deep.equal({ id: 'user1' });
+
+    // case: what it sees can not be read
+    stubScope.resolves({ status: 500, error: { message: 'Database failure' } });
+    const resFailed = await ProfessorsService.getAllForReq({ query: {} }, ctx);
+    chai.expect(resFailed.status).to.equal(500);
   }).timeout(10000);
 });

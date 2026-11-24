@@ -25,6 +25,7 @@ require('./test/classes/classes.all.tests.js');
 require('./test/locations/locations.all.tests.js');
 require('./test/groups/groups.all.tests.js');
 require('./test/schedules/schedules.all.tests.js');
+require('./test/roles/roles.permissions.test.js');
 
 if (process.env.IS_TEST_DB) {
   require('./test/functional/functional.all.tests.js');

@@ -141,7 +141,7 @@
             :titleAdd="itemDetails.name"
             :items="fieldExtraStudents"
             :apiFn="{
-              getAllParams: { 'classes.id': itemDetails.class?.id },
+              // all the students of the school can be added (not only the ones of the class of the schedule)
               updateField: updateFieldExtraStudents,
               deleteField: deleteFieldExtraStudent,
             }"
