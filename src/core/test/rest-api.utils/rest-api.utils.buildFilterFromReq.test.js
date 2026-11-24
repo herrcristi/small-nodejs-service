@@ -478,4 +478,28 @@ describe('Rest Api Utils', function () {
     const search = await build(cpp);
     chai.expect(search.value.filter.$and[0].name.test('C++ Programming')).to.equal(true);
   }).timeout(10000);
+
+  /**
+   * a translated field is searched in the language of the request (x-lang, the language shown by the UI): the text the
+   * server translated in it (_lang_ro.user.status), the other languages are refused
+   */
+  it('should buildFilterFromReq search a translated field in the language of the request', async () => {
+    const roCtx = { ..._ctx, lang: 'ro' };
+    const schema = { filter: ['user.name', 'user.status'] };
+
+    // call: the status shown in Romanian
+    const req = { query: querystring.parse('?user.name,_lang_ro.user.status=/activ/i') };
+    const res = await RestApiUtils.buildFilterFromReq(req, schema, roCtx);
+
+    // check
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.value.filter).to.deep.equal({
+      $and: [{ $or: [{ 'user.name': /activ/i }, { '_lang_ro.user.status': /activ/i }] }],
+    });
+
+    // case: another language than the one of the request
+    const reqOther = { query: querystring.parse('?_lang_en.user.status=/active/i') };
+    const resOther = await RestApiUtils.buildFilterFromReq(reqOther, schema, roCtx);
+    chai.expect(resOther.status).to.equal(400);
+  }).timeout(10000);
 });

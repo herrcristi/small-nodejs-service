@@ -454,9 +454,11 @@ async function fetchAll({ page = 1, itemsPerPage = 50, sortBy = [] } = {}) {
     }
 
     // filtering
-    // the text is found as it is (c++ is not a pattern) and with and without diacritics (a: a ă â)
+    // the text is found as it is (c++ is not a pattern) and with and without diacritics (a: a ă â); a translated field
+    // (_lang.status) in the language of the UI, as it is shown
     if (filter.value && Array.isArray(props.filterFields)) {
-      params['' + props.filterFields] = `/${ComponentUtils.getSearchPattern(filter.value)}/i`;
+      const searchFields = ComponentUtils.getSearchFields(props.filterFields, locale.value);
+      params['' + searchFields] = `/${ComponentUtils.getSearchPattern(filter.value)}/i`;
     }
 
     // sorting

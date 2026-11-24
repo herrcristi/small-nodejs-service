@@ -49,7 +49,7 @@
       :fields="['name', 'status', 'description']"
       :projectionFields="['name', 'status', 'description']"
       :sortFields="['name', 'status']"
-      :filterFields="['name', '_lang_en.status', 'description']"
+      :filterFields="['name', '_lang.status', 'description']"
       :apiFn="{
         getAll: Api.getGroups,
         getAllParams: apiFn.getAllParams,

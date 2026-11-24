@@ -80,6 +80,7 @@ const Private = {
           fieldName: 'user',
           service: UsersRest,
           projection: { id: 1, name: 1, type: 1, status: 1, email: 1, createdTimestamp: 1, modifiedCount: 1 },
+          translations: ['status'], // _lang_en.user.status: searched in the language of the UI, as it is shown
         },
       ],
       notifications: { projection: { ...BaseServiceUtils.Constants.DefaultProjection, user: 1 } } /* for sync+async */,
@@ -114,7 +115,9 @@ const Private = {
    */
   putTraceStatus: async (config, adminID, status, _ctx) => {
     const projection = BaseServiceUtils.getProjection(config, _ctx); // combined default projection + notifications.projection
-    const r = await DbOpsUtils.put(config, adminID, { 'user.status': status }, projection, _ctx);
+    const [userRef] = config.references; // user (its status, with its translations)
+    const traceInfo = TranslationsUtils.addReferenceTranslations({ 'user.status': status }, userRef, { status }, _ctx);
+    const r = await DbOpsUtils.put(config, adminID, traceInfo, projection, _ctx);
     if (r.error) {
       return r;
     }

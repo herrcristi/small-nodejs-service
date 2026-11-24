@@ -20,6 +20,7 @@ const AdminsRest = require('../rest/admins.rest.js');
 const UsersAuth = require('./users-auth.service.js');
 
 const UsersAuthConstants = require('./users-auth.constants.js');
+const WebServerConstants = require('../../web-server/web-server.constants.js');
 
 /**
  * validation
@@ -27,6 +28,7 @@ const UsersAuthConstants = require('./users-auth.constants.js');
 const Schema = {
   Signup: Joi.object().keys({
     email: ValidationUtils.email(),
+    language: Joi.string().valid(...WebServerConstants.Languages), // of the invitation of the first admin
     school: Joi.object().keys({
       name: Joi.string().trim().min(1).max(64).required(), // without the spaces around it (only spaces: refused)
       description: Joi.string().min(0).max(1024).allow(null),
@@ -34,6 +36,7 @@ const Schema = {
   }),
   Invite: Joi.object().keys({
     email: ValidationUtils.email(),
+    language: Joi.string().valid(...WebServerConstants.Languages), // of the invitation (its email, a new user)
     school: Joi.object().keys({
       id: Joi.string().pattern(ValidationUtils.IDPattern), // only a portal admin, to invite the admin of a school
       role: Joi.string()
@@ -104,8 +107,19 @@ const Private = {
   },
 
   /**
+   * the language of an invitation: the one chosen, otherwise the one of the person who invites (its UI: the language of
+   * the request), when the application has it (none: the user has the default of the UI)
+   */
+  getInviteLanguage: (objInfo, _ctx) => {
+    if (objInfo.language) {
+      return objInfo.language;
+    }
+    return WebServerConstants.Languages.includes(_ctx.lang) ? _ctx.lang : undefined;
+  },
+
+  /**
    * create new user
-   * objInfo: { email, school: { role } }
+   * objInfo: { email, language?, school: { role } } language: of the user (its UI and its emails)
    */
   postNewUser: async (objInfo, _ctx) => {
     // a new id, given here: the traces of a deleted account with this email are linked to it before the user exists
@@ -119,6 +133,7 @@ const Private = {
     const userInfo = {
       id: newID,
       email: objInfo.email,
+      language: objInfo.language,
       schools: [
         {
           id: _ctx.tenantID, // schoolID
@@ -257,6 +272,7 @@ const Public = {
     const schoolName = rSchool.value.name;
     const inviteInfo = {
       email: objInfo.email,
+      language: objInfo.language,
       school: { role: UsersRest.Constants.Roles.Admin },
     };
 
@@ -314,6 +330,9 @@ const Public = {
       return rRoles;
     }
 
+    // the language of the invitation (its email, a new user)
+    objInfo.language = Private.getInviteLanguage(objInfo, _ctx);
+
     // invite has 2 steps
     const errorO = {
       id: objInfo.email,
@@ -351,7 +370,7 @@ const Public = {
     // the email: the setup link (a new token) while the user has not set a password (a new user, a pending user invited
     // again because the first email was lost, a completed invite), otherwise the invitation (at most one each
     // EmailInterval); an active member that already has the role gets nothing (nothing was done: 204)
-    const userInfo = { username: objInfo.email };
+    const userInfo = { username: objInfo.email, language: objInfo.language };
     if (needsSetup) {
       // the auth record was written (or found) by this invite: the link is made from the answer, it is not read again
       const account = { username: rUser.value.username, userID: rUser.value.userID };

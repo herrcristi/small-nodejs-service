@@ -10,6 +10,7 @@ const TestConstants = require('../../test-constants.js');
 const Index = require('../../../index.js');
 const ConfigServices = require('../../../services/config.services.js');
 const WebServer = require('../../../web-server/web-server.js');
+const WebServerConstants = require('../../../web-server/web-server.constants.js');
 
 describe('Index', function () {
   const _ctx = { reqID: 'testReq', lang: 'en' };
@@ -64,7 +65,7 @@ describe('Index', function () {
 
     // check
     chai.expect(res).to.equal(true);
-    chai.expect(stubTranslations.callCount).to.equal(Index.Languages.length);
+    chai.expect(stubTranslations.callCount).to.equal(WebServerConstants.Languages.length);
     chai.expect(stubConfig.callCount).to.equal(1);
     chai.expect(stubWebServer.callCount).to.equal(1);
   }).timeout(10000);

@@ -19,6 +19,7 @@ const UsersRest = require('../rest/users.rest.js');
 const SchoolsRest = require('../rest/schools.rest.js');
 const EventsRest = require('../rest/events.rest.js');
 const UsersConstants = require('./users.constants.js');
+const WebServerConstants = require('../../web-server/web-server.constants.js');
 const UsersDatabase = require('./users.database.js');
 
 /**
@@ -50,6 +51,7 @@ const Schema = {
       .max(32)
       .regex(/^(\d|\+|\-|\.|' ')*$/), // allow 0-9 + - . in any order
     address: Joi.string().min(1).max(256),
+    language: Joi.string().valid(...WebServerConstants.Languages), // the language of the UI (and of its emails)
   }),
 
   // what a portal admin can change of another user (the other profile fields are personal, the email is the login)
@@ -83,6 +85,7 @@ const Validators = {
     id: Joi.string().min(1).max(64), // (internal) a new id given by the invite (the traces are linked to it first)
     name: Joi.string().trim().min(1).max(128), // without the spaces around it (only spaces: refused)
     type: Joi.string().valid(UsersConstants.Type),
+    language: Joi.string().valid(...WebServerConstants.Languages), // the language of its invitation
     schools: SchemaSchools,
   }).fork(['email', 'schools'], (x) => x.required() /*make required */),
 

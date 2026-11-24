@@ -1,1 +1,14 @@
-{}
+{
+  "reset-password": {
+    "subject": "Resetarea parolei",
+    "email": "./ro.email.reset-password.html"
+  },
+  "invite": {
+    "subject": "Ai fost invitat în {school}",
+    "email": "./ro.email.invite.html"
+  },
+  "signup": {
+    "subject": "Ai fost invitat în {school}",
+    "email": "./ro.email.signup.html"
+  }
+}

@@ -84,4 +84,33 @@ describe('Translations Utils', function () {
     // check
     chai.expect(res).to.equal(null);
   }).timeout(10000);
+
+  /**
+   * the translations of a referenced object (a reference to one object, user): its translated fields
+   * (ref.translations) are added to the object that references it, as _lang_en.user.status, with the translations of
+   * the object itself
+   */
+  it('should add the translations of a referenced object', async () => {
+    const ref = { fieldName: 'user', translations: ['status'] };
+    const obj = { id: 'student1', '_lang_en.status': 'Active', '_lang_ro.status': 'Activ' };
+
+    // call
+    const res = TranslationsUtils.addReferenceTranslations(obj, ref, { id: 'user1', status: 'removed' }, _ctx);
+
+    // check: with the translations of the object
+    chai.expect(CommonUtils.patch2obj(res)).to.deep.equal({
+      id: 'student1',
+      _lang_en: { status: 'Active', user: { status: 'Removed' } },
+      _lang_ro: { status: 'Activ', user: { status: 'Eliminat' } },
+    });
+
+    // case: the referenced object is not there (the object does not change its reference): nothing is added
+    chai.expect(TranslationsUtils.addReferenceTranslations({ id: 'student1' }, ref, undefined, _ctx)).to.deep.equal({
+      id: 'student1',
+    });
+
+    // case: a reference without translated fields: nothing is added
+    const other = { fieldName: 'class' };
+    chai.expect(TranslationsUtils.addReferenceTranslations({}, other, { status: 'active' }, _ctx)).to.deep.equal({});
+  }).timeout(10000);
 });

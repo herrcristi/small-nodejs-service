@@ -3,7 +3,12 @@
     <v-row align="center" justify="center">
       <v-col cols="12" sm="8" md="4">
         <v-card>
-          <v-card-title>{{ t('login') || 'Login' }}</v-card-title>
+          <v-card-title class="d-flex align-center">
+            {{ t('login') || 'Login' }}
+            <v-spacer />
+            <!-- the language of the page (the language of the user is applied by the login) -->
+            <LanguageMenu />
+          </v-card-title>
           <v-card-text>
             <v-form ref="form" v-model="valid">
               <v-text-field
@@ -75,6 +80,7 @@ import { ref } from 'vue';
 import Api from '../api/api.js';
 import { processLoginResponse } from '../auth.js';
 import ComponentsUtils from './components.utils.js';
+import LanguageMenu from './base.language.menu.vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();

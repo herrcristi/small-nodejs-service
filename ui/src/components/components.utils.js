@@ -362,24 +362,38 @@ const Utils = {
   },
 
   /**
-   * custom filter = search for a query in each field of item, without case and without diacritics
+   * a translated field of a search (_lang.status, _lang.user.status): it is searched in the text shown, in the language
+   * of the UI (see getSearchFields, findValue)
    */
-  findValue: (filterFields, value, query, item) => {
+  TranslatedField: '_lang.',
+
+  /**
+   * the fields of a search of the server: a translated field (_lang.user.status) is searched in the text the server
+   * translated in the language of the UI (_lang_ro.user.status), the one shown; the requests carry the same language
+   * (x-lang), the server accepts only it
+   */
+  getSearchFields: (filterFields, locale) => {
+    return filterFields.map((field) =>
+      field.startsWith(Utils.TranslatedField) ? `_lang_${locale}.${field.slice(Utils.TranslatedField.length)}` : field
+    );
+  },
+
+  /**
+   * custom filter = search for a query in each field of item, without case and without diacritics
+   * a translated field (_lang.status) is searched in the text shown: getShownText(item, 'status')
+   */
+  findValue: (filterFields, value, query, item, getShownText) => {
     let q = query == null ? null : Utils.getSearchText(query);
     if (q == null) {
       return false;
     }
 
     for (const field of filterFields || []) {
-      let value = item?.raw;
-
-      const subFields = field.split('.');
-      for (const subField of subFields) {
-        if (value == null) {
-          break;
-        }
-        value = value[subField];
-      }
+      const isTranslated = field.startsWith(Utils.TranslatedField);
+      const path = isTranslated ? field.slice(Utils.TranslatedField.length) : field;
+      let value = isTranslated
+        ? getShownText(item?.raw, path)
+        : path.split('.').reduce((fieldValue, key) => fieldValue?.[key], item?.raw);
 
       value = value == null ? value : Utils.getSearchText(value);
       if (value && value.indexOf(q) !== -1) {
@@ -500,6 +514,11 @@ const Utils = {
         return emailRegex.test(value) || t('email.invalid');
       },
       address: (v, t) => (!!v && v.toString().trim().length > 0) || t('required'),
+
+      // the profile of a user: the same rules as the server (Schema.UserProfile); an empty field is optional
+      nameLength: (v, t) => (v?.toString().trim().length || 0) <= 128 || t('name.invalid'),
+      phoneNumber: (v, t) => !v || (v.length <= 32 && /^[\d+\-. ]*$/.test(v)) || t('phoneNumber.invalid'),
+      addressLength: (v, t) => !v || v.length <= 256 || t('address.invalid'),
       credits: (v, t) => {
         // credits must be a number greater than or equal to zero
         const n = Number(v);

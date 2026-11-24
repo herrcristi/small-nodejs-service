@@ -77,7 +77,9 @@ describe('Base Service', function () {
     sinon.stub(config.references[0].service, 'getAllByIDs').callsFake((ids, projection) => {
       console.log(`\nrest service called with ids ${JSON.stringify(ids)} and projection ${JSON.stringify(projection)}`);
       chai.expect(ids).to.deep.equal(['targetID1', 'targetID2', 'targetID3', 'targetID4']);
-      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 });
+      chai
+        .expect(projection)
+        .to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 });
 
       return {
         status: 200,
@@ -181,6 +183,33 @@ describe('Base Service', function () {
   }).timeout(10000);
 
   /**
+   * a reference with translated fields (translations: user.status): the object gets the translations of its referenced
+   * object with it (_lang_en.target.status), so it is searched in the language of the UI
+   */
+  it('should call populate with the translations of the referenced object', async () => {
+    const configRef = { ...config.references[0], translations: ['status'] };
+    const objs = [{ id: 'id1', name: 'name1', target: 'targetID1' }];
+
+    // stub: the target
+    sinon
+      .stub(configRef.service, 'getAllByIDs')
+      .resolves({ status: 200, value: [{ id: 'targetID1', name: 'Jane Smith', status: 'disabled' }] });
+
+    // call
+    const res = await ReferencesUtils.populate(configRef, objs, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check: the target, with the translations of its status
+    chai.expect(res.value[0]).to.deep.equal({
+      id: 'id1',
+      name: 'name1',
+      target: { id: 'targetID1', name: 'Jane Smith', status: 'disabled' },
+      '_lang_en.target.status': 'Disabled',
+      '_lang_ro.target.status': 'Dezactivat',
+    });
+  }).timeout(10000);
+
+  /**
    * populate with success multi field
    */
   it('should call populate with success multi field', async () => {
@@ -213,7 +242,9 @@ describe('Base Service', function () {
     sinon.stub(config.references[1].service, 'getAllByIDs').callsFake((ids, projection) => {
       console.log(`\nrest service called with ids ${JSON.stringify(ids)} and projection ${JSON.stringify(projection)}`);
       chai.expect(ids).to.deep.equal(['targetID5', 'targetID6']);
-      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 });
+      chai
+        .expect(projection)
+        .to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 });
 
       return {
         status: 200,
@@ -385,7 +416,9 @@ describe('Base Service', function () {
     sinon.stub(config.references[0].service, 'getAllByIDs').callsFake((ids, projection) => {
       console.log(`\nrest service called with ids ${JSON.stringify(ids)} and projection ${JSON.stringify(projection)}`);
       chai.expect(ids).to.deep.equal(['targetID3', 'targetID4']);
-      chai.expect(projection).to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 });
+      chai
+        .expect(projection)
+        .to.deep.equal({ _id: 0, id: 1, name: 1, type: 1, status: 1, createdTimestamp: 1, modifiedCount: 1 });
 
       return {
         status: 200,

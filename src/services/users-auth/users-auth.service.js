@@ -19,6 +19,7 @@ const UsersRest = require('../rest/users.rest.js');
 const EventsRest = require('../rest/events.rest.js');
 const SchoolsRest = require('../rest/schools.rest.js');
 const UsersAuthConstants = require('./users-auth.constants.js');
+const WebServerConstants = require('../../web-server/web-server.constants.js');
 const UsersAuthSessionsService = require('./users-auth.sessions.service.js'); // the sessions and the emailed links
 const UsersAuthServiceLocal = require('./users-local-auth.service.js'); // use local auth service
 const UsersAuthServiceFirebase = require('./users-firebase-auth.service.js'); // use firebase auth service
@@ -107,10 +108,12 @@ const Validators = {
 
   Invite: Joi.object().keys({
     username: ValidationUtils.email(),
+    language: Joi.string().valid(...WebServerConstants.Languages), // the language of the email
   }),
 
   ResetPassword: Joi.object().keys({
     username: ValidationUtils.email(),
+    language: Joi.string().valid(...WebServerConstants.Languages), // the language of the email
   }),
 
   ResetToken: Joi.object().keys({
@@ -119,14 +122,20 @@ const Validators = {
 
   PutResetPassword: Joi.object().keys({
     password: NewPassword.required(),
-    // TODO if resetType is invite provide all details
-    // name: Joi.string().min(1).max(128),
-    // birthday: Joi.date().iso(),
-    // phoneNumber: Joi.string()
-    //   .min(1)
-    //   .max(32)
-    //   .regex(/^(\d|\+|\-|\.|' ')*$/), // allow 0-9 + - . in any order
-    // address: Joi.string().min(1).max(256),
+    // the profile of a new user, set with its first password (only by the link of an invitation: signup); the same
+    // rules as the profile of the users service (Schema.UserProfile)
+    profile: Joi.object()
+      .keys({
+        name: Joi.string().trim().min(1).max(128),
+        birthday: Joi.string().isoDate(),
+        phoneNumber: Joi.string()
+          .min(1)
+          .max(32)
+          .regex(/^(\d|\+|\-|\.|' ')*$/), // allow 0-9 + - . in any order
+        address: Joi.string().min(1).max(256),
+        language: Joi.string().valid(...WebServerConstants.Languages),
+      })
+      .min(1),
   }),
 };
 
@@ -451,7 +460,7 @@ const Private = {
    * returns { status, value: { user, rr } } or { status, error }; rr: the answer of validateRoute
    */
   getSessionUser: async (email, objInfo, _ctx, options) => {
-    const userProjection = { id: 1, status: 1, name: 1, email: 1, schools: 1 };
+    const userProjection = { id: 1, status: 1, name: 1, email: 1, language: 1, schools: 1 };
     const rUserDetails = await UsersRest.getOneByEmail(email, userProjection, _ctx, options);
     if (rUserDetails.error) {
       return { ...rUserDetails, status: 401 };
@@ -617,7 +626,7 @@ const Public = {
     // get user details (by email)
     ///
     // read on the primary: a user activated, disabled or given a school by the request before decides the login
-    const userProjection = { id: 1, status: 1, name: 1, email: 1, schools: 1 };
+    const userProjection = { id: 1, status: 1, name: 1, email: 1, language: 1, schools: 1 };
     const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
     const rUserDetails = await UsersRest.getOneByEmail(objInfo.username, userProjection, _ctx, options);
     if (rUserDetails.error) {
@@ -677,6 +686,7 @@ const Public = {
         username: _ctx.username,
         status: user.status,
         name: user.name,
+        language: user.language, // the language of the UI chosen by the user (none: the default of the UI)
         schools: Private.getMemberships(user),
       },
     };
@@ -795,6 +805,7 @@ const Public = {
         tenantVerified: rr.tenantVerified, // false: the school of the request is not used (not a member)
         status: user.status,
         name: user.name,
+        language: user.language, // the language of the UI chosen by the user (none: the default of the UI)
         schools: Private.getMemberships(user),
       },
     };
@@ -1168,7 +1179,7 @@ const Public = {
 
   /**
    * send the invitation email to an existing user (the invite flow is in UsersAuthSignupService.invite)
-   * objInfo: { username }
+   * objInfo: { username, language? } language: of the email (none: the language of the request)
    */
   sendInvite: async (objInfo, _ctx) => {
     // validate
@@ -1183,7 +1194,7 @@ const Public = {
 
     const username = objInfo.username;
     const action = Private.Action.Invite;
-    const args = { emailType: 'invite' };
+    const args = { emailType: 'invite', language: objInfo.language || _ctx.lang };
 
     // at most one each EmailInterval
     const canSend = await Private.canSendEmail(config, username, args.emailType, _ctx);
@@ -1208,7 +1219,7 @@ const Public = {
 
   /**
    * reset password
-   * objInfo: { username }
+   * objInfo: { username, language? } language: of the email (none: the language of the request, the UI of the person)
    */
   resetPassword: async (objInfo, _ctx, resetType = UsersAuthConstants.ResetTokenType.ResetPassword, account = null) => {
     // validate
@@ -1223,7 +1234,7 @@ const Public = {
 
     const username = objInfo.username;
     const action = resetType;
-    const args = { emailType: resetType, resetType };
+    const args = { emailType: resetType, resetType, language: objInfo.language || _ctx.lang };
 
     // at most one each EmailInterval: the link sent before stays the valid one (a new link would replace it)
     const canSend = await Private.canSendEmail(config, username, args.emailType, _ctx);
@@ -1290,7 +1301,8 @@ const Public = {
 
   /**
    * validate reset token and put reset password
-   * objInfo: { password }
+   * objInfo: { password, profile? } profile: { name?, birthday?, phoneNumber?, address?, language? } the profile of a new
+   *   user, only with its first password (the link of an invitation)
    */
   putResetPassword: async (resetToken, objInfo, _ctx) => {
     // validate
@@ -1314,6 +1326,12 @@ const Public = {
     const rT = await Private.checkResetToken(config, vT.value.token, _ctx);
     if (rT.error) {
       return rT;
+    }
+
+    // a profile only with the first password (the link of an invitation), checked before the link is used
+    if (objInfo.profile && rT.value.purpose !== UsersAuthConstants.ResetTokenType.Signup) {
+      const msg = 'The profile is set only by the link of an invitation';
+      return { status: 400, error: { message: msg, error: new Error(msg) } };
     }
 
     const username = rT.value.username;
@@ -1342,6 +1360,14 @@ const Public = {
     const rEnd = await UsersAuthSessionsService.endAll(userID, _ctx);
     if (rEnd.error) {
       return rEnd;
+    }
+
+    // the profile of the new user (its own: the user of the link)
+    if (objInfo.profile) {
+      const rProfile = await UsersRest.put(userID, objInfo.profile, _ctx);
+      if (rProfile.error) {
+        return rProfile;
+      }
     }
 
     // raise event for put reset password

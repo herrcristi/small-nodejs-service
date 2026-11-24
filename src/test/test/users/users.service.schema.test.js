@@ -507,4 +507,19 @@ describe('Users Service', function () {
       .expect(res.error.details[0].message)
       .to.include('"remove.schools[0].roles" does not contain 1 required value(s)');
   }).timeout(10000);
+
+  /**
+   * the language of the user (its profile): one of the languages of the application, chosen by the user
+   */
+  it('should validate the language of the profile', async () => {
+    // the languages of the application
+    for (const language of ['en', 'ro']) {
+      chai.expect(UsersService.Validators.Put.validate({ language }).error, language).to.equal(undefined);
+    }
+
+    // case: another language, or not a text
+    for (const language of ['fr', 'EN', '', 1, null]) {
+      chai.expect(UsersService.Validators.Put.validate({ language }).error, `${language}`).to.not.equal(undefined);
+    }
+  }).timeout(10000);
 });

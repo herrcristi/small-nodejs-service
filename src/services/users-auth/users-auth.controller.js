@@ -161,6 +161,7 @@ const Public = {
         userID: r.value.userID,
         username: r.value.username,
         name: r.value.name,
+        language: r.value.language, // the language of the UI chosen by the user
         schools: r.value.schools || [],
         expires: r.value.sessionExpiresAt, // when the session ends
       });

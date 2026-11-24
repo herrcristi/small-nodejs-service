@@ -288,6 +288,7 @@ describe('Users Auth Controller', function () {
           userID: testUser.id,
           username: testUser.email,
           name: testUser.name,
+          language: 'ro', // the language of the UI chosen by the user
           schools: testUser.schools,
           sessionExpiresAt: new Date(Date.now() + 60 * 1000), // the end of the session
         },
@@ -308,6 +309,7 @@ describe('Users Auth Controller', function () {
       userID: testUser.id,
       username: testUser.email,
       name: testUser.name,
+      language: 'ro',
       schools: testUser.schools,
       expires: '', // ignore expires for testing
     });

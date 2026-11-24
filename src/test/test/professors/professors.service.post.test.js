@@ -195,4 +195,26 @@ describe('Professors Service', function () {
       },
     });
   }).timeout(10000);
+
+  /**
+   * the status of the referenced user is stored with its translations (_lang_en.user.status), so a list is searched by
+   * the status in the language of the UI, as it is shown
+   */
+  it('should post with the translations of the status of its user', async () => {
+    // stub: the write and what follows it
+    const notifiedUser = { id: 'user1', name: 'Jane Smith', email: 'jane.smith@testdomain.test', status: 'active' };
+    const stubPost = sinon.stub(DbOpsUtils, 'post').callsFake((config, postObj) => ({ status: 201, value: postObj }));
+    sinon.stub(EventsRest, 'raiseEventForObject').resolves();
+    sinon.stub(ProfessorsRest, 'raiseNotification').resolves();
+
+    // call: the user of a users notification (its reference is filled from it)
+    const res = await ProfessorsService.post({ id: 'user1', classes: [] }, _ctx, notifiedUser);
+
+    // check: the status of the user, with its translations
+    chai.expect(res.status).to.equal(201);
+    const postObj = stubPost.firstCall.args[1];
+    chai.expect(postObj.user.status).to.equal('active');
+    chai.expect(postObj._lang_en).to.deep.equal({ user: { status: 'Active' } });
+    chai.expect(postObj._lang_ro).to.deep.equal({ user: { status: 'Activ' } });
+  }).timeout(10000);
 });

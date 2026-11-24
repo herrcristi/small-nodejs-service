@@ -1,5 +1,4 @@
 import { createApp } from 'vue';
-import { createI18n } from 'vue-i18n';
 import { createPinia } from 'pinia';
 import { useAuthStore, useAppStore } from './stores/stores.js';
 import Api, { bootstrapAuthFromCookie } from './api/api.js';
@@ -21,20 +20,7 @@ const vuetify = createVuetify({
   directives,
 });
 
-import en from './translations/en.json';
-import ro from './translations/ro.json';
-
-const i18n = createI18n({
-  legacy: false,
-  locale: 'ro',
-  fallbackLocale: 'en',
-  formatFallbackMessages: true,
-  silentFallbackWarn: true,
-  messages: {
-    en: en,
-    ro: ro,
-  },
-});
+import i18n from './i18n.js';
 
 const app = createApp(App);
 const pinia = createPinia();

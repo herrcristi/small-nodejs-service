@@ -412,7 +412,8 @@ const Public = {
   /**
    * send email
    * config: { serviceName }
-   * args: { token, resetType, emailType }
+   * args: { token, resetType, emailType, language } language: of the email and of the page of its link (an unknown one:
+   *   English)
    * returns { status, value } or { status, error } (the email could not be delivered to the mail server)
    */
   sendEmail: async (config, username, args, _ctx) => {
@@ -431,13 +432,16 @@ const Public = {
     if (args.resetType != null) {
       const type = encodeURIComponent(args.resetType);
       const token = encodeURIComponent(args.token);
-      emailArgs.resetUrl = `${uiUrl}/reset-password#type=${type}&token=${token}`;
+      const lang = encodeURIComponent(args.language);
+      emailArgs.resetUrl = `${uiUrl}/reset-password#type=${type}&token=${token}&lang=${lang}`;
     }
 
-    let emailTemplate = TranslationsUtils.email(args.emailType, _ctx, emailArgs);
+    // the email in its language (an unknown one: English)
+    const emailTemplates = TranslationsUtils.email(args.emailType, _ctx, emailArgs);
+    const email = emailTemplates[args.language] || emailTemplates['en'];
 
     // send email (the result tells if it was delivered to the mail server)
-    return await EmailsUtils.sendEmail(username, emailTemplate['en'].subject, emailTemplate['en'].email, _ctx);
+    return await EmailsUtils.sendEmail(username, email.subject, email.email, _ctx);
   },
 };
 

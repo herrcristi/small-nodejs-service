@@ -171,12 +171,7 @@
           <v-card-title>{{ t('edit') }}</v-card-title>
           <v-card-text>
             <v-form ref="editForm" v-model="formValid">
-              <v-text-field
-                v-model="edit.name"
-                :label="t('name')"
-                :rules="[(v) => !!v || t('name.required') || 'Name is required']"
-                required
-              />
+              <v-text-field v-model="edit.name" :label="t('name')" :rules="ProfileRules.name" required />
 
               <v-menu v-model="birthdaymenu" :close-on-content-click="false" transition="scale-transition" offset-y>
                 <template #activator>
@@ -191,8 +186,11 @@
                 <v-date-picker v-model="datePicker" show-adjacent-months @update:modelValue="onDatePicked" />
               </v-menu>
 
-              <v-text-field v-model="edit.phoneNumber" :label="t('phoneNumber')" />
-              <v-text-field v-model="edit.address" :label="t('address')" />
+              <v-text-field v-model="edit.phoneNumber" :label="t('phoneNumber')" :rules="ProfileRules.phoneNumber" />
+              <v-text-field v-model="edit.address" :label="t('address')" :rules="ProfileRules.address" />
+
+              <!-- the language of the UI (and of the emails of the user), with its flag -->
+              <LanguageSelect v-model="edit.language" />
             </v-form>
           </v-card-text>
           <v-card-actions>
@@ -237,6 +235,8 @@
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
 import ApiDetails from './api.base.details.vue';
 import KeyValue from './base.keyvalue.vue';
+import LanguageSelect from './base.language.select.vue';
+import { Languages, setLanguage } from '../i18n.js';
 import ActionIcon from './base.action.icon.vue';
 import PasswordChange from './api.user.change.password.vue';
 import EmailChange from './api.user.change.email.vue';
@@ -247,7 +247,7 @@ import ComponentsUtils from './components.utils.js';
 import { useAuthStore, useAppStore } from '../stores/stores.js';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 /**
  * props
@@ -265,6 +265,14 @@ const router = useRouter();
 const editDialog = ref(false);
 const edit = ref({ ...profile.value });
 const birthdaymenu = ref(false);
+
+// the rules of the profile fields, the same as the server (Schema.UserProfile): a value it would refuse keeps the dialog
+// open with its message; a field left empty is optional and is not sent
+const ProfileRules = {
+  name: [(v) => ComponentsUtils.Edit.Rules.name(v, t), (v) => ComponentsUtils.Edit.Rules.nameLength(v, t)],
+  phoneNumber: [(v) => ComponentsUtils.Edit.Rules.phoneNumber(v, t)],
+  address: [(v) => ComponentsUtils.Edit.Rules.addressLength(v, t)],
+};
 const formValid = ref(false);
 // the calls of the dialogs, each shown on the button that opened its dialog (disabled, a spinner when it takes long)
 const saveCall = ComponentsUtils.useSingleCall(); // the profile (handleSave)
@@ -306,8 +314,21 @@ const profileItems = computed(() => {
     },
     { key: 'phoneNumber', value: profile.value.phoneNumber, translate: true },
     { key: 'address', value: profile.value.address, translate: true },
+    {
+      key: 'language',
+      value: getLanguageName(profile.value.language),
+      language: profile.value.language,
+      translate: true,
+    },
   ];
 });
+
+/**
+ * the name of a language (in its own language), none when the user has not chosen one
+ */
+function getLanguageName(code) {
+  return Languages.find((language) => language.code === code)?.name;
+}
 
 /**
  * schoolRolesItems
@@ -340,6 +361,7 @@ function openEdit() {
     return;
   }
   edit.value = { ...profile.value };
+  edit.value.language ??= locale.value; // none chosen yet: the language shown
   if (edit.value.birthday) {
     try {
       // is in UTC format
@@ -380,12 +402,20 @@ async function saveEdit() {
       // console.log('Saving profile, datePicker:', datePicker.value);
       // console.log('datePicker as ISO:', datePicker.value ? getUTCISOString(datePicker.value) : null);
 
-      const payload = {
-        name: edit.value.name,
-        birthday: datePicker.value ? getUTCISOString(datePicker.value) : null,
-        phoneNumber: edit.value.phoneNumber,
-        address: edit.value.address,
-      };
+      // the fields left empty are not sent (the server refuses an empty value: a birthday that was never picked)
+      const payload = { name: edit.value.name.trim() };
+      if (datePicker.value) {
+        payload.birthday = getUTCISOString(datePicker.value);
+      }
+      if (edit.value.phoneNumber) {
+        payload.phoneNumber = edit.value.phoneNumber;
+      }
+      if (edit.value.address) {
+        payload.address = edit.value.address;
+      }
+      if (edit.value.language) {
+        payload.language = edit.value.language;
+      }
 
       // the dialog closes: the edit button shows the call until the answer
       editDialog.value = false;
@@ -399,6 +429,9 @@ async function saveEdit() {
 
       // update local profile
       profile.value = { ...profile.value, ...payload };
+
+      // the UI in the language chosen
+      setLanguage(payload.language);
 
       snackbarText.value = t('profile.update.success');
       snackbarColor.value = 'success';

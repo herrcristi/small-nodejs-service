@@ -99,6 +99,7 @@ describe('Users Auth Service', function () {
       chai.expect(userReq).to.deep.equal({
         id: userReq.id, // a new id, given by the invite
         email: testUser.email,
+        language: 'en', // the language of the invitation: the one of the request (the UI of the person who invites)
         schools: [
           {
             id: testSchoolID,
@@ -144,6 +145,7 @@ describe('Users Auth Service', function () {
 
       chai.expect(objInfo).to.deep.equal({
         username: testUser.email,
+        language: 'en', // the language of the invitation: the one of the request
       });
 
       return {
@@ -340,6 +342,7 @@ describe('Users Auth Service', function () {
       chai.expect(userReq).to.deep.equal({
         id: userReq.id, // a new id, given by the invite
         email: testUser.email,
+        language: 'en', // the language of the invitation: the one of the request (the UI of the person who invites)
         schools: [
           {
             id: testSchoolID,
@@ -445,6 +448,7 @@ describe('Users Auth Service', function () {
       chai.expect(userReq).to.deep.equal({
         id: userReq.id, // a new id, given by the invite
         email: testUser.email,
+        language: 'en', // the language of the invitation: the one of the request (the UI of the person who invites)
         schools: [
           {
             id: testSchoolID,

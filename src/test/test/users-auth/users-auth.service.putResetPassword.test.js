@@ -13,6 +13,7 @@ const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
+const UsersRest = require('../../../services/rest/users.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 const UsersLocalAuthService = require('../../../services/users-auth/users-local-auth.service.js');
 const UsersAuthSessionsService = require('../../../services/users-auth/users-auth.sessions.service.js');
@@ -287,5 +288,71 @@ describe('Users Auth Service', function () {
       status: 500,
       error: { message: 'Test error message', error: new Error('Test error') },
     });
+  }).timeout(10000);
+
+  /**
+   * the link of an invitation (signup) sets the first password and the profile of the new user (its own); a profile is
+   * refused with the link of a reset (before the link is used), and a profile that is not valid is refused first
+   */
+  it('should putResetPassword with the profile of a new user', async () => {
+    const testUser = _.cloneDeep(TestConstants.UsersAuth)[0];
+    const password = testUser._test_data.origPassword + 'aA1!';
+    const profile = { name: 'Jane Smith', birthday: '1990-05-01T00:00:00.000Z', language: 'ro' };
+
+    // stub: the link of an invitation, the password, the profile
+    const link = { id: 'link1', purpose: 'signup', userID: testUser.userID, username: testUser.id };
+    sinon.stub(UsersAuthSessionsService, 'check').resolves({ status: 200, value: link });
+    const stubEnd = sinon.stub(UsersAuthSessionsService, 'end').resolves({ status: 200, value: { id: 'link1' } });
+    sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 1 });
+    sinon.stub(DbOpsUtils, 'put').resolves({ status: 200, value: { ...testUser } });
+    sinon.stub(EventsRest, 'raiseEventForObject').resolves();
+    sinon.stub(UsersAuthRest, 'raiseNotification').resolves();
+    const stubProfile = sinon.stub(UsersRest, 'put').resolves({ status: 200, value: { id: testUser.userID } });
+
+    // call
+    const ctx = { ..._ctx };
+    const res = await UsersAuthService.putResetPassword(getResetToken(testUser, 'signup'), { password, profile }, ctx);
+
+    // check: the password and the profile of the user of the link (its own: the user of the request)
+    chai.expect(res.status).to.equal(200);
+    chai.expect(stubProfile.firstCall.args.slice(0, 2)).to.deep.equal([testUser.userID, profile]);
+    chai.expect(stubProfile.firstCall.args[2].userID).to.equal(testUser.userID);
+
+    // case: the profile can not be saved
+    stubProfile.resolves({ status: 500, error: { message: 'Database failure' } });
+    const resFail = await UsersAuthService.putResetPassword(
+      getResetToken(testUser, 'signup'),
+      { password, profile },
+      {
+        ..._ctx,
+      }
+    );
+    chai.expect(resFail.status).to.equal(500);
+
+    // case: the link of a reset (not of an invitation): refused before the link is used
+    link.purpose = 'reset-password';
+    stubEnd.resetHistory();
+    const resReset = await UsersAuthService.putResetPassword(
+      getResetToken(testUser),
+      { password, profile },
+      {
+        ..._ctx,
+      }
+    );
+    chai.expect(resReset.status).to.equal(400);
+    chai.expect(stubEnd.callCount).to.equal(0);
+
+    // case: a profile that is not valid (a language the application does not have, an empty profile)
+    for (const wrong of [{ language: 'fr' }, { birthday: 'yesterday' }, {}]) {
+      const resWrong = await UsersAuthService.putResetPassword(
+        getResetToken(testUser, 'signup'),
+        {
+          password,
+          profile: wrong,
+        },
+        { ..._ctx }
+      );
+      chai.expect(resWrong.status, JSON.stringify(wrong)).to.equal(400);
+    }
   }).timeout(10000);
 });
