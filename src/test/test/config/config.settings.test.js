@@ -13,6 +13,7 @@ describe('Config Settings', function () {
     'SMALL_API_RATE_LIMIT_LOGIN_ACCOUNT_MAX',
     'SMALL_API_RATE_LIMIT_RESET_MAX',
     'SMALL_API_DATABASE_LIMITS',
+    'SMALL_API_URL',
   ];
   const saved = {};
 
@@ -87,6 +88,7 @@ describe('Config Settings', function () {
   it('should get the settings of the web server', async () => {
     // stub: the environment
     process.env.SMALL_API_CORS_ORIGIN = 'https://ui.testdomain.test,https://admin.testdomain.test';
+    process.env.SMALL_API_URL = 'https://api.testdomain.test';
     process.env.SMALL_API_TRUST_PROXY = '1';
     process.env.SMALL_API_RATE_LIMIT_MAX = '500';
     process.env.SMALL_API_RATE_LIMIT_LOGIN_MAX = '4';
@@ -96,9 +98,9 @@ describe('Config Settings', function () {
     // call
     const settings = ConfigSettings.getWebServerSettings();
 
-    // check
+    // check: the origins of the UI, and the url of the api (the Origin of the calls between services)
     chai.expect(settings).to.deep.equal({
-      corsOrigins: ['https://ui.testdomain.test', 'https://admin.testdomain.test'],
+      corsOrigins: ['https://ui.testdomain.test', 'https://admin.testdomain.test', 'https://api.testdomain.test'],
       trustProxy: '1',
       rateLimits: { max: '500', loginMax: '4', loginAccountMax: '10', resetMax: '2' },
     });
@@ -108,7 +110,7 @@ describe('Config Settings', function () {
       delete process.env[name];
     }
     const empty = ConfigSettings.getWebServerSettings();
-    chai.expect(empty.corsOrigins).to.deep.equal(['']);
+    chai.expect(empty.corsOrigins).to.deep.equal(['', '']);
     chai.expect(empty.trustProxy).to.equal(undefined);
   }).timeout(10000);
 });

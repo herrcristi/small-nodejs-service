@@ -240,7 +240,8 @@ const Private = {
    * get all for a request with a schema of the allowed filters and an optional restriction set by the caller
    * req: { query }
    * restrictFilter: (filter) => {} the restriction of the caller, optional
-   * options: the options of the read (an internal request: the ones asked by the calling service), optional
+   * options: { readPreference? } the options of the read (an internal request: the ones asked by the calling service),
+   *   optional
    * returns: { status, value: {data, meta} } or { status, error }
    */
   getAllForReq: async (req, schema, _ctx, restrictFilter, options) => {
@@ -498,7 +499,7 @@ const Public = {
   /**
    * get all for an internal request (called from signup / invite by email)
    * req: { query }
-   * options: the options of the read asked by the calling service (the service token), like { readPreference }
+   * options: { readPreference? } the options of the read asked by the calling service (in its token)
    * returns: { status, value: {data, meta} } or { status, error }
    */
   getAllInternalForReq: async (req, _ctx, options) => {
@@ -582,7 +583,8 @@ const Public = {
   /**
    * get all
    * filter: { filter?, projection?, limit?, skip?, sort? }
-   * options: the options of the read (DbOpsUtils.getAll), like { readPreference } (the user of a login, of an invite)
+   * options: { readPreference? } the options of the read (DbOpsUtils.getAll; the user of a login, of an invite: the
+   *   primary, { readPreference: DbOpsUtils.Constants.ReadPrimary })
    * returns { status, value } or { status, error }
    */
   getAll: async (filter, _ctx, options) => {
@@ -593,7 +595,7 @@ const Public = {
   /**
    * get all count
    * filter: { filter? }
-   * options: the options of the read (DbOpsUtils.getAllCount), like { readPreference }
+   * options: { readPreference? } the options of the read (DbOpsUtils.getAllCount)
    * returns { status, value } or { status, error }
    */
   getAllCount: async (filter, _ctx, options) => {
@@ -604,8 +606,9 @@ const Public = {
   /**
    * get all by ids: the objects referenced by another service before it writes them (populateReferences) or a read that
    * decides a write (the roles of a user)
-   * options: the options of the read, built by the caller (populateReferences and the roles of a user ask the primary:
-   *   an object written just before, by an earlier request or by another service, is found)
+   * options: { readPreference? } the options of the read, built by the caller (populateReferences and the roles of a
+   *   user ask the primary, { readPreference: DbOpsUtils.Constants.ReadPrimary }: an object written just before, by
+   *   an earlier request or by another service, is found)
    * returns { status, value } or { status, error }
    */
   getAllByIDs: async (ids, projection, _ctx, options) => {

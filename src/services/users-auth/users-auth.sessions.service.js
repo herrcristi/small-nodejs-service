@@ -176,7 +176,7 @@ const Public = {
    * database removes the expired records only from time to time); a session is also not idle for too long, and its
    * use is saved
    * tokenData: { purpose, username, secret }
-   * options: the options of the read of the record (DbOpsUtils.getOne), like { readPreference }
+   * options: { readPreference? } the options of the read of the record (DbOpsUtils.getOne)
    * returns { status, value: { id, purpose, userID, username, expiresAt, lastUsedAt } } or { status, error }
    */
   check: async (tokenData, _ctx, options) => {

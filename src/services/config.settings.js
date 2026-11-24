@@ -57,11 +57,13 @@ const Public = {
 
   /**
    * the settings of the web server (core/web-server): the origins allowed by CORS (SMALL_API_CORS_ORIGIN, a list
-   * separated by commas), the proxies in front of it (SMALL_API_TRUST_PROXY) and the rate limits
-   * (SMALL_API_RATE_LIMIT_*); the web server checks them and uses its defaults for the missing ones
+   * separated by commas, and the url of the api SMALL_API_URL, the Origin of the calls between services), the proxies
+   * in front of it (SMALL_API_TRUST_PROXY) and the rate limits (SMALL_API_RATE_LIMIT_*); the web server checks them and
+   * uses its defaults for the missing ones
    */
   getWebServerSettings: () => {
     const corsOrigins = `${process.env.SMALL_API_CORS_ORIGIN || ''}`.split(',');
+    corsOrigins.push(`${process.env.SMALL_API_URL || ''}`);
     return {
       corsOrigins,
       trustProxy: process.env.SMALL_API_TRUST_PROXY,

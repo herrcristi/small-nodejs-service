@@ -24,7 +24,7 @@ const Public = {
 
   /**
    * get all by ids
-   * options: the options of the read, built by the caller (like { readPreference })
+   * options: { readPreference? } the options of the read, built by the caller
    */
   getAllByIDs: async (ids, projection, _ctx, options) => {
     return await RestCommsUtils.getAllByIDs(LocationsConstants.ServiceName, ids, projection, _ctx, options);

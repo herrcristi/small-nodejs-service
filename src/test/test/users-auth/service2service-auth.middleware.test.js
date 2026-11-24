@@ -90,7 +90,8 @@ describe('Service 2 Service Auth Middleware', function () {
     chai.expect(req._ctx.username).to.equal('user.one@testdomain.test');
     chai.expect(req._ctx.tenantName).to.equal('School A');
 
-    // check: the options of the read asked by the calling service (in its token), for the route
+    // check: a call of a service (no cookie on a public route), the options of its read (in its token), for the route
+    chai.expect(req.isS2SCall).to.equal(true);
     chai.expect(req.s2sOptions).to.deep.equal({ readPreference: 'primary' });
   });
 

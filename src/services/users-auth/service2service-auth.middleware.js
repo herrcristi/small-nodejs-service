@@ -45,7 +45,9 @@ const Public = {
         return res.end();
       }
 
-      // the options of the read asked by the calling service (in its token: only a service sets them), for the route
+      // a call of another service (the users-auth middleware takes its identity from the token, not from a cookie), and
+      // the options of the read it asked (in its token: only a service sets them), for the route
+      req.isS2SCall = true;
       req.s2sOptions = r.value.options;
     } catch (e) {
       console.log(`\nFailed to S2S authenticate request. Error: ${e.stack}`, _ctx);

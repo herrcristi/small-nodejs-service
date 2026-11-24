@@ -223,9 +223,11 @@ const Public = {
   /**
    * get all for a request
    * req: { query }
+   * options: { readPreference? } the options of the read asked by a calling service (in its token: the targets of
+   *   its references are read on the primary, { readPreference: DbOpsUtils.Constants.ReadPrimary }), optional
    * returns: { status, value: {data, meta} } or { status, error }
    */
-  getAllForReq: async (req, _ctx) => {
+  getAllForReq: async (req, _ctx, options) => {
     // convert query to mongo build filter: { filter, projection, limit, skip, sort }
     const rf = await RestApiUtils.buildFilterFromReq(req, Validators.Get, _ctx);
     if (rf.error) {
@@ -233,21 +235,22 @@ const Public = {
     }
     const filter = rf.value;
 
-    // exclude the portal school from the managed list
-    if (process.env.SMALL_API_PORTAL_SCHOOL_ID) {
+    // exclude the portal school from the managed list of a user (a call of another service reads the targets of its
+    // references: the portal school too)
+    if (process.env.SMALL_API_PORTAL_SCHOOL_ID && !req.isS2SCall) {
       filter.filter = {
         $and: [filter.filter || {}, { id: { $ne: process.env.SMALL_API_PORTAL_SCHOOL_ID } }],
       };
     }
 
     // get all (and expanded too)
-    let r = await Public.getAll(filter, _ctx);
+    let r = await Public.getAll(filter, _ctx, options);
     if (r.error) {
       return r;
     }
 
     // get corresponding count
-    let rCount = await Public.getAllCount(filter, _ctx);
+    let rCount = await Public.getAllCount(filter, _ctx, options);
     if (rCount.error) {
       return rCount;
     }
@@ -266,28 +269,31 @@ const Public = {
   /**
    * get all
    * filter: { filter?, projection?, limit?, skip?, sort? }
+   * options: { readPreference? } the options of the read (DbOpsUtils)
    * returns { status, value } or { status, error }
    */
-  getAll: async (filter, _ctx) => {
+  getAll: async (filter, _ctx, options) => {
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    return await DbOpsUtils.getAll(config, filter, _ctx);
+    return await DbOpsUtils.getAll(config, filter, _ctx, options);
   },
 
   /**
    * get all count
    * filter: { filter? }
+   * options: { readPreference? } the options of the read (DbOpsUtils)
    * returns { status, value } or { status, error }
    */
-  getAllCount: async (filter, _ctx) => {
+  getAllCount: async (filter, _ctx, options) => {
     const config = await Private.getConfig(_ctx); // { serviceName, collection }
-    return await DbOpsUtils.getAllCount(config, filter, _ctx);
+    return await DbOpsUtils.getAllCount(config, filter, _ctx, options);
   },
 
   /**
    * get all by ids: the objects referenced by another service before it writes them (populateReferences) or a read that
    * decides a write (the roles of a user)
-   * options: the options of the read, built by the caller (populateReferences and the roles of a user ask the primary:
-   *   an object written just before, by an earlier request or by another service, is found)
+   * options: { readPreference? } the options of the read, built by the caller (populateReferences and the roles of a
+   *   user ask the primary, { readPreference: DbOpsUtils.Constants.ReadPrimary }: an object written just before, by
+   *   an earlier request or by another service, is found)
    * returns { status, value } or { status, error }
    */
   getAllByIDs: async (ids, projection, _ctx, options) => {

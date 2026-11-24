@@ -29,8 +29,8 @@ const Public = {
         )}`
       );
 
-      // get all
-      const r = await AdminsService.getAllForReq(req, _ctx);
+      // get all (a call of another service: with the options of its read, the targets of its references)
+      const r = await AdminsService.getAllForReq(req, _ctx, req.s2sOptions);
       if (r.error) {
         const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
         return res.status(r.status).json(message);

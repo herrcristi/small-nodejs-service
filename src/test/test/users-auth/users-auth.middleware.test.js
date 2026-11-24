@@ -47,6 +47,28 @@ describe('Users Auth Middleware', function () {
   });
 
   /**
+   * a call of another service on a public route (its token validated by the service-to-service middleware): no cookie
+   * is validated, the identity and the school of the token are kept
+   */
+  it('should take a call of another service on a public route without a cookie', async () => {
+    // stub: the token gave the identity and the school
+    const stubValidate = sinon.stub(UsersAuthRest, 'validate');
+    const req = getReq('/api/v1/schools/:id', 'school-a');
+    Object.assign(req._ctx, { userID: 'user1', username: 'user@test.test' });
+    req.isS2SCall = true;
+    const next = sinon.stub();
+
+    // call
+    await UsersAuthMiddleware.middleware(req, {}, next);
+
+    // check: no cookie validated, the context of the token
+    chai.expect(stubValidate.callCount).to.equal(0);
+    chai.expect(next.calledOnce).to.equal(true);
+    chai.expect(req._ctx.tenantID).to.equal('school-a');
+    chai.expect(req._ctx.userID).to.equal('user1');
+  });
+
+  /**
    * an authenticated route keeps the tenant that the validation verified (the user is a member of it)
    */
   it('should keep the tenant on an authenticated route', async () => {
