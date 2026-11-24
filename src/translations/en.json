@@ -70,6 +70,7 @@
   "users-auth.putpassword": "User '{target}' changed the password",
   "users-auth.putresetpassword": "User '{target}' set the password with the emailed link",
   "users-auth.reset-password": "A password reset email was sent to '{target}'",
+  "users-auth.setupaccount": "User '{target}' set up the account with the emailed link",
   "users-auth.signup": "User '{target}' was invited by '{user}' and received the password setup email",
   "users-auth.signup.failed": "The school '{school}' with its admin '{target}' could not be created by '{user}': {reason}",
   "users.activate": "User '{target}' was activated at the first login",

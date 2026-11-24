@@ -141,7 +141,6 @@
   "professors.add": "Adaugă Profesor",
   "professors.edit": "Editează Profesor",
   "profile": "Profil",
-  "profile.setup": "Profilul tău (îl poți schimba mai târziu)",
   "profile.setup.success": "Contul tău este configurat. Te poți autentifica acum.",
   "profile.update.error": "Eroare la actualizarea profilului",
   "profile.update.success": "Profilul a fost actualizat",

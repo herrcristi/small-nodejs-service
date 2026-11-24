@@ -1248,6 +1248,58 @@ describe('Users Auth Controller', function () {
   }).timeout(10000);
 
   /**
+   * the page of the link of an invitation: its token is sent in its own header (x-setup-token, never in the url), the
+   * route is public; the answer of the service is returned, a failure with its status, an exception as 500
+   */
+  it('should validate the setup token and set up the account', async () => {
+    const answer = { userID: 'user1', username: 'jane.smith@testdomain.test', type: 'users-auth' };
+    const stubValidate = sinon.stub(UsersAuthService, 'validateSetupToken').resolves({ status: 200, value: answer });
+    const stubSetup = sinon.stub(UsersAuthService, 'putSetupAccount').resolves({ status: 200, value: answer });
+    const body = { password: 'password', profile: { name: 'Jane Smith' } };
+
+    // call: validate, then set up
+    const resValidate = await supertest(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPath}/setup-token/validate`)
+      .set('x-setup-token', 'token')
+      .set('Origin', TestConstants.WebServer);
+    const resSetup = await supertest(TestConstants.WebServer)
+      .put(`${UsersAuthConstants.ApiPath}/setup-token/account`)
+      .set('x-setup-token', 'token')
+      .set('Origin', TestConstants.WebServer)
+      .send(body);
+
+    // check: the token of the header, the body
+    chai.expect(resValidate.status).to.equal(200);
+    chai.expect(resValidate.body).to.deep.equal(answer);
+    chai.expect(stubValidate.firstCall.args[0]).to.deep.equal({ token: 'token' });
+    chai.expect(resSetup.status).to.equal(200);
+    chai.expect(stubSetup.firstCall.args.slice(0, 2)).to.deep.equal(['token', body]);
+
+    // case: refused by the service
+    const refused = { status: 401, error: { message: 'The link is not valid', error: new Error('Test error') } };
+    stubValidate.resolves(refused);
+    stubSetup.resolves(refused);
+    for (const call of [
+      () => supertest(TestConstants.WebServer).get(`${UsersAuthConstants.ApiPath}/setup-token/validate`),
+      () => supertest(TestConstants.WebServer).put(`${UsersAuthConstants.ApiPath}/setup-token/account`).send(body),
+    ]) {
+      const res = await call().set('x-setup-token', 'token').set('Origin', TestConstants.WebServer);
+      chai.expect(res.status).to.equal(401);
+    }
+
+    // case: an exception
+    stubValidate.rejects(new Error('Test exception'));
+    stubSetup.rejects(new Error('Test exception'));
+    for (const call of [
+      () => supertest(TestConstants.WebServer).get(`${UsersAuthConstants.ApiPath}/setup-token/validate`),
+      () => supertest(TestConstants.WebServer).put(`${UsersAuthConstants.ApiPath}/setup-token/account`).send(body),
+    ]) {
+      const res = await call().set('x-setup-token', 'token').set('Origin', TestConstants.WebServer);
+      chai.expect(res.status).to.equal(500);
+    }
+  }).timeout(10000);
+
+  /**
    * put reset password fail
    */
   it('should put reset password fail', async () => {

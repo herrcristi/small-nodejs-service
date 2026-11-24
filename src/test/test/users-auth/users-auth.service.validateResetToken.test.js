@@ -67,7 +67,6 @@ describe('Users Auth Service', function () {
         userID: testUser.userID,
         username: testUser.id,
         type: testUser.type,
-        resetType: 'reset-password',
       },
     });
     chai.expect(stubGet.firstCall.args[1]).to.equal(getLink(testUser).id);
@@ -116,10 +115,34 @@ describe('Users Auth Service', function () {
     const res = await UsersAuthService.validateResetToken({ token: getResetToken(testUser) }, _ctx);
     chai.expect(res.status).to.equal(500);
 
-    // an invitation (signup) with its record
+    // the link of an invitation (signup) with its record: it sets up the account, it does not reset a password
     getOne.returns({ status: 200, value: getLink(testUser, 'signup') });
-    const resSignup = await UsersAuthService.validateResetToken({ token: getResetToken(testUser, 'signup') }, _ctx);
-    chai.expect(resSignup.value.resetType).to.equal('signup');
+    await refused(getResetToken(testUser, 'signup'), 'The link is not valid');
+  }).timeout(10000);
+
+  /**
+   * the link of an invitation is validated by the page that sets up the account (validateSetupToken), and only it: a
+   * reset link is refused there
+   */
+  it('should validateSetupToken only the link of an invitation', async () => {
+    const testUser = _.cloneDeep(TestConstants.UsersAuth)[0];
+    const getOne = sinon.stub(DbOpsUtils, 'getOne');
+
+    // call: the link of an invitation
+    getOne.returns({ status: 200, value: getLink(testUser, 'signup') });
+    const res = await UsersAuthService.validateSetupToken({ token: getResetToken(testUser, 'signup') }, _ctx);
+
+    // check: the user of the link
+    chai.expect(res).to.deep.equal({
+      status: 200,
+      value: { userID: testUser.userID, username: testUser.id, type: testUser.type },
+    });
+
+    // case: a reset link
+    getOne.returns({ status: 200, value: getLink(testUser) });
+    const resReset = await UsersAuthService.validateSetupToken({ token: getResetToken(testUser) }, _ctx);
+    chai.expect(resReset.status).to.equal(401);
+    chai.expect(resReset.error.message).to.equal('The link is not valid');
   }).timeout(10000);
 
   /**

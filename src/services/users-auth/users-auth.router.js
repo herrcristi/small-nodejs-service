@@ -33,6 +33,9 @@ router
 
 router.route(`${UsersAuthConstants.ApiPath}/reset-token/validate`).get(UsersAuthController.validateResetToken); // public dont require authentication only for local auth
 router.route(`${UsersAuthConstants.ApiPath}/reset-token/password`).put(UsersAuthController.putResetPassword); // public dont require authentication only for local auth
+// the link of an invitation: set up the account (the first password and the profile), public, only for local auth
+router.route(`${UsersAuthConstants.ApiPath}/setup-token/validate`).get(UsersAuthController.validateSetupToken);
+router.route(`${UsersAuthConstants.ApiPath}/setup-token/account`).put(UsersAuthController.putSetupAccount);
 
 router.route(`${UsersAuthConstants.ApiPath}/invite`).post(UsersAuthSignupController.invite);
 router.route(`${UsersAuthConstants.ApiPath}/signup`).post(UsersAuthSignupController.signup); // by portal admin

@@ -141,7 +141,6 @@
   "professors.add": "Add Professor",
   "professors.edit": "Edit Professor",
   "profile": "Profile",
-  "profile.setup": "Your profile (you can change it later)",
   "profile.setup.success": "Your account is set up. You can log in now.",
   "profile.update.error": "Error updating profile",
   "profile.update.success": "Profile updated",

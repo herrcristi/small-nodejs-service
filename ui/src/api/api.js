@@ -6,7 +6,7 @@ import i18n from '../i18n.js';
 import { SMALL_API_URL, SMALL_API_CORS_ORIGIN } from './api.url.js';
 
 // the pages that are opened without a session
-const PublicPages = ['/login', '/reset-password'];
+const PublicPages = ['/login', '/reset-password', '/setup-account'];
 
 // Default to sending credentials (cookies). Server must allow credentials and a specific origin.
 const instance = axios.create({
@@ -297,9 +297,13 @@ const Api = {
   // the token of an emailed link is sent in a header, never in a url
   validateResetToken: (token) =>
     instance.get(`/users-auth/reset-token/validate`, { headers: { 'x-reset-token': token } }),
-  // profile: the profile of a new user, only with its first password (the link of an invitation)
-  setPasswordWithResetToken: (token, password, profile) =>
-    instance.put(`/users-auth/reset-token/password`, { password, profile }, { headers: { 'x-reset-token': token } }),
+  setPasswordWithResetToken: (token, password) =>
+    instance.put(`/users-auth/reset-token/password`, { password }, { headers: { 'x-reset-token': token } }),
+  // the link of an invitation: set up the account (the first password and the profile); its own header
+  validateSetupToken: (token) =>
+    instance.get(`/users-auth/setup-token/validate`, { headers: { 'x-setup-token': token } }),
+  setupAccount: (token, password, profile) =>
+    instance.put(`/users-auth/setup-token/account`, { password, profile }, { headers: { 'x-setup-token': token } }),
 
   currentUsername: () => useAuthStore()?.raw?.username /*current username*/,
 

@@ -365,6 +365,58 @@ const Public = {
   },
 
   /**
+   * validate setup token: the link of an invitation can still be used (the token is sent in a header, never in the url)
+   */
+  validateSetupToken: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersAuthConstants.ServiceName;
+
+    try {
+      console.log(`\n${_ctx.serviceName}: Setup token validate called`);
+
+      const setupToken = req.headers['x-setup-token'];
+      const r = await UsersAuthService.validateSetupToken({ token: setupToken }, _ctx);
+      if (r.error) {
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * set up the account with the link of an invitation: the first password and the profile
+   */
+  putSetupAccount: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersAuthConstants.ServiceName;
+
+    try {
+      console.log(`\n${_ctx.serviceName}: Put setup account called`);
+
+      const setupToken = req.headers['x-setup-token'];
+      const r = await UsersAuthService.putSetupAccount(setupToken, req.body, _ctx);
+      if (r.error) {
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
    * put password
    */
   putPassword: async (req, res, next) => {

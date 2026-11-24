@@ -28,6 +28,7 @@ const Public = {
         'x-lang',
         'x-request-id',
         'x-reset-token', // the reset password page (the identity headers are never read from a request)
+        'x-setup-token', // the setup account page (the link of an invitation)
       ],
       maxAge: 86400,
     };

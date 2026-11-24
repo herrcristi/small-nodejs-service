@@ -207,7 +207,15 @@ describe('Events Service', function () {
     for (const action of ['login', 'post', 'delete', 'putPassword', 'patchPassword', 'putID', 'patchID']) {
       ids.push(`users-auth.${action}`);
     }
-    for (const action of ['invite', 'invite.failed', 'signup', 'signup.failed', 'reset-password', 'putResetPassword']) {
+    const usersAuthActions = [
+      'invite',
+      'invite.failed',
+      'signup',
+      'signup.failed',
+      'reset-password',
+      'putResetPassword',
+    ];
+    for (const action of [...usersAuthActions, 'setupAccount']) {
       ids.push(`users-auth.${action}`);
     }
 

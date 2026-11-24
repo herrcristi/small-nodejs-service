@@ -427,13 +427,14 @@ const Public = {
       appUrl: uiUrl,
     };
 
-    // the link opens the page of the UI that sets the password; the token is in the fragment (after #), which the
-    // browser never sends to a server, so it is not in the logs or the history of a server
+    // the link opens the page of the UI for its purpose: an invitation sets up the account (setup-account), a reset
+    // sets the password (reset-password); the token is in the fragment (after #), which the browser never sends to a
+    // server, so it is not in the logs or the history of a server; the page opens in the language of the email
     if (args.resetType != null) {
-      const type = encodeURIComponent(args.resetType);
+      const page = args.resetType === UsersAuthConstants.ResetTokenType.Signup ? 'setup-account' : 'reset-password';
       const token = encodeURIComponent(args.token);
       const lang = encodeURIComponent(args.language);
-      emailArgs.resetUrl = `${uiUrl}/reset-password#type=${type}&token=${token}&lang=${lang}`;
+      emailArgs.resetUrl = `${uiUrl}/${page}#token=${token}&lang=${lang}`;
     }
 
     // the email in its language (an unknown one: English)

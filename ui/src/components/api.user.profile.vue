@@ -232,7 +232,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue';
 import ApiDetails from './api.base.details.vue';
 import KeyValue from './base.keyvalue.vue';
 import LanguageSelect from './base.language.select.vue';
@@ -259,6 +259,16 @@ const loading = ref(false);
 const nodatatext = ref('');
 
 const auth = useAuthStore();
+
+// the language chosen in the top bar (LanguageMenu saves it in the profile and in the store): shown here too
+watch(
+  () => auth.raw?.language,
+  (language) => {
+    if (language && profile.value.id) {
+      profile.value = { ...profile.value, language };
+    }
+  }
+);
 const router = useRouter();
 
 // edit
@@ -424,7 +434,7 @@ async function saveEdit() {
 
       // update store locally
       let auth = useAuthStore();
-      auth.raw = { ...auth.raw, name: payload.name, email: auth.raw.username };
+      auth.raw = { ...auth.raw, name: payload.name, language: payload.language, email: auth.raw.username };
       useAuthStore()?.save(auth);
 
       // update local profile

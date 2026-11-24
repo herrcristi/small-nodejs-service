@@ -72,7 +72,7 @@ describe('Users Auth Functional', function () {
   };
 
   /**
-   * the token of the last setup / reset link sent to an email
+   * the token of the last setup / reset link sent to an email (/setup-account#token=... or /reset-password#token=...)
    */
   const linkToken = async (email) => {
     // the emails are sent without waiting for them
@@ -80,21 +80,21 @@ describe('Users Auth Functional', function () {
     const mail = mails.filter((item) => item.to === email).pop();
     chai.expect(mail, `an email to ${email}`).to.exist;
     // the link is in the html of the email: its & is written &amp;
-    const match = /#type=[^&]+&amp;token=([^"'<\s&]+)/.exec(mail.body);
+    const match = /\/(?:setup-account|reset-password)#token=([^"'<\s&]+)/.exec(mail.body);
     chai.expect(match, `a link in the email to ${email}`).to.exist;
     return decodeURIComponent(match[1]);
   };
 
   /**
-   * the person sets its password with the link of its email
+   * the person sets up its account with the link of its invitation: its first password and its profile (its name)
    */
   const setPassword = async (email) => {
     const token = await linkToken(email);
-    const r = await api('put', `${AuthPath}/reset-token/password`, {
-      headers: { 'x-reset-token': token },
-      body: { password: Password },
+    const r = await api('put', `${AuthPath}/setup-token/account`, {
+      headers: { 'x-setup-token': token },
+      body: { password: Password, profile: { name: email.split('@')[0] } },
     });
-    chai.expect(r.status, `set the password of ${email}`).to.equal(200);
+    chai.expect(r.status, `set up the account of ${email}`).to.equal(200);
   };
 
   /**
