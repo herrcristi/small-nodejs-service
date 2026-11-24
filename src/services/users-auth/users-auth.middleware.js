@@ -77,6 +77,11 @@ const Public = {
       if (!r.value.tenantVerified) {
         _ctx.tenantID = undefined;
       }
+
+      // the roles of the user in the school of the request (none without a school): what a member sees of the school
+      // depends on them (a student sees its own groups and schedules); set only here, from the verified session (a
+      // service call and a call in the same process have none: they are not restricted)
+      _ctx.roles = r.value.schools?.find((school) => school.id === _ctx.tenantID)?.roles || [];
     } catch (e) {
       console.log(`\nFailed to authenticate request. Error: ${e.stack}`, _ctx);
       const message = await RestMessagesUtils.exception(e, _ctx);

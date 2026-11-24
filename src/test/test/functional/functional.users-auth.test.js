@@ -475,7 +475,7 @@ describe('Users Auth Functional', function () {
     const rSettings = await api('put', settingsPath, { cookie: adminCookie, tenant: schoolID, body: settings });
     chai.expect(rSettings.status).to.equal(200);
     const rRead = await api('get', settingsPath, { cookie: adminCookie, tenant: schoolID });
-    chai.expect(rRead.body).to.deep.equal(settings);
+    chai.expect(rRead.body).to.deep.equal({ ...settings, classmates: 'show' }); // the default of the other settings
     const rDelete = await api('delete', `${StudentsConstants.ApiPath}/${student.id}`, {
       cookie: adminCookie,
       tenant: schoolID,

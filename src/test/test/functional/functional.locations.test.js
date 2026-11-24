@@ -22,7 +22,9 @@ describe('Locations Functional', function () {
   beforeEach(async function () {
     sinon.stub(UsersAuthRest, 'validate').callsFake((objInfo) => {
       console.log(`\nUsersAuthRest.validate called`);
-      return { status: 200, value: { userID: 'user.id', username: 'user.email', tenantVerified: true } };
+      // the caller is an admin of the school (it sees everything of it)
+      const schools = [{ id: _ctx.tenantID, roles: ['admin'] }];
+      return { status: 200, value: { userID: 'user.id', username: 'user.email', tenantVerified: true, schools } };
     });
     await TestsUtils.initDatabase(_ctx);
   });

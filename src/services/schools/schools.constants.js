@@ -31,8 +31,13 @@ const Public = {
       Keep: 'keep', // the record stays as a trace, marked disabled (role removed) or deleted (account deleted)
       Delete: 'delete', // the record is deleted, and removed from the groups and schedules
     },
+    // what a student sees of the other students of its groups and schedules (a professor sees all of them)
+    Classmates: {
+      Show: 'show', // all the students of its groups and schedules
+      Hide: 'hide', // only itself
+    },
   },
-  DefaultSettings: { removedMembers: 'keep' },
+  DefaultSettings: { removedMembers: 'keep', classmates: 'show' },
 
   // how often the pending schools are checked for an expired signup (seconds)
   PendingCleanupInterval: 60 * 60,

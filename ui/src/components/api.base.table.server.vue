@@ -386,6 +386,14 @@ watch(filterInput, (value) => {
 });
 onBeforeUnmount(() => clearTimeout(filterTimeoutID));
 
+// another language (the flag at the top): a search of a translated field (_lang.status) is in the text of the language
+// shown, so the list is searched again
+watch(locale, () => {
+  if (filter.value) {
+    fetchAll(lastRequestParams.value);
+  }
+});
+
 /**
  * delete
  */

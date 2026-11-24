@@ -112,7 +112,7 @@ describe('Calls between services', function () {
     chai.expect(resGet.status).to.equal(200);
     chai.expect(resGet.value.id).to.equal(school.id);
     chai.expect(resSettings.status).to.equal(200);
-    chai.expect(resSettings.value).to.deep.equal({ removedMembers: 'delete' });
+    chai.expect(resSettings.value).to.deep.equal({ removedMembers: 'delete', classmates: 'show' });
     chai.expect(stubRead.secondCall.args[4]).to.deep.equal(primary);
     chai.expect(resDelete.status).to.equal(200);
     chai.expect(stubDelete.firstCall.args[0]).to.equal(school.id);

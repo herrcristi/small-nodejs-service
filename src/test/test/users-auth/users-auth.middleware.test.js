@@ -73,7 +73,12 @@ describe('Users Auth Middleware', function () {
    */
   it('should keep the tenant on an authenticated route', async () => {
     // stub: a valid session, the tenant is verified
+    const schools = [
+      { id: 'school-a', roles: ['student'] },
+      { id: 'school-b', roles: ['admin'] },
+    ];
     const validated = { userID: 'user1', username: 'user@test.test', tenantName: 'School A', tenantVerified: true };
+    validated.schools = schools; // the memberships of the user, with its roles
     const stubValidate = sinon.stub(UsersAuthRest, 'validate').resolves({ status: 200, value: validated });
     const req = getReq('/api/v1/students', 'school-a');
     const next = sinon.stub();
@@ -87,6 +92,9 @@ describe('Users Auth Middleware', function () {
     chai.expect(req._ctx.tenantID).to.equal('school-a');
     chai.expect(req._ctx.userID).to.equal('user1');
     chai.expect(req._ctx.tenantName).to.equal('School A');
+
+    // check: the roles of the user in the school of the request (not in its other schools)
+    chai.expect(req._ctx.roles).to.deep.equal(['student']);
   });
 
   /**
@@ -106,5 +114,6 @@ describe('Users Auth Middleware', function () {
     chai.expect(next.calledOnce).to.equal(true);
     chai.expect(req._ctx.userID).to.equal('user1');
     chai.expect(req._ctx.tenantID).to.equal(undefined);
+    chai.expect(req._ctx.roles).to.deep.equal([]); // no roles without a school
   });
 });
