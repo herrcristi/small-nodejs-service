@@ -208,9 +208,9 @@ const Public = {
    * get all
    * config: { serviceName, collection, maxTimeMS }
    * filter: { filter, projection, limit, skip, sort }
-   * options: the options of the read, built by the caller ({ readPreference: Constants.ReadPrimary } to see the writes
-   *   just done), otherwise null (the read preference of the client: a secondary may answer); the time limit of the
-   *   config is added
+   * options: { readPreference? } built by the caller: { readPreference: Constants.ReadPrimary } to see the writes just
+   *   done, otherwise null (the read preference of the client: a secondary may answer); the time limit of the config
+   *   is added
    * return: { status, value } or { status, error: { message, error } }
    */
   getAll: async (config, filter, _ctx, options = null) => {
@@ -252,7 +252,7 @@ const Public = {
    * count the objects of a filter
    * config: { serviceName, collection, maxTimeMS }
    * filter: { filter }
-   * options: the options of the read, built by the caller (see getAll), otherwise null
+   * options: { readPreference? } the options of the read, built by the caller (see getAll), otherwise null
    * return: { status, value } or { status, error: { message, error } }
    */
   getAllCount: async (config, filter, _ctx, options = null) => {
@@ -283,7 +283,7 @@ const Public = {
 
   /**
    * get the objects with these ids
-   * options: the options of the read, built by the caller (see getAll), otherwise null
+   * options: { readPreference? } the options of the read, built by the caller (see getAll), otherwise null
    */
   getAllByIDs: async (config, ids, projection, _ctx, options = null) => {
     return Public.getAll(config, { filter: { id: { $in: ids } }, projection }, _ctx, options);
@@ -292,7 +292,7 @@ const Public = {
   /**
    * get all the objects that reference an object
    * ref: { fieldName } (user, students[], schedules[].location)
-   * options: the options of the read, built by the caller (see getAll), otherwise null
+   * options: { readPreference? } the options of the read, built by the caller (see getAll), otherwise null
    * return: { status, value } or { status, error: { message, error } }
    */
   getAllByReference: async (config, ref, refID, projection, _ctx, options = null) => {
@@ -303,7 +303,7 @@ const Public = {
   /**
    * get one
    * config: { serviceName, collection, maxTimeMS }
-   * options: the options of the read, built by the caller (see getAll), otherwise null
+   * options: { readPreference? } the options of the read, built by the caller (see getAll), otherwise null
    * return: { status, value } or { status, error: { message, error } }
    */
   getOne: async (config, objID, projection, _ctx, options = null) => {

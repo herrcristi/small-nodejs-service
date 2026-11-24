@@ -39,6 +39,7 @@ describe('Rest Communications Utils', function () {
     let restConfig = {
       issuer: 'test-issuer',
       s2sPass: process.env.SMALL_API_S2SPASS,
+      origin: 'https://api.testdomain.test',
 
       rest: {
         [serviceName]: {
@@ -60,6 +61,9 @@ describe('Rest Communications Utils', function () {
       console.log(`\nRequest headers: ${JSON.stringify(config.headers, null, 2)}`);
       const s2sToken = config.headers['x-s2s-token'];
       chai.expect(s2sToken).to.exist;
+
+      // the Origin of the call: the url of the api (allowed by the CORS check of the called service)
+      chai.expect(config.headers.origin).to.equal(restConfig.origin);
 
       // the receiving request: the same method and path
       const receiver = { ..._ctx, reqMethod: 'PATCH', reqPath: '/api/v1/service/id1' };

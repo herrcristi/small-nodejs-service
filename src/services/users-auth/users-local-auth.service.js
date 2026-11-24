@@ -167,7 +167,7 @@ const Public = {
   /**
    * get the auth record of a user (without the password): it exists, or 404
    * config: { serviceName }
-   * options: the options of the read (DbOpsUtils.getOne)
+   * options: { readPreference? } the options of the read (DbOpsUtils.getOne)
    */
   getOne: async (config, username, _ctx, options) => {
     // { serviceName, collection, notifications.projection }

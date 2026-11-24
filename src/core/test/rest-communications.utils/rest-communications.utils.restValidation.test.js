@@ -178,6 +178,54 @@ describe('Rest Communications Utils', function () {
   }).timeout(10000);
 
   /**
+   * a request of another service: a valid service token for this request (its method and path), not used yet by its
+   * route (the rate limits do not count it)
+   */
+  it('should tell a request of another service by its valid service token', async () => {
+    // config
+    const serviceName = 'Service';
+    const restConfig = {
+      issuer: 'test-issuer',
+      s2sPass: process.env.SMALL_API_S2SPASS,
+      rest: {
+        [serviceName]: {
+          protocol: 'http',
+          host: 'localhost',
+          port: process.env.SMALL_API_PORT, // see test/test-setup.utils.js
+          path: '/api/v1/service',
+        },
+      },
+    };
+
+    // stub: the token of the call
+    let s2sToken;
+    mockAxios.onGet().reply((config) => {
+      s2sToken = config.headers['x-s2s-token'];
+      return [200, { data: [] }];
+    });
+
+    // call: a call of a service
+    await RestCommsUtils.init(restConfig);
+    const callCtx = { ..._ctx, reqMethod: 'GET', reqUrl: '/api/v1/users-auth/login' };
+    await RestCommsUtils.restCall({ serviceName, method: 'GET', path: '' }, callCtx);
+
+    // check: the request of the call
+    const req = { headers: { 'x-s2s-token': s2sToken }, method: 'get', path: '/api/v1/service' };
+    chai.expect(RestCommsUtils.isS2SRequest(req)).to.equal(true);
+
+    // case: not for another path or method, without a token, with a value that is not a token
+    chai.expect(RestCommsUtils.isS2SRequest({ ...req, path: '/api/v1/other' })).to.equal(false);
+    chai.expect(RestCommsUtils.isS2SRequest({ ...req, method: undefined })).to.equal(false);
+    chai.expect(RestCommsUtils.isS2SRequest({ method: 'GET', path: '/api/v1/service' })).to.equal(false);
+    chai.expect(RestCommsUtils.isS2SRequest({ ...req, headers: { 'x-s2s-token': 'not-a-token' } })).to.equal(false);
+
+    // case: used by its route (once): not anymore
+    const rv = RestCommsUtils.restValidation(s2sToken, { ..._ctx, reqMethod: 'GET', reqPath: '/api/v1/service' });
+    chai.expect(rv.status).to.equal(200);
+    chai.expect(RestCommsUtils.isS2SRequest(req)).to.equal(false);
+  }).timeout(10000);
+
+  /**
    * restValidation with failure
    */
   it('should restValidation with failure', async () => {

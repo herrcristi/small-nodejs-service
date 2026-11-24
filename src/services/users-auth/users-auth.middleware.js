@@ -22,6 +22,13 @@ const Public = {
       return next();
     }
 
+    // a call of another service on a public route: its token was validated (service-to-service middleware), its
+    // identity and its school come from the token (the request of the user was authorized by the calling service)
+    if (req.isS2SCall) {
+      console.log(`\nService call ${route} for user ${_ctx.username} (${_ctx.userID}) for tenant ${_ctx.tenantID}`);
+      return next();
+    }
+
     // is whitelisted
     const whitelistRoutes = [
       `${UsersAuthRest.Constants.ApiPath}/login`,

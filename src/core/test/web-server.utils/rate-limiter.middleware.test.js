@@ -1,9 +1,11 @@
 const chai = require('chai');
+const sinon = require('sinon');
 const express = require('express');
 const supertest = require('supertest');
 const rateLimit = require('express-rate-limit');
 
 const RateLimiterMiddleware = require('../../web-server/rate-limiter.middleware.js');
+const RestCommsUtils = require('../../utils/rest-communications.utils.js');
 const RequestMiddleware = require('../../web-server/request.middleware.js');
 const WebServerUtils = require('../../web-server/web-server.utils.js');
 
@@ -24,6 +26,7 @@ describe('Rate limiter middleware', function () {
   });
 
   afterEach(function () {
+    sinon.restore();
     process.env.NODE_ENV = savedNodeEnv;
     RateLimiterMiddleware.init({}); // the defaults (the tests of the service run in debug mode: no limit)
   });
@@ -44,6 +47,29 @@ describe('Rate limiter middleware', function () {
   };
   const login = (app, username, password, ip) =>
     supertest(app).post('/login').set('x-forwarded-for', ip).send({ username, password });
+
+  /**
+   * the requests of a client address are limited; a call of another service (a valid service token) is not, so the
+   * services can call each other when they run apart
+   */
+  it('should limit the requests of a client, not the calls of another service', async () => {
+    // stub: the requests with a service token are calls of a service (RestCommsUtils checks the token)
+    sinon.stub(RestCommsUtils, 'isS2SRequest').callsFake((req) => !!req.headers['x-s2s-token']);
+    RateLimiterMiddleware.init({ max: '2' });
+    const app = express();
+    app.get('/data', rateLimit(RateLimiterMiddleware.authLimiter), (req, res) => res.status(200).end());
+    const get = () => supertest(app).get('/data');
+
+    // a client: 2 requests, then limited
+    chai.expect((await get()).status).to.equal(200);
+    chai.expect((await get()).status).to.equal(200);
+    chai.expect((await get()).status).to.equal(429);
+
+    // a service: not limited
+    for (let i = 0; i < 3; i++) {
+      chai.expect((await get().set('x-s2s-token', 'token')).status).to.equal(200);
+    }
+  });
 
   /**
    * the failed logins of an account from one address are limited

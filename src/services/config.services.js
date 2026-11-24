@@ -188,6 +188,7 @@ const Public = {
     const config = {
       issuer: 'SmallApp-Service2Service',
       s2sPass: process.env.SMALL_API_S2SPASS,
+      origin: process.env.SMALL_API_URL, // the Origin of the calls between services (allowed by the CORS check)
 
       local: {
         [SchoolsConstants.ServiceName]: SchoolsService,

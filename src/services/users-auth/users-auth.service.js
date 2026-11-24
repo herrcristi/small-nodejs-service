@@ -447,7 +447,7 @@ const Private = {
   /**
    * the user of a session (by email) and its access to the route of the request
    * objInfo: { method, route }
-   * options: the options of the read of the user (UsersRest.getOneByEmail)
+   * options: { readPreference? } the options of the read of the user (UsersRest.getOneByEmail)
    * returns { status, value: { user, rr } } or { status, error }; rr: the answer of validateRoute
    */
   getSessionUser: async (email, objInfo, _ctx, options) => {

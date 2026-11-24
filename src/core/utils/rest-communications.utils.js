@@ -47,6 +47,40 @@ const Private = {
   },
 
   /**
+   * the error of a service token that is refused
+   */
+  invalid: (msg) => ({ status: 401, error: { message: msg, error: new Error(msg) } }),
+
+  /**
+   * check a service token for a request: it decrypts, its time is not older than its validity nor in the future, and
+   * it is for this method and path; it is not marked as used here (restValidation does it, once)
+   * returns { status, value: s2sData } or { status, error }
+   */
+  checkS2SToken: (s2sToken, method, path, _ctx) => {
+    // decode
+    const rs = JwtUtils.decrypt(s2sToken, Private.Config.issuer, _ctx, [Private.Config.s2sPass]);
+    if (rs.error) {
+      return rs;
+    }
+    const s2sData = rs.value;
+
+    // check the time: a valid time, not older than the validity, not in the future (more than the clock skew)
+    const now = Date.now();
+    const time = Date.parse(s2sData.timestamp);
+    if (!Number.isFinite(time) || time + Private.S2STokenTTL < now || time > now + Private.S2STokenClockSkew) {
+      return Private.invalid('Token is expired');
+    }
+
+    // check the token is for this request: the same method and path
+    const tokenPath = Private.getPath(s2sData.url);
+    if (s2sData.method !== method || !tokenPath || tokenPath !== path) {
+      return Private.invalid('Token is not for this request');
+    }
+
+    return { status: 200, value: s2sData };
+  },
+
+  /**
    * the path of a url, or undefined
    */
   getPath: (url) => {
@@ -62,6 +96,7 @@ const Private = {
    * {
    *   issuer,
    *   s2sPass,
+   *   origin, // the Origin of the calls (the url of the api: allowed by the CORS check of the called service)
    *   local: {
    *    'service1': service1,
    *    'service2': service2
@@ -75,8 +110,8 @@ const Private = {
   /**
    * rest call
    * config: { serviceName, method, path, query?, body?, headers?, options? }
-   * options: the options of a read (like { readPreference }), sent in the service token: only a service can set them,
-   * and the called route gives them to its read (restValidation)
+   * options: { readPreference? } the options of a read, sent in the service token: only a service can set them, and
+   *   the called route gives them to its read (restValidation)
    */
   restCall: async (config, _ctx) => {
     console.log(`\nRest api call: ${JSON.stringify(CommonUtils.protectData(config), null, 2)}`);
@@ -129,6 +164,7 @@ const Private = {
           'x-user-name': _ctx.username,
           'x-s2s-token': s2sToken.value,
           'content-type': 'application/json',
+          origin: Private.Config.origin, // the url of the api, allowed by the CORS check of the called service
         },
         data: config.body,
         timeout: config.timeout || Constants.Timeout,
@@ -195,31 +231,16 @@ const Public = {
    * service asked (restCall)
    */
   restValidation: (s2sToken, _ctx) => {
-    // decode
-    const rs = JwtUtils.decrypt(s2sToken, Private.Config.issuer, _ctx, [Private.Config.s2sPass]);
+    // decode, the time, the same method and path
+    const rs = Private.checkS2SToken(s2sToken, _ctx.reqMethod, _ctx.reqPath, _ctx);
     if (rs.error) {
       return rs;
     }
-
     const s2sData = rs.value;
-    const invalid = (msg) => ({ status: 401, error: { message: msg, error: new Error(msg) } });
-
-    // check the time: a valid time, not older than the validity, not in the future (more than the clock skew)
-    const now = Date.now();
-    const time = Date.parse(s2sData.timestamp);
-    if (!Number.isFinite(time) || time + Private.S2STokenTTL < now || time > now + Private.S2STokenClockSkew) {
-      return invalid('Token is expired');
-    }
-
-    // check the token is for this request: the same method and path
-    const path = Private.getPath(s2sData.url);
-    if (s2sData.method !== _ctx.reqMethod || !path || path !== _ctx.reqPath) {
-      return invalid('Token is not for this request');
-    }
 
     // check the token is used only once
-    if (!s2sData.jti || !Private.useS2SToken(s2sData.jti, now)) {
-      return invalid('Token was already used');
+    if (!s2sData.jti || !Private.useS2SToken(s2sData.jti, Date.now())) {
+      return Private.invalid('Token was already used');
     }
 
     _ctx.initialMethod = s2sData._ctx.initialMethod || s2sData._ctx.reqMethod;
@@ -242,6 +263,20 @@ const Public = {
   },
 
   /**
+   * a request of another service: a valid service token for this request, not used yet (the route uses it, once:
+   * restValidation); the rate limits do not count the calls of the services
+   */
+  isS2SRequest: (req) => {
+    const s2sToken = req.headers?.['x-s2s-token'];
+    if (!s2sToken) {
+      return false;
+    }
+
+    const rs = Private.checkS2SToken(s2sToken, req.method?.toUpperCase(), req.path, {});
+    return !rs.error && !!rs.value.jti && !Private.UsedS2STokens.has(rs.value.jti);
+  },
+
+  /**
    * call either local or rest
    * config: { serviceName, method, path, query?, body?, headers?, localCall:{ fn, params?: {} } }
    * examples
@@ -261,8 +296,8 @@ const Public = {
   /**
    * get all
    * queryParams
-   * options: the options of the read (DbOpsUtils.getAll): passed to a local service, sent in the service token of a
-   * REST call
+   * options: { readPreference? } the options of the read (DbOpsUtils.getAll): passed to a local service, sent in the
+   *   service token of a REST call
    */
   getAll: async (serviceName, queryParams, _ctx, options) => {
     const localService = Private.Config.local[serviceName];
@@ -289,8 +324,8 @@ const Public = {
   /**
    * get all by ids with projection
    * projection: {id:1, name:1, ...}
-   * options: the options of the read (DbOpsUtils.getAllByIDs): passed to a local service, sent in the service token of
-   * a REST call
+   * options: { readPreference? } the options of the read (DbOpsUtils.getAllByIDs): passed to a local service, sent in
+   *   the service token of a REST call
    */
   getAllByIDs: async (serviceName, ids, projection, _ctx, options) => {
     const localService = Private.Config.local[serviceName];

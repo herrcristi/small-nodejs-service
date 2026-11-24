@@ -128,6 +128,30 @@ describe('Schools Service', function () {
   }).timeout(10000);
 
   /**
+   * a call of another service (the targets of its references) reads every school, the portal school too, with the
+   * options of its read
+   */
+  it('should not exclude the portal school for a call of another service', async () => {
+    // stub
+    sinon.stub(RestApiUtils, 'buildFilterFromReq').returns({
+      status: 200,
+      value: { filter: { id: { $in: [TestConstants.PortalSchoolID] } }, projection: { _id: 0 }, limit: 0, skip: 0 },
+    });
+    const stubRead = sinon.stub(DbOpsUtils, 'getAll').returns({ status: 200, value: [] });
+    const stubCount = sinon.stub(DbOpsUtils, 'getAllCount').returns({ status: 200, value: 0 });
+
+    // call
+    const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
+    const result = await SchoolsService.getAllForReq({ query: {}, isS2SCall: true }, _ctx, options);
+
+    // check: the filter of the call, read with its options
+    chai.expect(result.status).to.equal(200);
+    chai.expect(stubRead.firstCall.args[1].filter).to.deep.equal({ id: { $in: [TestConstants.PortalSchoolID] } });
+    chai.expect(stubRead.firstCall.args[3]).to.deep.equal(options);
+    chai.expect(stubCount.firstCall.args[3]).to.deep.equal(options);
+  }).timeout(10000);
+
+  /**
    * getAllForReq keeps the filter as it is when the portal school is not configured
    */
   it('should not change the filter when the portal school is not configured', async () => {

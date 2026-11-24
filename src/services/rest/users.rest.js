@@ -18,7 +18,7 @@ const Public = {
   /**
    * get all (internal) called from signup / invite by email
    * queryParams
-   * options: the options of the read (DbOpsUtils.getAll)
+   * options: { readPreference? } the options of the read (DbOpsUtils.getAll)
    */
   getAll: async (queryParams, _ctx, options) => {
     return await RestCommsUtils.getAll(UsersConstants.ServiceNameInternal, queryParams, _ctx, options);
@@ -26,7 +26,7 @@ const Public = {
 
   /**
    * get all by ids
-   * options: the options of the read, built by the caller (like { readPreference })
+   * options: { readPreference? } the options of the read, built by the caller
    */
   getAllByIDs: async (ids, projection, _ctx, options) => {
     return await RestCommsUtils.getAllByIDs(UsersConstants.ServiceNameInternal, ids, projection, _ctx, options);
@@ -58,7 +58,7 @@ const Public = {
 
   /**
    * get one (internal) called from users-auth
-   * options: the options of the read (DbOpsUtils.getAll), like { readPreference }
+   * options: { readPreference? } the options of the read (DbOpsUtils.getAll)
    */
   getOneByEmail: async (email, projection, _ctx, options) => {
     // the emails are stored normalized (lower case): look up the normalized value (a token, a setting, an old link)

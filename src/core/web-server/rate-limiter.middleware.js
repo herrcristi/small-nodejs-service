@@ -5,10 +5,12 @@
  * the client address is req.ip, which is the real client only when 'trust proxy' is configured (see
  * web-server.utils), otherwise the address of the proxy
  * the limits are given by the application (init); a missing or a wrong one is the default
+ * a call of another service (a valid service token) is not limited: the services call each other when they run apart
  */
 const { ipKeyGenerator } = require('express-rate-limit');
 
 const CommonUtils = require('../utils/common.utils.js');
+const RestCommsUtils = require('../utils/rest-communications.utils.js');
 
 const Private = {
   Window: 15 * 60 * 1000, // 15 minutes
@@ -38,7 +40,8 @@ const Private = {
     message: 'Too many requests, please try again later',
     standardHeaders: true,
     legacyHeaders: false,
-    skip: (req) => CommonUtils.isDebug(), // disable rate limiting in debug mode
+    // no limit in debug mode, nor for a call of another service (a valid service token: the services run apart)
+    skip: (req) => CommonUtils.isDebug() || RestCommsUtils.isS2SRequest(req),
   },
 };
 
