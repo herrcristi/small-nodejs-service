@@ -15,6 +15,7 @@ import Dashboard from '../components/base.dashboard.vue';
 
 import Login from '../components/api.user.login.vue';
 import ResetPassword from '../components/api.user.reset.password.vue';
+import SetupAccount from '../components/api.user.setup.account.vue';
 import TenantSelect from '../components/base.tenant.select.vue';
 import Profile from '../components/api.user.profile.vue';
 import SchoolSettings from '../components/api.school.settings.vue';
@@ -161,10 +162,18 @@ const Router = createRouter({
       props: (route) => ({ tenantID: route.query.tenantID, next: route.query.next || '/' }),
     },
     {
-      // the page of the emailed link (set the first password or reset it); the token is in the url fragment
+      // the page of the emailed link of a reset (set a new password); the token is in the url fragment
       path: '/reset-password',
       name: 'ResetPassword',
       component: ResetPassword,
+      meta: { requiresAuth: false, noLayout: true },
+    },
+    {
+      // the page of the emailed link of an invitation (set up the account: the first password and the profile); the
+      // token is in the url fragment
+      path: '/setup-account',
+      name: 'SetupAccount',
+      component: SetupAccount,
       meta: { requiresAuth: false, noLayout: true },
     },
     {

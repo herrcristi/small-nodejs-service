@@ -50,7 +50,7 @@ const apiFields = {
   fields: ['name', 'email', 'status'],
   projectionFields: ['name', 'email', 'status'],
   sortFields: ['name', 'email', 'status'],
-  filterFields: ['name', 'email'],
+  filterFields: ['name', 'email', '_lang.status'],
 };
 
 // the update is done by the edit dialog (the name and the status have different routes)

@@ -19,6 +19,7 @@ const UsersRest = require('../rest/users.rest.js');
 const EventsRest = require('../rest/events.rest.js');
 const SchoolsRest = require('../rest/schools.rest.js');
 const UsersAuthConstants = require('./users-auth.constants.js');
+const WebServerConstants = require('../../web-server/web-server.constants.js');
 const UsersAuthSessionsService = require('./users-auth.sessions.service.js'); // the sessions and the emailed links
 const UsersAuthServiceLocal = require('./users-local-auth.service.js'); // use local auth service
 const UsersAuthServiceFirebase = require('./users-firebase-auth.service.js'); // use firebase auth service
@@ -107,10 +108,12 @@ const Validators = {
 
   Invite: Joi.object().keys({
     username: ValidationUtils.email(),
+    language: Joi.string().valid(...WebServerConstants.Languages), // the language of the email
   }),
 
   ResetPassword: Joi.object().keys({
     username: ValidationUtils.email(),
+    language: Joi.string().valid(...WebServerConstants.Languages), // the language of the email
   }),
 
   ResetToken: Joi.object().keys({
@@ -119,14 +122,24 @@ const Validators = {
 
   PutResetPassword: Joi.object().keys({
     password: NewPassword.required(),
-    // TODO if resetType is invite provide all details
-    // name: Joi.string().min(1).max(128),
-    // birthday: Joi.date().iso(),
-    // phoneNumber: Joi.string()
-    //   .min(1)
-    //   .max(32)
-    //   .regex(/^(\d|\+|\-|\.|' ')*$/), // allow 0-9 + - . in any order
-    // address: Joi.string().min(1).max(256),
+  }),
+
+  // the account of an invited user: its first password and its profile (the same rules as the profile of the users
+  // service, Schema.UserProfile; a new user has no name yet: it is required)
+  PutSetupAccount: Joi.object().keys({
+    password: NewPassword.required(),
+    profile: Joi.object()
+      .keys({
+        name: Joi.string().trim().min(1).max(128).required(),
+        birthday: Joi.string().isoDate(),
+        phoneNumber: Joi.string()
+          .min(1)
+          .max(32)
+          .regex(/^(\d|\+|\-|\.|' ')*$/), // allow 0-9 + - . in any order
+        address: Joi.string().min(1).max(256),
+        language: Joi.string().valid(...WebServerConstants.Languages),
+      })
+      .required(),
   }),
 };
 
@@ -139,6 +152,7 @@ const Private = {
     Invite: 'invite',
     ResetPassword: 'resetPassword',
     PutResetPassword: 'putResetPassword',
+    SetupAccount: 'setupAccount', // the account of an invited user is set up (its first password and its profile)
     PutID: 'putID',
     PatchPassword: 'patchPassword',
     PatchID: 'patchID',
@@ -199,6 +213,109 @@ const Private = {
     // encrypt token again
     const rE = JwtUtils.encrypt(rT.value, Private.Issuer, _ctx);
     return { status: 200, value: rE.value };
+  },
+
+  /**
+   * check the token of an emailed link for its purpose: a reset link does not set up an account, a setup link does not
+   * reset a password (the same answer as a link that is not valid: 401)
+   * returns { status, value: { purpose, username, userID, linkID } } or { status, error }
+   */
+  checkLink: async (config, token, purpose, _ctx) => {
+    const tokenInfo = { token };
+    const v = Validators.ResetToken.validate(tokenInfo);
+    if (v.error) {
+      return CommonUtils.getSchemaValidationError(v, tokenInfo, _ctx);
+    }
+
+    const r = await Private.checkResetToken(config, v.value.token, _ctx);
+    if (r.error) {
+      return r;
+    }
+    if (r.value.purpose !== purpose) {
+      const msg = 'The link is not valid';
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
+    return r;
+  },
+
+  /**
+   * the page of an emailed link: its link can still be used (for its purpose)
+   * objInfo: { token }
+   * returns { status, value: { userID, username, type } } or { status, error }
+   */
+  validateLink: async (objInfo, purpose, _ctx) => {
+    // validate
+    const v = Validators.ResetToken.validate(objInfo);
+    if (v.error) {
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+
+    // config: { serviceName }
+    const config = await Private.getConfig(_ctx);
+
+    // check the token and its link
+    const r = await Private.checkLink(config, v.value.token, purpose, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    _ctx.username = r.value.username;
+    _ctx.userID = r.value.userID;
+    return { status: 200, value: { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type } };
+  },
+
+  /**
+   * put a password with an emailed link (for its purpose): the link is used once, the password is set, and all the
+   * sessions and the other links of the user are ended
+   * returns { status, value: { username, userID } } or { status, error }
+   */
+  putLinkPassword: async (token, purpose, password, _ctx) => {
+    // config: { serviceName }
+    const config = await Private.getConfig(_ctx);
+
+    // check the token and its link
+    const rT = await Private.checkLink(config, token, purpose, _ctx);
+    if (rT.error) {
+      return rT;
+    }
+
+    const username = rT.value.username;
+    const userID = rT.value.userID;
+    _ctx.username = username;
+    _ctx.userID = userID;
+
+    // use the link: its record is removed once, so a second use (also at the same time) is refused
+    const rUse = await UsersAuthSessionsService.end(rT.value.linkID, _ctx);
+    if (rUse.status === 404) {
+      const msg = 'The link is not valid anymore';
+      return { status: 401, error: { message: msg, error: new Error(msg) } };
+    }
+    if (rUse.error) {
+      return rUse;
+    }
+
+    // put the password
+    const r = await UsersAuthServiceLocal.putResetPassword(config, username, { password }, _ctx);
+    if (r.error) {
+      return r;
+    }
+
+    // the new password ends all the sessions and the other links of the user
+    const rEnd = await UsersAuthSessionsService.endAll(userID, _ctx);
+    if (rEnd.error) {
+      return rEnd;
+    }
+
+    return { status: 200, value: { username, userID } };
+  },
+
+  /**
+   * a password was set with an emailed link: its event and the modified notification
+   */
+  notifyPasswordSet: async (username, action, _ctx) => {
+    const newObj = { id: username, name: username, type: UsersAuthConstants.Type };
+    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, {} /*args*/, _ctx);
+    await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
   },
 
   /**
@@ -451,7 +568,7 @@ const Private = {
    * returns { status, value: { user, rr } } or { status, error }; rr: the answer of validateRoute
    */
   getSessionUser: async (email, objInfo, _ctx, options) => {
-    const userProjection = { id: 1, status: 1, name: 1, email: 1, schools: 1 };
+    const userProjection = { id: 1, status: 1, name: 1, email: 1, language: 1, schools: 1 };
     const rUserDetails = await UsersRest.getOneByEmail(email, userProjection, _ctx, options);
     if (rUserDetails.error) {
       return { ...rUserDetails, status: 401 };
@@ -617,7 +734,7 @@ const Public = {
     // get user details (by email)
     ///
     // read on the primary: a user activated, disabled or given a school by the request before decides the login
-    const userProjection = { id: 1, status: 1, name: 1, email: 1, schools: 1 };
+    const userProjection = { id: 1, status: 1, name: 1, email: 1, language: 1, schools: 1 };
     const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
     const rUserDetails = await UsersRest.getOneByEmail(objInfo.username, userProjection, _ctx, options);
     if (rUserDetails.error) {
@@ -677,6 +794,7 @@ const Public = {
         username: _ctx.username,
         status: user.status,
         name: user.name,
+        language: user.language, // the language of the UI chosen by the user (none: the default of the UI)
         schools: Private.getMemberships(user),
       },
     };
@@ -795,6 +913,7 @@ const Public = {
         tenantVerified: rr.tenantVerified, // false: the school of the request is not used (not a member)
         status: user.status,
         name: user.name,
+        language: user.language, // the language of the UI chosen by the user (none: the default of the UI)
         schools: Private.getMemberships(user),
       },
     };
@@ -1168,7 +1287,7 @@ const Public = {
 
   /**
    * send the invitation email to an existing user (the invite flow is in UsersAuthSignupService.invite)
-   * objInfo: { username }
+   * objInfo: { username, language? } language: of the email (none: the language of the request)
    */
   sendInvite: async (objInfo, _ctx) => {
     // validate
@@ -1183,7 +1302,7 @@ const Public = {
 
     const username = objInfo.username;
     const action = Private.Action.Invite;
-    const args = { emailType: 'invite' };
+    const args = { emailType: 'invite', language: objInfo.language || _ctx.lang };
 
     // at most one each EmailInterval
     const canSend = await Private.canSendEmail(config, username, args.emailType, _ctx);
@@ -1208,7 +1327,7 @@ const Public = {
 
   /**
    * reset password
-   * objInfo: { username }
+   * objInfo: { username, language? } language: of the email (none: the language of the request, the UI of the person)
    */
   resetPassword: async (objInfo, _ctx, resetType = UsersAuthConstants.ResetTokenType.ResetPassword, account = null) => {
     // validate
@@ -1223,7 +1342,7 @@ const Public = {
 
     const username = objInfo.username;
     const action = resetType;
-    const args = { emailType: resetType, resetType };
+    const args = { emailType: resetType, resetType, language: objInfo.language || _ctx.lang };
 
     // at most one each EmailInterval: the link sent before stays the valid one (a new link would replace it)
     const canSend = await Private.canSendEmail(config, username, args.emailType, _ctx);
@@ -1260,36 +1379,23 @@ const Public = {
   },
 
   /**
-   * validate reset token (only for local auth)
+   * validate the token of a reset link (only for local auth): the link of a reset of the password
    * objInfo: { token }
    */
   validateResetToken: async (objInfo, _ctx) => {
-    // validate
-    const v = Validators.ResetToken.validate(objInfo);
-    if (v.error) {
-      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
-    }
-    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
-
-    // config: { serviceName }
-    const config = await Private.getConfig(_ctx);
-
-    // check the token and its link
-    const r = await Private.checkResetToken(config, objInfo.token, _ctx);
-    if (r.error) {
-      return r;
-    }
-
-    _ctx.username = r.value.username;
-    _ctx.userID = r.value.userID;
-
-    // success (the purpose tells the page if the person sets a first password or resets it)
-    const value = { userID: _ctx.userID, username: _ctx.username, type: UsersAuthConstants.Type };
-    return { status: 200, value: { ...value, resetType: r.value.purpose } };
+    return await Private.validateLink(objInfo, UsersAuthConstants.ResetTokenType.ResetPassword, _ctx);
   },
 
   /**
-   * validate reset token and put reset password
+   * validate the token of a setup link (only for local auth): the link of an invitation, that sets up the account
+   * objInfo: { token }
+   */
+  validateSetupToken: async (objInfo, _ctx) => {
+    return await Private.validateLink(objInfo, UsersAuthConstants.ResetTokenType.Signup, _ctx);
+  },
+
+  /**
+   * put the password with the link of a reset (only a reset link)
    * objInfo: { password }
    */
   putResetPassword: async (resetToken, objInfo, _ctx) => {
@@ -1300,59 +1406,46 @@ const Public = {
     }
     objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
 
-    // validate the token
-    const resetTokenInfo = { token: resetToken };
-    const vT = Validators.ResetToken.validate(resetTokenInfo);
-    if (vT.error) {
-      return CommonUtils.getSchemaValidationError(vT, resetTokenInfo, _ctx);
-    }
-
-    // config: { serviceName }
-    const config = await Private.getConfig(_ctx);
-
-    // check the token and its link
-    const rT = await Private.checkResetToken(config, vT.value.token, _ctx);
-    if (rT.error) {
-      return rT;
-    }
-
-    const username = rT.value.username;
-    const userID = rT.value.userID;
-    _ctx.username = username;
-    _ctx.userID = userID;
-
-    // use the link: its record is removed once, so a second use (also at the same time) is refused
-    const rUse = await UsersAuthSessionsService.end(rT.value.linkID, _ctx);
-    if (rUse.status === 404) {
-      const msg = 'The link is not valid anymore';
-      return { status: 401, error: { message: msg, error: new Error(msg) } };
-    }
-    if (rUse.error) {
-      return rUse;
-    }
-
-    // put reset password
-    const putResetPasswordInfo = { password: objInfo.password };
-    let r = await UsersAuthServiceLocal.putResetPassword(config, username, putResetPasswordInfo, _ctx);
+    // the password, with the link
+    const purpose = UsersAuthConstants.ResetTokenType.ResetPassword;
+    const r = await Private.putLinkPassword(resetToken, purpose, objInfo.password, _ctx);
     if (r.error) {
       return r;
     }
 
-    // the new password ends all the sessions and the other links of the user
-    const rEnd = await UsersAuthSessionsService.endAll(userID, _ctx);
-    if (rEnd.error) {
-      return rEnd;
+    const username = r.value.username;
+    await Private.notifyPasswordSet(username, Private.Action.PutResetPassword, _ctx);
+    return { status: 200, value: { username, type: UsersAuthConstants.Type } };
+  },
+
+  /**
+   * set up the account with the link of an invitation (only a setup link): the first password and the profile of the
+   * user (its own: the user of the link); the profile is validated before the link is used
+   * objInfo: { password, profile: { name, birthday?, phoneNumber?, address?, language? } }
+   */
+  putSetupAccount: async (setupToken, objInfo, _ctx) => {
+    // validate
+    const v = Validators.PutSetupAccount.validate(objInfo);
+    if (v.error) {
+      return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
+    }
+    objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
+
+    // the first password, with the link
+    const purpose = UsersAuthConstants.ResetTokenType.Signup;
+    const r = await Private.putLinkPassword(setupToken, purpose, objInfo.password, _ctx);
+    if (r.error) {
+      return r;
     }
 
-    // raise event for put reset password
-    const newObj = { id: username, name: username, type: UsersAuthConstants.Type };
-    const action = Private.Action.PutResetPassword;
-    await EventsRest.raiseEventForObject(UsersAuthConstants.ServiceName, action, newObj, {} /*args*/, _ctx);
+    // the profile of the user
+    const rProfile = await UsersRest.put(r.value.userID, objInfo.profile, _ctx);
+    if (rProfile.error) {
+      return rProfile;
+    }
 
-    // raise a notification for modified obj
-    let rn = await UsersAuthRest.raiseNotification(Private.Notification.Modified, [newObj], _ctx);
-
-    // success
+    const username = r.value.username;
+    await Private.notifyPasswordSet(username, Private.Action.SetupAccount, _ctx);
     return { status: 200, value: { username, type: UsersAuthConstants.Type } };
   },
 

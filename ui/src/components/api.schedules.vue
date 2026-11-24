@@ -157,7 +157,7 @@ const apiFields = {
   fields: ['name', 'status', 'class.name'],
   projectionFields: ['name', 'status', 'class'],
   sortFields: ['name', 'status'],
-  filterFields: ['name', '_lang_en.status', 'class.name'],
+  filterFields: ['name', '_lang.status', 'class.name'],
   addFields: ['name', 'status', 'class'],
   editFields: ['name', 'status'],
 };

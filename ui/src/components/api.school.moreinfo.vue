@@ -39,6 +39,7 @@
       <v-card-text>
         <v-form ref="inviteForm" v-model="inviteFormValid">
           <v-text-field v-model="inviteEmail" :label="t('email')" :rules="[emailReqRule, emailValidRule]" required />
+          <LanguageSelect v-model="inviteLanguage" :label="t('invite.language')" />
         </v-form>
       </v-card-text>
       <v-card-actions>
@@ -63,6 +64,7 @@ import ApiTableData from './api.base.table.data.vue';
 import ApiUserEditDialog from './api.user.edit.dialog.vue';
 import ComponentsUtils from './components.utils.js';
 import { useI18n } from 'vue-i18n';
+import LanguageSelect from './base.language.select.vue';
 const { t, locale } = useI18n();
 
 /**
@@ -80,7 +82,7 @@ const adminsFields = {
   fields: ['name', 'email', 'status'],
   projectionFields: ['name', 'email', 'status'],
   sortFields: ['name', 'email', 'status'],
-  filterFields: ['name', 'email'],
+  filterFields: ['name', 'email', '_lang.status'],
 };
 
 /**
@@ -177,6 +179,7 @@ function openEdit(item) {
  */
 const inviteDialog = ref(false);
 const inviteEmail = ref('');
+const inviteLanguage = ref(null); // the language of the invitation (its email, a new user)
 const inviteForm = ref(null);
 const inviteFormValid = ref(false);
 
@@ -193,6 +196,7 @@ function openInvite() {
     return;
   }
   inviteEmail.value = '';
+  inviteLanguage.value = locale.value; // the language of the person who invites
   inviteDialog.value = true;
 }
 
@@ -212,14 +216,14 @@ async function invite() {
     }
   }
 
-  const apiFn = { create: (payload) => Api.inviteSchoolAdmin(props.itemID, payload.email) };
+  const apiFn = { create: (payload) => Api.inviteSchoolAdmin(props.itemID, payload.email, payload.language) };
   const snackbarO = { ref: snackbar, text: snackbarText, color: snackbarColor };
 
   // the dialog closes: the + shows the call
   inviteDialog.value = false;
 
   // the answer of an invite is the same for every case: the text says only that it was sent
-  const payload = { email: inviteEmail.value.trim() };
+  const payload = { email: inviteEmail.value.trim(), language: inviteLanguage.value };
   const ok = await ComponentsUtils.Edit.add(apiFn, payload, snackbarO, t, { successKey: 'invite.success' });
   if (ok) {
     await load();

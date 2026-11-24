@@ -36,6 +36,8 @@ const Public = {
       `${UsersAuthRest.Constants.ApiPath}/reset-password`,
       `${UsersAuthRest.Constants.ApiPath}/reset-token/validate`,
       `${UsersAuthRest.Constants.ApiPath}/reset-token/password`,
+      `${UsersAuthRest.Constants.ApiPath}/setup-token/validate`,
+      `${UsersAuthRest.Constants.ApiPath}/setup-token/account`,
     ];
     if (whitelistRoutes.includes(route)) {
       console.log(`\nRoute whitelisted: ${route}`);

@@ -1,6 +1,7 @@
 <template>
   <!--
-        the page of an emailed link: set the first password (invitation) or a new one (reset)
+        the page of the emailed link of a reset: set a new password (the link of an invitation opens the page that sets
+        up the account, api.user.setup.account.vue); the link carries its language (lang), the page is shown in it
         the token is in the fragment of the link (after #): it is read once, removed from the address bar, kept in memory
         and sent in a header, so it is never in a url that a server or the history keeps
   -->
@@ -8,7 +9,11 @@
     <v-row align="center" justify="center">
       <v-col cols="12" sm="8" md="4">
         <v-card>
-          <v-card-title>{{ title }}</v-card-title>
+          <v-card-title class="d-flex align-center">
+            {{ title }}
+            <v-spacer />
+            <LanguageMenu />
+          </v-card-title>
 
           <v-card-text>
             <div v-if="state === 'checking'">{{ t('password.reset.checking') }}</div>
@@ -69,6 +74,8 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import Api from '../api/api.js';
 import ComponentsUtils from './components.utils.js';
+import LanguageMenu from './base.language.menu.vue';
+import { setLanguage } from '../i18n.js';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
 
@@ -78,7 +85,6 @@ const router = useRouter();
  * state: checking (the link), valid (the form), invalid (used, expired or wrong), done (the password is set)
  */
 const state = ref('checking');
-const resetType = ref('reset-password');
 const username = ref('');
 const password = ref('');
 const passwordConfirm = ref('');
@@ -90,7 +96,7 @@ const error = ref('');
 // the token is kept only in memory
 let token = '';
 
-const title = computed(() => (resetType.value === 'signup' ? t('password.signup.title') : t('password.reset.title')));
+const title = computed(() => t('password.reset.title'));
 
 /**
  * rules
@@ -107,10 +113,9 @@ function readToken() {
   const fragment = globalThis.location.hash.replace(/^#/, '');
   const params = new URLSearchParams(fragment);
   const value = params.get('token') || '';
-  const type = params.get('type');
-  if (type) {
-    resetType.value = type;
-  }
+
+  // the page in the language of the link (the one of the request of the reset)
+  setLanguage(params.get('lang'));
 
   const path = globalThis.location.pathname;
   globalThis.history.replaceState(null, '', path);
@@ -130,9 +135,6 @@ async function checkToken() {
   try {
     const response = await Api.validateResetToken(token);
     username.value = response.data?.username || '';
-    if (response.data?.resetType) {
-      resetType.value = response.data.resetType;
-    }
     state.value = 'valid';
   } catch (e) {
     console.error('The reset link is not valid', e);

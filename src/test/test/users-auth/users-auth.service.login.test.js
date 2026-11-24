@@ -41,6 +41,7 @@ describe('Users Auth Service', function () {
 
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
     const testInfoUser = testInfoUsers[0];
+    testInfoUser.language = 'ro'; // the language of the UI chosen by the user: returned by the login
     for (const school of testInfoUser.schools) {
       school.status = SchoolsRest.Constants.Status.Active;
     }
@@ -136,6 +137,7 @@ describe('Users Auth Service', function () {
         username: testInfoUser.email,
         status: testInfoUser.status,
         name: testInfoUser.name,
+        language: testInfoUser.language,
         schools: testInfoUser.schools,
       },
       token: 'token',
@@ -244,6 +246,7 @@ describe('Users Auth Service', function () {
         username: testInfoUser.email,
         status: testInfoUser.status,
         name: testInfoUser.name,
+        language: testInfoUser.language,
         schools: testInfoUser.schools,
       },
       token: 'token',

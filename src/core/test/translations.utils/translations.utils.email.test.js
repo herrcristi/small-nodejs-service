@@ -40,7 +40,7 @@ describe('Translations Utils', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.en.subject).to.equal('Reset password');
     chai.expect(res.en.email).to.include('<!DOCTYPE html>');
-    chai.expect(res.ro.subject).to.equal('Reset password');
+    chai.expect(res.ro.subject).to.equal('Resetarea parolei'); // every language has its emails
     chai.expect(res.ro.email).to.include('<!DOCTYPE html>');
 
     // found (by lowercase)
@@ -48,7 +48,7 @@ describe('Translations Utils', function () {
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.en.subject).to.equal('Reset password');
     chai.expect(res.en.email).to.include('<!DOCTYPE html>');
-    chai.expect(res.ro.subject).to.equal('Reset password');
+    chai.expect(res.ro.subject).to.equal('Resetarea parolei');
     chai.expect(res.ro.email).to.include('<!DOCTYPE html>');
 
     // not found
@@ -63,7 +63,7 @@ describe('Translations Utils', function () {
     res = TranslationsUtils.email('invite', _ctx, { school: 'test-school' });
     console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
     chai.expect(res.en.subject).to.equal('You have been invited to test-school');
-    chai.expect(res.ro.subject).to.equal('You have been invited to test-school');
+    chai.expect(res.ro.subject).to.equal('Ai fost invitat în test-school');
   }).timeout(10000);
 
   /**
@@ -121,8 +121,10 @@ describe('Translations Utils', function () {
         );
 
       // subject: text as it is (not html), one line
-      chai.expect(res[lang].subject).to.equal(`You have been invited to ${school}`);
+      chai.expect(res[lang].subject).to.include(school);
     }
+    chai.expect(res.en.subject).to.equal(`You have been invited to ${school}`);
+    chai.expect(res.ro.subject).to.equal(`Ai fost invitat în ${school}`);
 
     // a line break in a value can not add a header to the subject
     const res2 = TranslationsUtils.email('invite', _ctx, { school: 'School\r\nBcc: other.user@testdomain.test' });

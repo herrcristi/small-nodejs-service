@@ -1,4 +1,5 @@
 import { useAppStore, useAuthStore } from './stores/stores.js';
+import { setLanguage } from './i18n.js';
 
 /**
  * Default processing of login response.
@@ -13,6 +14,9 @@ export async function processLoginResponse(response, options = {}) {
     // Persist minimal user info in-memory. Cookie-only mode: do not persist tokens.
     const s = useAuthStore();
     s.save({ raw: data });
+
+    // the UI in the language of the user (its profile)
+    setLanguage(data?.language);
 
     // if only one school is active, set it as current tenantID (the other schools, disabled or pending, can not be used)
     let tenantID = null;

@@ -410,9 +410,12 @@ const headers = computed(() => {
 
 /**
  * custom filter
+ * a translated field (_lang.status) is searched in the text shown: the translation of the UI, otherwise the one of the
+ * server, in the language of the UI
  */
 function customFilter(value, query, item) {
-  return ComponentUtils.findValue(props.filterFields, value, query, item);
+  const getShownText = (raw, path) => ComponentUtils.getStatusText(raw, path, t, te, locale.value);
+  return ComponentUtils.findValue(props.filterFields, value, query, item, getShownText);
 }
 
 /**

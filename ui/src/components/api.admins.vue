@@ -66,6 +66,14 @@
                   required
                 />
               </slot>
+
+              <slot name="edit.language" :itemData="itemData" :fieldsSet="fieldsSet">
+                <LanguageSelect
+                  v-if="fieldsSet.has('user.language')"
+                  v-model="itemData.language"
+                  :label="t('invite.language')"
+                />
+              </slot>
             </v-form>
           </v-card-text>
 
@@ -93,8 +101,9 @@ import Api from '../api/api.js';
 import { useAppStore, useAuthStore } from '../stores/stores.js';
 import ApiTableServer from './api.base.table.server.vue';
 import { useI18n } from 'vue-i18n';
+import LanguageSelect from './base.language.select.vue';
 import ComponentsUtils from './components.utils.js';
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 /**
  * props
@@ -119,8 +128,8 @@ const apiFields = {
   fields: ['user.name', 'user.status', 'user.email'],
   projectionFields: ['user.name', 'user.status', 'user.email'],
   sortFields: ['user.name', 'user.status', 'user.email'],
-  filterFields: ['user.name', 'user.status', 'user.email'],
-  addFields: ['user.email'],
+  filterFields: ['user.name', '_lang.user.status', 'user.email'],
+  addFields: ['user.email', 'user.language'], // the language of the invitation (its email, the new user)
   editFields: ['user.name'], // the status of a person is global: only a portal admin changes it
 };
 
@@ -232,6 +241,9 @@ function openAdd() {
   // defaults for new
   if (fieldsSet.value.has('user.status')) {
     itemData.status = 'active';
+  }
+  if (fieldsSet.value.has('user.language')) {
+    itemData.language = locale.value; // the language of the person who invites
   }
 
   editing.value = false;

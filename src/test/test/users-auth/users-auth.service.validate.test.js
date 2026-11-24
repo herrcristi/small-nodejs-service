@@ -44,6 +44,7 @@ describe('Users Auth Service', function () {
 
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
     const testInfoUser = testInfoUsers[0];
+    testInfoUser.language = 'ro'; // the language of the UI chosen by the user: returned with the session user
     for (const school of testInfoUser.schools) {
       school.name = school.id;
       school.status = SchoolsRest.Constants.Status.Active;
@@ -99,6 +100,7 @@ describe('Users Auth Service', function () {
         tenantName: testInfoUser.schools[0].name,
         tenantVerified: true,
         name: testInfoUser.name,
+        language: testInfoUser.language,
         schools: testInfoUser.schools,
       },
     });
@@ -432,6 +434,7 @@ describe('Users Auth Service', function () {
         tenantName: 'school-high2',
         tenantVerified: true,
         name: testInfoUser.name,
+        language: testInfoUser.language,
         schools: testInfoUser.schools,
       },
     });
@@ -552,6 +555,7 @@ describe('Users Auth Service', function () {
         tenantName: 'school-high2',
         tenantVerified: true,
         name: testInfoUser.name,
+        language: testInfoUser.language,
         schools: testInfoUser.schools,
       },
     });

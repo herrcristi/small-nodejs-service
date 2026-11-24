@@ -7,6 +7,7 @@
  */
 const CommonUtils = require('./common.utils.js');
 const DbOpsArrayUtils = require('./db-ops.array.utils.js');
+const TranslationsUtils = require('./translations.utils.js');
 
 const Constants = {
   // the options of a read that must see the writes just done: the reads go to the secondaries (the readPreference of
@@ -711,7 +712,8 @@ const Public = {
    * than the object (its modifiedCount is missing or smaller than the one of the object): a change that comes back
    * through a cycle of notifications, or a late notification of an older change, changes nothing
    * config: { serviceName, collection, maxTimeMS }
-   * ref: { fieldName }
+   * ref: { fieldName, translations? } (translations: the translated fields of the referenced object, written with it,
+   *   see TranslationsUtils.addReferenceTranslations)
    * objInfo: the object (projected), with its modifiedCount
    * return: { status, value: updated count, ids: [ the ids of the updated objects ] } or { status, error }
    */
@@ -727,6 +729,9 @@ const Public = {
       for (const key in objInfo) {
         setObj[`${updateField}.${key}`] = objInfo[key]; // schedules.$[schedules].location.id: ...
       }
+
+      // its translations (ref.translations: _lang_en.user.status), written with it
+      TranslationsUtils.addReferenceTranslations(setObj, ref, objInfo, _ctx);
 
       // only the older referenced objects: an object with a modifiedCount (without it: everywhere it is referenced)
       const hasModifiedCount = typeof objInfo.modifiedCount === 'number';

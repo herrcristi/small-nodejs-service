@@ -106,6 +106,15 @@
                 />
               </slot>
 
+              <!-- the language of the invitation (its email, the new user) -->
+              <slot name="edit.language" :itemData="itemData" :fieldsSet="fieldsSet">
+                <LanguageSelect
+                  v-if="fieldsSet.has('language')"
+                  v-model="itemData.language"
+                  :label="t('invite.language')"
+                />
+              </slot>
+
               <slot name="edit.status" :itemData="itemData" :fieldsSet="fieldsSet">
                 <v-select
                   v-if="fieldsSet.has('status')"
@@ -167,8 +176,9 @@ import ApiSchoolMoreInfo from './api.school.moreinfo.vue';
 import ApiUserEditDialog from './api.user.edit.dialog.vue';
 import ActionIcon from './base.action.icon.vue';
 import { useI18n } from 'vue-i18n';
+import LanguageSelect from './base.language.select.vue';
 import ComponentsUtils from './components.utils.js';
-const { t } = useI18n();
+const { t, locale } = useI18n();
 
 /**
  * props
@@ -189,8 +199,8 @@ const apiFields = {
   fields: ['name', 'status', 'description'],
   projectionFields: ['name', 'status', 'description'],
   sortFields: ['name', 'status'],
-  filterFields: ['name', '_lang_en.status', 'description'],
-  addFields: ['name', 'email', 'description'],
+  filterFields: ['name', '_lang.status', 'description'],
+  addFields: ['name', 'email', 'language', 'description'],
   editFields: ['name', 'status', 'description'],
 };
 
@@ -198,8 +208,8 @@ const portalAdminsFields = {
   fields: ['name', 'email', 'status'],
   projectionFields: ['name', 'email', 'status'],
   sortFields: ['name'],
-  filterFields: ['name', 'email'],
-  inviteFields: ['email'],
+  filterFields: ['name', 'email', '_lang.status'],
+  inviteFields: ['email', 'language'],
 };
 
 const fieldsSet = ref(new Set([]));
@@ -209,6 +219,7 @@ const apiFn = {
   create: (data) =>
     Api.signup({
       email: data.email,
+      language: data.language, // the language of the invitation of the first admin
       school: { name: data.name, description: data.description },
     }),
   update: Api.updateSchool,
@@ -218,7 +229,7 @@ const apiFn = {
 // and delete removes only the portal-admin role (the user account is kept)
 const portalAdminsApiFn = {
   getAll: Api.getPortalAdmins,
-  create: (data) => Api.invitePortalAdmin(data.email),
+  create: (data) => Api.invitePortalAdmin(data.email, data.language),
   delete: Api.removePortalAdmin,
 };
 
@@ -355,6 +366,7 @@ function openAdd() {
   resetForm();
   dialogMode.value = 'school';
   fieldsSet.value = new Set(apiFields.addFields);
+  itemData.language = locale.value; // the invitation in the language of the person who invites
 
   editing.value = false;
   dialog.value = true;
@@ -401,6 +413,7 @@ function openInvitePortalAdmin() {
   resetForm();
   dialogMode.value = 'portal';
   fieldsSet.value = new Set(portalAdminsFields.inviteFields);
+  itemData.language = locale.value; // the invitation in the language of the person who invites
 
   editing.value = false;
   dialog.value = true;

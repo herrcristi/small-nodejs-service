@@ -951,6 +951,39 @@ describe('Database Functional', function () {
   }).timeout(10000);
 
   /**
+   * updateManyReferences of a reference with translated fields (translations: user.status): the translations of the
+   * referenced object are written with it (_lang_en.user.status), the other translations of the object are kept
+   */
+  it('should updateManyReferences with the translations of the referenced object', async () => {
+    // the object that references the user U1, with its own translations
+    const config = { serviceName: 'ServiceTest', collection: database.collection('dbtests') };
+    await database.collection('dbtests').insertOne({
+      id: 'O1',
+      status: 'active',
+      user: { id: 'U1', name: 'Jane Smith', status: 'pending', modifiedCount: 1 },
+      _lang_en: { status: 'Active', user: { status: 'Pending' } },
+      _lang_ro: { status: 'Activ', user: { status: 'În așteptare' } },
+    });
+
+    // update the referenced U1: it is active
+    const ref = { fieldName: 'user', translations: ['status'] };
+    const objInfo = { id: 'U1', name: 'Jane Smith', status: 'active', modifiedCount: 2 };
+    const res = await DBOpsUtils.updateManyReferences(config, ref, objInfo, _ctx);
+    console.log(`\nTest returned: ${JSON.stringify(res, null, 2)}\n`);
+
+    // check: the referenced user, with the translations of its status, and the translations of the object
+    chai.expect(res.ids).to.deep.equal(['O1']);
+    const object = await database
+      .collection('dbtests')
+      .findOne({ id: 'O1' }, { projection: { _id: 0, user: 1, _lang_en: 1, _lang_ro: 1 } });
+    chai.expect(object).to.deep.equal({
+      user: { id: 'U1', name: 'Jane Smith', status: 'active', modifiedCount: 2 },
+      _lang_en: { status: 'Active', user: { status: 'Active' } },
+      _lang_ro: { status: 'Activ', user: { status: 'Activ' } },
+    });
+  }).timeout(10000);
+
+  /**
    * updateManyReferences of the referenced objects in an array with a modifiedCount: only the older ones are updated,
    * the other referenced objects of the same array are not changed
    */

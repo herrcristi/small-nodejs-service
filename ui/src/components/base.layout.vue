@@ -5,6 +5,9 @@
 
       <v-spacer />
 
+      <!-- the language of the UI (kept in the profile of the user) -->
+      <LanguageMenu :userID="userID" />
+
       <div class="d-flex align-center">
         <v-menu offset-y>
           <template #activator="{ props }">
@@ -127,6 +130,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useAuthStore, useAppStore } from '../stores/stores.js';
 import Api from '../api/api.js';
 import { useI18n } from 'vue-i18n';
+import LanguageMenu from './base.language.menu.vue';
 const { t } = useI18n();
 
 /**
@@ -167,6 +171,11 @@ const breadcrumbs = computed(() => {
     return { text: p.charAt(0).toUpperCase() + p.slice(1), to: accPath };
   });
 });
+
+/**
+ * the user logged in (its profile keeps the language of the UI)
+ */
+const userID = computed(() => authStore?.raw?.userID || null);
 
 /**
  * userName

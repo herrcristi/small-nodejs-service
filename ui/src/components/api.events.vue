@@ -91,7 +91,7 @@ const apiFields = {
   fields: ['severity', 'message', 'createdTimestamp'],
   projectionFields: ['severity', 'user', 'target', 'createdTimestamp'],
   sortFields: ['severity', 'user.username', 'target.name', '_lang_en.message', 'createdTimestamp'],
-  filterFields: ['_lang_en.severity', 'user.username', 'target.name', '_lang_en.message', 'createdTimestamp'],
+  filterFields: ['_lang.severity', 'user.username', 'target.name', '_lang.message', 'createdTimestamp'],
 };
 
 const apiFn = {

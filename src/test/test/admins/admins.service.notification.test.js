@@ -172,10 +172,19 @@ describe('Admins Service', function () {
     chai.expect(stubDelete.callCount).to.equal(1);
     chai.expect(stubDelete.firstCall.args[1]).to.equal('user4');
 
-    // check: the traces, only the status of the referenced user (the one that was already a trace is not changed)
+    // check: the traces, only the status of the referenced user with its translations (the one that was already a
+    // trace is not changed)
     chai.expect(stubPut.args.map((args) => args[1])).to.deep.equal(['user1', 'user2']);
-    chai.expect(stubPut.firstCall.args[2]).to.deep.equal({ 'user.status': 'removed' });
-    chai.expect(stubPut.secondCall.args[2]).to.deep.equal({ 'user.status': 'deleted' });
+    chai.expect(stubPut.firstCall.args[2]).to.deep.equal({
+      'user.status': 'removed',
+      '_lang_en.user.status': 'Removed',
+      '_lang_ro.user.status': 'Eliminat',
+    });
+    chai.expect(stubPut.secondCall.args[2]).to.deep.equal({
+      'user.status': 'deleted',
+      '_lang_en.user.status': 'Deleted',
+      '_lang_ro.user.status': 'Șters',
+    });
     chai.expect(getEventsActions()).to.have.members(['delete', 'remove', 'accountDeleted']);
   }).timeout(10000);
 

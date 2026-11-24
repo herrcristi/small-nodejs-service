@@ -75,6 +75,7 @@ describe('Users Auth Service', function () {
       chai.expect(userReq).to.deep.equal({
         id: userReq.id, // a new id, given by the invite
         email: testUser.email,
+        language: 'en', // the language of the invitation: the one of the request (the UI of the person who invites)
         schools: [
           {
             id: _ctx.tenantID,
@@ -120,6 +121,7 @@ describe('Users Auth Service', function () {
 
       chai.expect(objInfo).to.deep.equal({
         username: testUser.email,
+        language: 'en', // the language of the invitation: the one of the request
       });
 
       return {
@@ -133,6 +135,7 @@ describe('Users Auth Service', function () {
 
       chai.expect(objInfo).to.deep.equal({
         username: testUser.email,
+        language: 'en', // the language of the invitation: the one of the request
       });
 
       return {
@@ -254,6 +257,7 @@ describe('Users Auth Service', function () {
       chai.expect(userReq).to.deep.equal({
         id: userReq.id, // a new id, given by the invite
         email,
+        language: 'en', // the language of the request
         schools: [{ id: TestConstants.PortalSchoolID, roles: [UsersRest.Constants.Roles.PortalAdmin] }],
       });
       return { status: 201, value: { id: testUserID, email, type: UsersRest.Constants.Type } };
@@ -397,6 +401,7 @@ describe('Users Auth Service', function () {
 
       chai.expect(objInfo).to.deep.equal({
         username: testUser.email,
+        language: 'en', // the language of the invitation: the one of the request
       });
 
       return {
@@ -607,6 +612,7 @@ describe('Users Auth Service', function () {
 
       chai.expect(objInfo).to.deep.equal({
         username: testUser.email,
+        language: 'en', // the language of the invitation: the one of the request
       });
 
       return {
@@ -690,6 +696,33 @@ describe('Users Auth Service', function () {
     }).timeout(10000);
 
     /**
+     * the language of the invitation: the one chosen (the new user gets it, its email is in it), otherwise the one of the
+     * request when the application has it (none: the user has the default of the UI)
+     */
+    it('should invite in the language chosen, otherwise in the one of the request', async () => {
+      // stub: a new user (not found), its post, its login and the email
+      sinon.stub(UsersRest, 'getOneByEmail').returns({ status: 404, error: { message: 'Not found' } });
+      const stubUsersPost = sinon
+        .stub(UsersRest, 'post')
+        .returns({ status: 201, value: { id: 'user1', email, type: UsersRest.Constants.Type } });
+      sinon.stub(UsersAuthService, 'post').returns({ status: 201, value: { username: email, userID: 'user1' } });
+      const stubReset = sinon.stub(UsersAuthService, 'resetPassword').returns({ status: 200, value: true });
+      const ctx = { reqID: 'testReq', lang: 'en', tenantID: 'school1', tenantName: 'School One' };
+
+      // call: Romanian chosen (the UI of the person who invites is in English)
+      await UsersAuthSignupService.invite({ email, language: 'ro', school: { role: 'student' } }, ctx);
+
+      // check: the new user and its email in Romanian
+      chai.expect(stubUsersPost.firstCall.args[0].language).to.equal('ro');
+      chai.expect(stubReset.firstCall.args[0]).to.deep.equal({ username: email, language: 'ro' });
+
+      // case: none chosen, a language of the request the application does not have
+      await UsersAuthSignupService.invite({ email, school: { role: 'student' } }, { ...ctx, lang: 'fr' });
+      chai.expect(stubUsersPost.secondCall.args[0].language).to.equal(undefined);
+      chai.expect(stubReset.secondCall.args[0].language).to.equal(undefined);
+    }).timeout(10000);
+
+    /**
      * a new user is created as admin of the named school, and its email names that school
      */
     it('should invite a new user as admin of the school', async () => {
@@ -710,6 +743,7 @@ describe('Users Auth Service', function () {
       chai.expect(stubUsersPost.firstCall.args[0]).to.deep.equal({
         id: stubUsersPost.firstCall.args[0].id, // a new id, given by the invite
         email,
+        language: 'en', // the language of the request
         schools: [{ id: 'school1', roles: ['admin'] }],
       });
       chai.expect(stubReset.firstCall.args[1]).to.include({ tenantID: 'school1', tenantName: 'School One' });
@@ -834,7 +868,7 @@ describe('Users Auth Service', function () {
     chai.expect(getByEmail.firstCall.args[0]).to.equal('john.doe@testdomain.test');
     chai.expect(post.firstCall.args[0].email).to.equal('john.doe@testdomain.test');
     chai.expect(authPost.firstCall.args[0].username).to.equal('john.doe@testdomain.test');
-    chai.expect(reset.firstCall.args[0]).to.deep.equal({ username: 'john.doe@testdomain.test' });
+    chai.expect(reset.firstCall.args[0]).to.deep.equal({ username: 'john.doe@testdomain.test', language: 'en' });
   }).timeout(10000);
 
   describe('the account state decides the email; an interrupted invite is completed', function () {

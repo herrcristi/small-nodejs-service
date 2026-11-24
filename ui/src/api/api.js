@@ -1,11 +1,12 @@
 import axios from 'axios';
 import { useAuthStore, useAppStore } from '../stores/stores.js';
 import { processLoginResponse, getRolesPermissions } from '../auth.js';
+import i18n from '../i18n.js';
 
 import { SMALL_API_URL, SMALL_API_CORS_ORIGIN } from './api.url.js';
 
 // the pages that are opened without a session
-const PublicPages = ['/login', '/reset-password'];
+const PublicPages = ['/login', '/reset-password', '/setup-account'];
 
 // Default to sending credentials (cookies). Server must allow credentials and a specific origin.
 const instance = axios.create({
@@ -19,10 +20,13 @@ const instance = axios.create({
 instance.interceptors.request.use((config) => {
   try {
     const tenantID = useAppStore()?.tenantID;
+    config.headers = config.headers || {};
     if (tenantID) {
-      config.headers = config.headers || {};
       config.headers['x-tenant-id'] = tenantID;
     }
+
+    // the language of the UI: a search of a translated field (_lang_<language>.status) is done in the language shown
+    config.headers['x-lang'] = i18n.global.locale.value;
     // Do NOT add Authorization header; authentication is cookie-based (HttpOnly).
   } catch (e) {
     // ignore
@@ -116,6 +120,7 @@ const Api = {
   createAdmin: (data) =>
     Api.invite({
       email: data.email /*new user email*/,
+      language: data.language, // the language of the invitation (none: the one of the UI)
       school: { role: 'admin' },
     }),
   updateAdmin: (id, data) => Api.updateUser(id, data),
@@ -127,6 +132,7 @@ const Api = {
   createStudent: (data) =>
     Api.invite({
       email: data.email /*new user email*/,
+      language: data.language, // the language of the invitation (none: the one of the UI)
       school: { role: 'student' },
     }),
   updateStudent: (id, data) => Api.updateUser(id, data),
@@ -151,6 +157,7 @@ const Api = {
   createProfessor: (data) =>
     Api.invite({
       email: data.email /*new user email*/,
+      language: data.language, // the language of the invitation (none: the one of the UI)
       school: { role: 'professor' },
     }),
   updateProfessor: (id, data) => Api.updateUser(id, data),
@@ -292,6 +299,11 @@ const Api = {
     instance.get(`/users-auth/reset-token/validate`, { headers: { 'x-reset-token': token } }),
   setPasswordWithResetToken: (token, password) =>
     instance.put(`/users-auth/reset-token/password`, { password }, { headers: { 'x-reset-token': token } }),
+  // the link of an invitation: set up the account (the first password and the profile); its own header
+  validateSetupToken: (token) =>
+    instance.get(`/users-auth/setup-token/validate`, { headers: { 'x-setup-token': token } }),
+  setupAccount: (token, password, profile) =>
+    instance.put(`/users-auth/setup-token/account`, { password, profile }, { headers: { 'x-setup-token': token } }),
 
   currentUsername: () => useAuthStore()?.raw?.username /*current username*/,
 
@@ -309,14 +321,16 @@ const Api = {
   getPortalAdmins: (params) => instance.get(`/users/portal-admins?${params}`),
   getSchoolAdmins: (schoolID, params) => instance.get(`/users/school-admins/${schoolID}?${params}`), // portal admin only
   // invites a user as admin of that school (the same invite, for the named school)
-  inviteSchoolAdmin: (schoolID, email) => Api.invite({ email, school: { id: schoolID, role: 'admin' } }), // portal admin only
+  // language: of the invitation (its email, a new user; none: the one of the UI)
+  inviteSchoolAdmin: (schoolID, email, language) =>
+    Api.invite({ email, language, school: { id: schoolID, role: 'admin' } }), // portal admin only
   // removes the admin role on that school (the user is kept), also the last admin (a new one can be invited)
   removeSchoolAdmin: (schoolID, userID) => instance.delete(`/users/school-admins/${schoolID}/${userID}`), // portal admin only
   removePortalAdmin: (userID) => Api.updateUserSchool(userID, { remove: { roles: ['portal-admin'] } }),
 
   // Auth for portal admin
   // invite a user to the portal school (selected tenant), the user becomes portal admin
-  invitePortalAdmin: (email) => Api.invite({ email, school: { role: 'portal-admin' } }),
+  invitePortalAdmin: (email, language) => Api.invite({ email, language, school: { role: 'portal-admin' } }),
 
   // signup new school
   signup: (data) => instance.post(`/users-auth/signup`, data),

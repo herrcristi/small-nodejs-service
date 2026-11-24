@@ -13,6 +13,7 @@ const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
+const UsersRest = require('../../../services/rest/users.rest.js');
 const EventsRest = require('../../../services/rest/events.rest.js');
 const UsersLocalAuthService = require('../../../services/users-auth/users-local-auth.service.js');
 const UsersAuthSessionsService = require('../../../services/users-auth/users-auth.sessions.service.js');
@@ -287,5 +288,69 @@ describe('Users Auth Service', function () {
       status: 500,
       error: { message: 'Test error message', error: new Error('Test error') },
     });
+  }).timeout(10000);
+
+  /**
+   * the link of an invitation sets up the account: the first password and the profile of the user (its own); the link
+   * of a reset does not (refused before the link is used), the profile is required and validated first, and a reset does
+   * not take a profile
+   */
+  it('should putSetupAccount with the link of an invitation', async () => {
+    const testUser = _.cloneDeep(TestConstants.UsersAuth)[0];
+    const password = testUser._test_data.origPassword + 'aA1!';
+    const profile = { name: 'Jane Smith', birthday: '1990-05-01T00:00:00.000Z', language: 'ro' };
+
+    // stub: the link of an invitation, the password, the profile
+    const link = { id: 'link1', purpose: 'signup', userID: testUser.userID, username: testUser.id };
+    sinon.stub(UsersAuthSessionsService, 'check').resolves({ status: 200, value: link });
+    const stubEnd = sinon.stub(UsersAuthSessionsService, 'end').resolves({ status: 200, value: { id: 'link1' } });
+    sinon.stub(UsersAuthSessionsService, 'endAll').resolves({ status: 200, value: 1 });
+    sinon.stub(DbOpsUtils, 'put').resolves({ status: 200, value: { ...testUser } });
+    const stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').resolves();
+    sinon.stub(UsersAuthRest, 'raiseNotification').resolves();
+    const stubProfile = sinon.stub(UsersRest, 'put').resolves({ status: 200, value: { id: testUser.userID } });
+    const setupToken = getResetToken(testUser, 'signup');
+
+    // call
+    const res = await UsersAuthService.putSetupAccount(setupToken, { password, profile }, { ..._ctx });
+
+    // check: the password and the profile of the user of the link (its own: the user of the request), its event
+    chai.expect(res).to.deep.equal({ status: 200, value: { username: testUser.id, type: UsersAuthConstants.Type } });
+    chai.expect(stubProfile.firstCall.args.slice(0, 2)).to.deep.equal([testUser.userID, profile]);
+    chai.expect(stubProfile.firstCall.args[2].userID).to.equal(testUser.userID);
+    chai.expect(stubEvent.firstCall.args[1]).to.equal('setupAccount');
+
+    // case: the profile can not be saved
+    stubProfile.resolves({ status: 500, error: { message: 'Database failure' } });
+    const resFail = await UsersAuthService.putSetupAccount(setupToken, { password, profile }, { ..._ctx });
+    chai.expect(resFail.status).to.equal(500);
+
+    // case: the link of a reset: refused before the link is used
+    link.purpose = 'reset-password';
+    stubEnd.resetHistory();
+    const resReset = await UsersAuthService.putSetupAccount(
+      getResetToken(testUser),
+      { password, profile },
+      { ..._ctx }
+    );
+    chai.expect(resReset.status).to.equal(401);
+    chai.expect(stubEnd.callCount).to.equal(0);
+
+    // case: a profile that is not valid, or none (a new user has no name yet: it is required)
+    for (const wrong of [{ name: 'Jane', language: 'fr' }, { name: 'Jane', birthday: 'yesterday' }, {}, undefined]) {
+      const resWrong = await UsersAuthService.putSetupAccount(setupToken, { password, profile: wrong }, { ..._ctx });
+      chai.expect(resWrong.status, JSON.stringify(wrong)).to.equal(400);
+    }
+    chai.expect(stubEnd.callCount).to.equal(0);
+
+    // case: a reset does not take a profile
+    const resProfile = await UsersAuthService.putResetPassword(
+      getResetToken(testUser),
+      { password, profile },
+      {
+        ..._ctx,
+      }
+    );
+    chai.expect(resProfile.status).to.equal(400);
   }).timeout(10000);
 });

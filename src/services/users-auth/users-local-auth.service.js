@@ -412,7 +412,8 @@ const Public = {
   /**
    * send email
    * config: { serviceName }
-   * args: { token, resetType, emailType }
+   * args: { token, resetType, emailType, language } language: of the email and of the page of its link (an unknown one:
+   *   English)
    * returns { status, value } or { status, error } (the email could not be delivered to the mail server)
    */
   sendEmail: async (config, username, args, _ctx) => {
@@ -426,18 +427,22 @@ const Public = {
       appUrl: uiUrl,
     };
 
-    // the link opens the page of the UI that sets the password; the token is in the fragment (after #), which the
-    // browser never sends to a server, so it is not in the logs or the history of a server
+    // the link opens the page of the UI for its purpose: an invitation sets up the account (setup-account), a reset
+    // sets the password (reset-password); the token is in the fragment (after #), which the browser never sends to a
+    // server, so it is not in the logs or the history of a server; the page opens in the language of the email
     if (args.resetType != null) {
-      const type = encodeURIComponent(args.resetType);
+      const page = args.resetType === UsersAuthConstants.ResetTokenType.Signup ? 'setup-account' : 'reset-password';
       const token = encodeURIComponent(args.token);
-      emailArgs.resetUrl = `${uiUrl}/reset-password#type=${type}&token=${token}`;
+      const lang = encodeURIComponent(args.language);
+      emailArgs.resetUrl = `${uiUrl}/${page}#token=${token}&lang=${lang}`;
     }
 
-    let emailTemplate = TranslationsUtils.email(args.emailType, _ctx, emailArgs);
+    // the email in its language (an unknown one: English)
+    const emailTemplates = TranslationsUtils.email(args.emailType, _ctx, emailArgs);
+    const email = emailTemplates[args.language] || emailTemplates['en'];
 
     // send email (the result tells if it was delivered to the mail server)
-    return await EmailsUtils.sendEmail(username, emailTemplate['en'].subject, emailTemplate['en'].email, _ctx);
+    return await EmailsUtils.sendEmail(username, email.subject, email.email, _ctx);
   },
 };
 

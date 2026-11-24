@@ -4,6 +4,7 @@
 
 const CommonUtils = require('./common.utils.js');
 const DbOpsUtils = require('./db-ops.utils.js');
+const TranslationsUtils = require('./translations.utils.js');
 
 const Utils = {
   /**
@@ -117,7 +118,8 @@ const Utils = {
 const Public = {
   /**
    * populate the field by getting the detail info via rest
-   * config: {fieldName, service, projection}
+   * config: { fieldName, service, projection, translations? } (translations: the translated fields of the referenced
+   *   object, see TranslationsUtils.addReferenceTranslations)
    * writtenTarget: the target of this reference written by the same request, as its write answered it (passed by the
    * caller that has it, never from a request): the reference to it is filled from it, it is not read again (a
    * secondary may not have it yet); the other targets are read
@@ -176,9 +178,10 @@ const Public = {
       }
     }
 
-    // update info
+    // update info, with the translations of the referenced object (configRef.translations: _lang_en.user.status)
     for (let i in objs) {
       Utils.populate(targetsMap, objs[i], fieldsPath, 0);
+      TranslationsUtils.addReferenceTranslations(objs[i], configRef, objs[i][configRef.fieldName], _ctx);
     }
 
     console.log(`\nTargets expanded for field '${configRef.fieldName}'`);
@@ -188,7 +191,7 @@ const Public = {
 
   /**
    * populate references
-   * config: { ..., fillReferences, references: [ {fieldName, service, projection} ] }
+   * config: { ..., fillReferences, references: [ { fieldName, service, projection, translations? } ] }
    * writtenTargets: { [fieldName]: target } the targets written by the same request, by the reference that points to
    * them (see populate)
    */

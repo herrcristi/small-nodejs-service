@@ -185,6 +185,23 @@ const Public = {
     }
     return obj;
   },
+
+  /**
+   * add the translations of a referenced object to the object that references it, wherever the reference is written
+   * (as patch, like addTranslations): its translated fields (ref.translations) are added as _lang_en.user.status,
+   * searched in the language of the request like the fields of the object
+   * only for a reference to one object at the top of the object (user, not classes[] or schedules[].location)
+   * ref: { fieldName, translations?: [ the translated fields of the referenced object ] }, like { fieldName: 'user',
+   *   translations: ['status'] }
+   * refObj: the referenced object (or its changed fields), like { status: 'active' }
+   */
+  addReferenceTranslations: (obj, ref, refObj, _ctx) => {
+    const translations = {};
+    for (const field of ref.translations || []) {
+      translations[`${ref.fieldName}.${field}`] = Public.string(refObj?.[field], _ctx);
+    }
+    return Public.addTranslations(obj, translations, _ctx);
+  },
 };
 
 module.exports = { ...Public };

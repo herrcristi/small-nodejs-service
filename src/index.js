@@ -7,6 +7,7 @@ const path = require('path');
 const CommonUtils = require('./core/utils/common.utils.js');
 const TranslationsUtils = require('./core/utils/translations.utils.js');
 const WebServer = require('./web-server/web-server.js');
+const WebServerConstants = require('./web-server/web-server.constants.js');
 const ConfigServices = require('./services/config.services.js');
 
 const { EventEmitter } = require('events');
@@ -15,8 +16,6 @@ const { EventEmitter } = require('events');
  * constants
  */
 const Constants = {
-  Languages: ['en', 'ro'],
-
   event: new EventEmitter(),
 };
 
@@ -133,7 +132,7 @@ const Public = {
       await Public.initEnv();
 
       // init language
-      for (const lang of Constants.Languages) {
+      for (const lang of WebServerConstants.Languages) {
         const stringsFile = path.resolve(__dirname, `translations/${lang}.json`);
         await TranslationsUtils.initStrings(lang, stringsFile);
         const emailsFile = path.resolve(__dirname, `translations/${lang}.emails.json`);

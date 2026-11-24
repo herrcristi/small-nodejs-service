@@ -70,6 +70,7 @@
   "users-auth.putpassword": "Utilizatorul '{target}' și-a schimbat parola",
   "users-auth.putresetpassword": "Utilizatorul '{target}' și-a setat parola cu linkul primit pe email",
   "users-auth.reset-password": "Un email pentru resetarea parolei a fost trimis la '{target}'",
+  "users-auth.setupaccount": "Utilizatorul '{target}' și-a configurat contul cu linkul primit pe email",
   "users-auth.signup": "Utilizatorul '{target}' a fost invitat de '{user}' și a primit emailul pentru setarea parolei",
   "users-auth.signup.failed": "Școala '{school}' cu adminul '{target}' nu a putut fi creată de '{user}': {reason}",
   "users.activate": "Utilizatorul '{target}' a fost activat la prima autentificare",

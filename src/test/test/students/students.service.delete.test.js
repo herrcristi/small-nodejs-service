@@ -67,7 +67,12 @@ describe('Students Service', function () {
     chai
       .expect(stubRole.firstCall.args[1])
       .to.deep.equal({ remove: { schools: [{ id: 'school1', roles: ['student'] }] } });
-    chai.expect(stubPut.firstCall.args[2]).to.deep.equal({ 'user.status': 'removed' });
+    // the status of the referenced user, with its translations (searched in the language of the UI)
+    chai.expect(stubPut.firstCall.args[2]).to.deep.equal({
+      'user.status': 'removed',
+      '_lang_en.user.status': 'Removed',
+      '_lang_ro.user.status': 'Eliminat',
+    });
     chai.expect(EventsRest.raiseEventForObject.firstCall.args[1]).to.equal('remove');
   }).timeout(10000);
 

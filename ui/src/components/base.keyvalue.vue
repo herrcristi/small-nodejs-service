@@ -16,7 +16,10 @@
       </template>
 
       <template #item.key="{ item }">{{ item.translate ? t(item.key) : item.key }}</template>
-      <template #item.value="{ item }">{{ item.value }}</template>
+      <template #item.value="{ item }">
+        <!-- a language: with its flag -->
+        <LanguageFlag v-if="item.language" :language="item.language" class="mr-2" />{{ item.value }}
+      </template>
     </v-data-table>
   </v-card>
 </template>
@@ -24,13 +27,14 @@
 <script setup>
 import { defineProps, computed } from 'vue';
 import { useI18n } from 'vue-i18n';
+import LanguageFlag from './base.language.flag.vue';
 const { t } = useI18n();
 
 /**
  * props
  */
 const props = defineProps({
-  items: { type: Array, default: () => [] },
+  items: { type: Array, default: () => [] }, // { key, value, translate?, language? (the code of a language: its flag) }
   title: { type: String, default: 'Properties' },
   loading: { type: Boolean, default: false },
 });

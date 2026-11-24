@@ -44,9 +44,7 @@ describe('Users Local Auth Service', function () {
 
     chai.expect(sent[0].body).to.include('TOKEN_OF_USER_1');
     // the link opens the page of the UI, with the token in the fragment (never sent to a server)
-    chai
-      .expect(sent[0].body)
-      .to.include(`${process.env.SMALL_UI_URL}/reset-password#type=signup&amp;token=TOKEN_OF_USER_1`);
+    chai.expect(sent[0].body).to.include(`${process.env.SMALL_UI_URL}/setup-account#token=TOKEN_OF_USER_1`);
     chai.expect(sent[0].body).to.not.include('reset-token/validate');
     chai.expect(sent[0].body).to.not.include('TOKEN_OF_USER_2');
     chai.expect(sent[0].body).to.include('School One');
@@ -134,5 +132,39 @@ describe('Users Local Auth Service', function () {
     chai.expect(conditions[0]).to.deep.equal({ 'emailTimestamps.invite': { $exists: false } });
     const sentBefore = new Date(conditions[1]['emailTimestamps.invite'].$lt).getTime();
     chai.expect(sentBefore).to.equal(new Date(sentAt).getTime() - UsersAuthConstants.EmailInterval * 1000);
+  }).timeout(10000);
+
+  /**
+   * the email is in its language (the one of the invitation, or of the request), and its link opens the page in it; an
+   * unknown language: English
+   */
+  it('should send the email in its language with the language in the link', async () => {
+    sinon.stub(UsersAuthDatabase, 'collection').resolves(null);
+    const sent = [];
+    sinon.stub(EmailsUtils, 'sendEmail').callsFake((to, subject, body) => {
+      sent.push({ to, subject, body });
+    });
+
+    const config = { serviceName: UsersAuthConstants.ServiceName };
+    const ctx = { reqID: 'testReq', lang: 'en', tenantName: 'School One' };
+    const args = { emailType: 'signup', resetType: 'signup', token: 'TOKEN' };
+
+    // call: in Romanian, then in a language the application does not have
+    await UsersLocalAuthService.sendEmail(config, 'user1@testdomain.test', { ...args, language: 'ro' }, ctx);
+    await UsersLocalAuthService.sendEmail(config, 'user2@testdomain.test', { ...args, language: 'fr' }, ctx);
+
+    // check: the Romanian email, its link opens the page in Romanian
+    chai.expect(sent[0].subject).to.equal('Ai fost invitat în School One');
+    chai.expect(sent[0].body).to.include('Configurează contul');
+    chai.expect(sent[0].body).to.include('/setup-account#token=TOKEN&amp;lang=ro');
+
+    // check: English for an unknown language
+    chai.expect(sent[1].subject).to.equal('You have been invited to School One');
+    chai.expect(sent[1].body).to.include('Set up account');
+
+    // case: the link of a reset opens the page that resets the password
+    const resetArgs = { emailType: 'reset-password', resetType: 'reset-password', token: 'TOKEN', language: 'en' };
+    await UsersLocalAuthService.sendEmail(config, 'user1@testdomain.test', resetArgs, ctx);
+    chai.expect(sent[2].body).to.include(`${process.env.SMALL_UI_URL}/reset-password#token=TOKEN&amp;lang=en`);
   }).timeout(10000);
 });
