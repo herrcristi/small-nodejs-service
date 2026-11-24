@@ -3,9 +3,7 @@
   "version": "1.0.0",
   "description": "Frontend for the Small Node.js Service using Vue.js",
   "type": "module",
-  "main": "index.js",
   "scripts": {
-    "start": "node index.js",
     "serve": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
@@ -23,11 +21,6 @@
   "dependencies": {
     "@mdi/font": "7.4.47",
     "axios": "1.21.1",
-    "body-parser": "2.4.0",
-    "cors": "2.8.6",
-    "dotenv": "17.2.2",
-    "dotenv-expand": "12.0.3",
-    "express": "5.3.0",
     "pinia": "3.0.3",
     "vue": "3.5.45",
     "vue-i18n": "11.4.22",
