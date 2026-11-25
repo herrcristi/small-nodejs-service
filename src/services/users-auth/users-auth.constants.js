@@ -51,6 +51,14 @@ const Public = {
   // public forms): an email asked for sooner is not sent
   EmailInterval: 60,
 
+  // the agreements that a user accepts to use its account (each one a checkbox): the end user license agreement with
+  // the terms and conditions, and the privacy policy (GDPR); the documents are src/translations/<lang>.legal.<name>.md
+  // version: the effective date of the documents; a new version (a changed document) is accepted again by every user
+  Agreements: {
+    terms: { version: '2026-11-25', documents: ['eula', 'terms'] },
+    privacy: { version: '2026-11-25', documents: ['privacy'] },
+  },
+
   // the limits of the sessions (besides TokenExpiresIn.session, the longest a session lasts)
   SessionLimits: {
     IdleTimeout: 30 * 60, // seconds without a request: the session ends (a computer left open)

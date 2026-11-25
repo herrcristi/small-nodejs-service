@@ -85,14 +85,20 @@ describe('Users Auth Functional', function () {
     return decodeURIComponent(match[1]);
   };
 
+  // the versions of the agreements, as a person accepts them (all the checkboxes)
+  const agreements = Object.fromEntries(
+    Object.entries(UsersAuthConstants.Agreements).map(([name, agreement]) => [name, agreement.version])
+  );
+
   /**
-   * the person sets up its account with the link of its invitation: its first password and its profile (its name)
+   * the person sets up its account with the link of its invitation: its first password, its profile (its name) and
+   * the agreements it accepted
    */
   const setPassword = async (email) => {
     const token = await linkToken(email);
     const r = await api('put', `${AuthPath}/setup-token/account`, {
       headers: { 'x-setup-token': token },
-      body: { password: Password, profile: { name: email.split('@')[0] } },
+      body: { password: Password, profile: { name: email.split('@')[0] }, agreements },
     });
     chai.expect(r.status, `set up the account of ${email}`).to.equal(200);
   };
@@ -296,6 +302,57 @@ describe('Users Auth Functional', function () {
     chai.expect(student.user.status).to.equal('active');
     const rClasses = await api('get', ClassesConstants.ApiPath, { cookie, tenant: schoolID });
     chai.expect(rClasses.status).to.equal(200);
+  }).timeout(30000);
+
+  /**
+   * the agreements: accepted at the setup of the account; an account created before them (no agreements on the user)
+   * logs in, but its session can only accept them (and read the current user) until it accepts their current versions
+   */
+  it('should ask an account created before the agreements to accept them', async () => {
+    // a school, its admin, and a student who joined (it accepted the agreements at the setup of its account)
+    const portalCookie = await startPortal();
+    const { schoolID, adminCookie } = await startSchool(portalCookie);
+    const body = { email: studentEmail, school: { role: 'student' } };
+    chai
+      .expect((await api('post', `${AuthPath}/invite`, { cookie: adminCookie, tenant: schoolID, body })).status)
+      .to.equal(200);
+    await setPassword(studentEmail);
+    let { r, cookie } = await login(studentEmail);
+
+    // check: nothing to accept, the versions kept on the user
+    chai.expect(r.body.agreementsPending).to.deep.equal([]);
+    const users = await UsersDatabase.collection(_ctx);
+    const user = await users.findOne({ email: studentEmail });
+    chai.expect(user.agreements.terms.version).to.equal(agreements.terms);
+    chai.expect(user.agreements.privacy.version).to.equal(agreements.privacy);
+
+    // an account created before the agreements
+    await users.updateOne({ email: studentEmail }, { $unset: { agreements: '' } });
+    ({ r, cookie } = await login(studentEmail));
+
+    // check: logged in, with the agreements to accept; its other routes are refused until then
+    chai.expect(r.status).to.equal(200);
+    chai.expect(r.body.agreementsPending).to.deep.equal(Object.keys(agreements));
+    const rMe = await api('get', `${AuthPath}/me`, { cookie });
+    chai.expect(rMe.status).to.equal(200);
+    chai.expect(rMe.body.agreementsPending).to.deep.equal(Object.keys(agreements));
+    chai.expect((await api('get', ClassesConstants.ApiPath, { cookie, tenant: schoolID })).status).to.equal(403);
+
+    // the documents (public), then an older version: refused
+    const rDocuments = await api('get', `${AuthPath}/agreements`);
+    chai.expect(rDocuments.status).to.equal(200);
+    const read = Object.fromEntries(rDocuments.body.agreements.map((agreement) => [agreement.name, agreement.version]));
+    const rOld = await api('put', `${AuthPath}/agreements/accept`, { cookie, body: { ...read, terms: '2000-01-01' } });
+    chai.expect(rOld.status).to.equal(409);
+
+    // call: accepts the versions it read
+    const rAccept = await api('put', `${AuthPath}/agreements/accept`, { cookie, body: read });
+
+    // check: accepted, the routes of its role work again
+    chai.expect(rAccept.status).to.equal(200);
+    chai.expect(rAccept.body.agreementsPending).to.deep.equal([]);
+    chai.expect((await api('get', ClassesConstants.ApiPath, { cookie, tenant: schoolID })).status).to.equal(200);
+    chai.expect((await users.findOne({ email: studentEmail })).agreements.terms.version).to.equal(agreements.terms);
   }).timeout(30000);
 
   /**

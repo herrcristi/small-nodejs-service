@@ -31,6 +31,7 @@ const Public = {
     process.env.SMALL_API_PREVAUTHPASS = TestConstants.Auth.PrevAuthPass;
     process.env.SMALL_API_AUTHPASS = TestConstants.Auth.AuthPass;
     process.env.SMALL_API_SMTP_CONFIG = TestConstants.Auth.SmtpConfig;
+    process.env.SMALL_API_LEGAL_CONFIG = TestConstants.LegalConfig; // the operator named in the legal documents
 
     process.env.SMALL_API_CORS_ORIGIN = TestConstants.WebServer + ',' + TestConstants.WebServer1;
 

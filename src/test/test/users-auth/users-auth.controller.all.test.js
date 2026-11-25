@@ -7,6 +7,7 @@ const supertest = require('supertest');
 const TestConstants = require('../../test-constants.js');
 const UsersAuthConstants = require('../../../services/users-auth/users-auth.constants.js');
 const UsersAuthService = require('../../../services/users-auth/users-auth.service.js');
+const UsersAuthAgreementsService = require('../../../services/users-auth/users-auth.agreements.service.js');
 const UsersAuthRest = require('../../../services/rest/users-auth.rest.js');
 const RestCommunicationsUtils = require('../../../core/utils/rest-communications.utils.js');
 
@@ -311,6 +312,7 @@ describe('Users Auth Controller', function () {
       name: testUser.name,
       language: 'ro',
       schools: testUser.schools,
+      agreementsPending: [], // the agreements to accept (none: the current ones are accepted)
       expires: '', // ignore expires for testing
     });
     // the expiry is the end of the session
@@ -497,6 +499,7 @@ describe('Users Auth Controller', function () {
       username: testUser.email,
       name: testUser.name,
       schools: [], // default to empty array if not provided
+      agreementsPending: [], // the agreements to accept (none: the current ones are accepted)
       expires: '', // ignore expires for testing
     });
     chai.expect(res.body.expires).to.exist;
@@ -1836,5 +1839,75 @@ describe('Users Auth Controller', function () {
     // check: only the header is used
     chai.expect(res.status).to.equal(200);
     chai.expect(stub.firstCall.args[0]).to.deep.equal({ token: 'FROM_HEADER' });
+  }).timeout(10000);
+
+  /**
+   * the agreements and their documents are public (read before the setup of the account and before the login): no
+   * session is validated, the language is the one of the request
+   */
+  it('should get the agreements without a session', async () => {
+    // call
+    const res = await supertest(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPath}/agreements`)
+      .set('Origin', TestConstants.WebServer)
+      .set('x-lang', 'ro');
+
+    // check: the documents in the language of the request, no session validated
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body.language).to.equal('ro');
+    chai
+      .expect(res.body.agreements.map((agreement) => agreement.name))
+      .to.deep.equal(Object.keys(UsersAuthConstants.Agreements));
+    chai.expect(UsersAuthRest.validate.callCount).to.equal(0);
+
+    // case: an exception
+    sinon.stub(UsersAuthAgreementsService, 'get').rejects(new Error('Test error message'));
+    const resError = await supertest(TestConstants.WebServer)
+      .get(`${UsersAuthConstants.ApiPath}/agreements`)
+      .set('Origin', TestConstants.WebServer);
+    chai.expect(resError.status).to.equal(500);
+  }).timeout(10000);
+
+  /**
+   * the current user accepts the agreements: the route needs a session (it is not public like the documents), and
+   * answers what the service answers
+   */
+  it('should accept the agreements', async () => {
+    const versions = _.mapValues(UsersAuthConstants.Agreements, (agreement) => agreement.version);
+
+    // stub
+    const stubService = sinon
+      .stub(UsersAuthAgreementsService, 'accept')
+      .resolves({ status: 200, value: { agreementsPending: [] } });
+
+    // call
+    const res = await supertest(TestConstants.WebServer)
+      .put(`${UsersAuthConstants.ApiPath}/agreements/accept`)
+      .set('Origin', TestConstants.WebServer)
+      .send(versions);
+
+    // check: the session was validated, the versions are given to the service
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal({ agreementsPending: [] });
+    chai.expect(UsersAuthRest.validate.callCount).to.equal(1);
+    chai.expect(stubService.firstCall.args[0]).to.deep.equal(versions);
+
+    // case: a document changed after it was read
+    const msg = 'The documents were changed, read them again';
+    stubService.resolves({ status: 409, error: { message: msg, error: new Error(msg) } });
+    const resChanged = await supertest(TestConstants.WebServer)
+      .put(`${UsersAuthConstants.ApiPath}/agreements/accept`)
+      .set('Origin', TestConstants.WebServer)
+      .send(versions);
+    chai.expect(resChanged.status).to.equal(409);
+    chai.expect(resChanged.body.detail).to.equal(msg);
+
+    // case: an exception
+    stubService.rejects(new Error('Test error message'));
+    const resError = await supertest(TestConstants.WebServer)
+      .put(`${UsersAuthConstants.ApiPath}/agreements/accept`)
+      .set('Origin', TestConstants.WebServer)
+      .send(versions);
+    chai.expect(resError.status).to.equal(500);
   }).timeout(10000);
 });

@@ -35,12 +35,41 @@ instance.interceptors.request.use((config) => {
 });
 
 /**
+ * a request refused (403) during a session: the agreements may have to be accepted (a document changed after the login),
+ * so the current user is read again and its pending agreements are kept (the layout then asks for them); one read at a
+ * time
+ */
+let refreshingAgreements = null;
+function refreshAgreements() {
+  refreshingAgreements ??= instance
+    .get('/users-auth/me')
+    .then((response) => {
+      const authStore = useAuthStore();
+      if (authStore?.raw) {
+        authStore.save({ raw: { ...authStore.raw, agreementsPending: response.data?.agreementsPending || [] } });
+      }
+    })
+    .catch(() => {
+      // ignore: a 401 sends to the login
+    })
+    .finally(() => {
+      refreshingAgreements = null;
+    });
+  return refreshingAgreements;
+}
+
+/**
  * response
  */
 instance.interceptors.response.use(
   (res) => res,
   async (err) => {
     try {
+      const url = err.config?.url || '';
+      if (err.response?.status === 403 && useAuthStore()?.raw && !url.startsWith('/users-auth/me')) {
+        refreshAgreements();
+      }
+
       if (err.response?.status === 401) {
         const current = globalThis.location.pathname + globalThis.location.search;
         const tenantID = useAppStore()?.tenantID;
@@ -302,8 +331,17 @@ const Api = {
   // the link of an invitation: set up the account (the first password and the profile); its own header
   validateSetupToken: (token) =>
     instance.get(`/users-auth/setup-token/validate`, { headers: { 'x-setup-token': token } }),
-  setupAccount: (token, password, profile) =>
-    instance.put(`/users-auth/setup-token/account`, { password, profile }, { headers: { 'x-setup-token': token } }),
+  // agreements: the versions of the agreements that the user read and accepted ({ terms, privacy })
+  setupAccount: (token, password, profile, agreements) =>
+    instance.put(
+      `/users-auth/setup-token/account`,
+      { password, profile, agreements },
+      { headers: { 'x-setup-token': token } }
+    ),
+
+  // the agreements (the legal documents) in the language of the UI (public), and their acceptance by the current user
+  getAgreements: () => instance.get(`/users-auth/agreements`),
+  acceptAgreements: (versions) => instance.put(`/users-auth/agreements/accept`, versions),
 
   currentUsername: () => useAuthStore()?.raw?.username /*current username*/,
 

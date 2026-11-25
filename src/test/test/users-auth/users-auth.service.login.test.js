@@ -40,6 +40,7 @@ describe('Users Auth Service', function () {
     const testAuthUser = testAuthUsers[0];
 
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    testInfoUsers.forEach((user) => (user.agreements = _.cloneDeep(TestConstants.AcceptedAgreements))); // accepted
     const testInfoUser = testInfoUsers[0];
     testInfoUser.language = 'ro'; // the language of the UI chosen by the user: returned by the login
     for (const school of testInfoUser.schools) {
@@ -139,6 +140,7 @@ describe('Users Auth Service', function () {
         name: testInfoUser.name,
         language: testInfoUser.language,
         schools: testInfoUser.schools,
+        agreementsPending: [], // the agreements to accept (none: the current ones are accepted)
       },
       token: 'token',
     });
@@ -152,6 +154,7 @@ describe('Users Auth Service', function () {
     const testAuthUser = testAuthUsers[0];
 
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    testInfoUsers.forEach((user) => (user.agreements = _.cloneDeep(TestConstants.AcceptedAgreements))); // accepted
     const testInfoUser = testInfoUsers[0];
     testInfoUser.status = UsersRest.Constants.Status.Pending;
     for (const school of testInfoUser.schools) {
@@ -248,6 +251,7 @@ describe('Users Auth Service', function () {
         name: testInfoUser.name,
         language: testInfoUser.language,
         schools: testInfoUser.schools,
+        agreementsPending: [], // the agreements to accept (none: the current ones are accepted)
       },
       token: 'token',
     });
@@ -261,6 +265,7 @@ describe('Users Auth Service', function () {
     const testAuthUser = testAuthUsers[0];
 
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    testInfoUsers.forEach((user) => (user.agreements = _.cloneDeep(TestConstants.AcceptedAgreements))); // accepted
     const testInfoUser = testInfoUsers[0];
 
     const testAuthData = testAuthUser._test_data;
@@ -296,6 +301,7 @@ describe('Users Auth Service', function () {
     const testAuthUser = testAuthUsers[0];
 
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    testInfoUsers.forEach((user) => (user.agreements = _.cloneDeep(TestConstants.AcceptedAgreements))); // accepted
     const testInfoUser = testInfoUsers[0];
 
     const testAuthData = testAuthUser._test_data;
@@ -353,6 +359,7 @@ describe('Users Auth Service', function () {
     const testAuthUser = testAuthUsers[0];
 
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    testInfoUsers.forEach((user) => (user.agreements = _.cloneDeep(TestConstants.AcceptedAgreements))); // accepted
     const testInfoUser = testInfoUsers[0];
 
     const testAuthData = testAuthUser._test_data;
@@ -414,6 +421,7 @@ describe('Users Auth Service', function () {
     const testAuthUser = testAuthUsers[0];
 
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    testInfoUsers.forEach((user) => (user.agreements = _.cloneDeep(TestConstants.AcceptedAgreements))); // accepted
     const testInfoUser = testInfoUsers[0];
 
     const testAuthData = testAuthUser._test_data;
@@ -479,6 +487,7 @@ describe('Users Auth Service', function () {
     const testAuthUser = testAuthUsers[0];
 
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    testInfoUsers.forEach((user) => (user.agreements = _.cloneDeep(TestConstants.AcceptedAgreements))); // accepted
     const testInfoUser = testInfoUsers[0];
 
     const testAuthData = testAuthUser._test_data;
@@ -546,6 +555,7 @@ describe('Users Auth Service', function () {
     const testAuthUser = testAuthUsers[0];
 
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    testInfoUsers.forEach((user) => (user.agreements = _.cloneDeep(TestConstants.AcceptedAgreements))); // accepted
     const testInfoUser = testInfoUsers[0];
     testInfoUser.status = UsersRest.Constants.Status.Pending;
     for (const school of testInfoUser.schools) {
@@ -603,6 +613,7 @@ describe('Users Auth Service', function () {
     const testAuthUser = testAuthUsers[0];
 
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    testInfoUsers.forEach((user) => (user.agreements = _.cloneDeep(TestConstants.AcceptedAgreements))); // accepted
     const testInfoUser = testInfoUsers[0];
     testInfoUser.status = UsersRest.Constants.Status.Pending;
     for (const school of testInfoUser.schools) {
@@ -660,6 +671,7 @@ describe('Users Auth Service', function () {
     const testAuthUser = testAuthUsers[0];
 
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    testInfoUsers.forEach((user) => (user.agreements = _.cloneDeep(TestConstants.AcceptedAgreements))); // accepted
     const testInfoUser = testInfoUsers[0];
 
     for (const school of testInfoUser.schools) {
@@ -711,6 +723,7 @@ describe('Users Auth Service', function () {
     const testAuthUser = testAuthUsers[0];
 
     const testInfoUsers = _.cloneDeep(TestConstants.Users);
+    testInfoUsers.forEach((user) => (user.agreements = _.cloneDeep(TestConstants.AcceptedAgreements))); // accepted
     const testInfoUser = testInfoUsers[0];
     for (const school of testInfoUser.schools) {
       school.status = SchoolsRest.Constants.Status.Active;

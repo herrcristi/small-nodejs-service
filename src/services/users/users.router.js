@@ -31,6 +31,7 @@ router.route(`${UsersConstants.ApiPathInternal}/portal-admins`).get(UsersControl
 router.route(`${UsersConstants.ApiPathInternal}/:id`).delete(UsersController.delete); // called from users-auth
 router.route(`${UsersConstants.ApiPathInternal}/:id/activate`).post(UsersController.activate); // called from users-auth at login
 router.route(`${UsersConstants.ApiPathInternal}/:id/email`).put(UsersController.putEmail); // called from users-auth to change only email
+router.route(`${UsersConstants.ApiPathInternal}/:id/agreements`).put(UsersController.putAgreements); // called from users-auth: the user accepts the agreements
 router.route(`${UsersConstants.ApiPathInternal}/:id/school`).patch(UsersController.patchSchool); // caled by admin to add/remove user from school
 
 router.route(`${UsersConstants.ApiPathInternal}/notifications`).post(UsersController.notification);

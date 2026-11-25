@@ -522,4 +522,34 @@ describe('Users Service', function () {
       chai.expect(UsersService.Validators.Put.validate({ language }).error, `${language}`).to.not.equal(undefined);
     }
   }).timeout(10000);
+
+  /**
+   * the agreements of a user are kept only by users-auth (internal): each one with its version and when it was
+   * accepted; the profile (the user itself, the admins of its school) can not change them
+   */
+  it('should validate the agreements of the user', async () => {
+    const agreements = _.cloneDeep(TestConstants.AcceptedAgreements);
+
+    // check: the agreements with their versions and times
+    chai.expect(UsersService.Validators.PutAgreements.validate({ agreements }).error).to.equal(undefined);
+
+    // case: none, empty, without a version or a time, a time that is not a date, an unknown field
+    for (const wrong of [
+      {},
+      { agreements: {} },
+      { agreements: { terms: { acceptedAt: agreements.terms.acceptedAt } } },
+      { agreements: { terms: { version: agreements.terms.version } } },
+      { agreements: { terms: { ...agreements.terms, acceptedAt: 'yesterday' } } },
+      { agreements: { terms: { ...agreements.terms, by: 'admin' } } },
+      { agreements, status: 'active' },
+    ]) {
+      chai
+        .expect(UsersService.Validators.PutAgreements.validate(wrong).error, JSON.stringify(wrong))
+        .to.not.equal(undefined);
+    }
+
+    // case: the profile does not take them (put and patch)
+    chai.expect(UsersService.Validators.Put.validate({ agreements }).error).to.not.equal(undefined);
+    chai.expect(UsersService.Validators.Patch.validate({ set: { agreements } }).error).to.not.equal(undefined);
+  }).timeout(10000);
 });

@@ -7,6 +7,7 @@ const RestMessagesUtils = require('../../core/utils/rest-messages.utils.js');
 
 const UsersAuthConstants = require('./users-auth.constants.js');
 const UsersAuthService = require('./users-auth.service.js');
+const UsersAuthAgreementsService = require('./users-auth.agreements.service.js');
 
 const Private = {
   /**
@@ -163,11 +164,56 @@ const Public = {
         name: r.value.name,
         language: r.value.language, // the language of the UI chosen by the user
         schools: r.value.schools || [],
+        agreementsPending: r.value.agreementsPending || [], // the agreements to accept before using the account
         expires: r.value.sessionExpiresAt, // when the session ends
       });
     } catch (e) {
       const message = await RestMessagesUtils.exception(e, _ctx);
       return res.status(401).json(message);
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * the agreements and their documents, in the language of the request (public)
+   */
+  getAgreements: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersAuthConstants.ServiceName;
+
+    try {
+      // read at the start: always there
+      const r = await UsersAuthAgreementsService.get(_ctx);
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
+   * the current user accepts the agreements (the versions that it read)
+   */
+  acceptAgreements: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersAuthConstants.ServiceName;
+
+    try {
+      console.log(`\n${_ctx.serviceName}: Accept agreements called, body ${JSON.stringify(req.body, null, 2)}`);
+
+      const r = await UsersAuthAgreementsService.accept(req.body, _ctx);
+      if (r.error) {
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
     } finally {
       res.end();
     }

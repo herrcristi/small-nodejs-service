@@ -149,4 +149,30 @@ describe('Index', function () {
     chai.expect(res).to.equal(true);
     chai.expect(stubProcessExit.callCount).to.equal(0);
   }).timeout(10000);
+
+  /**
+   * the operator named in the legal documents (SMALL_API_LEGAL_CONFIG): refused in production when it is missing or a
+   * field is missing, accepted with a warning in debug mode
+   */
+  it('should initEnv refuse the legal documents without their operator in production', async () => {
+    // stub: the exit and the environment
+    const stubProcessExit = sinon.stub(process, 'exit');
+    const env = sinon.stub(process, 'env');
+
+    // case: production, no operator, or one without a country: refused
+    for (const legal of [
+      undefined,
+      '{ "name": "Example SRL", "address": "Street 1", "email": "legal@example.test" }',
+    ]) {
+      env.value({ ...process.env, NODE_ENV: 'production', ...strongSecrets, SMALL_API_LEGAL_CONFIG: legal });
+      chai.expect(await Index.initEnv()).to.equal(false);
+    }
+    chai.expect(stubProcessExit.callCount).to.equal(2);
+
+    // case: debug mode: accepted (a warning)
+    stubProcessExit.resetHistory();
+    env.value({ ...process.env, NODE_ENV: 'dev', ...strongSecrets, SMALL_API_LEGAL_CONFIG: undefined });
+    chai.expect(await Index.initEnv()).to.equal(true);
+    chai.expect(stubProcessExit.callCount).to.equal(0);
+  }).timeout(10000);
 });

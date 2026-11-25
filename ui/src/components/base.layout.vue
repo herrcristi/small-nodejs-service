@@ -114,12 +114,18 @@
           </RouterLink>
         </div>
 
-        <slot />
+        <!-- the agreements to accept before using the account: asked instead of the page -->
+        <AgreementsAccept v-if="agreementsPending" @logout="doLogout" />
+        <slot v-else />
       </v-container>
     </v-main>
 
     <v-footer app padless>
-      <v-col class="text-center">© Small NodeJS Service</v-col>
+      <v-col class="text-center">
+        © Small NodeJS Service
+        <span class="mx-2">·</span>
+        <LegalLinks />
+      </v-col>
     </v-footer>
   </v-app>
 </template>
@@ -131,6 +137,8 @@ import { useAuthStore, useAppStore } from '../stores/stores.js';
 import Api from '../api/api.js';
 import { useI18n } from 'vue-i18n';
 import LanguageMenu from './base.language.menu.vue';
+import LegalLinks from './base.legal.links.vue';
+import AgreementsAccept from './api.user.agreements.vue';
 const { t } = useI18n();
 
 /**
@@ -149,10 +157,17 @@ const isTenantsPage = computed(() => route.path === '/tenants');
 const isProfilePage = computed(() => route.path === '/profile');
 
 /**
- * the menu of the pages and the breadcrumbs: not on a page with meta noMenu (the school selection), and not without a
- * school (the profile of a user that is not in any school: the pages are of a school)
+ * the agreements that the user has not accepted (an account created before them, or a changed document): until they are
+ * accepted, they are asked instead of the page (the server refuses the other requests of the user)
  */
-const showMenu = computed(() => !route.meta?.noMenu && hasTenant.value);
+const agreementsPending = computed(() => (authStore?.raw?.agreementsPending || []).length > 0);
+
+/**
+ * the menu of the pages and the breadcrumbs: not on a page with meta noMenu (the school selection), not without a
+ * school (the profile of a user that is not in any school: the pages are of a school), and not while the agreements are
+ * asked
+ */
+const showMenu = computed(() => !route.meta?.noMenu && hasTenant.value && !agreementsPending.value);
 
 /**
  * breadcrumbs

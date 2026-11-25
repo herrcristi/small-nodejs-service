@@ -436,6 +436,39 @@ const Public = {
   },
 
   /**
+   * put agreements (internal: called from users-auth)
+   */
+  putAgreements: async (req, res, next) => {
+    let _ctx = req._ctx;
+    _ctx.serviceName = UsersConstants.ServiceName;
+
+    try {
+      console.log(
+        `\n${_ctx.serviceName}: Put agreements called, param ${JSON.stringify(
+          CommonUtils.protectData(req.params),
+          null,
+          2
+        )}, body ${JSON.stringify(CommonUtils.protectData(req.body), null, 2)}`
+      );
+      const objID = req.params.id;
+
+      // put
+      const r = await UsersService.putAgreements(objID, req.body, _ctx);
+      if (r.error) {
+        const message = await RestMessagesUtils.statusError(r.status, r.error, _ctx);
+        return res.status(r.status).json(message);
+      }
+
+      res.status(r.status).json(r.value);
+    } catch (e) {
+      const message = await RestMessagesUtils.exception(e, _ctx);
+      return res.status(500).json(message);
+    } finally {
+      res.end();
+    }
+  },
+
+  /**
    * patch
    */
   patch: async (req, res, next) => {
