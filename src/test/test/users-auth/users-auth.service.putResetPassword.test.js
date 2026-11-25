@@ -291,14 +291,17 @@ describe('Users Auth Service', function () {
   }).timeout(10000);
 
   /**
-   * the link of an invitation sets up the account: the first password and the profile of the user (its own); the link
-   * of a reset does not (refused before the link is used), the profile is required and validated first, and a reset does
-   * not take a profile
+   * the link of an invitation sets up the account: the first password, the profile of the user (its own) and the
+   * agreements it accepted; the link of a reset does not (refused before the link is used), the profile and the
+   * agreements (all of them, in their current versions) are required and checked first, and a reset does not take a
+   * profile
    */
   it('should putSetupAccount with the link of an invitation', async () => {
     const testUser = _.cloneDeep(TestConstants.UsersAuth)[0];
     const password = testUser._test_data.origPassword + 'aA1!';
     const profile = { name: 'Jane Smith', birthday: '1990-05-01T00:00:00.000Z', language: 'ro' };
+    // the versions of the agreements that the user read and accepted (all the checkboxes)
+    const agreements = _.mapValues(UsersAuthConstants.Agreements, (agreement) => agreement.version);
 
     // stub: the link of an invitation, the password, the profile
     const link = { id: 'link1', purpose: 'signup', userID: testUser.userID, username: testUser.id };
@@ -309,10 +312,11 @@ describe('Users Auth Service', function () {
     const stubEvent = sinon.stub(EventsRest, 'raiseEventForObject').resolves();
     sinon.stub(UsersAuthRest, 'raiseNotification').resolves();
     const stubProfile = sinon.stub(UsersRest, 'put').resolves({ status: 200, value: { id: testUser.userID } });
+    const stubAgreements = sinon.stub(UsersRest, 'putAgreements').resolves({ status: 200, value: {} });
     const setupToken = getResetToken(testUser, 'signup');
 
     // call
-    const res = await UsersAuthService.putSetupAccount(setupToken, { password, profile }, { ..._ctx });
+    const res = await UsersAuthService.putSetupAccount(setupToken, { password, profile, agreements }, { ..._ctx });
 
     // check: the password and the profile of the user of the link (its own: the user of the request), its event
     chai.expect(res).to.deep.equal({ status: 200, value: { username: testUser.id, type: UsersAuthConstants.Type } });
@@ -320,17 +324,54 @@ describe('Users Auth Service', function () {
     chai.expect(stubProfile.firstCall.args[2].userID).to.equal(testUser.userID);
     chai.expect(stubEvent.firstCall.args[1]).to.equal('setupAccount');
 
+    // check: the agreements are kept on the user, each with its version and when it was accepted
+    chai.expect(stubAgreements.callCount).to.equal(1);
+    chai.expect(stubAgreements.firstCall.args[0]).to.equal(testUser.userID);
+    const saved = stubAgreements.firstCall.args[1].agreements;
+    chai.expect(_.mapValues(saved, (agreement) => agreement.version)).to.deep.equal(agreements);
+    for (const agreement of Object.values(saved)) {
+      chai.expect(new Date(agreement.acceptedAt).toISOString()).to.equal(agreement.acceptedAt);
+    }
+
     // case: the profile can not be saved
     stubProfile.resolves({ status: 500, error: { message: 'Database failure' } });
-    const resFail = await UsersAuthService.putSetupAccount(setupToken, { password, profile }, { ..._ctx });
+    const resFail = await UsersAuthService.putSetupAccount(setupToken, { password, profile, agreements }, { ..._ctx });
     chai.expect(resFail.status).to.equal(500);
+    stubProfile.resolves({ status: 200, value: { id: testUser.userID } });
+
+    // case: the agreements can not be saved
+    stubAgreements.resolves({ status: 500, error: { message: 'Database failure' } });
+    const resFailAgreements = await UsersAuthService.putSetupAccount(
+      setupToken,
+      { password, profile, agreements },
+      { ..._ctx }
+    );
+    chai.expect(resFailAgreements.status).to.equal(500);
+
+    // case: the agreements are missing, one is not accepted, or one is an older version (a document changed after it
+    // was read): refused before the link is used
+    stubEnd.resetHistory();
+    const cases = [
+      { agreements: undefined, status: 400 },
+      { agreements: _.omit(agreements, 'privacy'), status: 400 },
+      { agreements: { ...agreements, terms: '2000-01-01' }, status: 409 },
+    ];
+    for (const item of cases) {
+      const resCase = await UsersAuthService.putSetupAccount(
+        setupToken,
+        { password, profile, agreements: item.agreements },
+        { ..._ctx }
+      );
+      chai.expect(resCase.status, JSON.stringify(item.agreements)).to.equal(item.status);
+    }
+    chai.expect(stubEnd.callCount).to.equal(0);
 
     // case: the link of a reset: refused before the link is used
     link.purpose = 'reset-password';
     stubEnd.resetHistory();
     const resReset = await UsersAuthService.putSetupAccount(
       getResetToken(testUser),
-      { password, profile },
+      { password, profile, agreements },
       { ..._ctx }
     );
     chai.expect(resReset.status).to.equal(401);
@@ -338,7 +379,11 @@ describe('Users Auth Service', function () {
 
     // case: a profile that is not valid, or none (a new user has no name yet: it is required)
     for (const wrong of [{ name: 'Jane', language: 'fr' }, { name: 'Jane', birthday: 'yesterday' }, {}, undefined]) {
-      const resWrong = await UsersAuthService.putSetupAccount(setupToken, { password, profile: wrong }, { ..._ctx });
+      const resWrong = await UsersAuthService.putSetupAccount(
+        setupToken,
+        { password, profile: wrong, agreements },
+        { ..._ctx }
+      );
       chai.expect(resWrong.status, JSON.stringify(wrong)).to.equal(400);
     }
     chai.expect(stubEnd.callCount).to.equal(0);

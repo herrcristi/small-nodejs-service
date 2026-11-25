@@ -55,6 +55,36 @@ const Public = {
     return limits;
   },
 
+  // the fields of SMALL_API_LEGAL_CONFIG: the operator of the application, named in its legal documents (the end user
+  // license agreement, the terms and conditions, the privacy policy)
+  LegalFields: ['name', 'address', 'email', 'country'],
+
+  /**
+   * the operator of the application, named in its legal documents: SMALL_API_LEGAL_CONFIG is a JSON object
+   * { name, address, email, country } (the legal name, the address, the contact email, the country of the governing law)
+   * returns { value: { name, address, email, country }, problems: [ text ] }: the fields that are missing or empty are
+   * problems (the start refuses them in production) and are shown as their name in brackets ([name])
+   */
+  getLegalSettings: () => {
+    const problems = [];
+    let config = {};
+    try {
+      config = JSON.parse(process.env.SMALL_API_LEGAL_CONFIG || '{}') || {};
+    } catch (e) {
+      problems.push('Env var SMALL_API_LEGAL_CONFIG is not a JSON object');
+    }
+
+    const value = {};
+    for (const field of Public.LegalFields) {
+      const text = typeof config[field] === 'string' ? config[field].trim() : '';
+      if (!text) {
+        problems.push(`Env var SMALL_API_LEGAL_CONFIG has no ${field} (the operator named in the legal documents)`);
+      }
+      value[field] = text || `[${field}]`;
+    }
+    return { value, problems };
+  },
+
   /**
    * the settings of the web server (core/web-server): the origins allowed by CORS (SMALL_API_CORS_ORIGIN, a list
    * separated by commas, and the url of the api SMALL_API_URL, the Origin of the calls between services), the proxies

@@ -1,6 +1,15 @@
 /**
  * Test constants
  */
+const UsersAuthConstants = require('../services/users-auth/users-auth.constants.js');
+
+// the agreements accepted in their current versions (a user that can use its account)
+const AcceptedAgreements = Object.fromEntries(
+  Object.entries(UsersAuthConstants.Agreements).map(([name, agreement]) => [
+    name,
+    { version: agreement.version, acceptedAt: '2026-11-25T00:00:00.000Z' },
+  ])
+);
 
 const Public = {
   /**
@@ -20,6 +29,12 @@ const Public = {
     AuthPass: '5e8b2d6a0c4f9173e6b1a8d3f5c0927b', // 32 characters
     SmtpConfig: '{ "host": "host", "port": "465", "user": "user", "password": "password", "from": "small@localhost" }', // { host, port, user, pass, from }
   },
+
+  AcceptedAgreements,
+
+  // the operator named in the legal documents (SMALL_API_LEGAL_CONFIG)
+  LegalConfig:
+    '{ "name": "Test Operator", "address": "Test Street 1", "email": "legal@test.test", "country": "Romania" }',
 
   Database: {
     // the unit tests never connect (the connection is a stub): a test address, never the database of the shell; the

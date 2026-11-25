@@ -14,6 +14,7 @@ describe('Config Settings', function () {
     'SMALL_API_RATE_LIMIT_RESET_MAX',
     'SMALL_API_DATABASE_LIMITS',
     'SMALL_API_URL',
+    'SMALL_API_LEGAL_CONFIG',
   ];
   const saved = {};
 
@@ -112,5 +113,45 @@ describe('Config Settings', function () {
     const empty = ConfigSettings.getWebServerSettings();
     chai.expect(empty.corsOrigins).to.deep.equal(['', '']);
     chai.expect(empty.trustProxy).to.equal(undefined);
+  }).timeout(10000);
+
+  /**
+   * the operator named in the legal documents: the fields of SMALL_API_LEGAL_CONFIG (trimmed); a missing or empty
+   * field, or a value that is not a JSON object, is a problem and the field is shown as its name in brackets
+   */
+  it('should get the operator of the legal documents', async () => {
+    // case: all the fields
+    const operator = {
+      name: ' Example SRL ',
+      address: 'Street 1, City',
+      email: 'legal@example.test',
+      country: 'Romania',
+    };
+    process.env.SMALL_API_LEGAL_CONFIG = JSON.stringify(operator);
+    const res = ConfigSettings.getLegalSettings();
+    chai.expect(res.problems).to.deep.equal([]);
+    chai.expect(res.value).to.deep.equal({ ...operator, name: 'Example SRL' });
+
+    // case: a field missing, empty, or not a text
+    for (const wrong of [{ name: undefined }, { address: ' ' }, { email: 1 }]) {
+      process.env.SMALL_API_LEGAL_CONFIG = JSON.stringify({ ...operator, ...wrong });
+      const resWrong = ConfigSettings.getLegalSettings();
+      const field = Object.keys(wrong)[0];
+      chai.expect(resWrong.problems.length, field).to.equal(1);
+      chai.expect(resWrong.problems[0]).to.include(field);
+      chai.expect(resWrong.value[field]).to.equal(`[${field}]`);
+    }
+
+    // case: not set, not JSON, not an object: every field is missing
+    for (const value of [undefined, 'not json', '[]', 'null']) {
+      if (value === undefined) {
+        delete process.env.SMALL_API_LEGAL_CONFIG;
+      } else {
+        process.env.SMALL_API_LEGAL_CONFIG = value;
+      }
+      const resNone = ConfigSettings.getLegalSettings();
+      chai.expect(resNone.problems.length, `${value}`).to.be.at.least(ConfigSettings.LegalFields.length);
+      chai.expect(resNone.value.name).to.equal('[name]');
+    }
   }).timeout(10000);
 });

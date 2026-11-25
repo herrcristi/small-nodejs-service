@@ -37,6 +37,11 @@ router.route(`${UsersAuthConstants.ApiPath}/reset-token/password`).put(UsersAuth
 router.route(`${UsersAuthConstants.ApiPath}/setup-token/validate`).get(UsersAuthController.validateSetupToken);
 router.route(`${UsersAuthConstants.ApiPath}/setup-token/account`).put(UsersAuthController.putSetupAccount);
 
+// the agreements (the legal documents): read them (public: before the setup of the account and the login), and accept
+// them (the current user; until then the other routes of the user are refused)
+router.route(`${UsersAuthConstants.ApiPath}/agreements`).get(UsersAuthController.getAgreements);
+router.route(`${UsersAuthConstants.ApiPath}/agreements/accept`).put(UsersAuthController.acceptAgreements);
+
 router.route(`${UsersAuthConstants.ApiPath}/invite`).post(UsersAuthSignupController.invite);
 router.route(`${UsersAuthConstants.ApiPath}/signup`).post(UsersAuthSignupController.signup); // by portal admin
 

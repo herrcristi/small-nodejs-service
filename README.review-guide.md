@@ -45,6 +45,7 @@ Where input and trust cross, and so where reviews should look:
 | Multi-step operations                | Signup, invite, role changes, account changes and deletion                             | Half-finished state, rollback, retry                               |
 | Startup and timers                   | Portal School creation, first-portal-admin bootstrap, environment checks, the cleanups | Repeats, several pods, bad configuration                           |
 | Email                                | Templates, token links                                                                 | Wrong recipient, link that cannot be used, injection into the text |
+| Legal agreements                     | Documents and versions, public `GET /users-auth/agreements`, routes before acceptance  | A route reachable before acceptance, accepting for someone else    |
 | Browser                              | Stores, router guard, tenant selector, tables, dialogs                                 | Stale data, double submit, client-only checks                      |
 | Environment and dependencies         | `src/.env.example`, `npm audit`                                                        | Placeholder secrets, known advisories                              |
 
@@ -141,6 +142,7 @@ For scalability, severity is about the capacity and availability question being 
 7. Browser flows: tenant selector, dashboard, schools page, the people pages, the settings, the profile, dialogs. Look for success messages after a call that did nothing.
 8. Onboarding as a person: can a new user, with nothing but the email, get to a working account?
 9. Events: every change raises an event that names who did it, also when nobody is logged in (the start, the timers, a public form), and that has a message in every language. An event refused by its own validation is lost without an error: look for refusals in the logs of a full run.
+10. Agreements: a new account accepts them when it is set up; an account without them, or with an older version, logs in but reaches only the routes to accept them (and itself, the logout, the delete of its account); a document changed between reading and accepting is refused; nobody accepts for someone else (the profile and the admin routes do not take them); the documents are shown as text in every language, with the configured operator.
 
 **How to discover.** Trace the real code for each flow and write the trace as a numbered list of calls with the data at each step. Then break each step in turn (make the call fail, make the process stop) and check the state. Ask, for every action in the UI, what actually changed in the database.
 

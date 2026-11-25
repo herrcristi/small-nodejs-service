@@ -21,6 +21,7 @@ const SchoolsRest = require('../rest/schools.rest.js');
 const UsersAuthConstants = require('./users-auth.constants.js');
 const WebServerConstants = require('../../web-server/web-server.constants.js');
 const UsersAuthSessionsService = require('./users-auth.sessions.service.js'); // the sessions and the emailed links
+const UsersAuthAgreementsService = require('./users-auth.agreements.service.js'); // the agreements (legal documents)
 const UsersAuthServiceLocal = require('./users-local-auth.service.js'); // use local auth service
 const UsersAuthServiceFirebase = require('./users-firebase-auth.service.js'); // use firebase auth service
 
@@ -140,6 +141,8 @@ const Validators = {
         language: Joi.string().valid(...WebServerConstants.Languages),
       })
       .required(),
+    // the versions of the agreements that the user read and accepted (checked by UsersAuthAgreementsService.check)
+    agreements: Joi.object().required(),
   }),
 };
 
@@ -162,6 +165,10 @@ const Private = {
   Issuer: UsersAuthConstants.ServiceName,
 
   ReadMethods: ['GET', 'HEAD'], // the requests that do not change data (the others are authorized on the primary)
+
+  // the routes of a user that has not accepted the current agreements (config.roles.json): accept them, read the
+  // current user, log out, delete its account
+  AgreementsPendingRole: 'agreements-pending',
 
   /**
    * Auth Providers
@@ -568,7 +575,7 @@ const Private = {
    * returns { status, value: { user, rr } } or { status, error }; rr: the answer of validateRoute
    */
   getSessionUser: async (email, objInfo, _ctx, options) => {
-    const userProjection = { id: 1, status: 1, name: 1, email: 1, language: 1, schools: 1 };
+    const userProjection = { id: 1, status: 1, name: 1, email: 1, language: 1, schools: 1, agreements: 1 };
     const rUserDetails = await UsersRest.getOneByEmail(email, userProjection, _ctx, options);
     if (rUserDetails.error) {
       return { ...rUserDetails, status: 401 };
@@ -582,13 +589,26 @@ const Private = {
       return { status: 401, error: { message: msg, error: new Error(msg) } };
     }
 
+    // the agreements: until the user accepts their current versions (an account created before them, or a changed
+    // document), it can only accept them, read the current user, log out or delete its account
+    const agreementsPending = UsersAuthAgreementsService.getPending(user);
+    const isAgreementsRoute = Private.isValidRouteForRoles(
+      [Private.AgreementsPendingRole],
+      objInfo.method,
+      objInfo.route
+    );
+    if (agreementsPending.length && !isAgreementsRoute) {
+      const msg = 'The agreements must be accepted';
+      return { status: 403, error: { message: msg, error: new Error(msg) } };
+    }
+
     // validate routes
     const rr = Private.validateRoute(user, objInfo.method, objInfo.route, _ctx);
     if (rr.error) {
       return rr;
     }
 
-    return { status: 200, value: { user, rr } };
+    return { status: 200, value: { user, rr, agreementsPending } };
   },
 
   /**
@@ -682,6 +702,9 @@ const Public = {
 
     // init roles
     Private.initRolesAccess();
+
+    // the legal documents (the agreements)
+    await UsersAuthAgreementsService.init();
   },
 
   /**
@@ -734,7 +757,7 @@ const Public = {
     // get user details (by email)
     ///
     // read on the primary: a user activated, disabled or given a school by the request before decides the login
-    const userProjection = { id: 1, status: 1, name: 1, email: 1, language: 1, schools: 1 };
+    const userProjection = { id: 1, status: 1, name: 1, email: 1, language: 1, schools: 1, agreements: 1 };
     const options = { readPreference: DbOpsUtils.Constants.ReadPrimary };
     const rUserDetails = await UsersRest.getOneByEmail(objInfo.username, userProjection, _ctx, options);
     if (rUserDetails.error) {
@@ -796,6 +819,8 @@ const Public = {
         name: user.name,
         language: user.language, // the language of the UI chosen by the user (none: the default of the UI)
         schools: Private.getMemberships(user),
+        // the agreements to accept before using the account (an account created before them, or a changed document)
+        agreementsPending: UsersAuthAgreementsService.getPending(user),
       },
     };
   },
@@ -897,7 +922,7 @@ const Public = {
     if (rUser.error) {
       return rUser;
     }
-    const { user, rr } = rUser.value;
+    const { user, rr, agreementsPending } = rUser.value;
 
     ///
     // success
@@ -915,6 +940,7 @@ const Public = {
         name: user.name,
         language: user.language, // the language of the UI chosen by the user (none: the default of the UI)
         schools: Private.getMemberships(user),
+        agreementsPending, // the agreements to accept before using the account (none: it can be used)
       },
     };
   },
@@ -1419,9 +1445,10 @@ const Public = {
   },
 
   /**
-   * set up the account with the link of an invitation (only a setup link): the first password and the profile of the
-   * user (its own: the user of the link); the profile is validated before the link is used
-   * objInfo: { password, profile: { name, birthday?, phoneNumber?, address?, language? } }
+   * set up the account with the link of an invitation (only a setup link): the first password, the profile of the
+   * user (its own: the user of the link) and the agreements it accepted; the profile and the agreements are validated
+   * before the link is used
+   * objInfo: { password, profile: { name, birthday?, phoneNumber?, address?, language? }, agreements: { terms, privacy } }
    */
   putSetupAccount: async (setupToken, objInfo, _ctx) => {
     // validate
@@ -1430,6 +1457,12 @@ const Public = {
       return CommonUtils.getSchemaValidationError(v, objInfo, _ctx);
     }
     objInfo = v.value; // the validated value: converted (normalized emails, iso dates), no unknown keys
+
+    // the agreements: all of them, in their current versions (a document changed after it was read: 409)
+    const rAgreements = UsersAuthAgreementsService.check(objInfo.agreements, _ctx);
+    if (rAgreements.error) {
+      return rAgreements;
+    }
 
     // the first password, with the link
     const purpose = UsersAuthConstants.ResetTokenType.Signup;
@@ -1442,6 +1475,12 @@ const Public = {
     const rProfile = await UsersRest.put(r.value.userID, objInfo.profile, _ctx);
     if (rProfile.error) {
       return rProfile;
+    }
+
+    // the agreements it accepted (if this fails the account is set up: the agreements are asked at the login)
+    const rSave = await UsersAuthAgreementsService.save(r.value.userID, rAgreements.value, _ctx);
+    if (rSave.error) {
+      return rSave;
     }
 
     const username = r.value.username;

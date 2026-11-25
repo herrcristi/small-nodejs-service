@@ -135,6 +135,13 @@ const Public = {
   },
 
   /**
+   * the agreements accepted by the user (users-auth): { agreements: { terms: { version, acceptedAt }, ... } }
+   */
+  putAgreements: async (objID, objInfo, _ctx) => {
+    return await RestCommsUtils.put(UsersConstants.ServiceNameInternal, objID, objInfo, _ctx, 'agreements');
+  },
+
+  /**
    * patch
    */
   patch: async (objID, patchInfo, _ctx) => {

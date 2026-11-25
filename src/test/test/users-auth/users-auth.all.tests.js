@@ -18,6 +18,7 @@ require('./users-auth.rest.test.js');
 // service tests
 require('./users-auth.service.all.test.js');
 require('./users-auth.signup.service.all.test.js');
+require('./users-auth.agreements.service.test.js');
 
 // setup tests
 require('./users-auth.setup.service.test.js');

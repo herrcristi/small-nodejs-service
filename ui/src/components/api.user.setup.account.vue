@@ -1,6 +1,7 @@
 <template>
   <!--
-        the page of the emailed link of an invitation: set up the account (the first password and the profile)
+        the page of the emailed link of an invitation: set up the account (the first password, the profile and the
+        agreements: the legal documents, all are required)
         the token is in the fragment of the link (after #): it is read once, removed from the address bar, kept in memory
         and sent in a header (x-setup-token), so it is never in a url that a server or the history keeps; the link
         carries its language (lang): the page is shown in it, and it is the language of the profile until another one is
@@ -67,6 +68,11 @@
                   <v-col cols="12">
                     <v-text-field v-model="profile.address" :label="t('address')" :rules="[addressRule]" />
                   </v-col>
+
+                  <!-- the agreements: all are required to use the account -->
+                  <v-col cols="12">
+                    <Agreements ref="agreementsRef" v-model="agreements" />
+                  </v-col>
                 </v-row>
               </v-form>
               <v-alert v-if="error" type="error" density="compact">{{ error }}</v-alert>
@@ -79,7 +85,7 @@
             <v-btn
               v-if="state === 'valid'"
               color="primary"
-              :disabled="!formValid || saveCall.inProgress"
+              :disabled="!formValid || !agreements || saveCall.inProgress"
               :loading="saveCall.loading"
               @click="handleSubmit"
             >
@@ -99,6 +105,7 @@ import Api from '../api/api.js';
 import ComponentsUtils from './components.utils.js';
 import LanguageMenu from './base.language.menu.vue';
 import LanguageSelect from './base.language.select.vue';
+import Agreements from './base.agreements.vue';
 import { setLanguage } from '../i18n.js';
 import { useI18n } from 'vue-i18n';
 const { t, locale } = useI18n();
@@ -116,6 +123,8 @@ const formValid = ref(false);
 const formRef = ref(null);
 const saveCall = ComponentsUtils.useSingleCall(); // one call at a time (handleSubmit)
 const error = ref('');
+const agreementsRef = ref(null);
+const agreements = ref(null); // the versions of the agreements, when all are checked
 
 // the token is kept only in memory
 let token = '';
@@ -216,7 +225,7 @@ async function submit() {
 
   error.value = '';
   try {
-    await Api.setupAccount(token, password.value, getProfile());
+    await Api.setupAccount(token, password.value, getProfile(), agreements.value);
     token = '';
     password.value = '';
     passwordConfirm.value = '';
@@ -225,6 +234,12 @@ async function submit() {
     console.error('Error setting up the account', e);
     if (e.response?.status === 401) {
       state.value = 'invalid';
+      return;
+    }
+    // a document changed after it was read: read again (its box is not checked anymore); the link was not used
+    if (e.response?.status === 409) {
+      error.value = t('agreements.changed');
+      await agreementsRef.value?.load();
       return;
     }
     const errText = ComponentsUtils.getErrorText(e, t);

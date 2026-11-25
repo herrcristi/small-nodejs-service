@@ -121,6 +121,20 @@ const Validators = {
     }),
   }),
 
+  // the agreements accepted by the user (internal: users-auth, never the profile): each one with its version and when
+  PutAgreements: Joi.object().keys({
+    agreements: Joi.object()
+      .pattern(
+        Joi.string().min(1).max(32),
+        Joi.object().keys({
+          version: Joi.string().min(1).max(32).required(),
+          acceptedAt: Joi.string().isoDate().required(),
+        })
+      )
+      .min(1)
+      .required(),
+  }),
+
   // the internal changes of the status (never from a request)
   Activate: Joi.object().keys({
     status: Joi.string().valid(UsersConstants.Status.Active).required(),
@@ -131,6 +145,7 @@ const Private = {
   Action: {
     ...BaseServiceUtils.Constants.Action,
     PutEmail: 'putEmail',
+    PutAgreements: 'putAgreements',
     PutStatus: 'putStatus',
     PatchStatus: 'patchStatus',
     PatchSchool: 'patchSchool',
@@ -858,6 +873,14 @@ const Public = {
   putEmail: async (objID, objInfo, _ctx) => {
     // called from users-auth
     return await Public.putInternal(objID, objInfo, Validators.PutEmail, Private.Action.PutEmail, _ctx);
+  },
+
+  /**
+   * put the agreements accepted by the user (internal: called from users-auth, when the user accepts them)
+   * objInfo: { agreements: { terms: { version, acceptedAt }, privacy: { version, acceptedAt } } }
+   */
+  putAgreements: async (objID, objInfo, _ctx) => {
+    return await Public.putInternal(objID, objInfo, Validators.PutAgreements, Private.Action.PutAgreements, _ctx);
   },
 
   /**

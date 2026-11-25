@@ -29,6 +29,7 @@ It is deliberately small, and it goes deep where small examples stop: real multi
 | **People in many schools**     | One account, many schools, a different role in each (admin, professor, student)                                                   |
 | **A portal on top**            | Portal admins create and manage schools, but cannot see what is inside them                                                       |
 | **Invitation only**            | Nobody signs up on their own. Admins invite, and the portal admin invites other portal admins                                     |
+| **Terms and privacy**          | Every user accepts the license, the terms and the privacy policy (GDPR) to use the account, and again when a document changes     |
 | **Complete school flows**      | Classes, locations, groups, students, professors, and schedules with inner time slots, frequencies, and locations                 |
 | **Status instead of deletion** | `pending`, `active`, `disabled` on schools, users, and school records, so a school year can be closed without losing history      |
 | **Traceable changes**          | Every record has a creation time, a last-modified time, and a change counter                                                      |
@@ -208,7 +209,9 @@ The [security model](README.details.md#security-model) lists each layer and the 
 flowchart LR
   r["Request with cookie and x-tenant-id"] --> t{"Valid token?"}
   t -->|"no"| e1["401"]
-  t -->|"yes"| m{"Member of this school?"}
+  t -->|"yes"| a{"Current terms accepted?"}
+  a -->|"no"| e4["403, except to accept them"]
+  a -->|"yes"| m{"Member of this school?"}
   m -->|"no"| e2["401 or 403"]
   m -->|"yes"| p{"Role allows this route?"}
   p -->|"no"| e3["403"]
@@ -224,7 +227,7 @@ sequenceDiagram
   participant API as API
   PA->>API: create a school and invite its first admin
   API-->>AD: invitation email
-  AD->>API: set a password and log in, choose the school
+  AD->>API: set a password, accept the terms, log in, choose the school
   Note over API: the school and the admin become active
   AD->>API: invite professors and students
   AD->>API: create classes, locations, and groups

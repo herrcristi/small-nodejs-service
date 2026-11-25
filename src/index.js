@@ -9,6 +9,7 @@ const TranslationsUtils = require('./core/utils/translations.utils.js');
 const WebServer = require('./web-server/web-server.js');
 const WebServerConstants = require('./web-server/web-server.constants.js');
 const ConfigServices = require('./services/config.services.js');
+const ConfigSettings = require('./services/config.settings.js');
 
 const { EventEmitter } = require('events');
 
@@ -106,6 +107,18 @@ const Public = {
         return false;
       }
       console.log('Debug mode: the secrets above are accepted only for local development');
+    }
+
+    // the operator named in the legal documents (they are accepted by every user): refused in production when it is
+    // missing, a warning in debug mode (the documents show the names of the missing fields)
+    const legalProblems = ConfigSettings.getLegalSettings().problems;
+    if (legalProblems.length) {
+      legalProblems.forEach((problem) => console.log(problem));
+      if (!CommonUtils.isDebug()) {
+        process.exit(1);
+        return false;
+      }
+      console.log('Debug mode: the legal documents are shown without the missing operator details');
     }
 
     return true;

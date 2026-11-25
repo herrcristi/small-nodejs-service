@@ -80,6 +80,7 @@
   "users.patchstatus": "Statutul utilizatorului '{target}' a fost schimbat în '{set.status}' de '{user}'",
   "users.post": "Utilizatorul '{target}' a fost adăugat",
   "users.put": "Utilizatorul '{target}' a fost modificat",
+  "users.putagreements": "Utilizatorul '{target}' a acceptat termenii și condițiile ({agreements.terms.version}) și politica de confidențialitate ({agreements.privacy.version})",
   "users.putemail": "Emailul utilizatorului '{target}' a fost schimbat în '{email}'",
   "users.putstatus": "Statutul utilizatorului '{target}' a fost schimbat în '{status}' de '{user}'",
   "warning": "Atenție"

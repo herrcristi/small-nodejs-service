@@ -671,6 +671,7 @@ The backend reads its settings from the **process environment**. [src/.env.examp
 | `SMALL_API_DATABASE_LIMITS`    | optional. `connections=16;connwaitmax=30s;timeout=30s` (the defaults, each optional): the connections of each process to each member of the replica set, the wait for a free one, the time of a database call (then `503`). Keep processes x connections under what a member accepts                  |
 | Secrets                        | `SMALL_API_SALT`, `SMALL_API_AUTHPASS`, `SMALL_API_PREVAUTHPASS` (the previous one, for key rotation) and `SMALL_API_S2SPASS`, generated as the template shows. In production the service does not start with the example values, weak values, or a service-to-service secret equal to an auth secret |
 | SMTP                           | the mail server. Invitations and password setup are sent by email, so it is required                                                                                                                                                                                                                  |
+| `SMALL_API_LEGAL_CONFIG`       | the operator named in the legal documents that every user accepts: `{ "name", "address", "email", "country" }` (legal name, address, contact email, country of the governing law). Required in production. See [Agreements](#agreements-license-terms-and-privacy)                                    |
 | Server                         | port, public URL (`SMALL_API_URL`: also an allowed CORS origin, the `Origin` of the calls between services), and the CORS origins                                                                                                                                                                     |
 | `SMALL_API_TRUST_PROXY`        | the proxies in front of the API: their number (`1`) or addresses (`loopback, 10.0.0.0/8`). The client address (rate limits, events) is then taken from them. Not set: no proxy is trusted                                                                                                             |
 | `SMALL_UI_URL`                 | the address of the UI. The links of the emails (set a password, open the application) point to it                                                                                                                                                                                                     |
@@ -752,7 +753,7 @@ curl --include --cookie-jar cookies.txt \
   "$API/users-auth/login"
 ```
 
-The response contains `userID`, `username`, `status`, `name`, and `schools`. Pick the id of an active school from `schools` and send it on every tenant request:
+The response contains `userID`, `username`, `status`, `name`, `language`, `schools`, and `agreementsPending` (the agreements to accept first, see [Agreements](#agreements-license-terms-and-privacy)). Pick the id of an active school from `schools` and send it on every tenant request:
 
 ```sh
 TENANT_ID='school-id-from-login'
@@ -776,6 +777,17 @@ To restore the session call `GET /users-auth/me` with the cookie. To log out cal
 The limits are `SessionLimits` and `TokenExpiresIn` in `src/services/users-auth/users-auth.constants.js`.
 
 The emailed links (reset password, invitation) have records too: a link is used once, a newer link replaces the older ones, and a password change ends them. A session token is only a session: a link can not be used as a cookie, and a cookie can not set a password.
+
+### Agreements: license, terms and privacy
+
+Every user accepts two agreements before using the account, one checkbox each, both required: **terms** (the end user license agreement and the terms and conditions) and **privacy** (the privacy policy, GDPR).
+
+- **The documents** are `src/translations/<language>.legal.<eula|terms|privacy>.md`, in every language of the application. The service reads them once at startup, fills in the operator of `SMALL_API_LEGAL_CONFIG` and the address `SMALL_UI_URL`, and splits them into blocks (headings, paragraphs, lists). The UI shows the blocks as text, never as HTML.
+- **Reading them is public.** `GET /users-auth/agreements` answers the agreements, their versions and their documents in the language of the request (`x-lang`): the setup page and the login page show them before there is a session, and every page links to them in its footer.
+- **Each agreement has a version**, the effective date of its documents (`Agreements` in `src/services/users-auth/users-auth.constants.js`). The user keeps what it accepted: `agreements: { terms: { version, acceptedAt }, privacy: { version, acceptedAt } }`. Only users-auth writes it, through an internal route of the users service; the profile routes refuse it, so nobody accepts for another user.
+- **An invited user accepts them when it sets up its account**: `PUT /users-auth/setup-token/account` requires `agreements: { terms, privacy }`, the versions it read. A version that is not the current one is refused with `409` before the link is used.
+- **Accounts that have not accepted the current versions** (created before the agreements, or a document changed since) still log in. The login and `GET /users-auth/me` answer `agreementsPending: ['terms', 'privacy']`, and until they accept, their session can only use the routes of the pseudo-role `agreements-pending` in `config.roles.json`: accept them (`PUT /users-auth/agreements/accept` with `{ terms, privacy }`), read the current user, log out, or delete the account. Every other request answers `403`. The UI shows the accept page instead of the page that was opened, and reads `/me` again after a `403`.
+- **To publish a new version** of a document, change it in every language and change the version of its agreement: every user accepts it again at its next request.
 
 ## API conventions
 
@@ -1042,7 +1054,7 @@ curl --cookie cookies.txt -H "Origin: $ORIGIN" -H "x-tenant-id: $TENANT_ID" "$AP
 
 ### Users Auth
 
-In addition to login, logout, and `GET /users-auth/me`, the service provides `POST /users-auth/invite`, `POST /users-auth/reset-password`, `PUT /users-auth/password`, `PUT /users-auth/id`, `PATCH /users-auth/school/user/:uid`, and `DELETE /users-auth` (the current user deletes its account; see [Deleting a user keeps the traces](#deleting-a-user-keeps-the-traces)). Signup is restricted to portal admins; invite is available to school admins (for their selected school) and to portal admins (for the Portal School). Internal auth routes are not public APIs.
+In addition to login, logout, and `GET /users-auth/me`, the service provides `POST /users-auth/invite`, `POST /users-auth/reset-password`, `PUT /users-auth/password`, `PUT /users-auth/id`, `PATCH /users-auth/school/user/:uid`, `GET /users-auth/agreements` and `PUT /users-auth/agreements/accept` (see [Agreements](#agreements-license-terms-and-privacy)), and `DELETE /users-auth` (the current user deletes its account; see [Deleting a user keeps the traces](#deleting-a-user-keeps-the-traces)). Signup is restricted to portal admins; invite is available to school admins (for their selected school) and to portal admins (for the Portal School). Internal auth routes are not public APIs.
 
 ```js
 await Api.invite({ email: 'student@example.test', school: { role: 'student' } });
@@ -1059,7 +1071,7 @@ curl --cookie cookies.txt -H "x-tenant-id: $TENANT_ID" \
 
 The local auth provider sends a signup/password setup message to a newly created user and an invitation message to an existing user. SMTP settings and the email templates in `src/translations/` are required for delivery.
 
-The link of a reset email opens the UI page `/reset-password`, and the link of an invitation the page `/setup-account` (`SMALL_UI_URL`). The token is in the fragment of the link (after `#`), which the browser never sends to a server; the page removes it from the address bar and sends it in a header: `x-reset-token` to `GET /users-auth/reset-token/validate` and `PUT /users-auth/reset-token/password` (a reset link only), `x-setup-token` to `GET /users-auth/setup-token/validate` and `PUT /users-auth/setup-token/account` (an invitation link only). A link is valid for 1 hour (reset) or 72 hours (invitation), and only once: it is made for the current password, so setting the password ends it. The login page has a "Forgot password?" link that asks for a reset email. The link also carries the language of the email (`lang`), and the page opens in it. The link of an invitation sets up the account: the first password and the profile of the user (`PUT /users-auth/setup-token/account` with `{ password, profile: { name, birthday?, phoneNumber?, address?, language? } }`); the link of a reset sets only the password (`{ password }`). A link used on the other page is refused (`401`) and stays valid.
+The link of a reset email opens the UI page `/reset-password`, and the link of an invitation the page `/setup-account` (`SMALL_UI_URL`). The token is in the fragment of the link (after `#`), which the browser never sends to a server; the page removes it from the address bar and sends it in a header: `x-reset-token` to `GET /users-auth/reset-token/validate` and `PUT /users-auth/reset-token/password` (a reset link only), `x-setup-token` to `GET /users-auth/setup-token/validate` and `PUT /users-auth/setup-token/account` (an invitation link only). A link is valid for 1 hour (reset) or 72 hours (invitation), and only once: it is made for the current password, so setting the password ends it. The login page has a "Forgot password?" link that asks for a reset email. The link also carries the language of the email (`lang`), and the page opens in it. The link of an invitation sets up the account: the first password and the profile of the user (`PUT /users-auth/setup-token/account` with `{ password, profile: { name, birthday?, phoneNumber?, address?, language? }, agreements: { terms, privacy } }`, see [Agreements](#agreements-license-terms-and-privacy)); the link of a reset sets only the password (`{ password }`). A link used on the other page is refused (`401`) and stays valid.
 
 Every user has a language in its profile (`language`, `PUT /users/:id`), returned by the login and by `GET /users-auth/me`: the UI opens in it. The user chooses it in its profile or with the flag in the top bar. Every email exists in each language (`src/translations/<language>.emails.json`).
 
@@ -1086,6 +1098,7 @@ curl --cookie cookies.txt -H "Origin: $ORIGIN" -H "x-tenant-id: $TENANT_ID" "$AP
 | Service-to-service REST wrappers                              | `src/services/rest/`                                                                      |
 | Shared MongoDB, validation, references, events, notifications | `src/core/utils/` (a library: no reference to this application, it receives its settings) |
 | Authentication and invitation flows                           | `src/services/users-auth/`                                                                |
+| Legal documents (license, terms, privacy), their acceptance   | `src/translations/*.legal.*.md`, `src/services/users-auth/users-auth.agreements.*`        |
 | Web server, middleware, and security headers                  | `src/web-server/`, `src/core/web-server/`                                                 |
 | Backend tests                                                 | `src/test/test/` and `src/core/test/`                                                     |
 | Vue API client and role-derived permissions                   | `ui/src/api/`, `ui/src/auth.js`                                                           |

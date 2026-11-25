@@ -40,6 +40,11 @@
             </v-btn>
           </v-card-actions>
         </v-card>
+
+        <!-- the legal documents: they can be read before the login -->
+        <div class="text-center text-caption mt-3">
+          <LegalLinks />
+        </div>
       </v-col>
     </v-row>
 
@@ -81,6 +86,7 @@ import Api from '../api/api.js';
 import { processLoginResponse } from '../auth.js';
 import ComponentsUtils from './components.utils.js';
 import LanguageMenu from './base.language.menu.vue';
+import LegalLinks from './base.legal.links.vue';
 import { useRouter } from 'vue-router';
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();

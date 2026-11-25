@@ -80,6 +80,7 @@
   "users.patchstatus": "The status of user '{target}' was changed to '{set.status}' by '{user}'",
   "users.post": "User '{target}' added",
   "users.put": "User '{target}' modified",
+  "users.putagreements": "User '{target}' accepted the terms and conditions ({agreements.terms.version}) and the privacy policy ({agreements.privacy.version})",
   "users.putemail": "The email of user '{target}' changed to '{email}'",
   "users.putstatus": "The status of user '{target}' was changed to '{status}' by '{user}'",
   "warning": "Warning"

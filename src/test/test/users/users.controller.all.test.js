@@ -1173,4 +1173,38 @@ describe('Users Controller', function () {
     chai.expect(res.body.message).to.include('An unknown error has occured');
     chai.expect(res.body.error).to.include('Test error message');
   }).timeout(10000);
+
+  /**
+   * put the agreements of a user (internal, from users-auth): the answer of the service, its errors
+   */
+  it('should put agreements', async () => {
+    const testUser = _.cloneDeep(TestConstants.Users[0]);
+    const body = { agreements: _.cloneDeep(TestConstants.AcceptedAgreements) };
+
+    // stub
+    const stubService = sinon.stub(UsersService, 'putAgreements').resolves({ status: 200, value: { id: testUser.id } });
+    const call = () =>
+      supertest(TestConstants.WebServer)
+        .put(`${UsersConstants.ApiPathInternal}/${testUser.id}/agreements`)
+        .set('Origin', TestConstants.WebServer)
+        .send(body);
+
+    // call
+    let res = await call();
+
+    // check: the user of the route, the agreements of the body
+    chai.expect(res.status).to.equal(200);
+    chai.expect(res.body).to.deep.equal({ id: testUser.id });
+    chai.expect(stubService.firstCall.args.slice(0, 2)).to.deep.equal([testUser.id, body]);
+
+    // case: refused by the service
+    stubService.resolves({ status: 400, error: { message: 'Failed to validate schema' } });
+    res = await call();
+    chai.expect(res.status).to.equal(400);
+
+    // case: an exception
+    stubService.rejects(new Error('Test error message'));
+    res = await call();
+    chai.expect(res.status).to.equal(500);
+  }).timeout(10000);
 });
